@@ -1,0 +1,36 @@
+ManifestFileVersion: 0
+CRC: 344519532
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: b8a1a4faddaec93f5c923e3557f944ee
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 436279bcb6511de7a594bad7d2059432
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 52ff61be09c044e980d6876c532a99bd, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+- Class: 222
+  Script: {instanceID: 0}
+- Class: 224
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers:
+- AssemblyName: UnityEngine.CoreModule
+  ClassName: UnityEngine.Events.PersistentCallGroup
+- AssemblyName: UnityEngine.UI
+  ClassName: UnityEngine.UI.MaskableGraphic/CullStateChangedEvent
+Assets:
+- Assets/Res/Textures/Image.prefab
+- Assets/Res/Textures/TestImg.jpg
+Dependencies: []
