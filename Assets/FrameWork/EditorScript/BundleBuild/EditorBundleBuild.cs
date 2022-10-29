@@ -2,10 +2,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using LinkFrameWork.Define;
-using UnityEditor;
+using LinkFrameWork.Extentions;
 using UnityEngine;
 
-namespace Link.Editor.BundleBuilds
+#if UNITY_EDITOR
+using UnityEditor;
+
+namespace Link.EditorScript.BundleBuilds
 {
     public class EditorBundleBuild
     {
@@ -26,12 +29,13 @@ namespace Link.Editor.BundleBuilds
             GetBundleAssetData(manifestList, assetData);
             //前一步创建的资源只是存在内存中，现在要把它保存到本地
             //通过编辑器API，创建一个数据资源文件，第二个参数为资源文件在Assets目录下的路径
-            if (!Directory.Exists(Consts.BundleAssetConfigFolder))
+            var folder = Path.Combine("Assets", "Resources", Consts.BundleAssetConfigFolder);
+            if (!Directory.Exists(folder))
             {
-                Directory.CreateDirectory(Consts.BundleAssetConfigFolder);
+                Directory.CreateDirectory(folder);
             }
 
-            var path = Path.Combine(Consts.BundleAssetConfigFolder, Consts.BundleAssetConfigName);
+            var path = Path.Combine("Assets","Resources", Consts.BundleAssetConfigFolder, Consts.BundleAssetConfigName);
             AssetDatabase.CreateAsset(assetData, path);
             //保存创建的资源
             AssetDatabase.SaveAssets();
@@ -56,7 +60,7 @@ namespace Link.Editor.BundleBuilds
                 {
                     assetData.source.Add(new ScriptableAssetBundleData()
                     {
-                        fold = name.Split(Consts.PathSeparator).Take(3).Last(),
+                        hashCode = name.GenHashCode(),
                         assetName = name,
                         assetBundle = bundle.name
                     });
@@ -81,3 +85,4 @@ namespace Link.Editor.BundleBuilds
         }
     }
 }
+#endif

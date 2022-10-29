@@ -9,13 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 038e6ae45e4f4e0b962917be3c569d9a, type: 3}
+  m_Script: {fileID: 11500000, guid: 8939cdedba1846dbab3086a707af18dd, type: 3}
   m_Name: AssetBundleData
   m_EditorClassIdentifier: 
   source:
-  - fold: textures
+  - hashCode: 1298993236
     assetName: assets/res/textures/image.prefab
     assetBundle: testtexture
-  - fold: textures
+  - hashCode: 377570077
     assetName: assets/res/textures/testimg.jpg
     assetBundle: testtexture

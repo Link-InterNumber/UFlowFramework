@@ -2,10 +2,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using LinkFrameWork.DesignPatterns;
 using LinkFrameWork.MonoInstance;
 using UnityEngine;
 using UnityEngine.Events;
+using Link.EditorScript.BundleBuilds;
+using LinkFrameWork.Define;
+using LinkFrameWork.Extentions;
 
 namespace LinkFrameWork.AssetsManage
 {
@@ -25,6 +29,8 @@ namespace LinkFrameWork.AssetsManage
         private List<string> _waitForLoadList = new List<string>();
 
         private AssetBundleManifest _bundleManifest;
+        private List<ScriptableAssetBundleData> _assetBundleDatas;
+        private bool _inited = false;
 
         // TODO
         private string _mainBundleName = "StandaloneWindows";
@@ -34,35 +40,56 @@ namespace LinkFrameWork.AssetsManage
             return _loadedBundleDic.ContainsKey(bundleName);
         }
 
+        public bool Init()
+        {
+            if (_inited) return true;
+            GetBundleManifest();
+            var path = Path.Combine(Consts.BundleAssetConfigFolder, Consts.BundleAssetConfigName.Split(".")[0]);
+            if (!GetAssetBundle("init", out var bundle)) return false;
+            _assetBundleDatas = Resources.Load<ScriptableAssetBundle>(path).source;
+            _inited = true;
+            return true;
+        }
+
+
+        public bool CheckWithID = true;
+
+        public string GetBundleNameByAsset(string path)
+        {
+            if (!_inited) throw new Exception("AssetsBundleManager do not inited!!!");
+            var lowerPath = path.ToLower();
+            if (CheckWithID)
+            {
+                // -919671435
+                var id = lowerPath.GenHashCode();
+                var matched = _assetBundleDatas.FirstOrDefault(o => o.hashCode == id);
+                return matched == default ? string.Empty : matched.assetBundle;
+            }
+
+            var nameMatched = _assetBundleDatas.FirstOrDefault(o => o.assetName == lowerPath);
+            return nameMatched == default ? string.Empty : nameMatched.assetBundle;
+        }
+
         #region BundleDependence
 
         private void GetBundleManifest()
         {
-            if (!_bundleManifest)
+            if (_bundleManifest) return;
+            var path = Path.Combine(Application.streamingAssetsPath, _mainBundleName);
+            _waitForLoadList.Add(_mainBundleName);
+            _loadedBundleDic.Remove(_mainBundleName);
+            var loadedBundle = AssetBundle.LoadFromFile(path);
+            _waitForLoadList.Remove(_mainBundleName);
+            var abf = new AssetsBundleRef()
             {
-                var path = Path.Combine(Application.streamingAssetsPath, _mainBundleName);
-
-                _waitForLoadList.Add(_mainBundleName);
-                _loadedBundleDic.Remove(_mainBundleName);
-                var loadedBundle = AssetBundle.LoadFromFile(path);
-                _waitForLoadList.Remove(_mainBundleName);
-                var abf = new AssetsBundleRef()
-                {
-                    AutoDispose = false,
-                    Bundle = loadedBundle
-                };
-                _loadedBundleDic.Add(_mainBundleName, abf);
-                abf.AddRef();
-
-                if (loadedBundle)
-                {
-                    _bundleManifest = loadedBundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
-                }
-                else
-                {
-                    throw new Exception($"MainBundle Name Error: {_mainBundleName}");
-                }
-            }
+                AutoDispose = false,
+                Bundle = loadedBundle
+            };
+            _loadedBundleDic.Add(_mainBundleName, abf);
+            abf.AddRef();
+            if (!loadedBundle)
+                throw new Exception($"MainBundle Name Error: {_mainBundleName}");
+            _bundleManifest = loadedBundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
         }
 
         private string[] GetBundleDependencies(string bundleName)
@@ -172,7 +199,6 @@ namespace LinkFrameWork.AssetsManage
             abf.AddRef();
             _loadedBundleDic.Add(abcr.assetBundle.name, abf);
             callBack?.Invoke(abcr.assetBundle);
-            yield return null;
         }
 
         #endregion

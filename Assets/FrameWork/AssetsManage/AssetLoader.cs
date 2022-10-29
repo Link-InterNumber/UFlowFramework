@@ -3,6 +3,12 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
+using DG.Tweening;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace LinkFrameWork.AssetsManage
 {
@@ -12,6 +18,11 @@ namespace LinkFrameWork.AssetsManage
 
         private static void LoadAssetAsync<T>(string path, string bundleName, UnityAction<T> callback) where T : Object
         {
+#if UNITY_EDITOR
+            var asset = AssetDatabase.LoadAssetAtPath<T>(path);
+            DOVirtual.DelayedCall(0.05f, () => { callback?.Invoke(asset); });
+            return;
+#endif
             AssetsBundleManager.Instance.GetAssetsBundleAsync(bundleName, (bundle) =>
             {
                 var loaded = bundle.LoadAsset<T>(path);
@@ -21,6 +32,10 @@ namespace LinkFrameWork.AssetsManage
 
         private static T LoadAsset<T>(string path, string bundleName) where T : Object
         {
+#if UNITY_EDITOR
+            var asset = AssetDatabase.LoadAssetAtPath<T>(path);
+            return asset;
+#endif
             if (AssetsBundleManager.Instance.GetAssetBundle(bundleName, out var bundle))
             {
                 return bundle.LoadAsset<T>(path);
@@ -31,6 +46,9 @@ namespace LinkFrameWork.AssetsManage
 
         private static void AddRefComponent(Transform asset, string bundleName, AssetType type)
         {
+#if UNITY_EDITOR
+            return;
+#endif
             if (!AssetsBundleManager.EnableAutoUnload)
                 return;
             var refCom = asset.GetOrAddComponent<AssetsRefComponent>();
@@ -39,9 +57,10 @@ namespace LinkFrameWork.AssetsManage
 
         private static string GetBundleName(string path)
         {
-            // TODO 
-            var dirs = path.Split(Consts.PathSeparator);
-            return "testtexture";
+#if UNITY_EDITOR
+            return string.IsNullOrEmpty(path) ? path: "Unity_Editor";
+#endif
+            return string.IsNullOrEmpty(path) ? path : AssetsBundleManager.Instance.GetBundleNameByAsset(path);
         }
 
         #endregion
@@ -50,7 +69,7 @@ namespace LinkFrameWork.AssetsManage
         #region Sprite
 
         /// <summary>
-        /// 同步加载图片
+        /// 异步加载图片
         /// </summary>
         /// <param name="path">文件路径</param>
         /// <param name="img">UI图片组件</param>

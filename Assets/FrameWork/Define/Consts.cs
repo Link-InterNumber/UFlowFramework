@@ -13,7 +13,7 @@ namespace LinkFrameWork.Define
         /// <summary>
         /// 分包配置文件夹
         /// </summary>
-        public static readonly string BundleAssetConfigFolder = "Assets/Res/AssetBundleData";
+        public static readonly string BundleAssetConfigFolder = "AssetBundleData";
 
         /// <summary>
         /// 分包配置文件名

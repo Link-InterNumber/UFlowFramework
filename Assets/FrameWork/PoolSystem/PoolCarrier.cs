@@ -60,8 +60,7 @@ namespace LinkFrameWork.PoolSystem
 
         public void PushNode(IPoolable node)
         {
-            if (_nodeIndexList.Contains(node.SpawnIndex)) return;
-            if (Count >= MaxCount)
+            if (_nodeIndexList.Contains(node.SpawnIndex) || Count >= MaxCount)
             {
                 node.DestroyNode();
                 return;

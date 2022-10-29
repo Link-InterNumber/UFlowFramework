@@ -2,13 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Serialization;
 
-namespace Link.Editor.BundleBuilds
+namespace Link.EditorScript.BundleBuilds
 {
     [Serializable]
     public struct ScriptableAssetBundleData
     {
-        public string fold;
+        public override int GetHashCode()
+        {
+            return hashCode;
+        }
+
+        public int hashCode;
         public string assetName;
         public string assetBundle;
 
@@ -17,9 +23,9 @@ namespace Link.Editor.BundleBuilds
             var sb = new StringBuilder();
             sb.Append("AssetBundleData : { ");
 
-            sb.AppendFormat("fold: {0}, ", fold);
+            sb.AppendFormat("hashCode: {0}, ", hashCode);
             sb.AppendFormat("assetName: {0}, ", assetName);
-            sb.AppendFormat("assetBundle: {0}, ", assetBundle);
+            sb.AppendFormat("assetBundle: {0} ", assetBundle);
             sb.Append(" }");
             return sb.ToString();
         }
@@ -30,7 +36,7 @@ namespace Link.Editor.BundleBuilds
 
             var o = (ScriptableAssetBundleData)obj;
 
-            if (fold != o.fold) return false;
+            if (hashCode != o.hashCode) return false;
             if (assetName != o.assetName) return false;
             if (assetBundle != o.assetBundle) return false;
 
@@ -46,11 +52,5 @@ namespace Link.Editor.BundleBuilds
         {
             return !lhs.Equals(rhs);
         }
-    }
-
-    [Serializable]
-    public class ScriptableAssetBundle : ScriptableObject
-    {
-        public List<ScriptableAssetBundleData> source = new List<ScriptableAssetBundleData>();
     }
 }
