@@ -58,14 +58,13 @@ namespace LinkFrameWork.AssetsManage
         private static string GetBundleName(string path)
         {
 #if UNITY_EDITOR
-            return string.IsNullOrEmpty(path) ? path: "Unity_Editor";
+            return string.IsNullOrEmpty(path) ? path : "Unity_Editor";
 #endif
             return string.IsNullOrEmpty(path) ? path : AssetsBundleManager.Instance.GetBundleNameByAsset(path);
         }
 
         #endregion
-
-
+        
         #region Sprite
 
         /// <summary>
