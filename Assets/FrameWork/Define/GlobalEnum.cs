@@ -23,4 +23,12 @@ namespace LinkFrameWork.Define
         Effect,
         Dialog
     }
+    
+    public enum Direction2D
+    {
+        Left,
+        Right,
+        Up,
+        Down
+    }
 }

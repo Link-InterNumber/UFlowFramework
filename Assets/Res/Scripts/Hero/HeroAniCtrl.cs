@@ -7,6 +7,7 @@ namespace Res.Scripts.Hero
         private static readonly int VSpeed = Animator.StringToHash("VSpeed");
         private static readonly int HSpeed = Animator.StringToHash("HSpeed");
         private static readonly int Jump1 = Animator.StringToHash("jump");
+        private static readonly int Wall = Animator.StringToHash("onWall");
 
         public virtual void Jump()
         {
@@ -21,7 +22,7 @@ namespace Res.Scripts.Hero
         
         public virtual void SetOnWall(bool onGround)
         {
-            animator.SetBool(OnGround, onGround);
+            animator.SetBool(Wall, onGround);
         }
         
         public virtual void SetVSpeed(float vSpeed)

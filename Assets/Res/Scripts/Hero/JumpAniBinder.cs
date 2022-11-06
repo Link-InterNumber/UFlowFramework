@@ -8,7 +8,7 @@ namespace Res.Scripts.Hero
         
         public void Jump()
         {
-            moveCtrl.Jump();
+            // moveCtrl.Jump();
         }
     }
 }

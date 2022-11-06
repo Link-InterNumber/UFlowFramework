@@ -1,3 +1,4 @@
+using System;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
@@ -14,15 +15,21 @@ namespace Res.Scripts.Hero
 
         private ContactFilter2D _filter;
         private bool _inited = false;
-        private bool _isOnHitting = false;
+        [SerializeField] private bool _isOnHitting = false;
 
         public bool IsOnHitting => _isOnHitting;
+
+        // private void Start()
+        // {
+        //     colliderCom.enabled = false;
+        // }
 
         protected virtual void SetFilter()
         {
             _filter = new ContactFilter2D();
             _filter.SetLayerMask(maskLayer);
             _inited = true;
+            // colliderCom.enabled = false;
         }
         
         public virtual bool OnHitting()
