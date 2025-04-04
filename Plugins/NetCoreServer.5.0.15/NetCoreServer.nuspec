@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>NetCoreServer</id>
+    <version>5.0.15</version>
+    <authors>Ivan Shynkarenka</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <projectUrl>https://github.com/chronoxor/NetCoreServer</projectUrl>
+    <description>Ultra fast and low latency asynchronous socket server &amp; client C# .NET Core library with support TCP, SSL, UDP, HTTP, HTTPS, WebSocket protocols and 10K connections problem solution</description>
+    <copyright>Copyright (c) 2019-2021 Ivan Shynkarenka</copyright>
+    <tags>async client server tcp udp ssl tls http https websocket low latency performance</tags>
+    <repository url="https://github.com/chronoxor/NetCoreServer" />
+    <dependencies>
+      <group targetFramework="net5.0" />
+    </dependencies>
+  </metadata>
+</package>

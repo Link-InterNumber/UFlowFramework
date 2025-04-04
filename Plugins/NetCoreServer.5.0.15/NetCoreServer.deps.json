@@ -1,0 +1,24 @@
+{
+  "runtimeTarget": {
+    "name": ".NETStandard,Version=v2.1/",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETStandard,Version=v2.1": {},
+    ".NETStandard,Version=v2.1/": {
+      "NetCoreServer/3.0.22.0": {
+        "runtime": {
+          "NetCoreServer.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "NetCoreServer/3.0.22.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
