@@ -4,7 +4,10 @@
  *  
  * Copyright (c) Ruoy  
  */
+
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 
 namespace EnjoyGameClub.TextLifeFramework.Core
@@ -25,6 +28,7 @@ namespace EnjoyGameClub.TextLifeFramework.Core
             noneState.AddTranslation(runtimeState, () => Application.isPlaying&& _tempText.isActiveAndEnabled);
             noneState.AddTranslation(debugState, () => !Application.isPlaying && Debug);
 
+#if UNITY_EDITOR
             EditorApplication.playModeStateChanged += change =>
             {
                 if (change == PlayModeStateChange.ExitingEditMode)
@@ -33,7 +37,7 @@ namespace EnjoyGameClub.TextLifeFramework.Core
                     stateMachine.ChangeState(noneState);
                 }
             };
-
+#endif
             debugState.onStateEnter.AddListener(() =>
             {
 #if UNITY_EDITOR

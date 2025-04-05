@@ -11,10 +11,10 @@ namespace PowerCellStudio
         private Coroutine _seq;
         private AudioSource _audioSource;
         private Transform _parent;
-        private MusicGroup _curGroup = MusicGroup.MainScene;
+        private MusicGroup _curGroup = MusicGroup.Battle;
         private float _realVolume;
         private float _curVolume;
-        private float _maxVolume;
+        private float _maxVolume = 1f;
         private float _lastPlayTime;
         
         private Dictionary<MusicGroup, float> _audioTime = new Dictionary<MusicGroup, float>();
@@ -38,6 +38,8 @@ namespace PowerCellStudio
             _audioSource.ignoreListenerPause = true;
             _audioSource.playOnAwake = false;
             _realVolume = _audioSource.volume;
+            _maxVolume = 1f;
+            _curVolume = _realVolume;
         }
 
         private float _playtime;
@@ -255,16 +257,26 @@ namespace PowerCellStudio
             var starValue = _audioSource.volume;
             while (timePass < transferTime)
             {
+                if(!_audioSource)
+                {
+                    break;
+                }
+                if (_seq != null)
+                {
+                    yield return null;
+                    continue;
+                }
                 var normalized = Mathf.Clamp01(timePass / transferTime);
                 _audioSource.volume = Mathf.Lerp(starValue, targetVolume, normalized);
                 timePass += Time.unscaledDeltaTime;
-                if(!_audioSource ||_seq != null) yield break;
                 yield return null;
             }
-            onComplete?.Invoke();
             if(_audioSource) _audioSource.volume = targetVolume;
+            _volumeHandler = null;
+            onComplete?.Invoke();
         }
 
+        private Coroutine _volumeHandler;
         public void SetVolume(float volume, float transferTime, Action onComplete = null)
         {
             if(!_audioSource) return;
@@ -275,7 +287,8 @@ namespace PowerCellStudio
                 _audioSource.volume = _realVolume;
                 return;
             }
-            ApplicationManager.instance.StartCoroutine(SetVolumeHandler(_realVolume, transferTime, onComplete));
+            if(_volumeHandler != null) ApplicationManager.instance.StopCoroutine(_volumeHandler);
+            _volumeHandler = ApplicationManager.instance.StartCoroutine(SetVolumeHandler(_realVolume, transferTime, onComplete));
         }
         
         public void SetMaxVolume(float maxVolume)

@@ -129,14 +129,14 @@ namespace PowerCellStudio
             var starValue = _audioSource.volume;
             while (timePass < transferTime)
             {
+                if(!_audioSource) yield break;
                 var normalized = Mathf.Clamp01(timePass / transferTime);
                 _audioSource.volume = Mathf.Lerp(starValue, targetVolume, normalized);
                 timePass += Time.unscaledDeltaTime;
-                if(!_audioSource) yield break;
                 yield return null;
             }
-            onComplete?.Invoke();
             if(_audioSource) _audioSource.volume = targetVolume;
+            onComplete?.Invoke();
         }
 
         public void SetVolume(float volume, float transferTime, Action onComplete = null)

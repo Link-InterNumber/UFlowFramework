@@ -18,7 +18,7 @@ namespace PowerCellStudio
             standAlonePage.RegisterEvent();
             standAlonePage.OnOpen(null);
             standAlonePage.OnFocus();
-            standAlonePage.PreloadUI<MaskWindow>();
+            // standAlonePage.PreloadUI<MaskWindow>();
 #if UNITY_EDITOR || DEBUG
             var debugBtnGameObject = new GameObject("DebugBtn");
             var btnRect = debugBtnGameObject.AddComponent<RectTransform>();

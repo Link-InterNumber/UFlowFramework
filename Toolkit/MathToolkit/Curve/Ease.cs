@@ -6,36 +6,36 @@ namespace PowerCellStudio
     public enum EaseType
     {
         Linear,
-        EaseInQuad,
-        EaseOutQuad,
-        EaseInOutQuad,
-        EaseInCubic,
-        EaseOutCubic,
-        EaseInOutCubic,
-        EaseInQuart,
-        EaseOutQuart,
-        EaseInOutQuart,
-        EaseInQuint,
-        EaseOutQuint,
-        EaseInOutQuint,
-        EaseInSine,
-        EaseOutSine,
-        EaseInOutSine,
-        EaseInEnormalizedTimepo,
-        EaseOutEnormalizedTimepo,
-        EaseInOutEnormalizedTimepo,
-        EaseInCirc,
-        EaseOutCirc,
-        EaseInOutCirc,
-        EaseInBack,
-        EaseOutBack,
-        EaseInOutBack,
-        EaseInElastic,
-        EaseOutElastic,
-        EaseInOutElastic,
-        EaseInBounce,
-        EaseOutBounce,
-        EaseInOutBounce,
+        InQuad,
+        OutQuad,
+        InOutQuad,
+        InCubic,
+        OutCubic,
+        InOutCubic,
+        InQuart,
+        OutQuart,
+        InOutQuart,
+        InQuint,
+        OutQuint,
+        InOutQuint,
+        InSine,
+        OutSine,
+        InOutSine,
+        InEnormalizedTimepo,
+        OutEnormalizedTimepo,
+        InOutEnormalizedTimepo,
+        InCirc,
+        OutCirc,
+        InOutCirc,
+        InBack,
+        OutBack,
+        InOutBack,
+        InElastic,
+        OutElastic,
+        InOutElastic,
+        InBounce,
+        OutBounce,
+        InOutBounce,
     }
     
     public class Ease
@@ -53,65 +53,65 @@ namespace PowerCellStudio
             {
                 case EaseType.Linear:
                     return Linear(normalizedTime);
-                case EaseType.EaseInQuad:
+                case EaseType.InQuad:
                     return EaseInQuad(normalizedTime);
-                case EaseType.EaseOutQuad:
+                case EaseType.OutQuad:
                     return EaseOutQuad(normalizedTime);
-                case EaseType.EaseInOutQuad:
+                case EaseType.InOutQuad:
                     return EaseInOutQuad(normalizedTime);
-                case EaseType.EaseInCubic:
+                case EaseType.InCubic:
                     return EaseInCubic(normalizedTime);
-                case EaseType.EaseOutCubic:
+                case EaseType.OutCubic:
                     return EaseOutCubic(normalizedTime);
-                case EaseType.EaseInOutCubic:
+                case EaseType.InOutCubic:
                     return EaseInOutCubic(normalizedTime);
-                case EaseType.EaseInQuart:
+                case EaseType.InQuart:
                     return EaseInQuart(normalizedTime);
-                case EaseType.EaseOutQuart:
+                case EaseType.OutQuart:
                     return EaseOutQuart(normalizedTime);
-                case EaseType.EaseInOutQuart:
+                case EaseType.InOutQuart:
                     return EaseInOutQuart(normalizedTime);
-                case EaseType.EaseInQuint:
+                case EaseType.InQuint:
                     return EaseInQuint(normalizedTime);
-                case EaseType.EaseOutQuint:
+                case EaseType.OutQuint:
                     return EaseOutQuint(normalizedTime);
-                case EaseType.EaseInOutQuint:
+                case EaseType.InOutQuint:
                     return EaseInOutQuint(normalizedTime);
-                case EaseType.EaseInSine:
+                case EaseType.InSine:
                     return EaseInSine(normalizedTime);
-                case EaseType.EaseOutSine:
+                case EaseType.OutSine:
                     return EaseOutSine(normalizedTime);
-                case EaseType.EaseInOutSine:
+                case EaseType.InOutSine:
                     return EaseInOutSine(normalizedTime);
-                case EaseType.EaseInEnormalizedTimepo:
+                case EaseType.InEnormalizedTimepo:
                     return EaseInEnormalizedTimepo(normalizedTime);
-                case EaseType.EaseOutEnormalizedTimepo:
+                case EaseType.OutEnormalizedTimepo:
                     return EaseOutEnormalizedTimepo(normalizedTime);
-                case EaseType.EaseInOutEnormalizedTimepo:
+                case EaseType.InOutEnormalizedTimepo:
                     return EaseInOutEnormalizedTimepo(normalizedTime);
-                case EaseType.EaseInCirc:
+                case EaseType.InCirc:
                     return EaseInCirc(normalizedTime);
-                case EaseType.EaseOutCirc:
+                case EaseType.OutCirc:
                     return EaseOutCirc(normalizedTime);
-                case EaseType.EaseInOutCirc:
+                case EaseType.InOutCirc:
                     return EaseInOutCirc(normalizedTime);
-                case EaseType.EaseInBack:
+                case EaseType.InBack:
                     return EaseInBack(normalizedTime);
-                case EaseType.EaseOutBack:
+                case EaseType.OutBack:
                     return EaseOutBack(normalizedTime);
-                case EaseType.EaseInOutBack:
+                case EaseType.InOutBack:
                     return EaseInOutBack(normalizedTime);
-                case EaseType.EaseInElastic:
+                case EaseType.InElastic:
                     return EaseInElastic(normalizedTime);
-                case EaseType.EaseOutElastic:
+                case EaseType.OutElastic:
                     return EaseOutElastic(normalizedTime);
-                case EaseType.EaseInOutElastic:
+                case EaseType.InOutElastic:
                     return EaseInOutElastic(normalizedTime);
-                case EaseType.EaseInBounce:
+                case EaseType.InBounce:
                     return EaseInBounce(normalizedTime);
-                case EaseType.EaseOutBounce:
+                case EaseType.OutBounce:
                     return EaseOutBounce(normalizedTime);
-                case EaseType.EaseInOutBounce:
+                case EaseType.InOutBounce:
                     return EaseInOutBounce(normalizedTime);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type), type, null);
@@ -124,65 +124,65 @@ namespace PowerCellStudio
             {
                 case EaseType.Linear:
                     return Linear;
-                case EaseType.EaseInQuad:
+                case EaseType.InQuad:
                     return EaseInQuad;
-                case EaseType.EaseOutQuad:
+                case EaseType.OutQuad:
                     return EaseOutQuad;
-                case EaseType.EaseInOutQuad:
+                case EaseType.InOutQuad:
                     return EaseInOutQuad;
-                case EaseType.EaseInCubic:
+                case EaseType.InCubic:
                     return EaseInCubic;
-                case EaseType.EaseOutCubic:
+                case EaseType.OutCubic:
                     return EaseOutCubic;
-                case EaseType.EaseInOutCubic:
+                case EaseType.InOutCubic:
                     return EaseInOutCubic;
-                case EaseType.EaseInQuart:
+                case EaseType.InQuart:
                     return EaseInQuart;
-                case EaseType.EaseOutQuart:
+                case EaseType.OutQuart:
                     return EaseOutQuart;
-                case EaseType.EaseInOutQuart:
+                case EaseType.InOutQuart:
                     return EaseInOutQuart;
-                case EaseType.EaseInQuint:
+                case EaseType.InQuint:
                     return EaseInQuint;
-                case EaseType.EaseOutQuint:
+                case EaseType.OutQuint:
                     return EaseOutQuint;
-                case EaseType.EaseInOutQuint:
+                case EaseType.InOutQuint:
                     return EaseInOutQuint;
-                case EaseType.EaseInSine:
+                case EaseType.InSine:
                     return EaseInSine;
-                case EaseType.EaseOutSine:
+                case EaseType.OutSine:
                     return EaseOutSine;
-                case EaseType.EaseInOutSine:
+                case EaseType.InOutSine:
                     return EaseInOutSine;
-                case EaseType.EaseInEnormalizedTimepo:
+                case EaseType.InEnormalizedTimepo:
                     return EaseInEnormalizedTimepo;
-                case EaseType.EaseOutEnormalizedTimepo:
+                case EaseType.OutEnormalizedTimepo:
                     return EaseOutEnormalizedTimepo;
-                case EaseType.EaseInOutEnormalizedTimepo:
+                case EaseType.InOutEnormalizedTimepo:
                     return EaseInOutEnormalizedTimepo;
-                case EaseType.EaseInCirc:
+                case EaseType.InCirc:
                     return EaseInCirc;
-                case EaseType.EaseOutCirc:
+                case EaseType.OutCirc:
                     return EaseOutCirc;
-                case EaseType.EaseInOutCirc:
+                case EaseType.InOutCirc:
                     return EaseInOutCirc;
-                case EaseType.EaseInBack:
+                case EaseType.InBack:
                     return EaseInBack;
-                case EaseType.EaseOutBack:
+                case EaseType.OutBack:
                     return EaseOutBack;
-                case EaseType.EaseInOutBack:
+                case EaseType.InOutBack:
                     return EaseInOutBack;
-                case EaseType.EaseInElastic:
+                case EaseType.InElastic:
                     return EaseInElastic;
-                case EaseType.EaseOutElastic:
+                case EaseType.OutElastic:
                     return EaseOutElastic;
-                case EaseType.EaseInOutElastic:
+                case EaseType.InOutElastic:
                     return EaseInOutElastic;
-                case EaseType.EaseInBounce:
+                case EaseType.InBounce:
                     return EaseInBounce;
-                case EaseType.EaseOutBounce:
+                case EaseType.OutBounce:
                     return EaseOutBounce;
-                case EaseType.EaseInOutBounce:
+                case EaseType.InOutBounce:
                     return EaseInOutBounce;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type), type, null);
