@@ -190,7 +190,9 @@ namespace PowerCellStudio
                 _audioSource.mute = true;
                 return;
             }
+            var oriGenVolume = _curVolume;
             SetVolume(0f, transferTime, () => { _audioSource.mute = true;});
+            _curVolume = oriGenVolume;
         }
 
         public void Unmute(float transferTime)

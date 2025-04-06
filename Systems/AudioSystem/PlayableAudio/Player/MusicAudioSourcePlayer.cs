@@ -114,7 +114,7 @@ namespace PowerCellStudio
 
         public bool SetCurGroup(MusicGroup group)
         {
-            if (_curGroup == group) return true;
+            if (_curGroup == group && !_isLoading) return true;
             if (!_bgmDiscs.TryGetValue(group, out var info)) return false;
             _audioTime[_curGroup] = _audioSource.time + info.fadeoutTime;
             _curGroup = group;
@@ -139,6 +139,7 @@ namespace PowerCellStudio
         }
 
         private MusicGroup _onGoingGroup;
+        private bool _isLoading;
         public void Play(string[] clipRefs, MusicGroup group, bool randPlay, bool restart, float fadeoutTime = 1f, float intervalTime = 1f, float fadeinTime = 1f)
         {
             if(clipRefs == null || clipRefs.Length == 0) return;
@@ -150,6 +151,7 @@ namespace PowerCellStudio
                     SetCurGroup(group);
                     return;
                 }
+                _isLoading = true;
                 currentDisc.onClipLoaded.AddListener(OnAudioClipLoadCompleted);
                 currentDisc.SetClips(clipRefs, randPlay);
                 currentDisc.fadeoutTime = fadeoutTime;
@@ -159,6 +161,7 @@ namespace PowerCellStudio
             }
             else
             {
+                _isLoading = true;
                 var disc = new SongDisc(clipRefs, randPlay);
                 disc.onClipLoaded.AddListener(OnAudioClipLoadCompleted);
                 disc.fadeoutTime = fadeoutTime;
@@ -173,6 +176,7 @@ namespace PowerCellStudio
         {
             data.onClipLoaded.RemoveListener(OnAudioClipLoadCompleted);
             SetCurGroup(_onGoingGroup);
+            _isLoading = false;
         }
 
         private HashSet<MusicGroup> _pausedGroups = new HashSet<MusicGroup>();
@@ -321,7 +325,9 @@ namespace PowerCellStudio
                 _audioSource.mute = true;
                 return;
             }
+            var oriGenVolume = _curVolume;
             SetVolume(0f, transferTime, () => { _audioSource.mute = true;});
+            _curVolume = oriGenVolume;
         }
 
         public void Unmute(float transferTime)

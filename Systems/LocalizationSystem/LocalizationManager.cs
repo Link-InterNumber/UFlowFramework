@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using UnityEngine;
 using UnityEngine.Localization.Settings;
 using UnityEngine.Localization.Tables;
 using UnityEngine.ResourceManagement.AsyncOperations;
@@ -18,6 +19,10 @@ namespace PowerCellStudio
 
         public bool isChineseSimplified => curLanguage == Language.ChineseSimplified;
         public bool isChineseTraditional => curLanguage == Language.ChineseTraditional;
+
+        private Font _fontAsset;
+        public Font font => _fontAsset;
+        private IAssetLoader _assetLoader;
 
         public IEnumerator Init(Action callback)
         {
@@ -94,17 +99,26 @@ namespace PowerCellStudio
             return entry != null;
         }
 
-        public void ChangeLanguage(Language language, Action callBack = null)
+        public Coroutine ChangeLanguage(Language language, Action callBack = null)
         {
+            if (_curLanguage == language) return null;
             _curLanguage = language;
             LocalizationSettings.SelectedLocale = LocalizationSettings.AvailableLocales.Locales[(int)language];
-            ApplicationManager.instance.StartCoroutine(ChangeLanguageHandle(callBack));
+            return ApplicationManager.instance.StartCoroutine(ChangeLanguageHandle(callBack));
         }
 
         private IEnumerator ChangeLanguageHandle(Action callBack)
         {
             yield return LoadStringTable();
             yield return LoadAssetTable();
+            if (ConstSetting.LanguageFont.TryGetValue(_curLanguage, out var fontPath))
+            {
+                if(_assetLoader != null) AssetUtils.DeSpawnLoader(_assetLoader);
+                _assetLoader = AssetUtils.SpawnLoader(this.GetType().Name);
+                var handler = _assetLoader.LoadAsYieldInstruction<Font>(fontPath);
+                yield return handler;
+                _fontAsset = handler.asset;
+            }
             EventManager.instance.onLanguageChange.Invoke(_curLanguage);
             callBack?.Invoke();
         }
