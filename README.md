@@ -69,7 +69,7 @@
 ### [得意黑 Smiley Sans](https://github.com/atelier-anchor/smiley-sans)
 - **类型**: 开源中文字体
 - **风格**: 现代几何风格黑体
-- **字符集**: 支持简繁中文
+- **字符集**: 支持简体中文
 - **许可证**: SIL Open Font License
 
 ### [字魂扁桃体](https://izihun.com/shangyongziti/7495.html)
