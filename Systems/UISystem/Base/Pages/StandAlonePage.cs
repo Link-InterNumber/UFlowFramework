@@ -23,24 +23,7 @@ namespace PowerCellStudio
             var debugBtnGameObject = new GameObject("DebugBtn");
             var btnRect = debugBtnGameObject.AddComponent<RectTransform>();
             btnRect.SetParent(standAlonePage.transform);
-            btnRect.localScale = Vector3.one;
-            var size = Mathf.Min(UIManager.ScreenSize.x, UIManager.ScreenSize.y) * 0.1f; 
-            btnRect.sizeDelta = new Vector2(size, size);
-            btnRect.anchorMin = Vector2.one;
-            btnRect.anchorMax = Vector2.one;
-            
-            var safeArea = Screen.safeArea;
-            var scale = UIManager.PixelScale;
-            btnRect.anchoredPosition = safeArea.max * scale - UIManager.ScreenSize - new Vector2(size/2, size/2);
-            
-            var btnColor = Color.yellow;
-            btnColor.a = 0.5f;
-            debugBtnGameObject.AddComponent<Image>().color = btnColor;
-            var debugBtn = debugBtnGameObject.AddComponent<Button>();
-            debugBtn.onClick.AddListener(() =>
-            {
-                UIManager.instance.OpenWindow<DebugWindow>();
-            });
+            debugBtnGameObject.AddComponent<DebugBtn>();
 #endif
             return standAlonePage;
         }
