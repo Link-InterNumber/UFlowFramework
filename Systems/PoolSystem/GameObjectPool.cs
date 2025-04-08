@@ -80,6 +80,11 @@ namespace PowerCellStudio
         public override bool Release(GameObject obj)
         {
             if (!obj || !CanPool(obj)) return false;
+            if (_stack == null)
+            {
+                GameObject.Destroy(obj);
+                return false;
+            }
             if (_set.Contains(obj)) return true;
             if (count == _maxSize)
             {
@@ -95,6 +100,12 @@ namespace PowerCellStudio
         
         public void ReleaseWithoutCheck(GameObject obj)
         {
+            if (!obj) return;
+            if (_stack == null)
+            {
+                GameObject.Destroy(obj);
+                return;
+            }
             if (_set.Contains(obj)) return;
             if (count >= _maxSize)
             {
