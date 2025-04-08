@@ -1,7 +1,8 @@
 {
   "name": "deml.netcore-networking.editor",
   "references": [
-    "GUID:e1af3df6500b1c342803418d4e3e040f"
+    "GUID:e1af3df6500b1c342803418d4e3e040f",
+    "GUID:f8c5082aaf1c95e4d979e7f297dff8a0"
   ],
   "includePlatforms": [
     "Editor"

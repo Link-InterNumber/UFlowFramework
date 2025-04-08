@@ -13,7 +13,7 @@ using UnityEditor;
 
 namespace PowerCellStudio
 {
-    public class AssetAssetLoader : IAssetLoader
+    public class BundleAssetLoader : IAssetLoader
     {
         private long _index;
         public long index => _index;
@@ -25,10 +25,10 @@ namespace PowerCellStudio
         
         private AssetsBundleManager _assetsBundleManager;
 
-        public AssetAssetLoader( AssetsBundleManager assetsBundleManager)
+        public BundleAssetLoader( AssetsBundleManager assetsBundleManager)
         {
             _assetsBundleManager = assetsBundleManager;
-            _index = IndexGetter.instance.Get<AssetAssetLoader>();
+            _index = IndexGetter.instance.Get<BundleAssetLoader>();
         }
 
         #region Common

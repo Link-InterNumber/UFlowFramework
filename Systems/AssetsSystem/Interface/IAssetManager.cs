@@ -5,9 +5,9 @@ namespace PowerCellStudio
 {
     public interface IAssetManager //<T> where T : IAssetLoader
     {
-        AssetInitState initState {get;};
+        AssetInitState initState {get;}
 
-        float initProcess {get;};
+        float initProcess {get;}
 
         public void Init(MonoBehaviour coroutineRunner, Action callBack);
         

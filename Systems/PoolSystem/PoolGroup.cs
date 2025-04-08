@@ -46,8 +46,7 @@ namespace PowerCellStudio
 
         public GameObjectPool GetPool(string path)
         {
-            if (_gameObjectPools.ContainsKey(path)) return _gameObjectPools[key];
-            return null;
+            return _gameObjectPools.TryGetValue(path, out var pool) ? pool : null;
         }
 
         public PoolableObjectPool Push<T>(Func<T> create, int maxNum, int initNum) where T : class, IPoolable
