@@ -15,40 +15,17 @@ namespace PowerCellStudio
         
         private static LoadMode _loadMode = LoadMode.Addressable;
         public static LoadMode loadMode => _loadMode;
-        private static AssetsBundleManager _assetsBundleManager;
-        private static AddressableManager _addressableManager;
+        private static IAssetManager _assetManager;
+        // private static AssetsBundleManager _assetsBundleManager;
+        // private static AddressableManager _addressableManager;
         
-        public static AssetInitState initState =>
-            _loadMode switch
-            {
-                LoadMode.AssetBundle => _assetsBundleManager.initState,
-                LoadMode.Addressable => _addressableManager.initState,
-                LoadMode.Resources => AssetInitState.Complete,
-                _ => AssetInitState.Complete
-            };
+        public static AssetInitState initState => _assetManager?.initState ?? AssetInitState.Complete;
 
-        public static float initProcess =>
-            _loadMode switch
-            {
-                LoadMode.AssetBundle => _assetsBundleManager.initProcess,
-                LoadMode.Addressable => _addressableManager.initProcess,
-                LoadMode.Resources => 1f,
-                _ => 0f
-            };
+        public static float initProcess =>_assetManager?.initProcess??0f;
 
         public static IAssetLoader SpawnLoader(string tag= "")
         {
-            switch (_loadMode)
-            {
-                case LoadMode.AssetBundle:
-                    return _assetsBundleManager.SpawnLoader(tag);
-                case LoadMode.Addressable:
-                    return _addressableManager.SpawnLoader(tag);
-                case LoadMode.Resources:
-                    return new ResourceAssetLoader();
-                default:
-                    return _addressableManager.SpawnLoader(tag);
-            }
+            return _assetManager?.SpawnLoader(tag) ?? new ResourceAssetLoader();
         }
         
         public static void Init(MonoBehaviour coroutineRunner, Action callBack)
@@ -56,21 +33,21 @@ namespace PowerCellStudio
             switch (_loadMode)
             {
                 case LoadMode.AssetBundle:
-                    if(_assetsBundleManager != null) break;
-                    _assetsBundleManager = new AssetsBundleManager(); 
-                    _assetsBundleManager.Init(coroutineRunner, callBack);
+                    if(_assetManager != null) break;
+                    _assetManager = new AssetsBundleManager(); 
+                    _assetManager.Init(coroutineRunner, callBack);
                     break;
                 case LoadMode.Addressable:
-                    if(_addressableManager != null) break;
-                    _addressableManager = new AddressableManager();
-                    _addressableManager.Init(coroutineRunner, callBack);
+                    if(_assetManager != null) break;
+                    _assetManager = new AddressableManager();
+                    _assetManager.Init(coroutineRunner, callBack);
                     break;
                 case LoadMode.Resources:
                     break;
                 default:
-                    if(_assetsBundleManager != null) break;
-                    _assetsBundleManager = new AssetsBundleManager();
-                    _assetsBundleManager.Init(coroutineRunner, callBack);
+                    if(_assetManager != null) break;
+                    _assetManager = new AssetsBundleManager();
+                    _assetManager.Init(coroutineRunner, callBack);
                     break;
             }
         }
@@ -78,95 +55,34 @@ namespace PowerCellStudio
         public static void DeSpawnLoader(IAssetLoader assetLoader)
         {
             if(assetLoader == null) return;
-            switch (_loadMode)
-            {
-                case LoadMode.AssetBundle:
-                    _assetsBundleManager.DeSpawnLoader(assetLoader as AssetAssetLoader);
-                    break;
-                case LoadMode.Addressable:
-                    _addressableManager.DeSpawnLoader(assetLoader as AddressableAssetLoader);
-                    break;
-                case LoadMode.Resources:
-                    assetLoader.Deinit();
-                    break;
-                default:
-                    _addressableManager.DeSpawnLoader(assetLoader as AddressableAssetLoader);
-                    break;
-            }
+            if(_assetManager != null) _assetManager.DeSpawnLoader(assetLoader);
+            else assetLoader.Deinit();
         }
         
         public static void DeSpawnAllLoader()
         {
-            switch (_loadMode)
-            {
-                case LoadMode.AssetBundle:
-                    _assetsBundleManager.DeSpawnAllLoader();
-                    break;
-                case LoadMode.Addressable:
-                    _addressableManager.DeSpawnAllLoader();
-                    break;
-                case LoadMode.Resources:
-                    break;
-                default:
-                    _addressableManager.DeSpawnAllLoader();
-                    break;
-            }
+            _assetManager?.DeSpawnAllLoader();
         }
         
         public static void DeSpawnLoaderByTag(string tag)
         {
-            switch (_loadMode)
-            {
-                case LoadMode.AssetBundle:
-                    _assetsBundleManager.DeSpawnLoaderByTag(tag);
-                    break;
-                case LoadMode.Addressable:
-                    _addressableManager.DeSpawnLoaderByTag(tag);
-                    break;
-                case LoadMode.Resources:
-                    break;
-                default:
-                    _addressableManager.DeSpawnLoaderByTag(tag);
-                    break;
-            }
+            _assetManager?.DeSpawnLoaderByTag(tag);
         }
 
         public static void LoadScene(string sceneName, Action onComplete, bool unLoadOtherScene = false)
         {
-            switch (_loadMode)
-            {
-                case LoadMode.AssetBundle:
-                    _assetsBundleManager.LoadScene(sceneName, onComplete, unLoadOtherScene);
-                    break;
-                case LoadMode.Addressable:
-                    _addressableManager.LoadScene(sceneName, onComplete, unLoadOtherScene);
-                    break;
-                case LoadMode.Resources:
-                    SceneManager.LoadScene(sceneName, unLoadOtherScene ? LoadSceneMode.Single : LoadSceneMode.Additive);
-                    break;
-                default:
-                    _addressableManager.LoadScene(sceneName, onComplete, unLoadOtherScene);
-                    break;
-            }
+            if(_assetManager != null) 
+                _assetManager.LoadScene(sceneName, onComplete, unLoadOtherScene);
+            else 
+                SceneManager.LoadScene(sceneName, unLoadOtherScene ? LoadSceneMode.Single : LoadSceneMode.Additive);
         }
 
         public static void UnloadScene(string name)
         {
-            switch (_loadMode)
-            {
-                case LoadMode.AssetBundle:
-                    _assetsBundleManager.UnloadScene(name);
-                    break;
-                case LoadMode.Addressable:
-                    _addressableManager.UnloadScene(name);
-                    break;
-                case LoadMode.Resources:
-                    SceneManager.UnloadSceneAsync(name);
-                    break;
-                default:
-                    _addressableManager.UnloadScene(name);
-                    break;
-            }
+            if(_assetManager != null)
+                _assetManager.UnloadScene(name);
+            else 
+                SceneManager.UnloadSceneAsync(name);
         }
     }
 }

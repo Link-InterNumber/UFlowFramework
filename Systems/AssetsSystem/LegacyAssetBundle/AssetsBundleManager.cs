@@ -114,7 +114,7 @@ namespace PowerCellStudio
         private ObjectPool<AssetAssetLoader> _pool;
         private Dictionary<long, AssetAssetLoader> _activeLoader;
         
-        public AssetAssetLoader SpawnLoader(string tag= "")
+        public IAssetLoader SpawnLoader(string tag= "")
         {
             var loader = _pool.Get();
             loader.tag = tag;
@@ -122,16 +122,18 @@ namespace PowerCellStudio
             return loader;
         }
 
-        public void DeSpawnLoader(AssetAssetLoader assetLoader)
+        public void DeSpawnLoader(IAssetLoader assetLoader)
         {
-            if(assetLoader == null) return;
-            _activeLoader.Remove(assetLoader.index);
-            if(!assetLoader.spawned)
+            if (assetLoader == null) return;
+            var assetBundleLoader = assetLoader as AssetAssetLoader;
+            if (assetBundleLoader == null) return;
+            _activeLoader.Remove(assetBundleLoader.index);
+            if (!assetBundleLoader.spawned)
             {
-                assetLoader.Deinit();
+                assetBundleLoader.Deinit();
                 return;
             }
-            _pool.Release(assetLoader);
+            _pool.Release(assetBundleLoader);
         }
 
         public void DeSpawnAllLoader()

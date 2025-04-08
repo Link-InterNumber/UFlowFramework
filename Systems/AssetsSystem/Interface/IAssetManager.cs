@@ -3,13 +3,17 @@ using UnityEngine;
 
 namespace PowerCellStudio
 {
-    public interface IAssetManager<T> where T : IAssetLoader
+    public interface IAssetManager //<T> where T : IAssetLoader
     {
+        AssetInitState initState {get;};
+
+        float initProcess {get;};
+
         public void Init(MonoBehaviour coroutineRunner, Action callBack);
         
-        public T SpawnLoader(string tag);
+        public IAssetLoader SpawnLoader(string tag);
         
-        public void DeSpawnLoader(T loader);
+        public void DeSpawnLoader(IAssetLoader loader);
         
         public void DeSpawnAllLoader();
         
