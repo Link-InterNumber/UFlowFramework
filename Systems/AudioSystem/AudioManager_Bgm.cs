@@ -13,14 +13,14 @@ namespace PowerCellStudio
         }
 
         public void PlayMusic(string clipRef, MusicGroup group,
-            float fadeoutTime = 1f, float intervalTime = 1f, float fadeinTime = 1f)
+            float fadeoutTime = 0.5f, float intervalTime = 0.3f, float fadeinTime = 0.5f)
         {
             if(string.IsNullOrEmpty(clipRef)) return;
             PlayMusic(new[] {clipRef}, group, false, true, fadeoutTime, intervalTime, fadeinTime);
         }
         
         private void PlayMusic(string[] clipsRefs, MusicGroup group, bool randPlay, bool restart,
-            float fadeoutTime = 1f, float intervalTime = 1f, float fadeinTime = 1f)
+            float fadeoutTime = 0.5f, float intervalTime = 0.3f, float fadeinTime = 0.5f)
         {
             if(clipsRefs == null || clipsRefs.Length == 0) return;
             if (_musicPlayer == null) _musicPlayer = MusicAudioSourcePlayer.Create(transform, "MusicPlayer");

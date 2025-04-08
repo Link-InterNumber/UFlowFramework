@@ -78,7 +78,7 @@ namespace PowerCellStudio
             var timePass = 0f;
             while (timePass < time)
             {
-                var normalized = Ease.GetEase(EaseType.EaseOutSine, Mathf.Clamp01(timePass / time));
+                var normalized = Ease.GetEase(EaseType.OutSine, Mathf.Clamp01(timePass / time));
                 slider.value = Mathf.Lerp(startValue, val, normalized);
                 timePass += Time.unscaledTime;
                 if(!slider) yield break;

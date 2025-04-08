@@ -11,10 +11,10 @@ namespace PowerCellStudio
         private Coroutine _seq;
         private AudioSource _audioSource;
         private Transform _parent;
-        private MusicGroup _curGroup = MusicGroup.MainScene;
+        private MusicGroup _curGroup = MusicGroup.Battle;
         private float _realVolume;
         private float _curVolume;
-        private float _maxVolume;
+        private float _maxVolume = 1f;
         private float _lastPlayTime;
         
         private Dictionary<MusicGroup, float> _audioTime = new Dictionary<MusicGroup, float>();
@@ -38,6 +38,8 @@ namespace PowerCellStudio
             _audioSource.ignoreListenerPause = true;
             _audioSource.playOnAwake = false;
             _realVolume = _audioSource.volume;
+            _maxVolume = 1f;
+            _curVolume = _realVolume;
         }
 
         private float _playtime;
@@ -112,7 +114,7 @@ namespace PowerCellStudio
 
         public bool SetCurGroup(MusicGroup group)
         {
-            if (_curGroup == group) return true;
+            if (_curGroup == group && !_isLoading) return true;
             if (!_bgmDiscs.TryGetValue(group, out var info)) return false;
             _audioTime[_curGroup] = _audioSource.time + info.fadeoutTime;
             _curGroup = group;
@@ -137,6 +139,7 @@ namespace PowerCellStudio
         }
 
         private MusicGroup _onGoingGroup;
+        private bool _isLoading;
         public void Play(string[] clipRefs, MusicGroup group, bool randPlay, bool restart, float fadeoutTime = 1f, float intervalTime = 1f, float fadeinTime = 1f)
         {
             if(clipRefs == null || clipRefs.Length == 0) return;
@@ -148,6 +151,7 @@ namespace PowerCellStudio
                     SetCurGroup(group);
                     return;
                 }
+                _isLoading = true;
                 currentDisc.onClipLoaded.AddListener(OnAudioClipLoadCompleted);
                 currentDisc.SetClips(clipRefs, randPlay);
                 currentDisc.fadeoutTime = fadeoutTime;
@@ -157,6 +161,7 @@ namespace PowerCellStudio
             }
             else
             {
+                _isLoading = true;
                 var disc = new SongDisc(clipRefs, randPlay);
                 disc.onClipLoaded.AddListener(OnAudioClipLoadCompleted);
                 disc.fadeoutTime = fadeoutTime;
@@ -171,6 +176,7 @@ namespace PowerCellStudio
         {
             data.onClipLoaded.RemoveListener(OnAudioClipLoadCompleted);
             SetCurGroup(_onGoingGroup);
+            _isLoading = false;
         }
 
         private HashSet<MusicGroup> _pausedGroups = new HashSet<MusicGroup>();
@@ -255,16 +261,26 @@ namespace PowerCellStudio
             var starValue = _audioSource.volume;
             while (timePass < transferTime)
             {
+                if(!_audioSource)
+                {
+                    break;
+                }
+                if (_seq != null)
+                {
+                    yield return null;
+                    continue;
+                }
                 var normalized = Mathf.Clamp01(timePass / transferTime);
                 _audioSource.volume = Mathf.Lerp(starValue, targetVolume, normalized);
                 timePass += Time.unscaledDeltaTime;
-                if(!_audioSource ||_seq != null) yield break;
                 yield return null;
             }
-            onComplete?.Invoke();
             if(_audioSource) _audioSource.volume = targetVolume;
+            _volumeHandler = null;
+            onComplete?.Invoke();
         }
 
+        private Coroutine _volumeHandler;
         public void SetVolume(float volume, float transferTime, Action onComplete = null)
         {
             if(!_audioSource) return;
@@ -275,7 +291,8 @@ namespace PowerCellStudio
                 _audioSource.volume = _realVolume;
                 return;
             }
-            ApplicationManager.instance.StartCoroutine(SetVolumeHandler(_realVolume, transferTime, onComplete));
+            if(_volumeHandler != null) ApplicationManager.instance.StopCoroutine(_volumeHandler);
+            _volumeHandler = ApplicationManager.instance.StartCoroutine(SetVolumeHandler(_realVolume, transferTime, onComplete));
         }
         
         public void SetMaxVolume(float maxVolume)
@@ -308,7 +325,9 @@ namespace PowerCellStudio
                 _audioSource.mute = true;
                 return;
             }
+            var oriGenVolume = _curVolume;
             SetVolume(0f, transferTime, () => { _audioSource.mute = true;});
+            _curVolume = oriGenVolume;
         }
 
         public void Unmute(float transferTime)

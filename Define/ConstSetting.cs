@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
@@ -51,5 +52,12 @@ namespace PowerCellStudio
         }
         
         public static readonly ConfigSaveMode ConfigConfigSaveMode = ConfigSaveMode.Binary;
+
+        public static readonly Dictionary<Language, string> LanguageFont = new Dictionary<Language, string>()
+        {
+            { Language.ChineseSimplified, "Assets/UFlowFramework/Fonts/ZiHunBianTaoTi.ttf" },
+            { Language.English, "Assets/UFlowFramework/Fonts/ZiHunBianTaoTi.ttf" },
+            { Language.ChineseTraditional, "Assets/UFlowFramework/Fonts/AlibabaPuHuiTi-2-65-Medium.ttf" }
+        };
     }
 }

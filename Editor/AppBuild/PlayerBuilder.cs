@@ -13,7 +13,7 @@ namespace PowerCellStudio
         const string androidKeystorePass = "PowerCellStudio_keke";
         const string androidKeyaliasName = "PowerCellStudio";
         const string androidKeyaliasPass = "PowerCellStudio_keke";
-        private const string GameName = "TestGame";
+        private const string GameName = "Opoop日记";
         
         public static string GetBuildTargetName(BuildTarget target)
         {
@@ -130,7 +130,7 @@ namespace PowerCellStudio
 
             // playerSettings.locationPathName = path + GetBuildTargetName(playerSettings.target);
             BuildPipeline.BuildPlayer(playerSettings);
-            EditorUtility.RevealInFinder("Build/Andriod/");
+            EditorUtility.RevealInFinder("Build/Android/");
         }
         
         [MenuItem(@"Build/Addressable/WebGl Build", false, 1004)]

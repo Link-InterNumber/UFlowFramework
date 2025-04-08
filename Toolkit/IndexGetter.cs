@@ -3,7 +3,8 @@ using System.Collections.Generic;
 
 namespace PowerCellStudio
 {
-    public class IndexGetter : SingletonBase<IndexGetter>
+    public class 
+        IndexGetter : SingletonBase<IndexGetter>
     {
         private Dictionary<Type, long> _cache = new Dictionary<Type, long>();
 

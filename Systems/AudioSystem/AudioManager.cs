@@ -48,7 +48,7 @@ namespace PowerCellStudio
             }
         }
         
-        public void SetVolume(AudioSourceType type, float newValue, float transferTime = 0.5f)
+        public void SetVolume(AudioSourceType type, float newValue, float transferTime = 0.3f)
         {
             var v = Mathf.Clamp01(newValue);
             switch (type)
