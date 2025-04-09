@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using UnityEngine;
 using UnityEngine.Localization.Settings;
 using UnityEngine.Localization.Tables;
 using UnityEngine.ResourceManagement.AsyncOperations;
@@ -94,11 +95,11 @@ namespace PowerCellStudio
             return entry != null;
         }
 
-        public void ChangeLanguage(Language language, Action callBack = null)
+        public Coroutine ChangeLanguage(Language language, Action callBack = null)
         {
             _curLanguage = language;
             LocalizationSettings.SelectedLocale = LocalizationSettings.AvailableLocales.Locales[(int)language];
-            ApplicationManager.instance.StartCoroutine(ChangeLanguageHandle(callBack));
+            return ApplicationManager.instance.StartCoroutine(ChangeLanguageHandle(callBack));
         }
 
         private IEnumerator ChangeLanguageHandle(Action callBack)
