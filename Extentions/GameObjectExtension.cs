@@ -17,7 +17,6 @@ namespace PowerCellStudio
             return component;
         }
 
-
         public static void ReActive(this GameObject go)
         {
             if(!go) return;
@@ -71,18 +70,6 @@ namespace PowerCellStudio
                 child.SetParent(null);
                 GameObject.Destroy(child.gameObject);
             }
-        }
-
-        public static void ReActive(this GameObject obj)
-        {
-            if (!obj) return;
-            if (!obj.activeSelf)
-            {
-                obj.SetActive(true);
-                return;
-            }
-            obj.SetActive(false);
-            obj.SetActive(true);
         }
     }
 }
