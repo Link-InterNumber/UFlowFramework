@@ -83,10 +83,6 @@ namespace PowerCellStudio
                 if (instance is IModule module)
                 {
                     module.OnInit();
-                    if (module is IEventModule eventModule)
-                    {
-                        eventModule.RegisterEvent();
-                    }
                     ModuleManager.instance.AddModule(type, module);
                 }
 #if UNITY_EDITOR
@@ -127,10 +123,6 @@ namespace PowerCellStudio
                 if (instanceGo is IModule module)
                 {
                     module.OnInit();
-                    if (module is IEventModule eventModule)
-                    {
-                        eventModule.RegisterEvent();
-                    }
                     ModuleManager.instance.AddModule(type, module);
                 }
 #if UNITY_EDITOR
@@ -152,6 +144,10 @@ namespace PowerCellStudio
             EventManager.instance.onResetGame.RemoveListener(OnResetGame);
             foreach (var keyValuePair in _modules)
             {
+                if (keyValuePair.Value is IEventModule eventModule)
+                {
+                    eventModule.UnRegisterEvent();
+                }
                 keyValuePair.Value.Dispose();
             }
             _modules = null;
@@ -179,6 +175,10 @@ namespace PowerCellStudio
 
         private void AddModule<T>(Type type, T module) where T : class, IModule
         {
+            if (module is IEventModule eventModule)
+            {
+                eventModule.RegisterEvent();
+            }
             if (module is IExecutionModule executionModule && _executionModule != null)
             {
                 executionModule.inExecution = true;
@@ -198,10 +198,11 @@ namespace PowerCellStudio
             _laterExecutionModule?.Remove(type);
             if(_modules?.TryGetValue(type, out var module) ?? false)
             {
-                if(module is IEventModule eventModule)
+                if (module is IEventModule eventModule)
                 {
                     eventModule.UnRegisterEvent();
                 }
+                module.Dispose();
             }
             // type是monoSingleton类型时，删除对应的GameObject
             if (type.BaseType != null && type.BaseType.IsGenericType && type.BaseType.GetGenericTypeDefinition() == typeof(MonoSingleton<>))

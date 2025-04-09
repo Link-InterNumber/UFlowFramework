@@ -8,26 +8,42 @@ namespace PowerCellStudio
     {
         public bool staticText;
         public string localizationKey;
+        public bool changeFontWhenLanChange = true;
+
+        private bool _addListener;
 
         protected override void Awake()
         {
             base.Awake();
             if(!Application.isPlaying) return;
+            if(changeFontWhenLanChange)
+            {
+                EventManager.instance.onLanguageChange.AddListener(ChangeFont);
+                ChangeFont(LocalizationManager.instance.curLanguage);
+            }
             if (!staticText || string.IsNullOrEmpty(localizationKey)) return;
             SetLocalizedText();
             EventManager.instance.onLanguageChange.AddListener(OnLocalChange);
+            _addListener = true;
         }
 
         protected override void OnDestroy()
         {
             base.OnDestroy();
             if(!Application.isPlaying) return;
-            if (!staticText) return;
             EventManager.instance.onLanguageChange.RemoveListener(OnLocalChange);
+            EventManager.instance.onLanguageChange.RemoveListener(ChangeFont);
         }
-        
+
+        private void ChangeFont(Language data)
+        {
+            if (LocalizationManager.instance.font != null)
+                font = LocalizationManager.instance.font;
+        }
+
         public void SetLocalizationText(string key, params object[] param)
         {
+            localizationKey = key;
             if (param != null && param.Length > 0)
             {
                 text = string.Format(LocalizationManager.instance.GetString(key), param);
@@ -36,6 +52,9 @@ namespace PowerCellStudio
             {
                 text = LocalizationManager.instance.GetString(key);
             }
+            if(_addListener) return;
+            EventManager.instance.onLanguageChange.AddListener(OnLocalChange);
+            _addListener = true;
         }
 
         private void OnLocalChange(Language obj)

@@ -4,7 +4,7 @@ using PowerCellStudio;
 
 namespace LinkState
 {
-    public class LinkStateMachine<T> where T : class
+    public class LinkStateMachine<T> where T : class, ILinkStateOwner
     {
         private T _owner;
         private bool _inExecution;
@@ -94,6 +94,7 @@ namespace LinkState
             if (!_inited)
             {
                 _currentStateIndex = _initCondition?.Invoke(_owner) ?? 0;
+                _owner.StateIndex = _currentStateIndex;
                 _inited = true;
             }
 
@@ -110,6 +111,7 @@ namespace LinkState
                 // trigger.Execute(_owner, deltaTime);
                 if (!trigger.Check(_owner)) continue;
                 _currentStateIndex = trigger.DoTransfer(_owner);
+                _owner.StateIndex = _currentStateIndex;
                 break;
             }
         }
@@ -117,6 +119,7 @@ namespace LinkState
         public void UpdateManually(int state, float dt)
         {
             _currentStateIndex = state;
+            _owner.StateIndex = state;
             Update(dt);
         }
     }

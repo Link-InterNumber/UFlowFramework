@@ -17,6 +17,11 @@ namespace PowerCellStudio
 
         public override bool Release(IPoolable obj)
         {
+            if (_stack == null)
+            {
+                obj.Dispose();
+                return false;
+            }
             if (IsInPool(obj)) return true;
             obj.OnDeSpawn();
             if (count >= _maxSize)

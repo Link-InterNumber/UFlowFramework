@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace PowerCellStudio
 {
-    public class AssetsBundleManager : IAssetManager<AssetAssetLoader>
+    public class AssetsBundleManager : IAssetManager//<AssetAssetLoader>
     {
         public static bool simulateAssetBundleInEditor = false;
         /// <summary>
@@ -91,11 +91,11 @@ namespace PowerCellStudio
             _loadedBundleDic = new Dictionary<string, AssetsBundleRef>();
             _waitForLoadList = new Dictionary<string, LoaderYieldInstruction<AssetBundle>>();
             
-            _pool = new ObjectPool<AssetAssetLoader>(() => new AssetAssetLoader(this),
+            _pool = new ObjectPool<BundleAssetLoader>(() => new BundleAssetLoader(this),
                 loader => loader.Init(),
                 loader => loader.Deinit(),
                 loader => loader.Deinit(), true, 10, 30);
-            _activeLoader = new Dictionary<long, AssetAssetLoader>();
+            _activeLoader = new Dictionary<long, BundleAssetLoader>();
             
 #if UNITY_EDITOR
             if (!simulateAssetBundleInEditor)
@@ -111,10 +111,10 @@ namespace PowerCellStudio
             coroutineRunner.StartCoroutine(InitHandler(callBack));
         }
 
-        private ObjectPool<AssetAssetLoader> _pool;
-        private Dictionary<long, AssetAssetLoader> _activeLoader;
+        private ObjectPool<BundleAssetLoader> _pool;
+        private Dictionary<long, BundleAssetLoader> _activeLoader;
         
-        public AssetAssetLoader SpawnLoader(string tag= "")
+        public IAssetLoader SpawnLoader(string tag= "")
         {
             var loader = _pool.Get();
             loader.tag = tag;
@@ -122,16 +122,18 @@ namespace PowerCellStudio
             return loader;
         }
 
-        public void DeSpawnLoader(AssetAssetLoader assetLoader)
+        public void DeSpawnLoader(IAssetLoader assetLoader)
         {
-            if(assetLoader == null) return;
-            _activeLoader.Remove(assetLoader.index);
-            if(!assetLoader.spawned)
+            if (assetLoader == null) return;
+            var assetBundleLoader = assetLoader as BundleAssetLoader;
+            if (assetBundleLoader == null) return;
+            _activeLoader.Remove(assetBundleLoader.index);
+            if (!assetBundleLoader.spawned)
             {
-                assetLoader.Deinit();
+                assetBundleLoader.Deinit();
                 return;
             }
-            _pool.Release(assetLoader);
+            _pool.Release(assetBundleLoader);
         }
 
         public void DeSpawnAllLoader()

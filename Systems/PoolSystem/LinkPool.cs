@@ -18,6 +18,11 @@ namespace PowerCellStudio
         /// </summary>
         public int maxSize => _maxSize;
 
+        public void SetMaxSize(int newValue)
+        {
+            _maxSize = Math.Max(1, newValue);
+        }
+
         /// <summary>
         /// 对象池
         /// </summary>
@@ -59,8 +64,9 @@ namespace PowerCellStudio
         /// <returns>是否回收成功</returns>
         public virtual bool Release(T obj)
         {
+            if (_stack == null) return false;
             if (IsInPool(obj)) return true;
-            if (count == _maxSize) return false;
+            if (count >= _maxSize) return false;
             _stack.Push(obj);
             _set.Add(obj);
             return true;

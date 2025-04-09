@@ -41,6 +41,22 @@ namespace PowerCellStudio
                 return 1f;
             }
         }
+
+        public static Vector3 ScreenPosToUIPos(Vector2 screenPos)
+        {
+            switch (instance.canvasRenderMode)
+            {
+                case RenderMode.ScreenSpaceOverlay:
+                    return new Vector3(screenPos.x, screenPos.y, 0);
+                case RenderMode.ScreenSpaceCamera:
+                case RenderMode.WorldSpace:
+                    var worldPos = UICamera.instance.cameraCom.ScreenToWorldPoint(screenPos);
+                    worldPos.z = 0;
+                    return worldPos;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
         
         /// <summary>
         /// 获取UI元素在屏幕上的位置。

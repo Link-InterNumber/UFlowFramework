@@ -55,9 +55,14 @@ namespace PowerCellStudio
         {
             Dispose();
             _assetLoader = AssetUtils.SpawnLoader("SongDisc");
-            ApplicationManager.instance.StartCoroutine(LoadAudioClip(clipRefs));
+            _clipRefs.Clear();
+            for (var i = 0; i < clipRefs.Length; i++)
+            {
+                _clipRefs.Add(clipRefs[i]);
+            }
             _isRandom = isRandom;
             _index = 0;
+            ApplicationManager.instance.StartCoroutine(LoadAudioClip(clipRefs));
         }
         
         public void Restart()

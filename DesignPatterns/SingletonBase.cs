@@ -41,16 +41,7 @@ namespace PowerCellStudio
         public void Dispose()
         {
             if (_instance == null) return;
-            if (_instance is IEventModule eventModule)
-            {
-                eventModule.UnRegisterEvent();
-            }
-            if (_instance is IOnGameResetModule module)
-            {
-                module.OnGameReset();
-                ModuleManager.instance.RemoveModule(typeof(T));
-            }
-            // _instance = null;
+            _instance = null;
         }
     }
 }

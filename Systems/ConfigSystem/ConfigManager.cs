@@ -16,10 +16,11 @@ namespace PowerCellStudio
         {
             // 你可以使用 ConfigGroup 加载多个配置数据；
             // You can use ConfigGroup to load multiple configuration data;
-            _initConfig = new ConfigGroup<CommonConfigLoader>(_guidanceConf, _rolePropConf); //(_baseTypeSampleConf, _customTypeSampleConf);
-            _initConfig.onLoadCompleted += OnInitConfLoadCompleted;
-            if(onInitCompleted != null) _initConfig.onLoadCompleted += onInitCompleted;
-            yield return _initConfig.LoadAll();
+            // _initConfig = new ConfigGroup<CommonConfigLoader>(_guidanceConf, _rolePropConf); //(_baseTypeSampleConf, _customTypeSampleConf);
+            // _initConfig.onLoadCompleted += OnInitConfLoadCompleted;
+            // if(onInitCompleted != null) _initConfig.onLoadCompleted += onInitCompleted;
+            // yield return _initConfig.LoadAll();
+            yield return null;
         }
 
         private void OnInitConfLoadCompleted(AssetLoadStatus data)

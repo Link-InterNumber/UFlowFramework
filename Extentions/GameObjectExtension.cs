@@ -17,6 +17,19 @@ namespace PowerCellStudio
             return component;
         }
 
+
+        public static void ReActive(this GameObject go)
+        {
+            if(!go) return;
+            if (!go.activeSelf)
+            {
+                go.SetActive(true);
+                return;
+            }
+            go.SetActive(false);
+            go.SetActive(true);
+        }
+
         /// <summary>
         /// 是不是预制体
         /// </summary>

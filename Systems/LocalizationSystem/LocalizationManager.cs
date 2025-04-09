@@ -20,6 +20,10 @@ namespace PowerCellStudio
         public bool isChineseSimplified => curLanguage == Language.ChineseSimplified;
         public bool isChineseTraditional => curLanguage == Language.ChineseTraditional;
 
+        private Font _fontAsset;
+        public Font font => _fontAsset;
+        private IAssetLoader _assetLoader;
+
         public IEnumerator Init(Action callback)
         {
             _curLanguage = ConstSetting.DefaultLanguage;
@@ -97,6 +101,7 @@ namespace PowerCellStudio
 
         public Coroutine ChangeLanguage(Language language, Action callBack = null)
         {
+            if (_curLanguage == language) return null;
             _curLanguage = language;
             LocalizationSettings.SelectedLocale = LocalizationSettings.AvailableLocales.Locales[(int)language];
             return ApplicationManager.instance.StartCoroutine(ChangeLanguageHandle(callBack));
@@ -106,6 +111,14 @@ namespace PowerCellStudio
         {
             yield return LoadStringTable();
             yield return LoadAssetTable();
+            if (ConstSetting.LanguageFont.TryGetValue(_curLanguage, out var fontPath))
+            {
+                if(_assetLoader != null) AssetUtils.DeSpawnLoader(_assetLoader);
+                _assetLoader = AssetUtils.SpawnLoader(this.GetType().Name);
+                var handler = _assetLoader.LoadAsYieldInstruction<Font>(fontPath);
+                yield return handler;
+                _fontAsset = handler.asset;
+            }
             EventManager.instance.onLanguageChange.Invoke(_curLanguage);
             callBack?.Invoke();
         }

@@ -57,6 +57,16 @@ namespace PowerCellStudio
         
         #region IPoolable
 
+        public PoolableObjectPool GetPool<T>(PoolGroupName groupName)
+        {
+            return GetGroup(groupName).GetPool<T>();
+        }
+
+        public GameObjectPool GetPool(PoolGroupName groupName, string path)
+        {
+            return GetGroup(groupName).GetPool(path);
+        }
+
         /// <summary>
         /// 生成一个对象池，或获得已有的对象池
         /// </summary>

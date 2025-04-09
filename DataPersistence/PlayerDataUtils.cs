@@ -620,7 +620,7 @@ namespace PowerCellStudio
             return Sprite.Create(texture2D, new Rect(0f,0f, texture2D.width, texture2D.height), new Vector2(0.5f, 0.5f));
         }
         
-        public static LoaderYieldInstruction<Sprite> LoadCaptureAsync(string fileName, UnityAction<Sprite> action)
+        public static LoaderYieldInstruction<Sprite> LoadCaptureAsync(string fileName, Action<Sprite> action)
         {
             var path = Path.Combine(SavePath, "Capture", $"{fileName}.png");
             if (!File.Exists(path)) return null;

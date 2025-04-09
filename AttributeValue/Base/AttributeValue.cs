@@ -13,20 +13,28 @@ namespace PowerCellStudio
             Reset(initValue);
         }
         
-        [SerializeField] public T originValue;
-        [SerializeField] public T currentValue;
+        [SerializeField] protected T originValue;
+        [SerializeField] protected T currentValue;
         protected T _prevValue;
-        [SerializeField] public AttributeActionContainer<T> actions;
+        [SerializeField] protected AttributeActionContainer<T> actions;
         public event AttributeValueEvent<T> onValueChange;
 
         public AttributeActionContainer<T> GetActions(){return actions;}
 
+        private bool _isDirty = true;
+
         public bool Equals(IAttributeValue<T> other)
         {
-            return originValue.Equals(other.GetOrigin()) && currentValue.Equals(other.GetCurrent()) && actions.Count == other.GetActions().Count;
+            return originValue.Equals(other.GetOrigin()) 
+                && GetCurrent().Equals(other.GetCurrent()) 
+                && actions.Count == other.GetActions().Count;
         }
 
-        public bool ValueEquals(IAttributeValue<T> other) { return originValue.Equals(other.GetOrigin()) && currentValue.Equals(other.GetCurrent()); }
+        public bool ValueEquals(IAttributeValue<T> other) 
+        { 
+            return originValue.Equals(other.GetOrigin()) 
+                && GetCurrent().Equals(other.GetCurrent());
+        }
 
         public IAttributeValue<T> Clone()
         {
@@ -41,6 +49,7 @@ namespace PowerCellStudio
             // Calculate();
             _prevValue = currentValue;
             currentValue = originValue;
+            _isDirty = true;
         }
 
         public void Reset(T initValue)
@@ -49,6 +58,7 @@ namespace PowerCellStudio
             _prevValue = initValue;
             currentValue = initValue;
             actions = new AttributeActionContainer<T>();
+            _isDirty = true;
             // Calculate();
         }
 
@@ -70,12 +80,13 @@ namespace PowerCellStudio
                 onValueChange?.Invoke(currentValue, originValue, _prevValue);
             }
             _prevValue = currentValue;
+            _isDirty = false;
             return currentValue;
         }
         
         public T value => GetCurrent();
 
-        public T GetCurrent() { return currentValue; }
+        public T GetCurrent() { return _isDirty ? Calculate() : currentValue; }
 
         public T GetOrigin() { return originValue; }
         
@@ -122,14 +133,28 @@ namespace PowerCellStudio
         public AttributeAction<T> Push(Func<T, T, T> func, AttributePriority priority = AttributePriority.First, string tag = "")
         {
             if (func == null) return null;
+            _isDirty = true;
             return actions.Push(func, priority, tag);
         }
 
-        public void Remove(string tag) { actions.Remove(tag); }
+        public void Remove(string tag) 
+        {
+            actions.Remove(tag);
+            _isDirty = true;
+        }
         
-        public void Remove(AttributeAction<T> action) { actions.Remove(action); }
+        public void Remove(AttributeAction<T> action) 
+        {
+            actions.Remove(action);
+            _isDirty = true;
+        }
         
-        public void Pop() { actions.Pop(); }
+        public void Pop() 
+        {
+            actions.Pop(); 
+            _isDirty = true;
+        }
+
         public bool Equals(T other)
         {
             return currentValue?.Equals(other)?? false;
@@ -137,7 +162,7 @@ namespace PowerCellStudio
 
         public override string ToString()
         {
-            return currentValue.ToString();
+            return _isDirty? Calculate().ToString() : currentValue.ToString();
         }
     }
 }

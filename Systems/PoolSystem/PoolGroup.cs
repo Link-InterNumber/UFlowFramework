@@ -37,6 +37,18 @@ namespace PowerCellStudio
             _root.localPosition = Vector3.zero;
         }
 
+        public PoolableObjectPool GetPool<T>()
+        {
+            var key = typeof(T);
+            if (_pools.ContainsKey(key)) return _pools[key];
+            return null;
+        }
+
+        public GameObjectPool GetPool(string path)
+        {
+            return _gameObjectPools.TryGetValue(path, out var pool) ? pool : null;
+        }
+
         public PoolableObjectPool Push<T>(Func<T> create, int maxNum, int initNum) where T : class, IPoolable
         {
             var key = typeof(T);

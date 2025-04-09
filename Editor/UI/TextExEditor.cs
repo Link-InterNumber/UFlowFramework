@@ -105,12 +105,14 @@ namespace PowerCellStudio
     {
         private SerializedProperty m_staticText;
         private SerializedProperty m_localizationKey;
+        private SerializedProperty m_changeFontWhenLanChange;
 
         protected override void OnEnable()
         {
             base.OnEnable();
             m_staticText = serializedObject.FindProperty("staticText");
             m_localizationKey = serializedObject.FindProperty("localizationKey");
+            m_changeFontWhenLanChange = serializedObject.FindProperty("changeFontWhenLanChange");
         }
 
         protected override void OnDisable()
@@ -118,6 +120,7 @@ namespace PowerCellStudio
             base.OnDisable();
             m_staticText = null;
             m_localizationKey = null;
+            m_changeFontWhenLanChange = null;
         }
 
         public override void OnInspectorGUI()
@@ -125,7 +128,7 @@ namespace PowerCellStudio
             base.OnInspectorGUI();
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Localization");
-
+            EditorGUILayout.PropertyField(m_changeFontWhenLanChange);
             serializedObject.Update();
             EditorGUILayout.PropertyField(m_staticText);
             if (m_staticText.boolValue)

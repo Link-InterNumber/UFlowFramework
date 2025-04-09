@@ -20,13 +20,25 @@ namespace PowerCellStudio
         {
             btnLastMonth.onClick.AddListener(OnClickLastMonth);
             btnNextMonth.onClick.AddListener(OnClickNextMonth);
+            EventManager.instance.onLanguageChange.AddListener(OnLanguageChange);
         }
 
         private void OnDestroy()
         {
             btnLastMonth.onClick.RemoveListener(OnClickLastMonth);
             btnNextMonth.onClick.RemoveListener(OnClickNextMonth);
+            EventManager.instance.onLanguageChange.RemoveListener(OnLanguageChange);
             _calendarGenerator = null;
+        }
+
+        private void OnLanguageChange(Language data)
+        {
+            if (dayOfWeek != null && dayOfWeek.Length == 7)
+            {
+                UpdateWeekOfDay();
+            }
+            UpdateTable(_calendarGenerator);
+            onChangeMonth.Invoke();
         }
 
         public void Init(CalendarGenerator generator)
@@ -54,6 +66,7 @@ namespace PowerCellStudio
             if (_calendarGenerator == null) return;
             _calendarGenerator.ChangeMonth(1);
             UpdateTable(_calendarGenerator);
+            onChangeMonth.Invoke();
         }
 
         private void UpdateWeekOfDay()
@@ -84,7 +97,7 @@ namespace PowerCellStudio
         {
             monthYearText.text = LocalizationManager.instance.isChinese
                 ? $"{generator.currentDisplayYear}年{generator.currentDisplayMonth}月"
-                : generator.currentDate.ToString("yyyy MMMM");
+                : $"{TimeUtils.IntToEnglishMonth(generator.currentDisplayMonth)} {generator.currentDisplayYear}";
         }
         
         private void ClearCalendar()

@@ -13,7 +13,7 @@ using Object = UnityEngine.Object;
 
 namespace PowerCellStudio
 {
-    public class AddressableManager: IAssetManager<AddressableAssetLoader>
+    public class AddressableManager: IAssetManager //<AddressableAssetLoader>
     {
         private ObjectPool<AddressableAssetLoader> _pool;
         private Dictionary<long, AddressableAssetLoader> _activeLoader;
@@ -33,7 +33,7 @@ namespace PowerCellStudio
             coroutineRunner.StartCoroutine(InitHandle(handle, callBack));
         }
 
-        public AddressableAssetLoader SpawnLoader(string tag = "")
+        public IAssetLoader SpawnLoader(string tag = "")
         {
             var loader = _pool.Get();
             loader.tag = tag;
@@ -41,16 +41,18 @@ namespace PowerCellStudio
             return loader;
         }
 
-        public void DeSpawnLoader(AddressableAssetLoader assetLoader)
+        public void DeSpawnLoader(IAssetLoader assetLoader)
         {
             if(assetLoader == null) return;
-            _activeLoader.Remove(assetLoader.index);
-            if(!assetLoader.spawned)
+            var addressAbleLoader = assetLoader as AddressableAssetLoader;
+            if(addressAbleLoader == null) return;
+            _activeLoader.Remove(addressAbleLoader.index);
+            if(!addressAbleLoader.spawned)
             {
-                assetLoader.Deinit();
+                addressAbleLoader.Deinit();
                 return;
             }
-            _pool.Release(assetLoader);
+            _pool.Release(addressAbleLoader);
         }
 
         public void DeSpawnLoaderByTag(string tag)

@@ -41,6 +41,7 @@ namespace PowerCellStudio
             _stringBuilder.Append("\n");
             _stringBuilder.Append(stacktrace);
             _stringBuilder.Append("\n");
+            _stringBuilder.Append("\n");
             saveLog.content = _stringBuilder.ToString();
             _stringBuilder.Clear();
             _isNew = true;
