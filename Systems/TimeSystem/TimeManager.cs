@@ -27,7 +27,7 @@ namespace PowerCellStudio
 
             public void PushBlend(float v)
             {
-                if(v < 0f) ModuleLog<TimeManager>.Error("TimeScaler was set a negative number");
+                if(v < 0f) ModuleLog<TimeManager>.LogError("TimeScaler was set a negative number");
                 _blendValue.Add(Math.Max(v, 0f));
                 Calculated();
             }
@@ -62,7 +62,7 @@ namespace PowerCellStudio
 
             public void UpdateValue(float val)
             {
-                if(val < 0f) ModuleLog<TimeManager>.Error("TimeScaler was set a negative number");
+                if(val < 0f) ModuleLog<TimeManager>.LogError("TimeScaler was set a negative number");
                 _baseValue = val;
                 Calculated();
             }

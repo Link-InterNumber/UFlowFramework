@@ -151,7 +151,7 @@ namespace PowerCellStudio
                 UILog.LogError($"{_windowType.Name}没有配置预制体路径");
                 return;
             }
-            _parent.assetsAssetLoader.AsyncLoadNInstantiate(_windowPath, OnLoadSuccess, OnLoadFailed);
+            _parent.assetsLoader.AsyncLoadNInstantiate(_windowPath, OnLoadSuccess, OnLoadFailed);
         }
 
         private void OnLoadSuccess(GameObject go)
