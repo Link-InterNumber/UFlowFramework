@@ -34,6 +34,8 @@ namespace PowerCellStudio
         private IAssetLoader _3DEffectLoader;
         private PoolableObjectPool _poolAudioSource;
 
+        public float effectIntervalTime = 0.1f;
+
         private void InitEffectPlayer()
         {
             if (_3DEffectLoader == null)
@@ -69,7 +71,7 @@ namespace PowerCellStudio
                 audioType = onUI ? AudioSourceType.UIEffect : AudioSourceType.Effect3D,
                 clipName = clipRef,
                 requestTime = currentTime,
-                removeTime = currentTime + 0.1f,
+                removeTime = currentTime + effectIntervalTime,
                 attachToGameObject = attached != null,
                 attachGameObject =  attached,
                 full3D = !onUI && full3D,

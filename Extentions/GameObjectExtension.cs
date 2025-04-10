@@ -17,7 +17,6 @@ namespace PowerCellStudio
             return component;
         }
 
-
         public static void ReActive(this GameObject go)
         {
             if(!go) return;

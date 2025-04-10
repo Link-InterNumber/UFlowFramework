@@ -148,7 +148,7 @@ namespace PowerCellStudio
         {
             if (_pageStack.Count < 2)
             {
-                UILog.LogError("No page to close!");
+                UILog.LogError("Your must keep at least *one* page!");
                 return;
             }
             if (currentPage.GetType() == typeof(T))

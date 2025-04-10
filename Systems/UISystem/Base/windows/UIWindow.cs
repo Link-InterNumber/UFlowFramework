@@ -15,17 +15,17 @@ namespace PowerCellStudio
 
         #endregion
         
-        private IAssetLoader _assetsAssetLoader;
+        private IAssetLoader _assetsLoader;
         private IUIParent _parent;
         // private Canvas _canvas;
 
-        public IAssetLoader assetsAssetLoader => _assetsAssetLoader;
+        public IAssetLoader assetsLoader => _assetsLoader;
 
         public bool isOpened => gameObject.activeSelf;
         public virtual void OnUIDestroy()
         {
-            AssetUtils.DeSpawnLoader(_assetsAssetLoader);
-            _assetsAssetLoader = null;
+            AssetUtils.DeSpawnLoader(_assetsLoader);
+            _assetsLoader = null;
         }
 
         IUIParent IUIChild.parent
@@ -59,8 +59,8 @@ namespace PowerCellStudio
         public RectTransform rectTransform => transform as RectTransform;
         void IUIComponent.Open(object data)
         {
-            if(_assetsAssetLoader == null || !_assetsAssetLoader.spawned)
-                _assetsAssetLoader = AssetUtils.SpawnLoader(this.GetType().Name);
+            if(_assetsLoader == null || !_assetsLoader.spawned)
+                _assetsLoader = AssetUtils.SpawnLoader(this.GetType().Name);
             OnOpen(data);
         }
 
