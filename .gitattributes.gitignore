@@ -1,0 +1,2 @@
+*.meta merge=ours
+*.meta -export-ignore
