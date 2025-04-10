@@ -185,14 +185,14 @@ namespace PowerCellStudio
             UpdateTarget(0f);
         }
         
-        public void Push(float value, float duration = 0f)
+        public void Push(float timeScale, float duration = 0f)
         {
-            if (value == 0)
+            if (timeScale == 0)
             {
                 ModuleLog<TimeManager>.LogError("if you want to push a zero TimeScaler, please use PauseTime().");
                 return;
             }
-            var newScale = new TimeScaler(value);
+            var newScale = new TimeScaler(timeScale);
             if (_paused)
             {
                 ModuleLog<TimeManager>.LogWarning("Now time is paused, timeScale will not be set immediately.");
