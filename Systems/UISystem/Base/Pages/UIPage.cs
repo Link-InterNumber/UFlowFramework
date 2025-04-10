@@ -7,8 +7,8 @@ namespace PowerCellStudio
 {
     public abstract class UIPage : UIBehaviour, IUIParent
     {
-        protected IAssetLoader _assetsAssetLoader;
-        public IAssetLoader assetsAssetLoader => _assetsAssetLoader;
+        protected IAssetLoader _assetsLoader;
+        public IAssetLoader assetsLoader => _assetsLoader;
         
         protected HashStack<IUIChild> _openedUIs = new HashStack<IUIChild>();
         HashStack<IUIChild> IUIParent.openedUIs => _openedUIs;
@@ -29,8 +29,8 @@ namespace PowerCellStudio
         
         public void OnUIDestroy()
         {
-            AssetUtils.DeSpawnLoader(_assetsAssetLoader);
-            _assetsAssetLoader = null;
+            AssetUtils.DeSpawnLoader(_assetsLoader);
+            _assetsLoader = null;
         }
 
         public void OpenUI<T>(object data, Action beforeOpen = null) where T : UIBehaviour, IUIChild
@@ -109,7 +109,7 @@ namespace PowerCellStudio
 
         void IUIComponent.Open(object data)
         {
-            if(_assetsAssetLoader == null) _assetsAssetLoader = AssetUtils.SpawnLoader(gameObject.name);
+            if(_assetsLoader == null) _assetsLoader = AssetUtils.SpawnLoader(gameObject.name);
             OnOpen(data);
         }
 
