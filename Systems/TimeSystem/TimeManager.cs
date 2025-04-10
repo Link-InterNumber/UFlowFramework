@@ -27,7 +27,7 @@ namespace PowerCellStudio
 
             public void PushBlend(float v)
             {
-                if(v < 0f) throw ModuleLog<TimeManager>.Exception("TimeScaler was set a negative number");
+                if(v < 0f) ModuleLog<TimeManager>.Error("TimeScaler was set a negative number");
                 _blendValue.Add(Math.Max(v, 0f));
                 Calculated();
             }
@@ -52,7 +52,7 @@ namespace PowerCellStudio
 
             private void Calculated()
             {
-                var cal = Math.Max(_baseValue,0f);
+                var cal = Math.Max(_baseValue, 0f);
                 foreach (var i in _blendValue)
                 {
                     cal *= i;
@@ -62,7 +62,7 @@ namespace PowerCellStudio
 
             public void UpdateValue(float val)
             {
-                if(val < 0f) throw ModuleLog<TimeManager>.Exception("TimeScaler was set a negative number");
+                if(val < 0f) ModuleLog<TimeManager>.Error("TimeScaler was set a negative number");
                 _baseValue = val;
                 Calculated();
             }
@@ -189,13 +189,13 @@ namespace PowerCellStudio
         {
             if (value == 0)
             {
-                ModuleLog<TimeManager>.LogError("if you want to push a zero TimeScaler, please use TimeModule.PauseTime().");
+                ModuleLog<TimeManager>.LogError("if you want to push a zero TimeScaler, please use PauseTime().");
                 return;
             }
             var newScale = new TimeScaler(value);
             if (_paused)
             {
-                ModuleLog<TimeManager>.LogWarning("Now TimeModule is paused, timeScale will not be set immediately.");
+                ModuleLog<TimeManager>.LogWarning("Now time is paused, timeScale will not be set immediately.");
                 var pauseTimeScale = _stack.Pop();
                 _stack.Push(newScale);
                 _stack.Push(pauseTimeScale);
@@ -210,7 +210,7 @@ namespace PowerCellStudio
             if (_stack.Count == 1) return;
             if (_paused)
             {
-                ModuleLog<TimeManager>.LogWarning("Now TimeModule is paused, timeScale will not be set immediately.");
+                ModuleLog<TimeManager>.LogWarning("Now time is paused, timeScale will not be set immediately.");
                 var pauseTimeScale = _stack.Pop();
                 _stack.Pop();
                 _stack.Push(pauseTimeScale);
@@ -224,12 +224,12 @@ namespace PowerCellStudio
         {
             if (newValue <= 0)
             {
-                ModuleLog<TimeManager>.LogError("if you want to push a zero TimeScaler, please use TimeModule.PauseTime().");
+                ModuleLog<TimeManager>.LogError("if you want to push a zero TimeScaler, please use PauseTime().");
                 return;
             }
             if (_paused)
             {
-                ModuleLog<TimeManager>.LogWarning("Now TimeModule is paused, timeScale will not be set immediately.");
+                ModuleLog<TimeManager>.LogWarning("Now time is paused, timeScale will not be set immediately.");
                 var pauseTimeScale = _stack.Pop();
                 GetCurTimeScaler().UpdateValue(newValue);
                 _stack.Push(pauseTimeScale);
@@ -243,12 +243,12 @@ namespace PowerCellStudio
         {
             if (_paused)
             {
-                ModuleLog<TimeManager>.LogWarning("Now TimeModule is paused, timeScale will not be set immediately.");
+                ModuleLog<TimeManager>.LogWarning("Now time is paused, timeScale will not be set immediately.");
                 var pauseTimeScale = _stack.Pop();
                 var nv =fun.Invoke(GetCurTimeScaler().baseValue);
                 if (nv <= 0)
                 {
-                    ModuleLog<TimeManager>.LogError("if you want to push a zero TimeScaler, please use TimeModule.PauseTime().");
+                    ModuleLog<TimeManager>.LogError("if you want to push a zero TimeScaler, please use PauseTime().");
                     return;
                 }
                 GetCurTimeScaler().UpdateValue(nv);
@@ -259,7 +259,7 @@ namespace PowerCellStudio
             var newValue = fun.Invoke(curTimeScaler.baseValue);
             if (newValue <= 0)
             {
-                ModuleLog<TimeManager>.LogError("if you want to push a zero TimeScaler, please use TimeModule.PauseTime().");
+                ModuleLog<TimeManager>.LogError("if you want to push a zero TimeScaler, please use PauseTime().");
                 return;
             }
             curTimeScaler.UpdateValue(newValue);
@@ -270,7 +270,7 @@ namespace PowerCellStudio
         {
             if (_paused)
             {
-                ModuleLog<TimeManager>.LogError("Now TimeModule is paused, timeScale will not be set immediately.");
+                ModuleLog<TimeManager>.LogError("Now time is paused, timeScale will not be set immediately.");
                 var pauseTimeScale = _stack.Pop();
                 GetCurTimeScaler().PushBlend(value);
                 _stack.Push(pauseTimeScale);
@@ -286,7 +286,7 @@ namespace PowerCellStudio
         {
             if (_paused)
             {
-                ModuleLog<TimeManager>.LogError("Now TimeModule is paused, timeScale will not be set immediately.");
+                ModuleLog<TimeManager>.LogError("Now time is paused, timeScale will not be set immediately.");
                 var pauseTimeScale = _stack.Pop();
                 GetCurTimeScaler().RemoveBlend(val);
                 _stack.Push(pauseTimeScale);
@@ -301,7 +301,7 @@ namespace PowerCellStudio
         {
             if (_paused)
             {
-                ModuleLog<TimeManager>.LogError("Now TimeModule is paused, timeScale will not be set immediately.");
+                ModuleLog<TimeManager>.LogError("Now time is paused, timeScale will not be set immediately.");
                 var pauseTimeScale = _stack.Pop();
                 GetCurTimeScaler().PopBlend();
                 _stack.Push(pauseTimeScale);
