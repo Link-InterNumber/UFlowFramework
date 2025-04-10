@@ -30,7 +30,7 @@ namespace PowerCellStudio
         
         public override void OnOpen(object data)
         {
-            if(_assetsAssetLoader == null) _assetsAssetLoader = AssetUtils.SpawnLoader(gameObject.name);
+            if(_assetsLoader == null) _assetsLoader = AssetUtils.SpawnLoader(gameObject.name);
         }
 
         public override void OnClose()

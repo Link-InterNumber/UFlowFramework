@@ -51,7 +51,7 @@ namespace PowerCellStudio
             if (!guidanceInfo.conf.UiPrefab.isNull)
             {
                 _canSkip = false;
-                assetsAssetLoader.AsyncLoadNInstantiate(guidanceInfo.conf.UiPrefab.assetName, OnLoadUiPrefab);
+                assetsLoader.AsyncLoadNInstantiate(guidanceInfo.conf.UiPrefab.assetName, OnLoadUiPrefab);
             }
             else
             {

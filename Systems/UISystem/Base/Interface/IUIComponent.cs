@@ -7,7 +7,7 @@ namespace PowerCellStudio
         /// <summary>
         /// 资源加载器，会在UI初始化时创建，在UI销毁时自动回收加载都资源
         /// </summary>
-        public IAssetLoader assetsAssetLoader { get;}
+        public IAssetLoader assetsLoader { get;}
         
         public Transform transform { get; }
         
