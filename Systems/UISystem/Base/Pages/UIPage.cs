@@ -130,5 +130,10 @@ namespace PowerCellStudio
         public abstract void RegisterEvent();
 
         public abstract void DeregisterEvent();
+        
+        protected LoaderYieldInstruction<T> LoadAssetAsync<T>(string path) where T : UnityEngine.Object
+        {
+            return _assetsLoader.LoadAsYieldInstruction<T>(path);
+        }
     }
 }

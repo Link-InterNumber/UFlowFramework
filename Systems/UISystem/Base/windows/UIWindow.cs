@@ -95,7 +95,12 @@ namespace PowerCellStudio
                 button.onClick.RemoveListener(OnCloseBtnClick);
             }
         }
-        
+
+        protected LoaderYieldInstruction<T> LoadAssetAsync<T>(string path) where T : UnityEngine.Object
+        {
+            return _assetsLoader.LoadAsYieldInstruction<T>(path);
+        }
+
         protected virtual void OnCloseBtnClick()
         {
             CloseUI(null);
