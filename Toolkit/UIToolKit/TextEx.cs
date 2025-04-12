@@ -11,6 +11,7 @@ namespace PowerCellStudio
         public bool changeFontWhenLanChange = true;
 
         private bool _addListener;
+        private object[] _paramCache;
 
         protected override void Awake()
         {
@@ -30,6 +31,8 @@ namespace PowerCellStudio
         protected override void OnDestroy()
         {
             base.OnDestroy();
+            _paramCache = null;
+            localizationKey = null;
             if(!Application.isPlaying) return;
             EventManager.instance.onLanguageChange.RemoveListener(OnLocalChange);
             EventManager.instance.onLanguageChange.RemoveListener(ChangeFont);
@@ -46,10 +49,12 @@ namespace PowerCellStudio
             localizationKey = key;
             if (param != null && param.Length > 0)
             {
+                _paramCache = param;
                 text = string.Format(LocalizationManager.instance.GetString(key), param);
             }
             else
             {
+                _paramCache = null;
                 text = LocalizationManager.instance.GetString(key);
             }
             if(_addListener) return;
@@ -67,7 +72,14 @@ namespace PowerCellStudio
 #if UNITY_EDITOR
             if(!Application.isPlaying) return;
 #endif
-            text = LocalizationManager.instance.GetString(localizationKey);
+            if (_paramCache != null && _paramCache.Length > 0)
+            {
+                text = string.Format(LocalizationManager.instance.GetString(localizationKey), _paramCache);
+            }
+            else
+            {
+                text = LocalizationManager.instance.GetString(localizationKey);
+            }
         }
     }
 }
