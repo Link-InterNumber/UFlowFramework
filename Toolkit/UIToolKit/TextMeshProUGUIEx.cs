@@ -47,7 +47,7 @@ namespace PowerCellStudio
             }
             if(_addListener) return;
             EventManager.instance.onLanguageChange.AddListener(OnLocalChange);
-            _addListener = true
+            _addListener = true;
         }
 
         private void OnLocalChange(Language obj)
