@@ -1,5 +1,18 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-461457305273189128
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 7
 --- !u!21 &2100000
 Material:
   serializedVersion: 8
@@ -7,8 +20,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Wave
-  m_Shader: {fileID: -6465566751694194690, guid: 5cd58ade696bea84cae146bd246ec920, type: 3}
+  m_Name: waterTex
+  m_Shader: {fileID: -6465566751694194690, guid: 69b509628d93b4a49916cf062ae16df0, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -18,14 +31,13 @@ Material:
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
-  disabledShaderPasses:
-  - MOTIONVECTORS
+  disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
     - _MainTex:
-        m_Texture: {fileID: 8400000, guid: 5e064354b9b478849a4dd26b7ba255a8, type: 2}
+        m_Texture: {fileID: 2800000, guid: 05806f7a8231fea428aeabd05aa5397b, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - unity_Lightmaps:
@@ -42,31 +54,14 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Float: 0.67
-    - _Height: 0.729
+    - _NoiseSize: 10
+    - _NoiseSpeed: 2
+    - _Power: 10
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _UVScale: 0.4
-    - _UVSize: 0.5
-    - _Wave1Speed: 1.75
-    - _Wave2Speed: 1.2
-    - _WaveSize: 0.267
+    - _WaveAlphaScale: 2
     m_Colors:
-    - _MoveDir: {r: 0.2, g: 0, b: 0, a: 0}
-    - _SurfaceColor: {r: 1, g: 1, b: 1, a: 1}
-    - _UVDir: {r: 1, g: 1, b: 0, a: 0}
-    - _WaveOffset: {r: 4.7, g: 0, b: 0, a: 0}
+    - _WaveColor: {r: 1, g: 1, b: 1, a: 1}
+    - _WaveDir: {r: 0.3, g: 0, b: 0, a: 0}
+    - _WaveScale: {r: 0.3, g: 1, b: 0, a: 0}
   m_BuildTextureStacks: []
---- !u!114 &3261299261689404898
-MonoBehaviour:
-  m_ObjectHideFlags: 11
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  version: 9

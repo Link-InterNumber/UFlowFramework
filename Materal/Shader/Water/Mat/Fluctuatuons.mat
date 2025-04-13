@@ -7,26 +7,30 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Wave
-  m_Shader: {fileID: -6465566751694194690, guid: 5cd58ade696bea84cae146bd246ec920, type: 3}
+  m_Name: Fluctuatuons
+  m_Shader: {fileID: -6465566751694194690, guid: ab7c7f4ab8b84c24686ca1878a7885e4, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
-  m_InvalidKeywords: []
+  m_InvalidKeywords:
+  - _SURFACE_TYPE_TRANSPARENT
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
-  disabledShaderPasses:
-  - MOTIONVECTORS
+  disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _Displacement:
+        m_Texture: {fileID: 2800000, guid: fdf14c8c12c5f1249b555e862a00ddb5, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 8400000, guid: 5e064354b9b478849a4dd26b7ba255a8, type: 2}
-        m_Scale: {x: 1, y: 1}
+        m_Scale: {x: 1, y: -1}
         m_Offset: {x: 0, y: 0}
     - unity_Lightmaps:
         m_Texture: {fileID: 0}
@@ -42,22 +46,34 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Float: 0.67
-    - _Height: 0.729
+    - _AlphaClip: 0
+    - _AlphaToMask: 0
+    - _Blend: 0
+    - _CastShadows: 1
+    - _Cull: 2
+    - _DisplacementSpeed: 0.2
+    - _DisplacementStrength: 1
+    - _DstBlend: 10
+    - _FadeRange: 30
     - _QueueControl: 0
     - _QueueOffset: 0
-    - _UVScale: 0.4
-    - _UVSize: 0.5
-    - _Wave1Speed: 1.75
-    - _Wave2Speed: 1.2
-    - _WaveSize: 0.267
+    - _SrcBlend: 5
+    - _Surface: 1
+    - _TexMoveSpeed: 0.1
+    - _TexParam1: 8
+    - _TexParam2: 3.8
+    - _TexSize: 14.07
+    - _ZTest: 4
+    - _ZWrite: 0
+    - _ZWriteControl: 0
     m_Colors:
-    - _MoveDir: {r: 0.2, g: 0, b: 0, a: 0}
-    - _SurfaceColor: {r: 1, g: 1, b: 1, a: 1}
-    - _UVDir: {r: 1, g: 1, b: 0, a: 0}
-    - _WaveOffset: {r: 4.7, g: 0, b: 0, a: 0}
+    - _FadeColor: {r: 0.3440298, g: 0.8641509, b: 0.7584682, a: 1}
+    - _MoveDir: {r: 1, g: 0, b: 0, a: 0}
+    - _OverlayColor: {r: 0, g: 0, b: 0, a: 1}
+    - _TexColor: {r: 0.48113203, g: 1, b: 0.8877079, a: 1}
+    - _TexMoveDir: {r: 0, g: 1, b: 0, a: 0}
   m_BuildTextureStacks: []
---- !u!114 &3261299261689404898
+--- !u!114 &9101089441939703584
 MonoBehaviour:
   m_ObjectHideFlags: 11
   m_CorrespondingSourceObject: {fileID: 0}
@@ -69,4 +85,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 9
+  version: 7
