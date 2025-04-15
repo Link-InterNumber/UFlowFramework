@@ -84,6 +84,7 @@ namespace PowerCellStudio
         
         public void Invoke()
         {
+            if (_toInvoke) return;
             EventManager.instance.InvokeLaterEvent(this);
             _toInvoke = true;
         }

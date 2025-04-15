@@ -21,13 +21,13 @@ namespace PowerCellStudio
             private IRuntimeData _runtimeDataImplementation;
             public event OnRuntimeDataChange<T> onRuntimeDataChange;
 
-            public T GetData() { return _rawData; }
+            public T GetData() { return _rawData.Clone(); }
 
             public void ReplaceData(T newData)
             {
                 var temp = _rawData.Clone();
                 _rawData = newData;
-                onRuntimeDataChange?.Invoke(temp, newData);
+                onRuntimeDataChange?.Invoke(temp, newData.Clone());
             }
 
             public void AddListener(OnRuntimeDataChange<T> action)
@@ -120,7 +120,7 @@ namespace PowerCellStudio
                     temp = oldData.Clone();
                 }
                 _rawData[key] = newData;
-                onRuntimeDataChange?.Invoke(temp, newData);
+                onRuntimeDataChange?.Invoke(temp, newData.Clone());
             }
 
             // ReSharper disable once UnusedMethodReturnValue.Local
@@ -141,7 +141,7 @@ namespace PowerCellStudio
 
             public IEnumerator<T> GetEnumerator()
             {
-                return _rawData.Values.GetEnumerator();
+                return _rawData.Values.Select(o => o.Clone());
             }
 
             IEnumerator IEnumerable.GetEnumerator()

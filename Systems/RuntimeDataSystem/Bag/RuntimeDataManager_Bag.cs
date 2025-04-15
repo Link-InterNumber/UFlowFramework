@@ -24,6 +24,14 @@ namespace PowerCellStudio
     {
         private sealed class BagData : RuntimeDataDic<int, RItem> { }
 
+        public void InitBag()
+        {
+            if(GetRuntimeData<BagData>() != null) return;
+            var bagData = new BagData();
+            bagData.AddListener(OnItemChange);
+            AddRuntimeData(bagData);
+        }
+
         public void AddItem(RItem rItem)
         {
             if (rItem == null) return;
@@ -66,14 +74,6 @@ namespace PowerCellStudio
         {
             var bag = GetRuntimeData<BagData>();
             return bag?.ToList()?? new List<RItem>();
-        }
-
-        public void InitBag()
-        {
-            if(GetRuntimeData<BagData>() != null) return;
-            var bagData = new BagData();
-            bagData.AddListener(OnItemChange);
-            AddRuntimeData(bagData);
         }
 
         private void OnItemChange(RItem oldData, RItem newData)
