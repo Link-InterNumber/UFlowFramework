@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace PowerCellStudio
 {
@@ -141,7 +142,7 @@ namespace PowerCellStudio
 
             public IEnumerator<T> GetEnumerator()
             {
-                return _rawData.Values.Select(o => o.Clone());
+                return _rawData.Values.Select(o => o.Clone()).GetEnumerator();
             }
 
             IEnumerator IEnumerable.GetEnumerator()

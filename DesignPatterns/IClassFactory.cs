@@ -6,6 +6,6 @@ namespace PowerCellStudio
     /// <typeparam name="T"></typeparam>
     public interface IClassFactory<in T> where T : class, new()
     {
-        public TK Creat<TK>() where TK : T;
+        public TK Creat<TK>() where TK : T, new();
     }
 }
