@@ -46,49 +46,132 @@ namespace PowerCellStudio
             _textMeshProFontPath = null;
             _save = null;
         }
-
-        // private void OnFocus()
-        // {
-        //     _save.fontPath = EditorPrefs.GetString("fontPath", "Assets/FrameWork/Fonts/ZiHunBianTaoTi.ttf");
-        //     _save.textMeshProFontPath = EditorPrefs.GetString("textMeshProFontPath", "Assets/FrameWork/Fonts/ZiHunBianTaoTiSDF.asset");
-        //     _font = AssetDatabase.LoadAssetAtPath<Font>(_save.fontPath);
-        //     _textMeshProFontPath = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(_save.textMeshProFontPath);
-        // }
         
         void OnGUI()
+        {
+            DisplayFontSetting();
+            ExportPrefabText();
+            if (GUILayout.Button("Save"))
+            {
+                SaveSettings();
+            }
+        }
+
+        private void DisplayFontSetting()
         {
             GUILayout.Label("默认字体： ");
             _font = (Font) EditorGUILayout.ObjectField("字体", _font, typeof(Font));
             _textMeshProFontPath = (TMP_FontAsset) EditorGUILayout.ObjectField("TMP字体", _textMeshProFontPath, typeof(TMP_FontAsset));
-            if (GUILayout.Button("Save"))
+            GUILayout.Space(20);
+        }
+
+        private void SaveSettings()
+        {
+            if (_font)
             {
-                if (_font)
+                if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(_font, out string guid, out long a))
                 {
-                    if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(_font, out string guid, out long a))
-                    {
-                        var path = AssetDatabase.GUIDToAssetPath(guid);
-                        _save.fontPath = path;                    
-                    }
+                    var path = AssetDatabase.GUIDToAssetPath(guid);
+                    _save.fontPath = path;                    
                 }
-                else
+            }
+            else
+            {
+                _save.fontPath = EditorSettingSave.defaultFontPath;
+            }
+            
+            if (_textMeshProFontPath)
+            {
+                if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(_textMeshProFontPath, out string guid, out long a))
                 {
-                    _save.fontPath = EditorSettingSave.defaultFontPath;
+                    var path = AssetDatabase.GUIDToAssetPath(guid);
+                    _save.textMeshProFontPath = path;                    
                 }
-                
-                if (_textMeshProFontPath)
+            }
+            else
+            {
+                _save.textMeshProFontPath = EditorSettingSave.defaultTextMeshProFontPath;
+            }
+            EditorPrefs.SetString(EditorSettingKey.fontPath, _save.fontPath);
+            EditorPrefs.SetString(EditorSettingKey.textMeshProFontPath, _save.textMeshProFontPath);
+        }
+
+        private void ExportPrefabText()
+        {
+            GUILayout.Label("Export Text Components to CSV", EditorStyles.boldLabel);
+
+            folderPath = EditorGUILayout.TextField("Folder Path", folderPath);
+            outputFilePath = EditorGUILayout.TextField("Output File Path", outputFilePath);
+
+            if (GUILayout.Button("Export"))
+            {
+                if (string.IsNullOrEmpty(folderPath))
                 {
-                    if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(_textMeshProFontPath, out string guid, out long a))
-                    {
-                        var path = AssetDatabase.GUIDToAssetPath(guid);
-                        _save.textMeshProFontPath = path;                    
-                    }
+                    EditorUtility.DisplayDialog("Error", "Please specify a valid folder path.", "OK");
+                    return;
                 }
-                else
+
+                if (string.IsNullOrEmpty(outputFilePath))
                 {
-                    _save.textMeshProFontPath = EditorSettingSave.defaultTextMeshProFontPath;
+                    EditorUtility.DisplayDialog("Error", "Please specify a valid output file path.", "OK");
+                    return;
                 }
-                EditorPrefs.SetString(EditorSettingKey.fontPath, _save.fontPath);
-                EditorPrefs.SetString(EditorSettingKey.textMeshProFontPath, _save.textMeshProFontPath);
+                ExportTextsToCSV();
+            }
+            GUILayout.Space(20);
+        }
+
+        private class Mark
+        {
+            public bool has = false;
+        }
+
+        private void ExportTextsToCSV()
+        {
+            string[] guids = AssetDatabase.FindAssets("t:Prefab", new[] { folderPath });
+
+            var stringBuilder = new StringBuilder();
+            stringBuilder.AppendLine("Path,Text");
+            var mark = new Mark();
+            foreach (string guid in guids)
+            {
+                string assetPath = AssetDatabase.GUIDToAssetPath(guid);
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
+
+                if (prefab != null)
+                {
+                    AddTextsFromGameObject(prefab.transform, "", stringBuilder, mark);
+                    if (mark.has) AssetDatabase.SetDirty(prefab);
+                }
+                mark.has = false;
+            }
+            mark = null;
+            File.WriteAllText(outputFilePath, stringBuilder.ToString());            
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            EditorUtility.DisplayDialog("Export Complete", $"Exported text data to {outputFilePath}", "OK");
+            System.Diagnostics.Process.Start(outputFilePath);
+        }
+
+        private void AddTextsFromGameObject(Transform transform, string parentPath, StringBuilder stringBuilder, Mark mark)
+        {
+            // Prepare the path string
+            string currentPath = string.IsNullOrEmpty(parentPath) ? transform.name : $"{parentPath}_{transform.name}";
+
+            // Get Text component (you might consider using TryGetComponent for better performance in the latest Unity versions)
+            Text textComponent = transform.GetComponent<TextEx>();
+            if (textComponent != null && textComponent.staticText)
+            {
+                mark.has = true;
+                textComponent.localizationKey = currentPath;
+                // Use AppendLine for automatic newline and efficient string building
+                stringBuilder.AppendLine($"{currentPath},{textComponent.text}");
+            }
+
+            // Recursively process child transforms
+            foreach (Transform child in transform)
+            {
+                AddTextsFromGameObject(child, currentPath, stringBuilder, mark);
             }
         }
     }
