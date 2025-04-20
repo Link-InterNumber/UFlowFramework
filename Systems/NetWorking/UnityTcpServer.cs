@@ -44,17 +44,22 @@ public class TcpGameServer : TcpServer
             if (size <= 0) continue;
             var message = NetworkSerializer.Deserialize(_buffer, size, out var messageType);
             NetWorkLog.Log($"Received from {session.Id}: {message}");
-            if(messageType == typeof(PlayerMove))
-            {
-                DOVirtual.DelayedCall(Randomizer.Range(0.1f, 0.3f), () =>
-                {
-                    var ServerResponse = new ServerResponse();
-                    ServerResponse.Success = true;
-                    var messageBuffer = NetworkSerializer.Serialize(ServerResponse);
-                    gameSession.SendAsync(messageBuffer);
-                });
-            }
+            DealWithSR(messageType, gameSession);
         }
+    }
+
+    private static void DealWithSR(Type messageType, GameSession gameSession)
+    {
+        // if(messageType == typeof(PlayerMove))
+        // {
+        //     DOVirtual.DelayedCall(Randomizer.Range(0.1f, 0.3f), () =>
+        //     {
+        //         var ServerResponse = new ServerResponse();
+        //         ServerResponse.Success = true;
+        //         var messageBuffer = NetworkSerializer.Serialize(ServerResponse);
+        //         gameSession.SendAsync(messageBuffer);
+        //     });
+        // }
     }
 }
 

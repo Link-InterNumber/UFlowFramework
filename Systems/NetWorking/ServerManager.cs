@@ -73,37 +73,37 @@ public class ServerManager : MonoBehaviour
         NetClientManager.instance.Connect();
     }
     
-    [TestButton]
-    public void TestClientSend()
-    {
-        NetClientManager.instance.RemoveMessageListener<ServerResponse>(OnResiceveMessage);
-        var playmove = new PlayerMove();
-        playmove.X = 1;
-        playmove.Y = 2;
-        playmove.Z = 3;
-        NetClientManager.instance.AddMessageListener<ServerResponse>(OnResiceveMessage);
-        NetClientManager.instance.Send(playmove);
-    }
-
-    private void OnResiceveMessage(ServerResponse data)
-    {
-        NetClientManager.instance.RemoveMessageListener<ServerResponse>(OnResiceveMessage);
-        QueueLog(QueueLogLevel.Info, $"OnResiceveMessage: Received response: {data.Success}", new StackTrace(true));
-    }
-
-
-    [TestButton]
-    public void TestClientSendQueue()
-    {
-        var playmove = new PlayerMove();
-        playmove.X = 1;
-        playmove.Y = 2;
-        playmove.Z = 3;
-        var handler = NetClientManager.instance.SendQueue<ServerResponse, PlayerMove>(playmove);
-        handler.AddListener(response =>
-        {
-            QueueLog(QueueLogLevel.Info, $"TestClientSendQueue: Received response: {response.Success}", new StackTrace(true));
-            handler.GetMessage();
-        });
-    }
+    // [TestButton]
+    // public void TestClientSend()
+    // {
+    //     NetClientManager.instance.RemoveMessageListener<ServerResponse>(OnResiceveMessage);
+    //     var playmove = new PlayerMove();
+    //     playmove.X = 1;
+    //     playmove.Y = 2;
+    //     playmove.Z = 3;
+    //     NetClientManager.instance.AddMessageListener<ServerResponse>(OnResiceveMessage);
+    //     NetClientManager.instance.Send(playmove);
+    // }
+    //
+    // private void OnResiceveMessage(ServerResponse data)
+    // {
+    //     NetClientManager.instance.RemoveMessageListener<ServerResponse>(OnResiceveMessage);
+    //     QueueLog(QueueLogLevel.Info, $"OnResiceveMessage: Received response: {data.Success}", new StackTrace(true));
+    // }
+    //
+    //
+    // [TestButton]
+    // public void TestClientSendQueue()
+    // {
+    //     var playmove = new PlayerMove();
+    //     playmove.X = 1;
+    //     playmove.Y = 2;
+    //     playmove.Z = 3;
+    //     var handler = NetClientManager.instance.SendQueue<ServerResponse, PlayerMove>(playmove);
+    //     handler.AddListener(response =>
+    //     {
+    //         QueueLog(QueueLogLevel.Info, $"TestClientSendQueue: Received response: {response.Success}", new StackTrace(true));
+    //         handler.GetMessage();
+    //     });
+    // }
 }

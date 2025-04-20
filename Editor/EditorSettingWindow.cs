@@ -1,4 +1,6 @@
 ﻿#if UNITY_EDITOR
+using System.IO;
+using System.Text;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -15,10 +17,12 @@ namespace PowerCellStudio
         
         public class EditorSettingSave
         {
-            public static string defaultFontPath = "Assets/FrameWork/Fonts/ZiHunBianTaoTi.ttf";
-            public static string defaultTextMeshProFontPath = "Assets/FrameWork/Fonts/ZiHunBianTaoTiSDF.asset";
+            public static string defaultFontPath = "Assets/UFlowFramework/Fonts/ZiHunBianTaoTi.ttf";
+            public static string defaultTextMeshProFontPath = "Assets/UFlowFramework/Fonts/ZiHunBianTaoTiSDF.asset";
             public string fontPath = defaultFontPath;
             public string textMeshProFontPath = defaultTextMeshProFontPath;
+            public string UIPrefabPath;
+            public string localizationCSVPath;
         }
         
         private EditorSettingSave _save;
@@ -100,23 +104,23 @@ namespace PowerCellStudio
         {
             GUILayout.Label("Export Text Components to CSV", EditorStyles.boldLabel);
 
-            folderPath = EditorGUILayout.TextField("Folder Path", folderPath);
-            outputFilePath = EditorGUILayout.TextField("Output File Path", outputFilePath);
+            _save.UIPrefabPath = EditorGUILayout.TextField("Folder Path", _save.UIPrefabPath);
+            _save.localizationCSVPath = EditorGUILayout.TextField("Output File Path", _save.localizationCSVPath);
 
             if (GUILayout.Button("Export"))
             {
-                if (string.IsNullOrEmpty(folderPath))
+                if (string.IsNullOrEmpty(_save.UIPrefabPath))
                 {
                     EditorUtility.DisplayDialog("Error", "Please specify a valid folder path.", "OK");
                     return;
                 }
 
-                if (string.IsNullOrEmpty(outputFilePath))
+                if (string.IsNullOrEmpty(_save.localizationCSVPath))
                 {
                     EditorUtility.DisplayDialog("Error", "Please specify a valid output file path.", "OK");
                     return;
                 }
-                ExportTextsToCSV();
+                ExportTextsToCSV(_save.UIPrefabPath, _save.localizationCSVPath);
             }
             GUILayout.Space(20);
         }
@@ -126,7 +130,7 @@ namespace PowerCellStudio
             public bool has = false;
         }
 
-        private void ExportTextsToCSV()
+        private void ExportTextsToCSV(string folderPath, string outputFilePath)
         {
             string[] guids = AssetDatabase.FindAssets("t:Prefab", new[] { folderPath });
 
@@ -141,7 +145,7 @@ namespace PowerCellStudio
                 if (prefab != null)
                 {
                     AddTextsFromGameObject(prefab.transform, "", stringBuilder, mark);
-                    if (mark.has) AssetDatabase.SetDirty(prefab);
+                    if (mark.has) EditorUtility.SetDirty(prefab);
                 }
                 mark.has = false;
             }
@@ -159,7 +163,7 @@ namespace PowerCellStudio
             string currentPath = string.IsNullOrEmpty(parentPath) ? transform.name : $"{parentPath}_{transform.name}";
 
             // Get Text component (you might consider using TryGetComponent for better performance in the latest Unity versions)
-            Text textComponent = transform.GetComponent<TextEx>();
+            var textComponent = transform.GetComponent<TextEx>();
             if (textComponent != null && textComponent.staticText)
             {
                 mark.has = true;
