@@ -111,26 +111,19 @@ namespace PowerCellStudio
                 foreach (var keyValuePair in page.children)
                 {
                     var child = keyValuePair.Value;
-                    if (child is IUIPoolable)
+                    CloseUI(child, null);
+                    if (child is IUIPoolable 
+                        && !poolParent.children.ContainsKey(child.GetType()) 
+                        && !poolParent.windowRequests.IsUIGoingToOpen(keyValuePair.Key, out _))
                     {
-                        if (!poolParent.children.ContainsKey(child.GetType()) 
-                            && !poolParent.windowRequests.IsUIGoingToOpen(keyValuePair.Key, out _))
-                        {
-                            // CloseUI(child, null);
-                            SetUIChildToParent(child, poolParent);
-                        }
-                        else
-                        {
-                            CloseUI(child, null);
-                            DestroyUI(child, null);
-                        }
+                        SetUIChildToParent(child, poolParent);
                     }
                     else
                     {
-                        CloseUI(child, null);
                         DestroyUI(child, null);
                     }
                 }
+                page.children = null;
                 DestroyUI(page, null);
             }
             callback?.Invoke();
