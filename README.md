@@ -3,97 +3,98 @@
 ![Unity Version](https://img.shields.io/badge/Unity-2022.3.53f1%20LTS-blue?logo=unity)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
 
-## 🚨 Environment Requirements
-
-### Mandatory Dependency Packages
-The following official plugin packages must be installed via **Package Manager**:
-
-| Package Name | Purpose | Installation Verification |
-|--------------|---------|---------------------------|
-| [Addressables](https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/index.html) | Dynamic resource loading system | Check if the `Window > Asset Management > Addressables` menu exists |
-| [Localization](https://docs.unity3d.com/Packages/com.unity.localization@1.4/manual/index.html) | Multilingual localization system | Confirm the `Project Settings > Localization` configuration panel |
-| [TextMeshPro](https://docs.unity3d.com/Packages/com.unity.textmeshpro@3.0/manual/index.html) | Advanced text rendering solution | Import `TMP Essential Resources` |
-
-### Installation Verification Steps
-1. Open the Package Manager (`Window > Package Manager`)
-2. Search for the following packages in the `Unity Registry`:
-    - `com.unity.addressables` (Recommended version 1.21.4+)
-    - `com.unity.localization` (Recommended version 1.4.2+)
-    - `com.unity.textmeshpro` (Recommended version 3.0.6+)
-3. When using TextMeshPro for the first time:
+## 🚨 环境要求
+ 
+ ### 强制依赖包
+ 必须通过 **Package Manager** 安装以下官方插件包：
+ 
+ | 包名称 | 用途 | 安装验证方式 |
+ |--------|------|--------------|
+ | [Addressables](https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/index.html) | 资源动态加载系统 | 检查 `Window > Asset Management > Addressables` 菜单是否存在 |
+ | [Localization](https://docs.unity3d.com/Packages/com.unity.localization@1.4/manual/index.html) | 多语言本地化系统 | 确认 `Project Settings > Localization` 配置面板 |
+ | [TextMeshPro](https://docs.unity3d.com/Packages/com.unity.textmeshpro@3.0/manual/index.html) | 高级文本渲染方案 | 需导入 `TMP Essential Resources` |
+ 
+ ### 安装验证步骤
+ 1. 打开 Package Manager (`Window > Package Manager`)
+ 2. 在 `Unity Registry` 中搜索以下包：
+     - `com.unity.addressables` (建议版本 1.21.4+)
+     - `com.unity.localization` (建议版本 1.4.2+)
+     - `com.unity.textmeshpro` (建议版本 3.0.6+)
+ 3. 首次使用 TextMeshPro 时需：
    ```csharp
-   // Call this in any initialization code
-   TMPro.TMP_Settings.LoadDefaultSettings(); 
+    // 在任意初始化代码中调用
+    TMPro.TMP_Settings.LoadDefaultSettings(); 
    ```
 
-### You May Not Need These Features
-For projects that already use **other or custom** resource loading or localization management solutions, you can modify/delete the corresponding scripts as needed.
+### 可能你不需要以上这些功能
 
-For example, to implement a custom resource loading method, you can create scripts that implement the required interfaces. Specific solutions should be developed based on the project requirements.
+对于项目中已经使用了**其他或者自定义**的资源加载、本地化管理方案的项目，可以自行修改/删除对应脚本。
 
-# Unity Project Third-Party Assets
+例如资源加载可以新增实现对应接口的脚本来接入需要的加载方式，具体方案请根据项目情况进行开发。
 
-This project uses the following open-source/third-party resources. Special thanks and acknowledgments:
+# 第三方插件/资源
+
+本项目使用了以下开源/第三方资源，特此声明并致谢：
 
 ---
 
-## 📦 Core Framework & Network Communication
+## 📦 核心框架 & 网络通信
 ### [NetCoreServer](https://github.com/chronoxor/NetCoreServer)
-- **Type**: High-performance cross-platform network server library
-- **Purpose**: Implementation of TCP/UDP/SSL communication modules
-- **License**: MIT License
+ - **类型**: 高性能跨平台网络服务器库
+ - **用途**: TCP/UDP/SSL 通信模块实现
+ - **许可证**: MIT License
 
 ---
 
-## 🖥️ UI Components
+## 🖥️ UI 组件
 ### [uGUI-Hypertext](https://github.com/setchi/uGUI-Hypertext)
-- **Type**: Rich text interaction component
-- **Purpose**: Create UGUI text with hyperlink support
-- **License**: MIT License
+ - **类型**: 富文本交互组件
+ - **用途**: 创建支持超链接的UGUI文本
+ - **许可证**: MIT License
 
 ### [TextLife](https://flowus.cn/enjoygameclub/share/fa2ac259-3498-4282-8200-3caeef47caef)
-- **Type**: UI text component
-- **Purpose**: Generate text with special effects
-- **License**: MPL-2.0
+ - **类型**: UI文本组件
+ - **用途**: 生成带特效的文本
+ - **许可证**: MPL-2.0
 
 ---
 
-## 🧠 Algorithms and Data Structures
+## 🧠 算法与数据结构
 ### [KDTree](https://github.com/viliwonka/KDTree)
-- **Type**: Spatial partitioning data structure
-- **Purpose**: Efficient nearest neighbor search algorithm implementation
-- **License**: MIT License
+ - **类型**: 空间分区数据结构
+ - **用途**: 高效近邻搜索算法实现
+ - **许可证**: MIT License
 
 ---
 
-## ✒️ Font Resources
-### [Smiley Sans](https://github.com/atelier-anchor/smiley-sans)
-- **Type**: Open-source Chinese font
-- **Style**: Modern geometric sans-serif
-- **Character Set**: Supports Simplified Chinese
-- **License**: SIL Open Font License
+## ✒️ 字体资源
+### [得意黑 Smiley Sans](https://github.com/atelier-anchor/smiley-sans)
+ - **类型**: 开源中文字体
+ - **风格**: 现代几何风格黑体
+ - **字符集**: 支持简体中文
+ - **许可证**: SIL Open Font License
 
-### [Zihun Almond](https://izihun.com/shangyongziti/7495.html)
-- **Type**: Open-source Chinese font
-- **Feature**: Handwriting-style artistic font
-- **Authorization**: Zihun Network created the open-source font "Zihun Almond" based on Smiley Sans. It is also open-source and free for commercial use.
+### [字魂扁桃体](https://izihun.com/shangyongziti/7495.html)
+ - **类型**: 开源中文字体
+ - **特征**: 手写风格艺术字体
+ - **授权**: 字魂网对得意黑进行二次创作，发布开源字体「字魂扁桃体」，同样是开源并永久免费商用
 
 ---
 
-## 🔧 Development Tools
+## 🔧 开发工具
 ### [PlayableGraph Monitor](https://github.com/SolarianZ/UnityPlayableGraphMonitorTool)
-- **Type**: Timeline/Animation system debugging tool
-- **Purpose**: Visualize the PlayableGraph structure
-- **License**: MIT License
+ - **类型**: Timeline/动画系统调试工具
+ - **用途**: 可视化PlayableGraph结构
+ - **许可证**: MIT License
 
 ---
 
-## 📜 License Notes
-This project complies with the licensing agreements of all third-party resources:
-- MIT Licensed resources can be freely modified/distributed
-- MPL-2.0 requires modified files to be marked, and derivative works must be open-sourced
-- SIL OFL fonts require copyright notices to be retained
+## 📜 许可证说明
+ 本项目遵循各第三方资源的授权协议：
+ - MIT Licensed 资源可自由修改/再分发
+ - MPL-2.0 修改文件需标注修改内容，衍生作品需开源
+ - SIL OFL 字体需保留版权声明
 
 ---
 
-🙏 **Special Thanks** to all the authors and contributors of open-source projects for their outstanding work!
+🙏 **特别感谢** 所有开源项目作者及贡献者的杰出工作！
