@@ -73,10 +73,10 @@ This project uses the following open-source/third-party resources. Special thank
 - **Character Set**: Supports Simplified Chinese
 - **License**: SIL Open Font License
 
-### [Zihun Almond](https://izihun.com/shangyongziti/7495.html)
+### [Zihun Biantaoti](https://izihun.com/shangyongziti/7495.html)
 - **Type**: Open-source Chinese font
 - **Feature**: Handwriting-style artistic font
-- **Authorization**: Zihun Network created the open-source font "Zihun Almond" based on Smiley Sans. It is also open-source and free for commercial use.
+- **Authorization**: Zihun Network created the open-source font "Zihun Biantaoti" based on Smiley Sans. It is also open-source and free for commercial use.
 
 ---
 
