@@ -12,18 +12,23 @@ namespace LinkState
         private Func<T, int> _initCondition;
         private bool _doExecute;
 
-        public LinkStateMachine(T dataSource, bool doExecute)
+        public LinkStateMachine(T dataSource, bool doExecute, int size = 256)
         {
+            if (dataSource == null)
+            {
+                LinkLog.LogError("StateMachine Got Null Source")
+                return;
+            }
             _inExecution = false;
             _inited = false;
             _doExecute = doExecute;
-            _owner = dataSource ?? throw new Exception("StateMachine Got Null Source");
-            _statesTransition = new Dictionary<int, List<TriggerBehavior<T>>>();
-            _statesExecute = new Dictionary<int, ExecuteBehavior<T>>();
+            _owner = dataSource;
+            _statesTransition = new List<TriggerBehavior<T>>[size]();
+            _statesExecute = new ExecuteBehavior<T>[size]();
         }
         
-        private Dictionary<int, List<TriggerBehavior<T>>>  _statesTransition;
-        private Dictionary<int, ExecuteBehavior<T>> _statesExecute;
+        private List<TriggerBehavior<T>>[]  _statesTransition;
+        private ExecuteBehavior<T>[] _statesExecute;
         private int _currentStateIndex;
 
         public LinkStateMachine<T> SetEntry(Func<T, int> initConditionFunc)
@@ -35,7 +40,7 @@ namespace LinkState
 
         public LinkStateMachine<T> SetExecute(int stateIndex, Action<T, float> executeAction)
         {
-            if(_statesExecute.ContainsKey(stateIndex))
+            if (_statesExecute.ContainsKey(stateIndex))
             {
                 LinkLog.LogWarning("StateMachine has been set execute, Make sure you are not overwriting it");
             }
@@ -54,7 +59,7 @@ namespace LinkState
         
         public LinkStateMachine<T> SetTrigger(int stateIndex, Func<T, bool> trigger, Func<T, int> transition, TriggerPriority priority = TriggerPriority.Default)
         {
-            if (!_statesTransition.ContainsKey(stateIndex))
+            if (_statesTransition[stateIndex] == null)
                 _statesTransition[stateIndex] = new List<TriggerBehavior<T>>();
             _statesTransition[stateIndex].Add(new TriggerBehavior<T>(trigger, transition, priority));
             return this;
@@ -62,7 +67,7 @@ namespace LinkState
         
         public LinkStateMachine<T> SetEscape(int stateIndex, Func<T, bool> trigger, Func<T, int> transition, TriggerPriority priority = TriggerPriority.Default)
         {
-            if (!_statesTransition.ContainsKey(stateIndex))
+            if (_statesTransition[stateIndex] == null)
                 _statesTransition[stateIndex] = new List<TriggerBehavior<T>>();
             _statesTransition[stateIndex].Add(new TriggerBehavior<T>((a) => {
                     if (!trigger(a)) return false;
@@ -76,7 +81,7 @@ namespace LinkState
 
         public void Start()
         {
-            if(_statesTransition == null) return;
+            if (_statesTransition == null) return;
             foreach (var triggers in _statesTransition)
             {
                 triggers.Value.Sort((a,b)=>a.Priority.CompareTo(b.Priority));
@@ -97,13 +102,13 @@ namespace LinkState
                 _owner.StateIndex = _currentStateIndex;
                 _inited = true;
             }
-
-            if (_doExecute && _statesExecute.TryGetValue(_currentStateIndex, out var executeAction))
+            if (!VerifyIndex(_currentStateIndex)) return;
+            if (_doExecute && _statesExecute[_currentStateIndex] != null)
             {
-                executeAction.Execute(_owner, deltaTime);
+                _statesExecute[_currentStateIndex].Execute(_owner, deltaTime);
             }
 
-            _statesTransition.TryGetValue(_currentStateIndex, out var triggers);
+            var triggers = _statesTransition[_currentStateIndex];
             if (triggers == null) return;
             for (var i = 0; i < triggers.Count; i++)
             {
@@ -118,9 +123,20 @@ namespace LinkState
 
         public void UpdateManually(int state, float dt)
         {
+            if (!VerifyIndex(state)) return;
             _currentStateIndex = state;
             _owner.StateIndex = state;
             Update(dt);
+        }
+
+        private bool VerifyIndex(int index)
+        {
+            if(index < 0 || index > _statesTransition.Length - 1)
+            {
+                LinkLog.LogError($"index out of state range, got index = {index}, set range = [0, {_statesTransition.Length - 1}]")
+                return false;
+            }
+            return true;
         }
     }
 }
