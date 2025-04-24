@@ -4,7 +4,7 @@ using PowerCellStudio;
 
 namespace LinkState
 {
-    public class LinkStateMachine<T> where T : class, ILinkStateOwner
+    public class LinkStateMachine<T> where T : class, ILinkStateOwner, IDisposable
     {
         private T _owner;
         private bool _inExecution;
@@ -137,6 +137,15 @@ namespace LinkState
                 return false;
             }
             return true;
+        }
+
+        public void Dispose()
+        {
+            _inExecution = false;
+            _inited = false;
+            _owner = null;
+            _statesTransition = null;
+            _statesExecute = null;
         }
     }
 }
