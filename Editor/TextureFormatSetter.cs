@@ -21,12 +21,12 @@ namespace PowerCellStudio
 
     public enum TextureFormatSetterSize
     {
-        x32 = 32, 
-        x64 = 64, 
-        x128 = 128, 
-        x256 = 256, 
-        x512 = 512, 
-        x1024 = 1024, 
+        x32 = 32,
+        x64 = 64,
+        x128 = 128,
+        x256 = 256,
+        x512 = 512,
+        x1024 = 1024,
         x2048 = 2048,
         x4096 = 4096,
         x8192 = 8192,
@@ -36,7 +36,7 @@ namespace PowerCellStudio
     public class TextureFormatSetter : EditorWindow
     {
         //保存当前设置的格式
-        public TextureImporterFormat curTF = TextureImporterFormat.ASTC_4x4, setTF;
+        public int curTFIndex = 0, setTFIndex;
         public GUIStyle guiStyle;
 
         public TextureFormatSetterSize curSize = TextureFormatSetterSize.x2048, setSize;
@@ -53,14 +53,30 @@ namespace PowerCellStudio
         // //是否是一个文件
         // public bool _isFile;
         private string _printResult;
+        private Dictionary<string, string[]> _textureFormatMapping;
 
-        new void Show()
+        private static string[] _DEFAULT_FORMAT = new string[1]{"Automatic"};
+
+        public void Awake()
         {
             //设置绘制下拉框的格式
             guiStyle = new GUIStyle(EditorStyles.popup);
             guiStyle.fontSize = 15;
             guiStyle.fixedHeight = 25;
             guiStyle.fixedWidth = 200;
+
+            _textureFormatMapping = new Dictionary<string, string[]>();
+            for(var keyValuePair in TextureFormatMapping.PlatformFormats)
+            {
+                _textureFormatMapping.Add(keyValuePair.key, keyValuePair.value.Select(o => o.ToString()).ToArray());
+            } 
+        }
+
+        public void OnDestroy()
+        {
+            guiStyle = null;
+            _printResult = null;
+            _textureFormatMapping = null;
         }
 
         void OnGUI()
@@ -84,10 +100,20 @@ namespace PowerCellStudio
 
             GUILayout.Label("设置平台： ");
             setPl = (EPlatform) EditorGUILayout.EnumPopup(curPl, guiStyle);
+            if (setPl != curPl)
+            {
+                curTFIndex = 0;
+            }
             GUILayout.Label("");
 
             GUILayout.Label("设置格式： ");
-            setTF = (TextureImporterFormat) EditorGUILayout.EnumPopup(curTF, guiStyle);
+            var string[] canSetFormats = null;
+            if (!_textureFormatMapping.TryGetValue(setPl.ToString(), out canSetFormats))
+            {
+                canSetFormats = _DEFAULT_FORMAT;
+            }
+            setTFIndex = (TextureImporterFormat) EditorGUILayout.Popup(curTFIndex, canSetFormats, guiStyle);
+
             // isConvertRGBA = EditorGUILayout.ToggleLeft("是否将RGB强制转成RGBA", isConvertRGBA);
             GUILayout.Label("");
             
@@ -179,7 +205,15 @@ namespace PowerCellStudio
                 // string parseName = path.Replace('\\', '/')
                 //     .Replace(Application.dataPath.Replace("Assets", ""), "");
                 if (isFix)
-                    SetPicFormat(path, curPl.ToString(), curTF, (int) curSize, autoOptimize, autoSize);
+                {
+                    var platform = curPl.ToString();
+                    var textureFormat = TextureImporterFormat.Automatic;
+                    if (TextureFormatMapping.PlatformFormats.TryGetValue(platform, out var formats))
+                    {
+                        textureFormat = formats[Mathf.Clamp(setTFIndex, 0, formats.Length -1)]
+                    }
+                    SetPicFormat(path, platform, textureFormat, (int) curSize, autoOptimize, autoSize);
+                }
                 else
                     PrintPicFormat(path);
             }
@@ -352,10 +386,10 @@ namespace PowerCellStudio
                 Debug.LogError("当前平台：" + curPl);
             }
 
-            if (setTF != curTF)
+            if (setTFIndex != curTFIndex)
             {
-                curTF = setTF;
-                Debug.LogError("当前格式" + curTF);
+                curTFIndex = setTFIndex;
+                Debug.LogError("当前格式" + curTFIndex);
             }
             
             if (setSize != curSize)
