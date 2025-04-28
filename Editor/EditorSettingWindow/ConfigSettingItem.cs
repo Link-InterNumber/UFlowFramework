@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.IO;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
@@ -26,7 +27,7 @@ namespace PowerCellStudio
             public static string localizationCSVPath = "localizationCSVPath";
         }
 
-        public string itemName => "配置表工具";
+        public string itemName => "Excel To Config";
         
         private ConfigSettingSave _save;
 
@@ -59,19 +60,19 @@ namespace PowerCellStudio
             GUILayout.Space(30);
             if (GUILayout.Button("Save Settings"))
             {
-                SaveSettings();
+                SaveData();
             }
             GUILayout.Space(10);
             if (GUILayout.Button("Create Cs Files"))
             {
-                SaveSettings();
+                SaveData();
                 ConfigMenu.CreateCsFiles();
                 _save.excelPath = EditorPrefs.GetString(SaveKey.excelPath);
             }
             GUILayout.Space(10);
             if (GUILayout.Button("Create Config Assets"))
             {
-                SaveSettings();
+                SaveData();
                 ConfigMenu.CreateConfigAsset();
             }
             GUILayout.Space(10);
@@ -87,7 +88,7 @@ namespace PowerCellStudio
 
             GUILayout.Space(10);
             GUILayout.Label("Export Text Components to CSV", EditorStyles.boldLabel);
-            _save.UIPrefabPath = EditorGUILayout.TextField("Folder Path", _save.UIPrefabPath);
+            _save.UIPrefabPath = EditorGUILayout.TextField("UI Prefab Folder Path", _save.UIPrefabPath);
 
             if (GUILayout.Button("Export"))
             {

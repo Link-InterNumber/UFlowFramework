@@ -1,6 +1,13 @@
-using UnityEditor;
 using System;
+using UnityEditor;
+using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
+using Newtonsoft.Json;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
+using UnityEngine;
 
 namespace PowerCellStudio
 {
@@ -8,34 +15,38 @@ namespace PowerCellStudio
     {
         private string _searchKey;
 
-        private Vector2 scrollPosition;
-        private Dictionary<string, string> dataDictionary
+        private Dictionary<string, string> dataDictionary;
         private string selectedDataKey;
         private string readedDataString;
 
-        public string itemName => "开发中本地数据管理"
+        public string itemName => "Persistence Data Inspector";
 
         public void InitSave()
         {
-            scrollPosition = Vector2.Zero;
             dataDictionary = new Dictionary<string, string>();
 
             var typeStrJson = "Json";
             string folderPath = Path.Combine(PlayerDataUtils.SavePath, typeStrJson);
-            string[] files = Directory.GetFiles(folderPath);
-            foreach (string file in files)
+            if (Directory.Exists(folderPath))
             {
-                string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
-                dataDictionary.Add(fileNameWithoutExtension, typeStrJson);
+                var files = Directory.GetFiles(folderPath);
+                foreach (string file in files)
+                {
+                    string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
+                    dataDictionary.Add(fileNameWithoutExtension, typeStrJson);
+                }
             }
-
+            
             var typeStrBinary = "Binary";
             folderPath = Path.Combine(PlayerDataUtils.SavePath, typeStrBinary);
-            files = Directory.GetFiles(folderPath);
-            foreach (string file in files)
+            if (Directory.Exists(folderPath))
             {
-                string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
-                dataDictionary.Add(fileNameWithoutExtension, typeStrBinary);
+                var files = Directory.GetFiles(folderPath);
+                foreach (string file in files)
+                {
+                    string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
+                    dataDictionary.Add(fileNameWithoutExtension, typeStrBinary);
+                }
             }
         }
 
@@ -73,60 +84,65 @@ namespace PowerCellStudio
             // 读取
             _searchKey = EditorGUILayout.TextField("Data Save Key:", _searchKey);
             EditorGUILayout.LabelField("If no saved key is specified, the key is the name of type of the data class");
-            if (GUILayout.Button("Read") && dataDictionary.ContainsKey(_searchKey))
+            if (GUILayout.Button("Read") && dataDictionary.TryGetValue(_searchKey, out var typeName))
             {
                 selectedDataKey = _searchKey;
-                if (entry.Value == "Json")
+                if (typeName == "Json")
                 {
-                    readedDataString = ReadJson(entry.Key);
+                    readedDataString = ReadJson(_searchKey);
                 }
-                else if (entry.Value == "Binary")
+                else if (typeName == "Binary")
                 {
-                    readedDataString = ReadBinary(entry.Key);
+                    readedDataString = ReadBinary(_searchKey);
                 }
             }
 
-            // Start of scroll view
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Width(position.width), GUILayout.Height(position.height - 100));
-            
-            foreach (var entry in dataDictionary)
+            if (dataDictionary.Count > 0)
             {
-                GUILayout.BeginHorizontal();
-
-                GUILayout.Label(entry.Key, GUILayout.Width(150));
-                GUILayout.Label(entry.Value.type, GUILayout.Width(50));
-
-                if (GUILayout.Button("Show", GUILayout.Width(50)))
-                {
-                    selectedDataKey = entry.Key;
-                    if (entry.Value == "Json")
-                    {
-                        readedDataString = ReadJson(entry.Key);
-                    }
-                    else if (entry.Value == "Binary")
-                    {
-                        readedDataString = ReadBinary(entry.Key);
-                    }
-                }
-
-                if (GUILayout.Button("Delete", GUILayout.Width(50)))
-                {
-                    if (entry.Value == "Json")
-                    {
-                        PlayerDataUtils.ClearJson(entry.Key);
-                    }
-                    else if (entry.Value == "Binary")
-                    {
-                        PlayerDataUtils.ClearBinary(entry.Key);
-                    }
-                    dataDictionary.Remove(entry.Key);
-                    break;
-                }
-                GUILayout.EndHorizontal();
-            }
+                // Start of scroll view
+                // scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(300));
             
-            // End of scroll view
-            GUILayout.EndScrollView();
+                foreach (var entry in dataDictionary)
+                {
+                    GUILayout.BeginHorizontal();
+
+                    GUILayout.Label(entry.Key, GUILayout.Width(200));
+                    GUILayout.Label(entry.Value, GUILayout.Width(50));
+
+                    if (GUILayout.Button("Show", GUILayout.Width(50)))
+                    {
+                        selectedDataKey = entry.Key;
+                        if (entry.Value == "Json")
+                        {
+                            readedDataString = ReadJson(entry.Key);
+                        }
+                        else if (entry.Value == "Binary")
+                        {
+                            readedDataString = ReadBinary(entry.Key);
+                        }
+                    }
+
+                    if (GUILayout.Button("Delete", GUILayout.Width(50)))
+                    {
+                        if (entry.Value == "Json")
+                        {
+                            PlayerDataUtils.ClearJson(entry.Key);
+                        }
+                        else if (entry.Value == "Binary")
+                        {
+                            PlayerDataUtils.ClearBinary(entry.Key);
+                        }
+                        dataDictionary.Remove(entry.Key);
+                        GUILayout.EndHorizontal();
+                        break;
+                    }
+                    GUILayout.EndHorizontal();
+                }
+            
+                // End of scroll view
+                // GUILayout.EndScrollView();
+            }
+            GUILayout.Space(10);
 
             if (!string.IsNullOrEmpty(selectedDataKey) && dataDictionary.ContainsKey(selectedDataKey))
             {
@@ -142,10 +158,15 @@ namespace PowerCellStudio
             var jsonEn = File.ReadAllText(path);
             if (decrypt)
             {
-                var json = Decrypt(jsonEn);
-                return json;
+                var json = EncryptUtils.Base64Decrypt(jsonEn);
+                dynamic parsedJson = JsonConvert.DeserializeObject(json);
+                return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
             }
-            return jsonEn;
+            else
+            {
+                dynamic parsedJson = JsonConvert.DeserializeObject(jsonEn);
+                return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
+            }
         }
 
         private string ReadBinary(string fileName, bool decrypt = true)
@@ -161,7 +182,25 @@ namespace PowerCellStudio
             var data = formatter.Deserialize(memoryStream);
             // 关闭文件流
             memoryStream.Close();
-            return data.ToString();
+            
+            StringBuilder result = new StringBuilder();
+            result.Append($"[\n");
+
+            var fields = data.GetType()
+                .GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+
+            foreach (var field in fields)
+            {
+                // Optionally check for NonSerialized attribute
+                if (Attribute.IsDefined(field, typeof(NonSerializedAttribute)))
+                    continue;
+
+                var fieldValue = field.GetValue(data);
+                result.Append($"\t{field.Name} = {fieldValue}, \n");
+            }
+            result.Append("]");
+            
+            return result.ToString();
         }
 
         public void SaveData(){}

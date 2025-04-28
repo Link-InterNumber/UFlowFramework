@@ -19,15 +19,15 @@ namespace PowerCellStudio
         private Font _font;
         private TMP_FontAsset _textMeshProFont;
 
-        public string itemName => "设置默认字体";
+        public string itemName => "Set Editor Font";
 
         public void InitSave()
         {
             _fontPath = EditorPrefs.GetString(FontSettingItem.fontPath, FontSettingItem.defaultFontPath);
             _textMeshProFontPath = EditorPrefs.GetString(FontSettingItem.textMeshProFontPath, FontSettingItem.defaultTextMeshProFontPath);
 
-            _font = AssetDatabase.LoadAssetAtPath<Font>(_save.fontPath);
-            _textMeshProFont = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(_save.textMeshProFontPath);
+            _font = AssetDatabase.LoadAssetAtPath<Font>(_fontPath);
+            _textMeshProFont = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(_textMeshProFontPath);
         }
 
         public void OnDestroy()
@@ -41,8 +41,6 @@ namespace PowerCellStudio
             GUILayout.Label("itemName");
             _font = (Font) EditorGUILayout.ObjectField("Text Font: ", _font, typeof(Font));
             _textMeshProFont = (TMP_FontAsset) EditorGUILayout.ObjectField("TMP Font Asset", _textMeshProFont, typeof(TMP_FontAsset));
-            // 绘制分割线
-            GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1));
         }
 
         public void SaveData()
@@ -57,7 +55,7 @@ namespace PowerCellStudio
             }
             else
             {
-                _fontPath = EditorSettingSave.defaultFontPath;
+                _fontPath = defaultFontPath;
             }
             
             if (_textMeshProFont)
@@ -70,7 +68,7 @@ namespace PowerCellStudio
             }
             else
             {
-                _textMeshProFontPath = EditorSettingSave.defaultTextMeshProFontPath;
+                _textMeshProFontPath = defaultTextMeshProFontPath;
             }
             EditorPrefs.SetString(FontSettingItem.fontPath, _fontPath);
             EditorPrefs.SetString(FontSettingItem.textMeshProFontPath, _textMeshProFontPath);
