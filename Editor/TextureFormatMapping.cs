@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEditor;
 
 namespace PowerCellStudio
 {
@@ -32,9 +33,9 @@ namespace PowerCellStudio
                     TextureImporterFormat.BC7,
                     TextureImporterFormat.BC6H,
                     TextureImporterFormat.DXT1,
-                    TextureImporterFormat.DXT1Crunched
+                    TextureImporterFormat.DXT1Crunched,
                     TextureImporterFormat.DXT5,
-                    TextureImporterFormat.DXT5Crunched
+                    TextureImporterFormat.DXT5Crunched,
 
                 }
             },
@@ -100,9 +101,8 @@ namespace PowerCellStudio
                     TextureImporterFormat.RGBA16,
                     TextureImporterFormat.RGBA32,
 
-                    TextureImporterFormat.ETC1,
                     TextureImporterFormat.DXT1,
-                    TextureImporterFormat.DXT5
+                    TextureImporterFormat.DXT5,
 
                     TextureImporterFormat.ETC2_RGB4,
                     TextureImporterFormat.ETC_RGB4Crunched,

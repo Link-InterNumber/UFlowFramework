@@ -26,7 +26,7 @@ namespace PowerCellStudio
             public static string localizationCSVPath = "localizationCSVPath";
         }
 
-        public string itemName => "配置表工具"
+        public string itemName => "配置表工具";
         
         private ConfigSettingSave _save;
 

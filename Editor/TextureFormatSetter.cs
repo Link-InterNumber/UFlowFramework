@@ -66,9 +66,10 @@ namespace PowerCellStudio
             guiStyle.fixedWidth = 200;
 
             _textureFormatMapping = new Dictionary<string, string[]>();
-            for(var keyValuePair in TextureFormatMapping.PlatformFormats)
+
+            foreach (var keyValuePair in TextureFormatMapping.PlatformFormats)
             {
-                _textureFormatMapping.Add(keyValuePair.key, keyValuePair.value.Select(o => o.ToString()).ToArray());
+                _textureFormatMapping.Add(keyValuePair.Key, keyValuePair.Value.Select(o => o.ToString()).ToArray());
             } 
         }
 
@@ -107,12 +108,12 @@ namespace PowerCellStudio
             GUILayout.Label("");
 
             GUILayout.Label("设置格式： ");
-            var string[] canSetFormats = null;
+            string[] canSetFormats = null;
             if (!_textureFormatMapping.TryGetValue(setPl.ToString(), out canSetFormats))
             {
                 canSetFormats = _DEFAULT_FORMAT;
             }
-            setTFIndex = (TextureImporterFormat) EditorGUILayout.Popup(curTFIndex, canSetFormats, guiStyle);
+            setTFIndex = EditorGUILayout.Popup(curTFIndex, canSetFormats, guiStyle);
 
             // isConvertRGBA = EditorGUILayout.ToggleLeft("是否将RGB强制转成RGBA", isConvertRGBA);
             GUILayout.Label("");
@@ -210,7 +211,7 @@ namespace PowerCellStudio
                     var textureFormat = TextureImporterFormat.Automatic;
                     if (TextureFormatMapping.PlatformFormats.TryGetValue(platform, out var formats))
                     {
-                        textureFormat = formats[Mathf.Clamp(setTFIndex, 0, formats.Length -1)]
+                        textureFormat = formats[Mathf.Clamp(setTFIndex, 0, formats.Length - 1)];
                     }
                     SetPicFormat(path, platform, textureFormat, (int) curSize, autoOptimize, autoSize);
                 }

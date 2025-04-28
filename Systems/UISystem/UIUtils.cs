@@ -123,7 +123,6 @@ namespace PowerCellStudio
                         DestroyUI(child, null);
                     }
                 }
-                page.children = null;
                 DestroyUI(page, null);
             }
             callback?.Invoke();

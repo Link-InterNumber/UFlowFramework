@@ -4,7 +4,7 @@ namespace PowerCellStudio
 {
     public interface IEditorSettingWindowItem
     {
-        string itemName {get;};
+        string itemName {get;}
 
         void InitSave();
 

@@ -400,7 +400,7 @@ namespace PowerCellStudio
                 }
                 
                 // var excelPath = EditorPrefs.GetString(ConfigSettingWindow.SaveKey.excelPath);
-                var csvPath = EditorPrefs.GetString(SaveKey.localizationCSVPath, Path.Combine(Environment.CurrentDirectory, "ExcelFiles/Localization")); //Path.Combine(excelPath, "Localization");
+                var csvPath = EditorPrefs.GetString(ConfigSettingWindow.SaveKey.localizationCSVPath, Path.Combine(Environment.CurrentDirectory, "ExcelFiles/Localization")); //Path.Combine(excelPath, "Localization");
                 if (!Directory.Exists(csvPath))
                 {
                     Directory.CreateDirectory(csvPath);

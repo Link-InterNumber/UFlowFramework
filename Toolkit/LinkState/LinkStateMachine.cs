@@ -16,15 +16,15 @@ namespace LinkState
         {
             if (dataSource == null)
             {
-                LinkLog.LogError("StateMachine Got Null Source")
+                LinkLog.LogError("StateMachine Got Null Source");
                 return;
             }
             _inExecution = false;
             _inited = false;
             _doExecute = doExecute;
             _owner = dataSource;
-            _statesTransition = new List<TriggerBehavior<T>>[size]();
-            _statesExecute = new ExecuteBehavior<T>[size]();
+            _statesTransition = new List<TriggerBehavior<T>>[size];
+            _statesExecute = new ExecuteBehavior<T>[size];
         }
         
         private List<TriggerBehavior<T>>[]  _statesTransition;
@@ -40,7 +40,7 @@ namespace LinkState
 
         public LinkStateMachine<T> SetExecute(int stateIndex, Action<T, float> executeAction)
         {
-            if (_statesExecute.ContainsKey(stateIndex))
+            if (_statesExecute[stateIndex] != null)
             {
                 LinkLog.LogWarning("StateMachine has been set execute, Make sure you are not overwriting it");
             }
@@ -84,7 +84,7 @@ namespace LinkState
             if (_statesTransition == null) return;
             foreach (var triggers in _statesTransition)
             {
-                triggers.Value.Sort((a,b)=>a.Priority.CompareTo(b.Priority));
+                triggers.Sort((a,b)=>a.Priority.CompareTo(b.Priority));
             }
             _inExecution = true;
         }
@@ -133,7 +133,8 @@ namespace LinkState
         {
             if(index < 0 || index > _statesTransition.Length - 1)
             {
-                LinkLog.LogError($"index out of state range, got index = {index}, set range = [0, {_statesTransition.Length - 1}]")
+                LinkLog.LogError(
+                    $"index out of state range, got index = {index}, set range = [0, {_statesTransition.Length - 1}]");
                 return false;
             }
             return true;

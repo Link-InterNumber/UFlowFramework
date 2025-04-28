@@ -52,7 +52,6 @@ namespace PowerCellStudio
         void OnGUI()
         {
             DisplayFontSetting();
-            ExportPrefabText();
             if (GUILayout.Button("Save"))
             {
                 SaveSettings();
