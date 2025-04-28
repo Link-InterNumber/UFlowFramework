@@ -39,8 +39,8 @@ namespace PowerCellStudio
         public void OnGUI()
         {
             GUILayout.Label("itemName");
-            _font = (Font) EditorGUILayout.ObjectField("字体", _font, typeof(Font));
-            _textMeshProFont = (TMP_FontAsset) EditorGUILayout.ObjectField("TMP字体", _textMeshProFont, typeof(TMP_FontAsset));
+            _font = (Font) EditorGUILayout.ObjectField("Text Font: ", _font, typeof(Font));
+            _textMeshProFont = (TMP_FontAsset) EditorGUILayout.ObjectField("TMP Font Asset", _textMeshProFont, typeof(TMP_FontAsset));
             // 绘制分割线
             GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(1));
         }

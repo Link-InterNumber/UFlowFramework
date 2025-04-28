@@ -21,8 +21,6 @@ namespace PowerCellStudio
             public static string defaultTextMeshProFontPath = "Assets/UFlowFramework/Fonts/ZiHunBianTaoTiSDF.asset";
             public string fontPath = defaultFontPath;
             public string textMeshProFontPath = defaultTextMeshProFontPath;
-            public string UIPrefabPath;
-            public string localizationCSVPath;
         }
         
         private EditorSettingSave _save;
@@ -98,85 +96,6 @@ namespace PowerCellStudio
             }
             EditorPrefs.SetString(EditorSettingKey.fontPath, _save.fontPath);
             EditorPrefs.SetString(EditorSettingKey.textMeshProFontPath, _save.textMeshProFontPath);
-        }
-
-        private void ExportPrefabText()
-        {
-            GUILayout.Label("Export Text Components to CSV", EditorStyles.boldLabel);
-
-            _save.UIPrefabPath = EditorGUILayout.TextField("Folder Path", _save.UIPrefabPath);
-            _save.localizationCSVPath = EditorGUILayout.TextField("Output File Path", _save.localizationCSVPath);
-
-            if (GUILayout.Button("Export"))
-            {
-                if (string.IsNullOrEmpty(_save.UIPrefabPath))
-                {
-                    EditorUtility.DisplayDialog("Error", "Please specify a valid folder path.", "OK");
-                    return;
-                }
-
-                if (string.IsNullOrEmpty(_save.localizationCSVPath))
-                {
-                    EditorUtility.DisplayDialog("Error", "Please specify a valid output file path.", "OK");
-                    return;
-                }
-                ExportTextsToCSV(_save.UIPrefabPath, _save.localizationCSVPath);
-            }
-            GUILayout.Space(20);
-        }
-
-        private class Mark
-        {
-            public bool has = false;
-        }
-
-        private void ExportTextsToCSV(string folderPath, string outputFilePath)
-        {
-            string[] guids = AssetDatabase.FindAssets("t:Prefab", new[] { folderPath });
-
-            var stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine("Path,Text");
-            var mark = new Mark();
-            foreach (string guid in guids)
-            {
-                string assetPath = AssetDatabase.GUIDToAssetPath(guid);
-                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
-
-                if (prefab != null)
-                {
-                    AddTextsFromGameObject(prefab.transform, "", stringBuilder, mark);
-                    if (mark.has) EditorUtility.SetDirty(prefab);
-                }
-                mark.has = false;
-            }
-            mark = null;
-            File.WriteAllText(outputFilePath, stringBuilder.ToString());            
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-            EditorUtility.DisplayDialog("Export Complete", $"Exported text data to {outputFilePath}", "OK");
-            System.Diagnostics.Process.Start(outputFilePath);
-        }
-
-        private void AddTextsFromGameObject(Transform transform, string parentPath, StringBuilder stringBuilder, Mark mark)
-        {
-            // Prepare the path string
-            string currentPath = string.IsNullOrEmpty(parentPath) ? transform.name : $"{parentPath}_{transform.name}";
-
-            // Get Text component (you might consider using TryGetComponent for better performance in the latest Unity versions)
-            var textComponent = transform.GetComponent<TextEx>();
-            if (textComponent != null && textComponent.staticText)
-            {
-                mark.has = true;
-                textComponent.localizationKey = currentPath;
-                // Use AppendLine for automatic newline and efficient string building
-                stringBuilder.AppendLine($"{currentPath},{textComponent.text}");
-            }
-
-            // Recursively process child transforms
-            foreach (Transform child in transform)
-            {
-                AddTextsFromGameObject(child, currentPath, stringBuilder, mark);
-            }
         }
     }
 }
