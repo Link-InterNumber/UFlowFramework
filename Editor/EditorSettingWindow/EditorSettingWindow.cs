@@ -19,13 +19,13 @@ namespace PowerCellStudio
         private List<IEditorSettingWindowItem> items;
         private Vector2 scrollPosition;
         private const float tabHeight = 25;
-        private const float tabMaxWidth = 100;
+        private const float tabMaxWidth = 150;
 
-        private static GUIStyle titleStyle = new GUIStyle(EditorStyles.label)
-        {
-            fontSize = 25,
-            fontStyle = FontStyle.Bold,
-        };
+        // private static GUIStyle titleStyle = new GUIStyle(EditorStyles.label)
+        // {
+        //     fontSize = 25,
+        //     fontStyle = FontStyle.Bold,
+        // };
 
         void OnEnable()
         {
@@ -75,7 +75,8 @@ namespace PowerCellStudio
             for (var i = 0; i < items.Count; i++)
             {
                 var tab = items[i];
-                float tabWidth = Mathf.Min(tabMaxWidth, currentWidth / items.Count);
+                // 根据 tab.itemName 长度计算 tab 的宽度
+                float tabWidth = Mathf.Min(tabMaxWidth, tab.itemName.Length * 8); // Mathf.Min(tabMaxWidth, currentWidth / items.Count);
 
                 if (xOffset + tabWidth > currentWidth)
                 {
@@ -101,9 +102,14 @@ namespace PowerCellStudio
             GUILayout.Space(yOffset);
             GUILayout.EndVertical();
 
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition);
+            var titleStyle = new GUIStyle(EditorStyles.label)
+            {
+                fontSize = 25,
+                fontStyle = FontStyle.Bold,
+            };
             GUILayout.Label(items[_selectIndex].itemName, titleStyle);
-            items[_selectIndex].OnGUI();
+            scrollPosition = GUILayout.BeginScrollView(scrollPosition);
+            items[_selectIndex].OnGUI(this);
             GUILayout.EndScrollView();
             
             GUILayout.Space(10);

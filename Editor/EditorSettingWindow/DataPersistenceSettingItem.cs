@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEditor;
 using System.Collections.Generic;
 using System.IO;
@@ -19,7 +20,7 @@ namespace PowerCellStudio
         private string selectedDataKey;
         private string readedDataString;
 
-        public string itemName => "Persistence Data Inspector";
+        public string itemName => "Persistence Data";
 
         public void InitSave()
         {
@@ -59,7 +60,7 @@ namespace PowerCellStudio
             readedDataString = null;
         }
 
-        public void OnGUI()
+        public void OnGUI(EditorWindow window)
         {
             if (GUILayout.Button("Clear Player Prefs"))
             {
@@ -191,7 +192,7 @@ namespace PowerCellStudio
             memoryStream.Close();
             
             StringBuilder result = new StringBuilder();
-            result.Append("{\n");
+            result.AppendLine("{");
 
             var fields = data.GetType()
                 .GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
@@ -207,36 +208,26 @@ namespace PowerCellStudio
 
                 if (fieldValue is IList list)
                 {
-                    result.Append("[");
+                    result.AppendLine("[");
                     for (int i = 0; i < list.Count; i++)
                     {
-                        result.Append(list[i]);
-                        if (i < list.Count - 1)
-                        {
-                            result.Append(", \n");
-                        }
+                        result.AppendLine($"\t\t{list[i]},");
                     }
-                    result.Append("], \n");
+                    result.AppendLine("\t\t],");
                 }
                 else if (fieldValue is IDictionary dictionary)
                 {
-                    result.Append("{");
-                    bool first = true;
+                    result.AppendLine("{");
                     foreach (DictionaryEntry entry in dictionary)
                     {
-                        if (!first)
-                        {
-                            result.Append(", ");
-                        }
-                        result.Append($"[{entry.Key}: {entry.Value}]\n");
-                        first = false;
+                        result.AppendLine($"\t\t[ {entry.Key}: {entry.Value} ],");
                     }
-                    result.Append("}, \n");
+                    result.AppendLine("\t\t},");
                 }
                 else
                 {
                     // Handle other field types here
-                    result.Append($"{fieldValue}, \n");
+                    result.AppendLine($"{fieldValue},");
                 }
             }
             result.Append("}");

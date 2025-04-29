@@ -50,7 +50,7 @@ namespace PowerCellStudio
             _save = null;
         }
         
-        public void OnGUI()
+        public void OnGUI(EditorWindow window)
         {
             _save.excelPath = EditorGUILayout.TextField("excel file Path:", _save.excelPath);
             _save.csFilePath = EditorGUILayout.TextField("cs file Path:", _save.csFilePath);

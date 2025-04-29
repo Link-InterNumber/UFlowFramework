@@ -14,12 +14,12 @@ namespace PowerCellStudio
     public class TextureFormatSetterItem : IEditorSettingWindowItem
     {
 
-        private static GUIStyle guiStyle = new GUIStyle(EditorStyles.popup)
-        {
-            fontSize = 15,
-            fixedHeight = 25,
-            fixedWidth = 200,
-        };
+        // private static GUIStyle guiStyle = new GUIStyle(EditorStyles.popup)
+        // {
+        //     fontSize = 15,
+        //     fixedHeight = 25,
+        //     fixedWidth = 200,
+        // };
         private static string[] _DEFAULT_FORMAT = new string[1]{"Automatic"};
 
 
@@ -58,7 +58,7 @@ namespace PowerCellStudio
             _allSettings = null;
         }
 
-        public void OnGUI()
+        public void OnGUI(EditorWindow window)
         {
             if (Selection.assetGUIDs.Length <= 0)
             {
@@ -78,7 +78,7 @@ namespace PowerCellStudio
             GUILayout.Space(10);
 
             GUILayout.Label("设置平台： ");
-            setPl = (EPlatform) EditorGUILayout.EnumPopup(curPl, guiStyle);
+            setPl = (EPlatform) EditorGUILayout.EnumPopup(curPl); //, guiStyle);
             if (setPl != curPl)
             {
                 curTFIndex = 0;
@@ -91,13 +91,13 @@ namespace PowerCellStudio
             {
                 canSetFormats = _DEFAULT_FORMAT;
             }
-            setTFIndex = EditorGUILayout.Popup(curTFIndex, canSetFormats, guiStyle);
+            setTFIndex = EditorGUILayout.Popup(curTFIndex, canSetFormats); //, guiStyle);
 
             // isConvertRGBA = EditorGUILayout.ToggleLeft("是否将RGB强制转成RGBA", isConvertRGBA);
             GUILayout.Space(10);
             
             GUILayout.Label("设置最大尺寸： ");
-            setSize = (TextureFormatSetterSize) EditorGUILayout.EnumPopup(curSize, guiStyle);
+            setSize = (TextureFormatSetterSize) EditorGUILayout.EnumPopup(curSize); //, guiStyle);
             // isConvertRGBA = EditorGUILayout.ToggleLeft("是否将RGB强制转成RGBA", isConvertRGBA);
             GUILayout.Space(10);
             autoOptimize = EditorGUILayout.ToggleLeft("自动优化", autoOptimize);

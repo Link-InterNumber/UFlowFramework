@@ -1,3 +1,5 @@
+using UnityEditor;
+
 #if UNITY_EDITOR
 
 namespace PowerCellStudio
@@ -10,7 +12,7 @@ namespace PowerCellStudio
 
         void OnDestroy();
 
-        void OnGUI();
+        void OnGUI(EditorWindow window);
 
         void SaveData();
     }

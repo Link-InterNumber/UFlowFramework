@@ -14,16 +14,16 @@ namespace PowerCellStudio
     
     public class BinaryTree<T> : IEnumerable<T> where T : class, IBinaryTreeNode 
     {
-        private class BinaryTreeNode
+        private class BinaryTreeNode<T>
         {
             public T valueT;
             public BinaryTreeNode<T>[] children;
 
             public bool isLeaf => valueT != null;
 
-            public BinaryTreeNode left => children[0];
+            public BinaryTreeNode<T> left => children[0];
 
-            public BinaryTreeNode right => children[1];
+            public BinaryTreeNode<T> right => children[1];
 
             public BinaryTreeNode()
             {

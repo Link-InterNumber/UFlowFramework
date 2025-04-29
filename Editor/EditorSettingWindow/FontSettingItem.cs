@@ -38,7 +38,7 @@ namespace PowerCellStudio
             _textMeshProFont = null;
         }
 
-        public void OnGUI()
+        public void OnGUI(EditorWindow window)
         {
             GUILayout.Label("itemName");
             _font = (Font) EditorGUILayout.ObjectField("Text Font: ", _font, typeof(Font));
