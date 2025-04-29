@@ -14,6 +14,23 @@ namespace PowerCellStudio
     
     public class BinaryTree<T> : IEnumerable<T> where T : class, IBinaryTreeNode 
     {
+        private class BinaryTreeNode
+        {
+            public T valueT;
+            public BinaryTreeNode<T>[] children;
+
+            public bool isLeaf => valueT != null;
+
+            public BinaryTreeNode left => children[0];
+
+            public BinaryTreeNode right => children[1];
+
+            public BinaryTreeNode()
+            {
+                children = new BinaryTreeNode<T>[2];
+            }
+        }
+
         private int _maxObject;
         private int _maxLevel;
         private int _level;
