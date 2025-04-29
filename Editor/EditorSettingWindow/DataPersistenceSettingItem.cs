@@ -184,7 +184,7 @@ namespace PowerCellStudio
             memoryStream.Close();
             
             StringBuilder result = new StringBuilder();
-            result.Append($"[\n");
+            result.Append("{\n");
 
             var fields = data.GetType()
                 .GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
@@ -196,9 +196,43 @@ namespace PowerCellStudio
                     continue;
 
                 var fieldValue = field.GetValue(data);
-                result.Append($"\t{field.Name} = {fieldValue}, \n");
+                result.Append($"\t{field.Name} = ");
+
+                if (fieldValue is IList list)
+                {
+                    result.Append("[");
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        result.Append(list[i]);
+                        if (i < list.Count - 1)
+                        {
+                            result.Append(", \n");
+                        }
+                    }
+                    result.Append("], \n");
+                }
+                else if (fieldValue is IDictionary dictionary)
+                {
+                    result.Append("{");
+                    bool first = true;
+                    foreach (DictionaryEntry entry in dictionary)
+                    {
+                        if (!first)
+                        {
+                            result.Append(", ");
+                        }
+                        result.Append($"[{entry.Key}: {entry.Value}]\n");
+                        first = false;
+                    }
+                    result.Append("}, \n");
+                }
+                else
+                {
+                    // Handle other field types here
+                    result.Append($"{fieldValue}, \n");
+                }
             }
-            result.Append("]");
+            result.Append("}");
             
             return result.ToString();
         }

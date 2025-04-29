@@ -18,7 +18,7 @@ namespace PowerCellStudio
 
         private List<IEditorSettingWindowItem> items;
         private Vector2 scrollPosition;
-        private string splitStr;
+        // private string splitStr;
 
         private static GUIStyle titleStyle = new GUIStyle(EditorStyles.label)
         {
@@ -35,7 +35,7 @@ namespace PowerCellStudio
             // titleStyle.fontStyle = FontStyle.Bold;
             // titleStyle.normal.textColor = Color.white;
             
-            splitStr = "------------------------ Divider --------------------------";
+            // splitStr = "------------------------ Divider --------------------------";
             var interfaceType = typeof(IEditorSettingWindowItem);
             var types = Assembly.GetExecutingAssembly().GetTypes();
             foreach (var type in types)
@@ -45,7 +45,6 @@ namespace PowerCellStudio
                     // 创建实例
                     var instance = (IEditorSettingWindowItem)Activator.CreateInstance(type);
                 
-                    // 使用实例
                     items.Add(instance);
                 }
             }
@@ -63,7 +62,7 @@ namespace PowerCellStudio
                 items[i].OnDestroy();
             }
             items = null;
-            splitStr = null;
+            // splitStr = null;
         }
         
         void OnGUI()
@@ -74,12 +73,13 @@ namespace PowerCellStudio
             {
                 GUILayout.Label(items[i].itemName, titleStyle);
                 items[i].OnGUI();
-                // GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(5));
+                
                 // Define the rect for the line
         
                 // Draw the line
                 GUILayout.Space(10);
-                GUILayout.Label(splitStr);
+                GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(5));
+                // GUILayout.Label(splitStr);
                 GUILayout.Space(10);
             }
             GUILayout.EndScrollView();
