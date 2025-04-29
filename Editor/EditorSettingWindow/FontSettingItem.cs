@@ -32,6 +32,8 @@ namespace PowerCellStudio
 
         public void OnDestroy()
         {
+            _fontPath = null;
+            _textMeshProFontPath = null;
             _font = null;
             _textMeshProFont = null;
         }

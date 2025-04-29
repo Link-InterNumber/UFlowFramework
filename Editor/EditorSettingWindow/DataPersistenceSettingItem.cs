@@ -53,7 +53,7 @@ namespace PowerCellStudio
         public void OnDestroy()
         {
             _searchKey = null;
-            dataDictionary.Clear();
+            dataDictionary?.Clear();
             dataDictionary = null;
             selectedDataKey = null;
             readedDataString = null;

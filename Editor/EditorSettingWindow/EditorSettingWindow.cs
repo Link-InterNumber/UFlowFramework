@@ -18,7 +18,8 @@ namespace PowerCellStudio
 
         private List<IEditorSettingWindowItem> items;
         private Vector2 scrollPosition;
-        // private string splitStr;
+        private const float tabHeight = 25;
+        private const float tabMaxWidth = 100;
 
         private static GUIStyle titleStyle = new GUIStyle(EditorStyles.label)
         {
@@ -30,12 +31,8 @@ namespace PowerCellStudio
         {
             scrollPosition = Vector2.zero;
             items = new List<IEditorSettingWindowItem>();
-            // titleStyle = new GUIStyle(EditorStyles.label);
-            // titleStyle.fontSize = 25;
-            // titleStyle.fontStyle = FontStyle.Bold;
-            // titleStyle.normal.textColor = Color.white;
+            _selectIndex = 0;
             
-            // splitStr = "------------------------ Divider --------------------------";
             var interfaceType = typeof(IEditorSettingWindowItem);
             var types = Assembly.GetExecutingAssembly().GetTypes();
             foreach (var type in types)
@@ -44,15 +41,15 @@ namespace PowerCellStudio
                 {
                     // 创建实例
                     var instance = (IEditorSettingWindowItem)Activator.CreateInstance(type);
-                
                     items.Add(instance);
                 }
             }
             
-            for (var i = 0; i < items.Count; i++)
-            {
-                items[i].InitSave();
-            }
+            if(items.Count > 0) items[0].InitSave();
+            // for (var i = 0; i < items.Count; i++)
+            // {
+            //     items[i].InitSave();
+            // }
         }
 
         private void OnDisable()
@@ -62,34 +59,57 @@ namespace PowerCellStudio
                 items[i].OnDestroy();
             }
             items = null;
-            // splitStr = null;
         }
         
+        private int _selectIndex;
         void OnGUI()
         {
             if (items == null) return;
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition);
+
+            float currentWidth = position.width - 20; // Leave space for scroll bar
+            float xOffset = 0;
+            float yOffset = 0;
+
+
+            GUILayout.BeginVertical();
             for (var i = 0; i < items.Count; i++)
             {
-                GUILayout.Label(items[i].itemName, titleStyle);
-                items[i].OnGUI();
+                var tab = items[i];
+                float tabWidth = Mathf.Min(tabMaxWidth, currentWidth / items.Count);
+
+                if (xOffset + tabWidth > currentWidth)
+                {
+                    // Move to next line
+                    xOffset = 0;
+                    yOffset += tabHeight + 5; // 5 for margin
+                }
+
+                // Use a rect to create a button position
+                Rect tabRect = new Rect(xOffset, yOffset, tabWidth, tabHeight);
                 
-                // Define the rect for the line
-        
-                // Draw the line
-                GUILayout.Space(10);
-                GUILayout.Box("", GUILayout.ExpandWidth(true), GUILayout.Height(5));
-                // GUILayout.Label(splitStr);
-                GUILayout.Space(10);
+                if (GUI.Button(tabRect, tab.itemName))
+                {
+                    items[_selectIndex].SaveData();
+                    items[_selectIndex].OnDestroy();
+                    _selectIndex = i;
+                    items[_selectIndex].InitSave();
+                }
+
+                xOffset += tabWidth + 5; // Increment x position with margin
             }
+            yOffset += tabHeight; // Adjust for the last line
+            GUILayout.Space(yOffset);
+            GUILayout.EndVertical();
+
+            scrollPosition = GUILayout.BeginScrollView(scrollPosition);
+            GUILayout.Label(items[_selectIndex].itemName, titleStyle);
+            items[_selectIndex].OnGUI();
             GUILayout.EndScrollView();
+            
             GUILayout.Space(10);
             if (GUILayout.Button("Save"))
             {
-                for (var i = 0; i < items.Count; i++)
-                {
-                    items[i].SaveData();
-                }
+                items[_selectIndex].SaveData();
             }
             GUILayout.Space(10);
         }
