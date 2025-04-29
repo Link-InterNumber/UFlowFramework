@@ -195,9 +195,8 @@ namespace PowerCellStudio
         private void ParseTexture(string path, bool isFix)
         {
             if (path.EndsWith(".png") || path.EndsWith(".jpg") ||
-                path.EndsWith(".tga") ||
-                path.EndsWith(".psd") || path.EndsWith(".PSD") ||
-                path.EndsWith(".exr") ||
+                path.EndsWith(".tga") || path.EndsWith(".psd") ||
+                path.EndsWith(".PSD") || path.EndsWith(".exr") ||
                 path.EndsWith(".tif"))
             {
                 // Debug.Log("-------------path: " + path);
@@ -229,7 +228,6 @@ namespace PowerCellStudio
         {
             return formatSize.Contains(width) && formatSize.Contains(height);
         }
-
 
         //设置图片格式
         public static void SetPicFormat(string path, string curPlatform, TextureImporterFormat curFormat, int maxSize, bool autoOptimize, bool autoSize)

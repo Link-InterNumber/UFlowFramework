@@ -45,7 +45,7 @@ namespace PowerCellStudio
                 }
             }
             
-            if(items.Count > 0) items[0].InitSave();
+            if (items.Count > 0) items[0].InitSave();
             // for (var i = 0; i < items.Count; i++)
             // {
             //     items[i].InitSave();
@@ -64,7 +64,7 @@ namespace PowerCellStudio
         private int _selectIndex;
         void OnGUI()
         {
-            if (items == null) return;
+            if (items == null && items.Count > 0) return;
 
             float currentWidth = position.width - 20; // Leave space for scroll bar
             float xOffset = 0;
