@@ -97,6 +97,13 @@ namespace PowerCellStudio
                 }
             }
 
+            if (GUILayout.Button("Refresh Data"))
+            {
+                dataDictionary = null;
+                InitSave();
+                return;
+            }
+
             if (dataDictionary.Count > 0)
             {
                 // Start of scroll view
