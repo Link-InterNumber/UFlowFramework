@@ -7,13 +7,108 @@ using UnityEngine;
 
 namespace PowerCellStudio
 {
-    public interface IQuadTreeNode
+    public interface IQuadTreeItem
     {
         public Vector2 ToVector();
     }
     
-    public class QuadTree<T> : IEnumerable<T> where T : class, IQuadTreeNode 
+    public class QuadTree<T> : IEnumerable<T> where T : class, IQuadTreeItem 
     {
+        private class QuadTreeNode<T>
+        {
+            public T[] children;
+            public int level
+            public int count;
+            public Vector2 center;
+            public Vector2 extends;
+            public bool isLeaf => nodes != null;
+            public QuadTreeNode<T>[][] nodes;
+            public QuadTreeNode<T> parent;
+
+            public QuadTreeNode<T>(QuadTreeNode<T> root, Vector2 centerPos)
+            {
+                parent = root;
+                level = root.level + 1;
+                children = new T[root.children.Length];
+                count = 0;
+                center = centerPos;
+                extends = root.extends * 0.5f;
+            }
+
+            public void Add(T v)
+            {
+                if (nodes != null)
+                {
+                    var vec = v.ToVector();
+                    var indexX = vec.x < center.x ? 0 : 1;
+                    var indexY = vec.y < center.y ? 0 : 1;
+                    nodes[indexX][indexY].Add(v);
+                    return;
+                }
+                if(count + 1 > children.Length)
+                {
+                    Split();
+                    Add(v);
+                    return;
+                }
+                children[count] = v;
+                count ++;
+            }
+
+            public void Remove(T v)
+            {
+                if (nodes != null)
+                {
+                    var vec = v.ToVector();
+                    var indexX = vec.x < center.x ? 0 : 1;
+                    var indexY = vec.y < center.y ? 0 : 1;
+                    nodes[indexX][indexY].Remove(v);
+                    return;
+                }
+                var removeIndex = -1;
+                for (var i = 0; i < count; i++)
+                {
+                    var child = children[i];
+                    if (child == v)
+                    {
+                        removeIndex = i;
+                    }
+                }
+                if (removeIndex < 0) return;
+                children[removeIndex] = null;
+                Array.Copy(children, removeIndex + 1, children, removeIndex, count - removeIndex);
+                children[count - 1] = null;
+                count--;
+                if(count == 0)
+                {
+
+                }
+            }
+
+            private void Split()
+            {
+                nodes = new QuadTreeNode<T>[][2];
+                nodes[0] = new QuadTreeNode<T>[2];
+                nodes[1] = new QuadTreeNode<T>[2];
+                for (var i = 0; i < 2; i++)
+                {
+                    for (var j = 0; j < 2; j++)
+                    {
+                        nodes[i][j] = new QuadTreeNode<T>();
+                    }
+                }
+
+                for (var i = 0; i < count; i++)
+                {
+                    var child = children[i];
+                    Add(child);
+                }
+                Array.Clear(children 0, children.Length);
+                children = null;
+                count = 0;
+            }
+        }
+
         private int _maxObject;
         private int _maxLevel;
         private int _level;
