@@ -9,24 +9,24 @@ namespace PowerCellStudio
 {
     public interface IQuadTreeItem : IToVector2 {}
     
-    public class QuadTree<T>
-        where T : class, IQuadTreeItem
+    public class QuadTree<T> where T : class, IQuadTreeItem
     {
-        private class QuadTreeNode<T>: IDisposable
+        private class QuadTreeNode<KT>: IDisposable 
+            where KT :  class, IQuadTreeItem
         {
-            public T[] children;
-            public int level
+            public KT[] children;
+            public int level;
             public int count;
             public Vector2 center;
             public Vector2 extends;
             public bool isLeaf => nodes == null;
-            public QuadTreeNode<T>[] nodes;
-            public QuadTreeNode<T> parent;
+            public QuadTreeNode<KT>[] nodes;
+            public QuadTreeNode<KT> parent;
 
             public int maxCount;
-            publuc int maxLv;
+            public int maxLv;
 
-            public QuadTreeNode<T>(QuadTreeNode<T> root, Vector2 centerPos)
+            public QuadTreeNode(QuadTreeNode<KT> root, Vector2 centerPos)
             {
                 parent = root;
                 if (root != null)
@@ -35,7 +35,7 @@ namespace PowerCellStudio
                     maxCount = root.children.Length;
                     extends = root.extends * 0.5f;
                     maxLv = root.maxLv;
-                    children = new T[maxCount];
+                    children = new KT[maxCount];
                 }
                 count = 0;
                 center = centerPos;
@@ -49,7 +49,7 @@ namespace PowerCellStudio
                     pos.y < max.y && pos.y >= min.y;
             }
 
-            public T FindNearest(Vector2 pos)
+            public KT FindNearest(Vector2 pos)
             {
                 if (nodes != null)
                 {
@@ -59,7 +59,7 @@ namespace PowerCellStudio
                 return children?.MinBy(o => Vector2.Distance(o.ToVector(), pos)).First() ?? null;
             }
 
-            public T Find(Vector2 pos)
+            public KT Find(Vector2 pos)
             {
                 if (!InRange(pos)) return null;
                 if (nodes != null)
@@ -70,7 +70,7 @@ namespace PowerCellStudio
                 for (var i = 0; i < count; i++)
                 {
                     var child = children[i];
-                    if (child.ToVector.Equals(pos))
+                    if (child.ToVector().Equals(pos))
                     {
                         return child;
                     }
@@ -78,7 +78,7 @@ namespace PowerCellStudio
                 return null;
             }
 
-            publuc int GetIndex(Vector2 objV2)
+            public int GetIndex(Vector2 objV2)
             {
                 var delta = -center + objV2;
                 var index = 0;
@@ -97,11 +97,11 @@ namespace PowerCellStudio
                 return index;
             }
 
-            public void Add(T v, Vector2 pos)
+            public void Add(KT v, Vector2 pos)
             {
                 if (nodes != null)
                 {
-                    var index = GetIndex(pos, center);
+                    var index = GetIndex(pos);
                     nodes[index].Add(v, pos);
                     return;
                 }
@@ -116,11 +116,11 @@ namespace PowerCellStudio
                 count ++;
             }
 
-            public bool Remove(T v, Vector2 pos)
+            public bool Remove(KT v, Vector2 pos)
             {
                 if (nodes != null)
                 {
-                    var index = GetIndex(pos, center);
+                    var index = GetIndex(pos);
                     return nodes[index].Remove(v, pos);
                 }
                 var removeIndex = -1;
@@ -149,10 +149,10 @@ namespace PowerCellStudio
 
             private void Split()
             {
-                nodes = new QuadTreeNode<T>[4];
+                nodes = new QuadTreeNode<KT>[4];
                 for (var i = 0; i < 4; i++)
                 {
-                    var newCenter = i SwitchAmbienceGroup
+                    var newCenter = i switch
                     {
                         0 => center + new Vector2(extends.x * -0.5f, extends.y * -0.5f),
                         1 => center + new Vector2(extends.x * -0.5f, extends.y * 0.5f),
@@ -160,15 +160,15 @@ namespace PowerCellStudio
                         3 => center + new Vector2(extends.x * 0.5f, extends.y * 0.5f),
                         _ => center + new Vector2(extends.x * -0.5f, extends.y * -0.5f),
                     } ;
-                    nodes[i] = new QuadTreeNode<T>(this, newCenter);
+                    nodes[i] = new QuadTreeNode<KT>(this, newCenter);
                 }
 
                 for (var i = 0; i < count; i++)
                 {
                     var child = children[i];
-                    Add(child);
+                    Add(child, child.ToVector());
                 }
-                Array.Clear(children 0, children.Length);
+                Array.Clear(children, 0, children.Length);
                 children = null;
                 count = 0;
             }
@@ -183,7 +183,7 @@ namespace PowerCellStudio
                     totalCount += nodes[i].count;
                 }
                 if (totalCount > maxCount) return;
-                children = new T[maxCount];
+                children = new KT[maxCount];
                 count = 0;
                 for (var i = 0; i < 4; i++)
                 {
@@ -204,7 +204,7 @@ namespace PowerCellStudio
                 {
                     foreach (var node in nodes)
                     {
-                        node.Dispose()
+                        node.Dispose();
                     }
                 }
                 nodes = null;
@@ -212,7 +212,7 @@ namespace PowerCellStudio
         }
 
         private HashSet<T> _objects;
-        private QuadTree<T> _root;
+        private QuadTreeNode<T> _root;
 
         public int maxLevel => _root.maxLv;
         public Vector2 center => _root.center;
@@ -226,7 +226,7 @@ namespace PowerCellStudio
             _objects = new HashSet<T>();
         }
 
-        private static QuadTree CreateRoot(Vector2 center, Vector2 extends, int maxCount, int maxLv)
+        private static QuadTreeNode<T> CreateRoot(Vector2 center, Vector2 extends, int maxCount, int maxLv)
         {
             var root = new QuadTreeNode<T>(null, center);
             root.level = 1;
@@ -260,7 +260,7 @@ namespace PowerCellStudio
 
         public void Insert(T obj)
         {
-            if(_objects.Contians(obj))
+            if(_objects.Contains(obj))
                 return;
             _objects.Add(obj);
             var pos = obj.ToVector();
@@ -270,7 +270,7 @@ namespace PowerCellStudio
         public bool Remove(T obj)
         {
             if(!_objects.Remove(obj))
-                return;
+                return false;
             var pos = obj.ToVector();
             return _root.Remove(obj, pos);
         }
@@ -287,22 +287,40 @@ namespace PowerCellStudio
             return branch.children;
         }
 
-        publuc T[] GetBlock(Vector2 pos)
+        public T[] GetBlock(Vector2 pos)
         {
-            return GetBlockEnumerator(pos).ToArray();
+            var root = _root;
+            if(!root.isLeaf)
+            {
+                var index = root.GetIndex(pos);
+                root = root.nodes[index];
+            }
+            root = root.parent != null ? root.parent : root;
+            var count = root.nodes.Sum(o => o.count);
+            var result = new T[count];
+            var temp = 0;
+            for (var i = 0; i < root.nodes.Length; i++)
+            {
+                var branch = root.nodes[i];
+                for (var j = 0; j < branch.count; j++)
+                {
+                    result[temp] = branch.children[j];
+                    temp++;
+                }
+            }
+            return result;
         }
         
         public IEnumerator<T> GetLeafEnumerator(Vector2 pos)
         {
-            var pos = obj.ToVector();
             var branch = _root;
             if(!branch.isLeaf)
             {
                 var index = branch.GetIndex(pos);
                 branch = branch.nodes[index];
             }
-            count = branch.count;
-            for (var i = 0; i < branch.count; i ++)
+            var count = branch.count;
+            for (var i = 0; i < count; i ++)
             {
                 yield return branch.children[i];
             }
@@ -316,8 +334,8 @@ namespace PowerCellStudio
                 var index = root.GetIndex(pos);
                 root = root.nodes[index];
             }
-            root = root.parent != null ? branch.parent : branch;
-            for (var i = 0; i < root.node.Length; i++)
+            root = root.parent != null ? root.parent : root;
+            for (var i = 0; i < root.nodes.Length; i++)
             {
                 var branch = root.nodes[i];
                 for (var j = 0; j < branch.count; j++)
@@ -341,9 +359,9 @@ namespace PowerCellStudio
             return _objects.GetEnumerator();
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        // IEnumerator IEnumerable.GetEnumerator()
+        // {
+        //     return GetEnumerator();
+        // }
     }
 }

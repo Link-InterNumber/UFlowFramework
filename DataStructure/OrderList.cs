@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace PowerCellStudio
 {
@@ -9,9 +10,9 @@ namespace PowerCellStudio
         private T[] _rawData;
         private int _count;
 
-        public OrderList(size = 128)
+        public OrderList(int size = 128)
         {
-            _rawData = T[size];
+            _rawData = new T[size];
             _count = 0;
         }
 
@@ -19,12 +20,12 @@ namespace PowerCellStudio
         {
             if(source == null || source.Count == 0)
             {
-                _rawData = T[128];
+                _rawData = new T[128];
                 _count = 0;
                 return;
             }
-            source.Sort();
-            _rawData = T[source.Count];
+            source = source.OrderBy(o => o).ToList();
+            _rawData = new T[source.Count];
             _count = source.Count;
             for (var i = 0; i < _count; i++)
             {
@@ -78,7 +79,7 @@ namespace PowerCellStudio
             list.Sort();
             if (_count < _rawData.Length + list.Count)
             {
-                Resize(Math.max(128, list.Count));
+                Resize(Math.Max(128, list.Count));
             }
 
             int index = Array.BinarySearch(_rawData, 0, _count, list[0]);

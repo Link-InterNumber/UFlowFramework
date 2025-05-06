@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace PowerCellStudio
 {
@@ -24,9 +25,9 @@ namespace PowerCellStudio
         // 计算包围盒的相交检测
         public bool Intersects(BoundingBox other)
         {
-            return (Min.X <= other.Max.X && Max.X >= other.Min.X) &&
-                (Min.Y <= other.Max.Y && Max.Y >= other.Min.Y) &&
-                (Min.Z <= other.Max.Z && Max.Z >= other.Min.Z);
+            return (Min.x <= other.Max.x && Max.x >= other.Min.x) &&
+                (Min.y <= other.Max.y && Max.y >= other.Min.y) &&
+                (Min.z <= other.Max.z && Max.z >= other.Min.z);
         }
 
         // 扩展包围盒以包含另一个包围盒
@@ -142,8 +143,8 @@ namespace PowerCellStudio
         private int GetLongestAxis(BoundingBox bounds)
         {
             var size = bounds.Max - bounds.Min;
-            if (size.X >= size.Y && size.X >= size.Z) return 0;
-            return size.Y >= size.Z ? 1 : 2;
+            if (size.x >= size.y && size.x >= size.z) return 0;
+            return size.y >= size.z ? 1 : 2;
         }
     }
 }

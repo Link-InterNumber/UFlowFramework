@@ -16,7 +16,7 @@ namespace PowerCellStudio
         /// <param name="obj">要添加的对象</param>
         public void AddObject(IToVector2 obj)
         {
-            Vector2Int cellKey = GetCellKey(obj.ToVector2());
+            Vector2Int cellKey = GetCellKey(obj.ToVector());
             if (!grid.ContainsKey(cellKey))
             {
                 grid[cellKey] = new List<IToVector2>();
@@ -30,7 +30,7 @@ namespace PowerCellStudio
         /// <param name="obj">要移除的对象</param>
         public void RemoveObject(IToVector2 obj)
         {
-            Vector2Int cellKey = GetCellKey(obj.ToVector2());
+            Vector2Int cellKey = GetCellKey(obj.ToVector());
             if (grid.ContainsKey(cellKey))
             {
                 grid[cellKey].Remove(obj);

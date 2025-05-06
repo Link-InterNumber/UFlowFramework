@@ -9,19 +9,19 @@ namespace PowerCellStudio
 {    
     public class BinaryTree<T> : IEnumerable<T> where T : IComparable<T> 
     {
-        private class BinaryTreeNode<T> : IComparable<BinaryTreeNode<T>> 
+        private class BinaryTreeNode<K> where K : IComparable<K> 
         {
             public int deepLv;
-            public T valueT;
+            public K valueT;
 
-            public BinaryTreeNode<T> left;
+            public BinaryTreeNode<K> left;
 
-            public BinaryTreeNode<T> right;
+            public BinaryTreeNode<K> right;
 
-            public BinaryTreeNode(T v, int deepLv)
+            public BinaryTreeNode(K v, int deepLv)
             {
                 valueT = v;
-                lv = deepLv;
+                this.deepLv = deepLv;
             }
         }
 
@@ -61,30 +61,31 @@ namespace PowerCellStudio
         {
             if (obj == null || !_objects.Contains(obj)) return false;
             _objects.Remove(obj);
-            int index = _rawData.BinarySearch(item);
+            int index = _rawData.BinarySearch(obj);
             if (index > -1) 
             {
                 _rawData.RemoveAt(index);
                 _nodeCount ++;
             }
+            return index > 0;
         }
 
         public void Build()
         {
             _rawData.Sort();
-            var centerIndex = (int)Math.floor(_rawData.Length / 2f);
+            var centerIndex = (int)Math.Floor(_rawData.Count / 2f);
             _deep = 1;
             _root = new BinaryTreeNode<T>(_rawData[centerIndex], _deep);
             _root.left = BuildHandler(_root, 0 , centerIndex);
-            _root.right = BuildHandler(_root, centerIndex + 1, _rawData.Length - centerIndex - 1);
+            _root.right = BuildHandler(_root, centerIndex + 1, _rawData.Count - centerIndex - 1);
         }
 
         private BinaryTreeNode<T> BuildHandler(BinaryTreeNode<T> root, int startIndex, int subListLength)
         {
             if (subListLength < 1) return null;
-            var deep = root.deep + 1;
+            var deep = root.deepLv + 1;
             if (subListLength == 1) return new BinaryTreeNode<T>(_rawData[startIndex], deep);
-            var centerIndex = (int) Math.floor((startIndex + subListLength - 1) / 2f);
+            var centerIndex = (int) Math.Floor((startIndex + subListLength - 1) / 2f);
             var newNode = new BinaryTreeNode<T>(_rawData[centerIndex], deep);
             newNode.left = BuildHandler(newNode, startIndex , centerIndex - startIndex);
             newNode.right = BuildHandler(newNode, centerIndex + 1, subListLength + startIndex - 1 - centerIndex);
@@ -93,28 +94,28 @@ namespace PowerCellStudio
 
         private int GetIndex(T obj)
         {
-            int index = _rawData.BinarySearch(item);
+            int index = _rawData.BinarySearch(obj);
             return index > -1? index : -1;
         }
         
-        public T Find(int objPos, bool approximately = true)
-        {
-            if (_isLeaf)
-            {
-                if (_objectNum == 0) return default;
-                if (!approximately)
-                {
-                    foreach (var quadTreeNode in _objects)
-                    {
-                        if (quadTreeNode.ToInt().Equals(objPos)) return quadTreeNode;
-                    }
-                    return default;
-                }
-                return _objects.MinBy(o => Mathf.Abs(objPos - o.ToInt())).First();
-            }
-            var index = GetIndex(objPos);
-            return _children[index].Find(objPos, approximately);
-        }
+        // public T Find(int objPos, bool approximately = true)
+        // {
+        //     if (_isLeaf)
+        //     {
+        //         if (_objectNum == 0) return default;
+        //         if (!approximately)
+        //         {
+        //             foreach (var quadTreeNode in _objects)
+        //             {
+        //                 if (quadTreeNode.ToInt().Equals(objPos)) return quadTreeNode;
+        //             }
+        //             return default;
+        //         }
+        //         return _objects.MinBy(o => Mathf.Abs(objPos - o.ToInt())).First();
+        //     }
+        //     var index = GetIndex(objPos);
+        //     return _children[index].Find(objPos, approximately);
+        // }
 
         public IEnumerator<T> GetEnumerator()
         {
