@@ -29,6 +29,21 @@ namespace PowerCellStudio
             public int maxCount;
             publuc int maxLv;
 
+            public QuadTreeNode<T>(QuadTreeNode<T> root, Vector2 centerPos)
+            {
+                parent = root;
+                if (root != null)
+                {
+                    level = root.level + 1;
+                    maxCount = root.children.Length;
+                    extends = root.extends * 0.5f;
+                    maxLv = root.maxLv;
+                    children = new T[maxCount];
+                }
+                count = 0;
+                center = centerPos;
+            }
+
             public bool InRange(Vector2 pos)
             {
                 var min = center - extends;
@@ -85,21 +100,6 @@ namespace PowerCellStudio
                 return index;
             }
 
-            public QuadTreeNode<T>(QuadTreeNode<T> root, Vector2 centerPos)
-            {
-                parent = root;
-                if(root != null)
-                {
-                    level = root.level + 1;
-                    maxCount = root.children.Length;
-                    extends = root.extends * 0.5f;
-                    maxLv = root.maxLv;
-                }
-                children = new T[maxCount];
-                count = 0;
-                center = centerPos;
-            }
-
             public void Add(T v, Vector2 pos)
             {
                 if (nodes != null)
@@ -137,7 +137,10 @@ namespace PowerCellStudio
                 }
                 if (removeIndex < 0) return false;
                 children[removeIndex] = null;
-                Array.Copy(children, removeIndex + 1, children, removeIndex, count - removeIndex);
+                for (var i = removeIndex + 1; i < count; i++)
+                {
+                    children[i - 1] = children[i];
+                }
                 children[count - 1] = null;
                 count--;
                 if (count == 0)
@@ -175,14 +178,21 @@ namespace PowerCellStudio
 
             public void TryMerge()
             {
+                if (nodes == null) return;
+                var totalCount = 0;
+                for (var i = 0; i < 4; i++)
+                {
+                    if(!nodes[i].isLeaf) return;
+                    totalCount += nodes[i].count;
+                }
+                if (totalCount > maxCount) return;
                 children = new T[maxCount];
                 count = 0;
                 for (var i = 0; i < 4; i++)
                 {
                     Array.Copy(children, count, nodes[i].children, 0, nodes[i].count);
                     count += nodes[i].count;
-                    nodes[i].children = null;
-                    nodes[i].count = 0;
+                    nodes[i].Dispose();
                 }
                 nodes = null;
             }
@@ -213,29 +223,42 @@ namespace PowerCellStudio
 
         public int Count => _objects.Count;
 
-        public QuadTree(int maxLevel, Vector2 center, Vector2 extends, int maxCount = 10, int maxLv = 5)
+        public QuadTree(Vector2 center, Vector2 extends, int maxCount = 10, int maxLv = 5)
         {
-            _root = new QuadTreeNode<T>(null, center);
-            _root.level = 1;
-            _root.extends = extends;
-            _root.maxCount = maxCount;
-            _root.maxLv = maxLv;
-
+            _root = CreateRoot(center, extends, maxCount, maxLv);
             _objects = new HashSet<T>();
         }
 
+        private static QuadTree CreateRoot(Vector2 center, Vector2 extends, int maxCount, int maxLv)
+        {
+            var root = new QuadTreeNode<T>(null, center);
+            root.level = 1;
+            root.extends = extends;
+            root.maxCount = maxCount;
+            root.maxLv = maxLv;
+            root.children = new T[maxCount];
+            return root;
+        } 
+
         public void Clear()
         {
-            var newRoot = new QuadTreeNode<T>(null, _root.center);
-            newRoot.level = 1;
-            newRoot.extends = _root.extends;
-            newRoot.maxCount = _root.maxCount;
-            newRoot.maxLv = _root.maxLv;
-
+            var newRoot = CreateRoot(_root.center, _root.extends, _root.maxCount, _root.maxLv);
             _root.Dispose();
-
             _root = newRoot;
             _objects.Clear();
+        }
+
+        public void ReBuild()
+        {
+            var newRoot = CreateRoot(_root.center, _root.extends, _root.maxCount, _root.maxLv);
+            _root.Dispose();
+            _root = newRoot;
+
+            foreach (var item in _objects)
+            {
+                var pos = item.ToVector();
+                _root.Add(item, pos);
+            }
         }
 
         public void Insert(T obj)
