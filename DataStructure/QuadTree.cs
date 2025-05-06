@@ -7,10 +7,7 @@ using UnityEngine;
 
 namespace PowerCellStudio
 {
-    public interface IQuadTreeItem
-    {
-        public Vector2 ToVector();
-    }
+    public interface IQuadTreeItem : IToVector2 {}
     
     public class QuadTree<T>
         where T : class, IQuadTreeItem
