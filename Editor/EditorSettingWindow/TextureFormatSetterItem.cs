@@ -116,7 +116,7 @@ namespace PowerCellStudio
                 Debug.Log("完成");
             }
 
-            GUILayout.Label("");
+            GUILayout.Space(20);
             if (GUILayout.Button("获取当前文件夹下所有文件当前平台的压缩格式"))
             {
                 if (!CheckSelection())
@@ -145,9 +145,9 @@ namespace PowerCellStudio
 
             if (!string.IsNullOrEmpty(_printResult))
             {
-                _scrollPosition =  GUILayout.BeginScrollView(_scrollPosition);
+                // _scrollPosition =  GUILayout.BeginScrollView(_scrollPosition);
                 GUILayout.Label(_printResult, new GUIStyle(){richText = true, normal = new GUIStyleState{textColor = Color.white}});
-                GUILayout.EndScrollView();
+                // GUILayout.EndScrollView();
             }
         }
 

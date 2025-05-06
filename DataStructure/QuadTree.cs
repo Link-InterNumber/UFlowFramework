@@ -12,58 +12,119 @@ namespace PowerCellStudio
         public Vector2 ToVector();
     }
     
-    public class QuadTree<T> : IEnumerable<T> where T : class, IQuadTreeItem 
+    public class QuadTree<T>
+        where T : class, IQuadTreeItem
     {
-        private class QuadTreeNode<T>
+        private class QuadTreeNode<T>: IDisposable
         {
             public T[] children;
             public int level
             public int count;
             public Vector2 center;
             public Vector2 extends;
-            public bool isLeaf => nodes != null;
-            public QuadTreeNode<T>[][] nodes;
+            public bool isLeaf => nodes == null;
+            public QuadTreeNode<T>[] nodes;
             public QuadTreeNode<T> parent;
+
+            public int maxCount;
+            publuc int maxLv;
+
+            public bool InRange(Vector2 pos)
+            {
+                var min = center - extends;
+                var max = center + extends;
+                return pos.x < max.x && pos.x >= min.x &&
+                    pos.y < max.y && pos.y >= min.y;
+            }
+
+            public T FindNearest(Vector2 pos)
+            {
+                if (nodes != null)
+                {
+                    var index = GetIndex(pos);
+                    return nodes[index].FindNearest(pos);
+                }
+                return children?.MinBy(o => Vector2.Distance(o.ToVector(), pos)).First() ?? null;
+            }
+
+            public T Find(Vector2 pos)
+            {
+                if (!InRange(pos)) return null;
+                if (nodes != null)
+                {
+                    var index = GetIndex(pos);
+                    return nodes[index].Find(pos);
+                }
+                for (var i = 0; i < count; i++)
+                {
+                    var child = children[i];
+                    if (child.ToVector.Equals(pos))
+                    {
+                        return child;
+                    }
+                }
+                return null;
+            }
+
+            publuc int GetIndex(Vector2 objV2)
+            {
+                var delta = -center + objV2;
+                var index = 0;
+                if (delta.x < 0 && delta.y > 0)
+                {
+                    index = 1;
+                }
+                else if (delta.x > 0 && delta.y < 0)
+                {
+                    index = 2;
+                }
+                else if (delta.x >= 0 && delta.y >= 0)
+                {
+                    index = 3;
+                }
+                return index;
+            }
 
             public QuadTreeNode<T>(QuadTreeNode<T> root, Vector2 centerPos)
             {
                 parent = root;
-                level = root.level + 1;
-                children = new T[root.children.Length];
+                if(root != null)
+                {
+                    level = root.level + 1;
+                    maxCount = root.children.Length;
+                    extends = root.extends * 0.5f;
+                    maxLv = root.maxLv;
+                }
+                children = new T[maxCount];
                 count = 0;
                 center = centerPos;
-                extends = root.extends * 0.5f;
             }
 
-            public void Add(T v)
+            public void Add(T v, Vector2 pos)
             {
                 if (nodes != null)
                 {
-                    var vec = v.ToVector();
-                    var indexX = vec.x < center.x ? 0 : 1;
-                    var indexY = vec.y < center.y ? 0 : 1;
-                    nodes[indexX][indexY].Add(v);
+                    var index = GetIndex(pos, center);
+                    nodes[index].Add(v, pos);
                     return;
                 }
-                if(count + 1 > children.Length)
+                if(count + 1 > children.Length && level < maxLv)
                 {
                     Split();
-                    Add(v);
+                    Add(v, pos);
                     return;
                 }
+                if (count >= children.Length) Array.Resize(ref children, children.Length + maxCount);
                 children[count] = v;
                 count ++;
             }
 
-            public void Remove(T v)
+            public bool Remove(T v, Vector2 pos)
             {
                 if (nodes != null)
                 {
-                    var vec = v.ToVector();
-                    var indexX = vec.x < center.x ? 0 : 1;
-                    var indexY = vec.y < center.y ? 0 : 1;
-                    nodes[indexX][indexY].Remove(v);
-                    return;
+                    var index = GetIndex(pos, center);
+                    return nodes[index].Remove(v, pos);
                 }
                 var removeIndex = -1;
                 for (var i = 0; i < count; i++)
@@ -74,28 +135,32 @@ namespace PowerCellStudio
                         removeIndex = i;
                     }
                 }
-                if (removeIndex < 0) return;
+                if (removeIndex < 0) return false;
                 children[removeIndex] = null;
                 Array.Copy(children, removeIndex + 1, children, removeIndex, count - removeIndex);
                 children[count - 1] = null;
                 count--;
-                if(count == 0)
+                if (count == 0)
                 {
-
+                    parent?.TryMerge();
                 }
+                return true;
             }
 
             private void Split()
             {
-                nodes = new QuadTreeNode<T>[][2];
-                nodes[0] = new QuadTreeNode<T>[2];
-                nodes[1] = new QuadTreeNode<T>[2];
-                for (var i = 0; i < 2; i++)
+                nodes = new QuadTreeNode<T>[4];
+                for (var i = 0; i < 4; i++)
                 {
-                    for (var j = 0; j < 2; j++)
+                    var newCenter = i SwitchAmbienceGroup
                     {
-                        nodes[i][j] = new QuadTreeNode<T>();
-                    }
+                        0 => center + new Vector2(extends.x * -0.5f, extends.y * -0.5f),
+                        1 => center + new Vector2(extends.x * -0.5f, extends.y * 0.5f),
+                        2 => center + new Vector2(extends.x * 0.5f, extends.y * -0.5f),
+                        3 => center + new Vector2(extends.x * 0.5f, extends.y * 0.5f),
+                        _ => center + new Vector2(extends.x * -0.5f, extends.y * -0.5f),
+                    } ;
+                    nodes[i] = new QuadTreeNode<T>(this, newCenter);
                 }
 
                 for (var i = 0; i < count; i++)
@@ -107,253 +172,153 @@ namespace PowerCellStudio
                 children = null;
                 count = 0;
             }
-        }
 
-        private int _maxObject;
-        private int _maxLevel;
-        private int _level;
-        private HashSet<T> _objects = new HashSet<T>();
-        private int _objectNum;
-        private QuadTree<T>[] _children;
-        private Vector2 _center;
-        private Vector2 _extends;
-        private bool _isLeaf;
-
-        public int NodeCount => _objectNum;
-
-        public int Count
-        {
-            get
+            public void TryMerge()
             {
-                return _isLeaf ? _objectNum : _children.Sum(o => o?.Count??0);
+                children = new T[maxCount];
+                count = 0;
+                for (var i = 0; i < 4; i++)
+                {
+                    Array.Copy(children, count, nodes[i].children, 0, nodes[i].count);
+                    count += nodes[i].count;
+                    nodes[i].children = null;
+                    nodes[i].count = 0;
+                }
+                nodes = null;
+            }
+
+            public void Dispose()
+            {
+                children = null;
+                parent = null;
+                count = 0;
+                level = 0;
+                if (nodes != null)
+                {
+                    foreach (var node in nodes)
+                    {
+                        node.Dispose()
+                    }
+                }
+                nodes = null;
             }
         }
 
-        public QuadTree(int maxLevel, Vector2 center, Vector2 extends, int maxCount = 10)
+        private HashSet<T> _objects;
+        private QuadTree<T> _root;
+
+        public int maxLevel => _root.maxLv;
+        public Vector2 center => _root.center;
+        public Vector2 extends => _root.extends;
+
+        public int Count => _objects.Count;
+
+        public QuadTree(int maxLevel, Vector2 center, Vector2 extends, int maxCount = 10, int maxLv = 5)
         {
-            _maxLevel = maxLevel;
-            _level = 0;
-            _maxObject = maxCount;
+            _root = new QuadTreeNode<T>(null, center);
+            _root.level = 1;
+            _root.extends = extends;
+            _root.maxCount = maxCount;
+            _root.maxLv = maxLv;
+
             _objects = new HashSet<T>();
-            _objectNum = 0;
-            _children = new QuadTree<T>[4];
-            _center = center;
-            _extends = extends;
-            _isLeaf = true;
-            Split();
-        }
-        
-        private QuadTree(int maxLevel, int lv, Vector2 center, Vector2 extends, int maxCount)
-        {
-            _maxLevel = maxLevel;
-            _level = lv;
-            _maxObject = maxCount;
-            _objects = new HashSet<T>();
-            _objectNum = 0;
-            _children = new QuadTree<T>[4];
-            _center = center;
-            _extends = extends;
-            _isLeaf = true;
         }
 
         public void Clear()
         {
-            _objects?.Clear();
-            foreach (var quadTree in _children)
-            {
-                quadTree?.Clear();
-            }
-            Array.Clear(_children, 0, _children.Length);
-            _isLeaf = true;
-            _objectNum = 0;
-        }
+            var newRoot = new QuadTreeNode<T>(null, _root.center);
+            newRoot.level = 1;
+            newRoot.extends = _root.extends;
+            newRoot.maxCount = _root.maxCount;
+            newRoot.maxLv = _root.maxLv;
 
-        private void Split()
-        {
-            _isLeaf = false;
-            for (int i = 0; i < 4; i++)
-            {
-                var newCenter = _center;
-                switch (i)
-                {
-                    case 0:
-                        newCenter += _extends * -0.5f;
-                        break;
-                    case 1:
-                        newCenter.x = newCenter.x - _extends.x * 0.5f;
-                        newCenter.y = newCenter.y + _extends.y * 0.5f;
-                        break;
-                    case 2:
-                        newCenter.x = newCenter.x + _extends.x * 0.5f;
-                        newCenter.y = newCenter.y - _extends.y * 0.5f;
-                        break;
-                    case 3:
-                        newCenter += _extends * 0.5f;
-                        break;
-                }
-                _children[i] = new QuadTree<T>(_maxLevel, _level + 1, newCenter, _extends * 0.25f, _maxObject);
-            }
+            _root.Dispose();
 
-            foreach (var o in _objects)
-            {
-                Insert(o);
-            }
+            _root = newRoot;
             _objects.Clear();
-            _objectNum = 0;
-        }
-
-        private void Combine()
-        {
-            if(_isLeaf) return;
-            foreach (var quadTree in _children)
-            {
-                foreach (var quadTreeNode in quadTree)
-                {
-                    _objects.Add(quadTreeNode);
-                    _objectNum++;
-                }
-            }
-            Array.Clear(_children, 0, _children.Length);
-            _isLeaf = true;
         }
 
         public void Insert(T obj)
         {
-            if (_isLeaf)
-            {
-                if (_objectNum >= _maxObject && _level < _maxLevel)
-                {
-                    Split();
-                    Insert(obj);
-                    return;
-                }
-                _objects.Add(obj);
-                _objectNum++;
-            }
-            else
-            {
-                var index = GetIndex(obj);
-                _children[index].Insert(obj);
-            }
+            if(_objects.Contians(obj))
+                return;
+            _objects.Add(obj);
+            var pos = obj.ToVector();
+            _root.Add(obj, pos);
         }
 
-        public void Remove(T obj)
+        public bool Remove(T obj)
         {
-            if (_isLeaf)
-            {
-                if (_objects.Remove(obj))
-                {
-                    _objectNum--;
-                    _objectNum = Mathf.Max(0, _objectNum);
-                }
-            }
-            else
-            {
-                var index = GetIndex(obj);
-                _children[index].Remove(obj);
-                if(_level == 0) return;
-                if(!_children[0]._isLeaf) return;
-                if (Count <= _maxObject)
-                {
-                    Combine();
-                }
-            }
+            if(!_objects.Remove(obj))
+                return;
+            var pos = obj.ToVector();
+            return _root.Remove(obj, pos);
         }
 
-        private int GetIndex(T obj)
+        public T[] GetLeaf(Vector2 pos, out int count)
         {
-            var objV2 = obj.ToVector();
-            return GetIndex(objV2);
+            var branch = _root;
+            if(!branch.isLeaf)
+            {
+                var index = branch.GetIndex(pos);
+                branch = branch.nodes[index];
+            }
+            count = branch.count;
+            return branch.children;
         }
 
-        private int GetIndex(Vector2 objV2)
+        publuc T[] GetBlock(Vector2 pos)
         {
-            var delta = -_center + objV2;
-            var index = 0;
-            if (delta.x < 0 && delta.y > 0)
-            {
-                index = 1;
-            }
-            else if (delta.x > 0 && delta.y < 0)
-            {
-                index = 2;
-            }
-            else if (delta.x >= 0 && delta.y >= 0)
-            {
-                index = 3;
-            }
-            return index;
-        }
-
-        public T[] GetBranch(T obj)
-        {
-            if (_isLeaf)
-            {
-                return _objects.ToArray();
-            }
-            var index = GetIndex(obj);
-            return _children[index].GetBranch(obj);
+            return GetBlockEnumerator(pos).ToArray();
         }
         
-        public IEnumerable<T> GetBranch(Vector2 objPos)
+        public IEnumerator<T> GetLeafEnumerator(Vector2 pos)
         {
-            if (_isLeaf)
+            var pos = obj.ToVector();
+            var branch = _root;
+            if(!branch.isLeaf)
             {
-                return _objects;
+                var index = branch.GetIndex(pos);
+                branch = branch.nodes[index];
             }
-            var index = GetIndex(objPos);
-            return _children[index].GetBranch(objPos);
+            count = branch.count;
+            for (var i = 0; i < branch.count; i ++)
+            {
+                yield return branch.children[i];
+            }
         }
 
-        public T Find(T obj, bool approximately = true)
+        public IEnumerator<T> GetBlockEnumerator(Vector2 pos)
         {
-            if (_isLeaf)
+            var root = _root;
+            if(!root.isLeaf)
             {
-                if (_objectNum == 0) return default;
-                if (!approximately && _objects.Contains(obj)) return obj;
-                return _objects.MinBy(o => Vector2.Distance(obj.ToVector(), o.ToVector())).First();
+                var index = root.GetIndex(pos);
+                root = root.nodes[index];
             }
-            var index = GetIndex(obj);
-            return _children[index].Find(obj, approximately);
+            root = root.parent != null ? branch.parent : branch;
+            for (var i = 0; i < root.node.Length; i++)
+            {
+                var branch = root.nodes[i];
+                for (var j = 0; j < branch.count; j++)
+                {
+                    yield return branch.children[j];
+                }
+            }
         }
         
-        public T Find(Vector2 objPos, bool approximately = true)
+        public T Find(Vector2 pos, bool approximately = true)
         {
-            if (_isLeaf)
+            if (approximately)
             {
-                if (_objectNum == 0) return default;
-                if (!approximately)
-                {
-                    foreach (var quadTreeNode in _objects)
-                    {
-                        if (quadTreeNode.ToVector().Equals(objPos)) return quadTreeNode;
-                    }
-                    return default;
-                }
-                return _objects.MinBy(o => Vector2.Distance(objPos, o.ToVector())).First();
+                return _root.FindNearest(pos);
             }
-            var index = GetIndex(objPos);
-            return _children[index].Find(objPos, approximately);
+            return _root.Find(pos);
         }
 
         public IEnumerator<T> GetEnumerator()
         {
-            if (_isLeaf)
-            {
-                foreach (var quadTreeNode in _objects)
-                {
-                    yield return quadTreeNode;
-                }
-            }
-            foreach (var quadTreeNodes in _children)
-            {
-                if(quadTreeNodes == null) continue;
-                using var enumerator = quadTreeNodes.GetEnumerator();
-                while (enumerator.MoveNext())
-                {
-                    yield return enumerator.Current;
-                }
-            }
+            return _objects.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
