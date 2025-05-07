@@ -288,6 +288,12 @@ namespace PowerCellStudio
             UpdateList(newdata);
         }
 
+        public void Clear()
+        {
+            var newdata = new List<object>();
+            UpdateList(newdata);
+        }
+
         public IEnumerator GetEnumerator()
         {
             yield return _dataList.GetEnumerator();

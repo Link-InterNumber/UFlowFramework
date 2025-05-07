@@ -42,6 +42,11 @@ namespace PowerCellStudio
         /// </summary>
         /// <param name="index">索引位</param>
         public void RemoveItem(int index);
+
+        /// <summary>
+        /// 隐藏所有子节点
+        /// </summary>
+        public void Clear();
     }
 
     public class ListUpdater : MonoBehaviour, IListUpdater
@@ -221,12 +226,13 @@ namespace PowerCellStudio
             if (usedIndex == -1)
             {
                 var go = Instantiate(_prefab, transform);
-                go.transform.SetSiblingIndex(index);
+                var realIndex = Mathf.Min(index, transform.childCount - 1);
+                go.transform.SetSiblingIndex(realIndex);
                 go.SetActive(true);
                 var item = go.GetComponent<IListItem>();
                 if (item == null) return;
                 item.itemHolder = this;
-                item.UpdateContent(index, data);
+                item.UpdateContent(realIndex, data);
                 
                 for (int i = index; i < transform.childCount; i++)
                 {
@@ -241,11 +247,11 @@ namespace PowerCellStudio
             // 如果有未使用的节点，则将其设置为使用状态
             var itemGo = transform.GetChild(usedIndex);
             itemGo.gameObject.SetActive(true);
-            itemGo.SetSiblingIndex(index);
+            itemGo.SetSiblingIndex(Mathf.Min(index, usedIndex));
             var item1 = itemGo.GetComponent<IListItem>();
             if (item1 == null) return;
             item1.itemHolder = this;
-            item1.UpdateContent(index, data);
+            item1.UpdateContent(Mathf.Min(index, usedIndex), data);
             for (int i = index; i < transform.childCount; i++)
             {
                 var child = transform.GetChild(i);

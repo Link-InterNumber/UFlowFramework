@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.UI;
+using System.Linq;
 
 namespace PowerCellStudio
 {
@@ -27,11 +28,25 @@ namespace PowerCellStudio
         public InputField inputTargetFixedFrameRate;
         public Text txtTargetFrameRate;
         public Text txtTargetFixedFrameRate;
+
+        // log
+        public Toggle tglLog;
+        public Toggle tglWarning;
+        public Toggle tglError;
+        public Button btnClearLog;
+        public RecycleScrollRect listLog;
         
         private int _frameCount = 0;
         private float _frameTime = 0;
         private int _fixedFrameCount = 0;
         private float _fixedFrameTime = 0;
+
+        public override void RegisterEvent()
+        {
+            tglLog.isOn = true;
+            tglWarning.isOn = true;
+            tglError.isOn = true;
+        }
         
         public override void OnOpen(object data)
         {
@@ -52,6 +67,14 @@ namespace PowerCellStudio
             inputTargetFrameRate.onEndEdit.AddListener(OnTargetFrameRateDropdownChange);
             inputTimeScale.onEndEdit.AddListener(OnInputTimeScale);
             inputTargetFixedFrameRate.onEndEdit.AddListener(OnTargetFixedFrameRateDropdownChange);
+            
+            DebugBtn.onLoged += OnLoged;
+            btnClearLog.onClick.AddListener(OnClickClearLog)
+            tglLog.onValueChange.AddListener(OnClickLog);
+            tglWarning.onValueChange.AddListener(OnClickWarning);
+            tglError.onValueChange.AddListener(OnClickError);
+            UpdateLogs();
+
         }
 
         private void OnTargetFixedFrameRateDropdownChange(string arg0)
@@ -78,6 +101,74 @@ namespace PowerCellStudio
             inputTargetFrameRate.onEndEdit.RemoveListener(OnTargetFrameRateDropdownChange);
             inputTimeScale.onEndEdit.RemoveListener(OnInputTimeScale);
             inputTargetFixedFrameRate.onEndEdit.RemoveListener(OnTargetFixedFrameRateDropdownChange);
+            DebugBtn.onLoged -= OnLoged;
+            btnClearLog.onClick.RemoveListener(OnClickClearLog)
+            tglLog.onValueChange.RemoveListener(OnClickLog);
+            tglWarning.onValueChange.RemoveListener(OnClickWarning);
+            tglError.onValueChange.RemoveListener(OnClickError);
+        }
+
+        private void OnLoged(DebugBtn.LogInfo logInfo)
+        {
+            switch(LogInfo.logType)
+            {
+                case LogType.Log:
+                    if (!tglLog.isOn) return;
+                    break;
+                case LogType.Warning:
+                    if (!tglWarning.isOn) return;
+                    break;
+                case LogType.Error:
+                    if (!tglError.isOn) return;
+                    break;
+                default:
+                    return;
+            }
+            listLog.AddItem(DebugBtn.logInfos.Count - 1, logInfo);
+        }
+
+        private void UpdateLogs()
+        {
+            var fliterLogs = DebugBtn.logInfos.Where(o => 
+            {
+                switch(o.logType)
+                {
+                    case LogType.Log:
+                        if (!tglLog.isOn) return false;
+                        break;
+                    case LogType.Warning:
+                        if (!tglWarning.isOn) return false;
+                        break;
+                    case LogType.Error:
+                        if (!tglError.isOn) return false;
+                        break;
+                    default:
+                        return false;
+                }
+                return true;
+            }).ToList();
+            listLog.UpdateList(fliterLogs);
+        }
+
+        private void OnClickClearLog()
+        {
+            DebugBtn.logInfos.Clear();
+            listLog.Clear();
+        }
+
+        private void OnClickLog(bool isOn)
+        {
+            UpdateLogs();
+        }
+
+        private void OnClickWarning(bool isOn)
+        {
+            UpdateLogs();
+        }
+
+        private void OnClickError(bool isOn)
+        {
+            UpdateLogs();
         }
         
         private void OnTimeScaleSliderChange(float arg0)
