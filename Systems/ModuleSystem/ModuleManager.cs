@@ -7,6 +7,7 @@ using UnityEngine;
 
 namespace PowerCellStudio
 {
+    [DonotInitModuleIAutoly]
     public class ModuleManager : MonoSingleton<ModuleManager>
     {
 #if UNITY_EDITOR
@@ -76,6 +77,7 @@ namespace PowerCellStudio
                 .ToList();
             foreach (var type in res)
             {
+                if (type.GetCustomAttribute<DonotInitModuleIAutoly>() != null) continue;
                 var property = type.GetProperty("instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
                 if (property == null) continue;
                 property.SetValue(null, Activator.CreateInstance(type));
@@ -83,7 +85,7 @@ namespace PowerCellStudio
                 if (instance is IModule module)
                 {
                     module.OnInit();
-                    ModuleManager.instance.AddModule(type, module);
+                    AddModule(type, module);
                 }
 #if UNITY_EDITOR
                 moduleInfos.Add(new ModuleInfo
@@ -112,6 +114,7 @@ namespace PowerCellStudio
                 .ToList();
             foreach (var type in res)
             {
+                if (type.GetCustomAttribute<DonotInitModuleIAutoly>() != null) continue;
                 // 判断是否已经实例化
                 var exitGo = GameObject.Find(type.Name);
                 var instanceGo = exitGo?.GetComponent(type)?? null;
@@ -123,7 +126,7 @@ namespace PowerCellStudio
                 if (instanceGo is IModule module)
                 {
                     module.OnInit();
-                    ModuleManager.instance.AddModule(type, module);
+                    AddModule(type, module);
                 }
 #if UNITY_EDITOR
                 moduleInfos.Add(new ModuleInfo
@@ -142,14 +145,15 @@ namespace PowerCellStudio
             base.Deinit();
             EventManager.instance.onStartGame.RemoveListener(OnStartGame);
             EventManager.instance.onResetGame.RemoveListener(OnResetGame);
-            foreach (var keyValuePair in _modules)
-            {
-                if (keyValuePair.Value is IEventModule eventModule)
-                {
-                    eventModule.UnRegisterEvent();
-                }
-                keyValuePair.Value.Dispose();
-            }
+            // var modules =_modules.Values.Reverse().ToList();
+            // foreach (var module in modules)
+            // {
+            //     if (module is IEventModule eventModule)
+            //     {
+            //         eventModule.UnRegisterEvent();
+            //     }
+            //     module.Dispose();
+            // }
             _modules = null;
             _executionModule = null;
             _laterExecutionModule = null;
@@ -168,8 +172,8 @@ namespace PowerCellStudio
         {
             foreach (var (key, value) in _modules)
             {
-                if (!(value is IOnGameResetModule)) continue;
-                (value as IOnGameResetModule).OnGameReset();
+                if (value is IOnGameResetModule onGameResetModule)
+                    onGameResetModule.OnGameReset();
             }
         }
 

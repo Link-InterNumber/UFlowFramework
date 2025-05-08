@@ -69,10 +69,10 @@ namespace PowerCellStudio
             inputTargetFixedFrameRate.onEndEdit.AddListener(OnTargetFixedFrameRateDropdownChange);
             
             DebugBtn.onLoged += OnLoged;
-            btnClearLog.onClick.AddListener(OnClickClearLog)
-            tglLog.onValueChange.AddListener(OnClickLog);
-            tglWarning.onValueChange.AddListener(OnClickWarning);
-            tglError.onValueChange.AddListener(OnClickError);
+            btnClearLog.onClick.AddListener(OnClickClearLog);
+            tglLog.onValueChanged.AddListener(OnClickLog);
+            tglWarning.onValueChanged.AddListener(OnClickWarning);
+            tglError.onValueChanged.AddListener(OnClickError);
             UpdateLogs();
 
         }
@@ -102,15 +102,15 @@ namespace PowerCellStudio
             inputTimeScale.onEndEdit.RemoveListener(OnInputTimeScale);
             inputTargetFixedFrameRate.onEndEdit.RemoveListener(OnTargetFixedFrameRateDropdownChange);
             DebugBtn.onLoged -= OnLoged;
-            btnClearLog.onClick.RemoveListener(OnClickClearLog)
-            tglLog.onValueChange.RemoveListener(OnClickLog);
-            tglWarning.onValueChange.RemoveListener(OnClickWarning);
-            tglError.onValueChange.RemoveListener(OnClickError);
+            btnClearLog.onClick.RemoveListener(OnClickClearLog);
+            tglLog.onValueChanged.RemoveListener(OnClickLog);
+            tglWarning.onValueChanged.RemoveListener(OnClickWarning);
+            tglError.onValueChanged.RemoveListener(OnClickError);
         }
 
         private void OnLoged(DebugBtn.LogInfo logInfo)
         {
-            switch(LogInfo.logType)
+            switch(logInfo.logType)
             {
                 case LogType.Log:
                     if (!tglLog.isOn) return;

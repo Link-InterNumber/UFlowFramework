@@ -48,7 +48,6 @@ Material:
     m_Colors:
     - _GrayColor: {r: 0.17188221, g: 0.7830189, b: 0, a: 0}
   m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!114 &4813853412986343711
 MonoBehaviour:
   m_ObjectHideFlags: 11

@@ -234,8 +234,8 @@ namespace PowerCellStudio
 
         public void UnRegisterEvent()
         {
-            EventManager.instance.onStartGame.RemoveListener(InitRuntimeData);
-            EventManager.instance.onResetGame.RemoveListener(ClearRuntimeData);
+            EventManager.instance?.onStartGame.RemoveListener(InitRuntimeData);
+            EventManager.instance?.onResetGame.RemoveListener(ClearRuntimeData);
         }
 
         private  void InitRuntimeData()

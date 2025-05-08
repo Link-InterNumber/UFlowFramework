@@ -4,6 +4,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.UI.Extensions.ColorPicker;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace PowerCellStudio
 {

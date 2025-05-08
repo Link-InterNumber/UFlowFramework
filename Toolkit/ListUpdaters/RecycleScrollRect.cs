@@ -106,8 +106,8 @@ namespace PowerCellStudio
             {
                 _dataList.Add(datas[i]);
             }
-            Init();
-            // ApplicationManager.instance.StartCoroutine(DelayInit());
+            // Init();
+            ApplicationManager.instance.StartCoroutine(DelayInit());
         }
 
         private IEnumerator DelayInit()
