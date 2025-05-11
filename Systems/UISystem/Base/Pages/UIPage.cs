@@ -31,6 +31,9 @@ namespace PowerCellStudio
         {
             AssetUtils.DeSpawnLoader(_assetsLoader);
             _assetsLoader = null;
+            _children = null;
+            _openedUIs = null;
+            _windowRequests = null;
         }
 
         public void OpenUI<T>(object data, Action beforeOpen = null) where T : UIBehaviour, IUIChild

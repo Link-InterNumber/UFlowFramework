@@ -47,6 +47,7 @@ namespace PowerCellStudio
         
         private IEnumerator LoadAssetTable()
         {
+            if (_assetTable) _assetTable.ReleaseAssets();
             var operationHandle = LocalizationSettings.AssetDatabase.GetTableAsync(ConstSetting.LocalizationAssetTable);
             yield return operationHandle;
             if (operationHandle.Status == AsyncOperationStatus.Succeeded)
@@ -77,6 +78,17 @@ namespace PowerCellStudio
             var entry = _stringTable.GetEntry(key);
             result = entry?.GetLocalizedString() ?? key;
             return entry != null;
+        }
+        
+        public AsyncOperationHandle<T> GetAssetAsync<T>(string key) where T : UnityEngine.Object
+        {
+            if (_assetTable == null) return default;
+            return _assetTable.GetAssetAsync<T>(key);
+        }
+
+        public void ReleaseAsset(string key)
+        {
+            _assetTable.ReleaseAsset(key);
         }
         
         public string GetAssetGuid(string key)

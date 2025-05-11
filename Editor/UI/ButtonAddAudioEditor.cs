@@ -1,4 +1,6 @@
-﻿using UnityEditor;
+﻿#if UNITY_EDITOR
+
+using UnityEditor;
 using UnityEditor.UI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -65,3 +67,5 @@ namespace PowerCellStudio
         }
     }
 }
+
+#endif

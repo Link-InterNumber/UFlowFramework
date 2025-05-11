@@ -106,8 +106,8 @@ namespace PowerCellStudio
             {
                 _dataList.Add(datas[i]);
             }
-            Init();
-            // ApplicationManager.instance.StartCoroutine(DelayInit());
+            // Init();
+            ApplicationManager.instance.StartCoroutine(DelayInit());
         }
 
         private IEnumerator DelayInit()
@@ -285,6 +285,12 @@ namespace PowerCellStudio
                 if(i == index) continue;
                 newdata.Add(_dataList[i]);
             }
+            UpdateList(newdata);
+        }
+
+        public void Clear()
+        {
+            var newdata = new List<object>();
             UpdateList(newdata);
         }
 

@@ -3,6 +3,8 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.UI.Extensions.ColorPicker;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace PowerCellStudio
 {
@@ -34,17 +36,37 @@ namespace PowerCellStudio
                 img.color = _yellow;
                 UIManager.instance.OpenWindow<DebugWindow>();
             });
+            logInfos = new List<LogInfo>();
             Application.logMessageReceivedThreaded += OnLogReceived;
         }
         
         protected void OnDestroy()
         {
             Application.logMessageReceivedThreaded -= OnLogReceived;
+            logInfos = null;
         }
+
+        public struct LogInfo
+        {
+            public LogType logType;
+            public string condition;
+            public string stacktrace;
+        }
+
+        public static List<LogInfo> logInfos;
+        public static Action<LogInfo> onLoged;
         
         private void OnLogReceived(string condition, string stacktrace, LogType type)
         {
-            if(type  == LogType.Log || type == LogType.Warning) return;
+            var newLog = new LogInfo()
+            {
+                logType = type,
+                condition = condition,
+                stacktrace = stacktrace,
+            };
+            logInfos.Add(newLog);
+            onLoged?.Invoke(newLog);
+            if (type == LogType.Log || type == LogType.Warning) return;
             _errorCount++;
             img.color = _red;
         }

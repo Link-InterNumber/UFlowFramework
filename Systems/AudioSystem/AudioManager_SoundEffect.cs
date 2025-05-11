@@ -50,7 +50,7 @@ namespace PowerCellStudio
         
         private void DeinitEffectPlayer()
         {
-            PoolManager.instance.UnRegister<PoolableAudioSource>(PoolManager.PoolGroupName.Effect);
+            PoolManager.instance?.UnRegister<PoolableAudioSource>(PoolManager.PoolGroupName.Effect);
             _onGoingRequests?.Clear(); 
             _audioRequests?.Clear();
             _onGoingRequestSet?.Clear();

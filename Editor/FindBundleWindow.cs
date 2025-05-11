@@ -19,7 +19,7 @@ namespace PowerCellStudio
             DrawButton("计算bundle加载消耗", ShowLoadBundleCost);
             if (!string.IsNullOrEmpty(_printResult))
             {
-                _scrollPosition =  GUILayout.BeginScrollView(_scrollPosition);
+                _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
                 GUILayout.Label(_printResult, new GUIStyle(){richText = true, normal = new GUIStyleState{textColor = Color.white}});
                 GUILayout.EndScrollView();
             }

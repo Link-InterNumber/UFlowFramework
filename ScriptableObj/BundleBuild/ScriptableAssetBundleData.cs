@@ -6,22 +6,21 @@ namespace PowerCellStudio
     [Serializable]
     public struct ScriptableAssetBundleData
     {
-        public override int GetHashCode()
-        {
-            return hashCode;
-        }
+        // public override int GetHashCode()
+        // {
+        //     return hashCode;
+        // }
 
-        public int hashCode;
+        // public int hashCode;
         public string assetName;
         public string assetBundle;
-        private int fffff;
-
+ 
         public override string ToString()
         {
             var sb = new StringBuilder();
             sb.Append("AssetBundleData : { ");
 
-            sb.AppendFormat("hashCode: {0}, ", hashCode);
+            // sb.AppendFormat("hashCode: {0}, ", hashCode);
             sb.AppendFormat("assetName: {0}, ", assetName);
             sb.AppendFormat("assetBundle: {0} ", assetBundle);
             sb.Append(" }");
@@ -34,7 +33,7 @@ namespace PowerCellStudio
 
             var o = (ScriptableAssetBundleData)obj;
 
-            if (hashCode != o.hashCode) return false;
+            // if (hashCode != o.hashCode) return false;
             if (assetName != o.assetName) return false;
             if (assetBundle != o.assetBundle) return false;
 

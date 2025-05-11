@@ -6,245 +6,120 @@ using MoreLinq;
 using UnityEngine;
 
 namespace PowerCellStudio
-{
-    public interface IBinaryTreeNode
+{    
+    public class BinaryTree<T> : IEnumerable<T> where T : IComparable<T> 
     {
-        public int ToInt();
-    }
-    
-    public class BinaryTree<T> : IEnumerable<T> where T : class, IBinaryTreeNode 
-    {
-        private int _maxObject;
-        private int _maxLevel;
-        private int _level;
-        private HashSet<T> _objects;
-        private int _objectNum;
-        private BinaryTree<T>[] _children;
-        private int _center;
-        private int _extendsMin;
-        private int _extendsMax;
-        private bool _isLeaf;
-
-        public int NodeCount => _objectNum;
-
-        public int Count
+        private class BinaryTreeNode<K> where K : IComparable<K> 
         {
-            get
+            public int deepLv;
+            public K valueT;
+
+            public BinaryTreeNode<K> left;
+
+            public BinaryTreeNode<K> right;
+
+            public BinaryTreeNode(K v, int deepLv)
             {
-                return _isLeaf ? _objectNum : _children.Sum(o => o.Count);
+                valueT = v;
+                this.deepLv = deepLv;
             }
         }
 
-        public BinaryTree(int maxLevel, int center, int extends, int maxCount = 10)
+        private BinaryTreeNode<T> _root;
+        private HashSet<T> _objects;
+        private List<T> _rawData;
+
+        private int _deep;
+        private int _nodeCount;
+
+        public int Count => _nodeCount;
+
+        public BinaryTree()
         {
-            _maxLevel = maxLevel;
-            _level = 0;
-            _maxObject = maxCount;
+            _rawData = new List<T>();
             _objects = new HashSet<T>();
-            _objectNum = 0;
-            _children = new BinaryTree<T>[2];
-            _center = center;
-            _extendsMin = center - extends;
-            _extendsMax = center + extends;
-            _isLeaf = true;
-            Split();
-        }
-        
-        private BinaryTree(int maxLevel, int lv, int center, int extends, int maxCount)
-        {
-            _maxLevel = maxLevel;
-            _level = lv;
-            _maxObject = maxCount;
-            _objects = new HashSet<T>();
-            _objectNum = 0;
-            _children = new BinaryTree<T>[2];
-            _center = center;
-            _extendsMin = center - extends;
-            _extendsMax = center + extends;
-            _isLeaf = true;
         }
 
         public void Clear()
         {
+            _rawData.Clear();
+            _root = null;
             _objects.Clear();
-            foreach (var quadTree in _children)
-            {
-                quadTree.Clear();
-            }
-            Array.Clear(_children, 0, _children.Length);
-            _isLeaf = true;
-            _objectNum = 0;
-        }
-
-        private void Split()
-        {
-            _isLeaf = false;
-            for (int i = 0; i < 2; i++)
-            {
-                var newCenter = _center;
-                switch (i)
-                {
-                    case 0:
-                        newCenter = Mathf.CeilToInt((_extendsMin + _center) * 0.5f);
-                        break;
-                    case 1:
-                        newCenter = Mathf.FloorToInt((_extendsMax + _center) * 0.5f);
-                        break;
-                }
-                _children[i] = new BinaryTree<T>(_maxLevel, _level + 1, newCenter, _center - _extendsMin, _maxObject);
-            }
-
-            foreach (var o in _objects)
-            {
-                Insert(o);
-            }
-            _objects.Clear();
-            _objectNum = 0;
-        }
-
-        private void Combine()
-        {
-            if(_isLeaf) return;
-            foreach (var quadTree in _children)
-            {
-                foreach (var quadTreeNode in quadTree)
-                {
-                    _objects.Add(quadTreeNode);
-                    _objectNum++;
-                }
-            }
-            Array.Clear(_children, 0, _children.Length);
-            _isLeaf = true;
+            _nodeCount= 0;
+            _deep = 0;
         }
 
         public void Insert(T obj)
         {
-            if (_isLeaf)
-            {
-                if (_objectNum >= _maxObject && _level < _maxLevel)
-                {
-                    Split();
-                    Insert(obj);
-                    return;
-                }
-                _objects.Add(obj);
-                _objectNum++;
-            }
-            else
-            {
-                var index = GetIndex(obj);
-                _children[index].Insert(obj);
-            }
+            if (obj == null || _objects.Contains(obj)) return;
+            _objects.Add(obj);
+            _rawData.Add(obj);
+            _nodeCount ++;
         }
 
-        public void Remove(T obj)
+        public bool Remove(T obj)
         {
-            if (_isLeaf)
+            if (obj == null || !_objects.Contains(obj)) return false;
+            _objects.Remove(obj);
+            int index = _rawData.BinarySearch(obj);
+            if (index > -1) 
             {
-                if (_objects.Remove(obj))
-                {
-                    _objectNum--;
-                    _objectNum = Mathf.Max(0, _objectNum);
-                }
+                _rawData.RemoveAt(index);
+                _nodeCount ++;
             }
-            else
-            {
-                var index = GetIndex(obj);
-                _children[index].Remove(obj);
-                if(_level == 0) return;
-                if(!_children[0]._isLeaf) return;
-                if (Count <= _maxObject)
-                {
-                    Combine();
-                }
-            }
+            return index > 0;
+        }
+
+        public void Build()
+        {
+            _rawData.Sort();
+            var centerIndex = (int)Math.Floor(_rawData.Count / 2f);
+            _deep = 1;
+            _root = new BinaryTreeNode<T>(_rawData[centerIndex], _deep);
+            _root.left = BuildHandler(_root, 0 , centerIndex);
+            _root.right = BuildHandler(_root, centerIndex + 1, _rawData.Count - centerIndex - 1);
+        }
+
+        private BinaryTreeNode<T> BuildHandler(BinaryTreeNode<T> root, int startIndex, int subListLength)
+        {
+            if (subListLength < 1) return null;
+            var deep = root.deepLv + 1;
+            if (subListLength == 1) return new BinaryTreeNode<T>(_rawData[startIndex], deep);
+            var centerIndex = (int) Math.Floor((startIndex + subListLength - 1) / 2f);
+            var newNode = new BinaryTreeNode<T>(_rawData[centerIndex], deep);
+            newNode.left = BuildHandler(newNode, startIndex , centerIndex - startIndex);
+            newNode.right = BuildHandler(newNode, centerIndex + 1, subListLength + startIndex - 1 - centerIndex);
+            return newNode;
         }
 
         private int GetIndex(T obj)
         {
-            var objV2 = obj.ToInt();
-            return GetIndex(objV2);
-        }
-
-        private int GetIndex(int objV2)
-        {
-            var delta = objV2 -_center;
-            var index = 0;
-            if (delta > 0)
-            {
-                index = 1;
-            }
-            return index;
-        }
-
-        public T[] GetBranch(T obj)
-        {
-            if (_isLeaf)
-            {
-                return _objects.ToArray();
-            }
-            var index = GetIndex(obj);
-            return _children[index].GetBranch(obj);
+            int index = _rawData.BinarySearch(obj);
+            return index > -1? index : -1;
         }
         
-        public IEnumerable<T> GetBranch(int objPos)
-        {
-            if (_isLeaf)
-            {
-                return _objects;
-            }
-            var index = GetIndex(objPos);
-            return _children[index].GetBranch(objPos);
-        }
-
-        public T Find(T obj, bool approximately = true)
-        {
-            if (_isLeaf)
-            {
-                if (_objectNum == 0) return default;
-                if (!approximately && _objects.Contains(obj)) return obj;
-                return _objects.MinBy(o => Mathf.Abs(obj.ToInt() - o.ToInt())).First();
-            }
-            var index = GetIndex(obj);
-            return _children[index].Find(obj, approximately);
-        }
-        
-        public T Find(int objPos, bool approximately = true)
-        {
-            if (_isLeaf)
-            {
-                if (_objectNum == 0) return default;
-                if (!approximately)
-                {
-                    foreach (var quadTreeNode in _objects)
-                    {
-                        if (quadTreeNode.ToInt().Equals(objPos)) return quadTreeNode;
-                    }
-                    return default;
-                }
-                return _objects.MinBy(o => Mathf.Abs(objPos - o.ToInt())).First();
-            }
-            var index = GetIndex(objPos);
-            return _children[index].Find(objPos, approximately);
-        }
+        // public T Find(int objPos, bool approximately = true)
+        // {
+        //     if (_isLeaf)
+        //     {
+        //         if (_objectNum == 0) return default;
+        //         if (!approximately)
+        //         {
+        //             foreach (var quadTreeNode in _objects)
+        //             {
+        //                 if (quadTreeNode.ToInt().Equals(objPos)) return quadTreeNode;
+        //             }
+        //             return default;
+        //         }
+        //         return _objects.MinBy(o => Mathf.Abs(objPos - o.ToInt())).First();
+        //     }
+        //     var index = GetIndex(objPos);
+        //     return _children[index].Find(objPos, approximately);
+        // }
 
         public IEnumerator<T> GetEnumerator()
         {
-            if (_isLeaf)
-            {
-                foreach (var quadTreeNode in _objects)
-                {
-                    yield return quadTreeNode;
-                }
-            }
-            foreach (var quadTreeNodes in _children)
-            {
-                using var enumerator = quadTreeNodes.GetEnumerator();
-                while (enumerator.MoveNext())
-                {
-                    yield return enumerator.Current;
-                }
-            }
+            return _rawData.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

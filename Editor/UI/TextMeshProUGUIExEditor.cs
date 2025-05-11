@@ -68,7 +68,7 @@ namespace PowerCellStudio
             }
 
             var newText = Selection.activeGameObject.AddComponent<TextMeshProUGUIEx>();
-            var fontPath = EditorPrefs.GetString(EditorSettingWindow.EditorSettingKey.textMeshProFontPath, EditorSettingWindow.EditorSettingSave.defaultTextMeshProFontPath);
+            var fontPath = EditorPrefs.GetString(FontSettingItem.textMeshProFontPath, FontSettingItem.defaultTextMeshProFontPath);
             var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(fontPath);
             if (font) newText.font = font;
             newText.text = replaceInfo.textString;
@@ -92,7 +92,7 @@ namespace PowerCellStudio
             text.alignment = TextAlignmentOptions.Midline;
             text.text = "Text..";
             text.raycastTarget = false;
-            var fontPath = EditorPrefs.GetString(EditorSettingWindow.EditorSettingKey.textMeshProFontPath, EditorSettingWindow.EditorSettingSave.defaultTextMeshProFontPath);
+            var fontPath = EditorPrefs.GetString(FontSettingItem.textMeshProFontPath, FontSettingItem.defaultTextMeshProFontPath);
             var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(fontPath);
             if (font) text.font = font;
             return text;

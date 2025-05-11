@@ -213,16 +213,17 @@ namespace PowerCellStudio
             callBack?.Invoke();
         }
 
-        public bool CheckWithID = false;
+        // public bool CheckWithID = false;
 
         public string GetBundleNameByAsset(string path)
         {
             if (!_inited) throw new Exception("AssetsBundleManager do not inited!!!");
             var lowerPath = path.ToLower();
             if (!_assetBundleDatas.TryGetValue(lowerPath, out var matched)) return string.Empty;
-            if (!CheckWithID) return matched.assetBundle;
-            var id = lowerPath.GenHashCode();
-            return matched.hashCode.Equals(id) ? matched.assetBundle : string.Empty;
+            return matched.assetBundle;
+            // if (!CheckWithID) return matched.assetBundle;
+            // var id = lowerPath.GenHashCode();
+            // return matched.hashCode.Equals(id) ? matched.assetBundle : string.Empty;
         }
 
         #region BundleDependence
