@@ -79,6 +79,12 @@ namespace PowerCellStudio
             return entry != null;
         }
         
+        public AsyncOperationHandle<T> GetAssetAsync<T>(string key) where T : UnityEngine.Object
+        {
+            if (_assetTable == null) return default;
+            return _assetTable.GetAssetAsync<T>(key);
+        }
+        
         public string GetAssetGuid(string key)
         {
             if (_assetTable == null) return string.Empty;

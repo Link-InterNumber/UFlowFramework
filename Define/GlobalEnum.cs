@@ -89,7 +89,7 @@ namespace PowerCellStudio
         ChineseSimplified = 0,
         ChineseTraditional,
         English,
-        // Japanese
+        Japanese
     }
     
     /// <summary>
