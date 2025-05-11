@@ -39,6 +39,16 @@ namespace PowerCellStudio
         public static readonly string LocalizationStringTable = "ThiefHero";
         
         public static readonly string LocalizationAssetTable = "ThiefHeroAsset";
+        
+        /// <summary>
+        /// 本地化资源配置文件夹
+        /// </summary>
+        public static readonly string LocalizationAssetConfigFolder = "AssetLocalizationData";
+
+        /// <summary>
+        /// 本地化资源配置文件名
+        /// </summary>
+        public static readonly string LocalizationAssetConfigName = "AssetLocalizationData.asset";
 
         public static readonly int MillionInt = 10000;
         

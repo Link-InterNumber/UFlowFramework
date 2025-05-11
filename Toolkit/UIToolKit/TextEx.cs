@@ -32,8 +32,8 @@ namespace PowerCellStudio
         {
             base.OnDestroy();
             _paramCache = null;
-            localizationKey = null;
             if(!Application.isPlaying) return;
+            localizationKey = null;
             EventManager.instance.onLanguageChange.RemoveListener(OnLocalChange);
             EventManager.instance.onLanguageChange.RemoveListener(ChangeFont);
         }

@@ -47,6 +47,7 @@ namespace PowerCellStudio
         
         private IEnumerator LoadAssetTable()
         {
+            if (_assetTable) _assetTable.ReleaseAssets();
             var operationHandle = LocalizationSettings.AssetDatabase.GetTableAsync(ConstSetting.LocalizationAssetTable);
             yield return operationHandle;
             if (operationHandle.Status == AsyncOperationStatus.Succeeded)
@@ -83,6 +84,11 @@ namespace PowerCellStudio
         {
             if (_assetTable == null) return default;
             return _assetTable.GetAssetAsync<T>(key);
+        }
+
+        public void ReleaseAsset(string key)
+        {
+            _assetTable.ReleaseAsset(key);
         }
         
         public string GetAssetGuid(string key)
