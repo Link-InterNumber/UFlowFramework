@@ -16,6 +16,7 @@ namespace PowerCellStudio
         private SerializedProperty _direction;
         private SerializedProperty _optimize;
         private SerializedProperty _spacing;
+        private SerializedProperty _numPerLine
         private RecycleScrollRect recycleScrollRect => target as RecycleScrollRect;
         
         private void OnEnable()
@@ -27,6 +28,7 @@ namespace PowerCellStudio
             _direction = serializedObject.FindProperty("direction");
             _optimize = serializedObject.FindProperty("optimize");
             _spacing = serializedObject.FindProperty("spacing");
+            _numPerLine = serializedObject.FindProperty("numPerLine");
         }
 
         public override void OnInspectorGUI()
@@ -43,51 +45,35 @@ namespace PowerCellStudio
                 {
                     _spacing.floatValue = verticalLayoutGroup.spacing;
                     _direction.enumValueIndex = (int) RecycleScrollRect.ListDirection.VERTICAL;
+                    _numPerLine.intValue = 1;
                 }
                 else if(_layoutGroup.objectReferenceValue is HorizontalLayoutGroup horizontalLayoutGroup)
                 {
                     _spacing.floatValue = horizontalLayoutGroup.spacing;
                     _direction.enumValueIndex = (int) RecycleScrollRect.ListDirection.HORIZONTAL;
+                    _numPerLine.intValue = 1;
+                }
+                else if(_layoutGroup.objectReferenceValue is GridLayoutGroup gridLayoutGroup)
+                {
+
                 }
                 else
                 {
                     _layoutGroup.objectReferenceValue = null;
+                    _numPerLine.intValue = 1;
                     Debug.LogError("ListManager needs a [VerticalLayoutGroup] or a [HorizontalLayoutGroup]!");
                 }
             }
             else
             {
+                _numPerLine.intValue = 1;
                 _spacing.floatValue = 0f;
                 _direction.enumValueIndex = (int) RecycleScrollRect.ListDirection.HORIZONTAL;
             }
             EditorGUILayout.PropertyField(_layoutGroup);
             EditorGUILayout.PropertyField(_direction);
             EditorGUILayout.PropertyField(_spacing);
-            // if(!EditorGUI.EndChangeCheck() || !_listManager)
-            // {
-            //     serializedObject.ApplyModifiedProperties();
-            //     return;
-            // }
-            
-            // if ((ListManager.ListDirection) _direction.enumValueIndex == ListManager.ListDirection.VERTICAL)
-            // {
-            //     var hl = _listManager.GetComponent<HorizontalLayoutGroup>();
-            //     if (hl) GameObject.DestroyImmediate(hl);
-            //     if(!_listManager.GetComponent<VerticalLayoutGroup>())
-            //     {
-            //         _layoutGroup.objectReferenceValue = _listManager.AddComponent<VerticalLayoutGroup>();
-            //     }
-            //     serializedObject.ApplyModifiedProperties();
-            // }
-            // else
-            // {
-            //     var vl = _listManager.GetComponent<VerticalLayoutGroup>();
-            //     if (vl) GameObject.DestroyImmediate(vl);
-            //     if(!_listManager.GetComponent<HorizontalLayoutGroup>())
-            //     {
-            //         _layoutGroup.objectReferenceValue = _listManager.AddComponent<HorizontalLayoutGroup>();
-            //     }
-            // }
+            EditorGUILayout.PropertyField(_numPerLine);
             serializedObject.ApplyModifiedProperties();
         }
     }

@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace PowerCellStudio
 {
-    public sealed class RecycleScrollRect : MonoBehaviour, IEnumerable, IListUpdater
+    public partial class RecycleScrollRect : MonoBehaviour, IEnumerable, IListUpdater
     {
         #region define
 
@@ -27,6 +27,8 @@ namespace PowerCellStudio
 
         #endregion
         
+        #region opened field
+        
         public LayoutGroup layoutGroup;
         public ScrollRect scroll;
         public Mask maskObj;
@@ -34,6 +36,9 @@ namespace PowerCellStudio
         public ListDirection direction = ListDirection.HORIZONTAL;
         public float spacing;
         public bool optimize = true;
+        public int numPerLine;
+        
+        #endregion
         
         private int _count = 1;
         public int count => _count;
@@ -75,8 +80,8 @@ namespace PowerCellStudio
             _container.anchorMin = Vector2.up;
             _container.anchorMax = Vector2.up;
             _container.pivot = Vector2.up;
-            var ContentSizeFitter = _container.GetComponent<ContentSizeFitter>();
-            if(ContentSizeFitter) ContentSizeFitter.enabled = false;
+            var contentSizeFitter = _container.GetComponent<ContentSizeFitter>();
+            if (contentSizeFitter) contentSizeFitter.enabled = false;
         }
         
         private void OnDestroy()
@@ -92,6 +97,7 @@ namespace PowerCellStudio
         public void UpdateList(IList datas, bool destroyUnused = false)
         {
             if (datas == null) return;
+            numPerLine = Mathf.Max(1, numPerLine);
             _count = datas.Count;
             _itemDict.Clear();
             if (_dataList == null) _dataList = new List<object>();
@@ -123,12 +129,18 @@ namespace PowerCellStudio
             Vector2 prefabRectSize = prefab.rect.size;
             _prefabSize = (direction == ListDirection.HORIZONTAL ? prefabRectSize.x : prefabRectSize.y) + spacing;
 
-            _container.sizeDelta = direction == ListDirection.HORIZONTAL
-                ? (new Vector2(_prefabSize * _count - spacing + _padding.left + _padding.right, prefabRectSize.y + _padding.top * 2f))
-                : (new Vector2(prefabRectSize.x + _padding.left * 2f, _prefabSize * _count - spacing + _padding.top + _padding.bottom));
-            // _containerHalfSize = direction == ListDirection.HORIZONTAL
-            //     ? (_container.rect.size.x * 0.5f)
-            //     : (_container.rect.size.y * 0.5f);
+            if (direction == ListDirection.HORIZONTAL)
+            {
+                var w = _prefabSize * _count - spacing + _padding.left + _padding.right;
+                var h = prefabRectSize.y + _padding.top * 2f;
+                _container.sizeDelta = new Vector2(w, h);
+            }
+            else
+            {
+                var w = prefabRectSize.x + _padding.left * 2f;
+                var h = _prefabSize * _count - spacing + _padding.top + _padding.bottom;
+                _container.sizeDelta = new Vector2(w, h);
+            }
 
             _numVisible = Mathf.CeilToInt((direction == ListDirection.HORIZONTAL ? _maskRT.rect.width : _maskRT.rect.height) / _prefabSize);
 
