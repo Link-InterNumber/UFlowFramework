@@ -110,6 +110,7 @@ namespace PowerCellStudio
 
         private void OnLoged(DebugBtn.LogInfo logInfo)
         {
+            if (!ApplicationManager.instance) return;
             switch(logInfo.logType)
             {
                 case LogType.Log:

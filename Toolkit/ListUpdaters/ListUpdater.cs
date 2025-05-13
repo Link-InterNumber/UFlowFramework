@@ -128,8 +128,7 @@ namespace PowerCellStudio
                 var item = transform.GetChild(i).GetComponent<IListItem>();
                 if (item == null) continue;
                 var o = data[i];
-                item.itemHolder = this;
-                item.UpdateContent(i, o);
+                item.UpdateContent(i, o, this);
                 yield return new WaitForSeconds(interval);;
             }
             _updateCoroutine = null;
@@ -153,8 +152,7 @@ namespace PowerCellStudio
                 var item = go.GetComponent<IListItem>();
                 if (item == null) continue;
                 var o = data[i];
-                item.itemHolder = this;
-                item.UpdateContent(i, o);
+                item.UpdateContent(i, o, this);
             }
 
             if (destroyUnused)
@@ -207,8 +205,7 @@ namespace PowerCellStudio
             if (index < 0 || index >= transform.childCount) return;
             var item = transform.GetChild(index).GetComponent<IListItem>();
             if (item == null) return;
-            item.itemHolder = this;
-            item.UpdateContent(index, data);
+            item.UpdateContent(index, data, this);
         }
 
         public void AddItem(int index, object data)
@@ -231,8 +228,7 @@ namespace PowerCellStudio
                 go.SetActive(true);
                 var item = go.GetComponent<IListItem>();
                 if (item == null) return;
-                item.itemHolder = this;
-                item.UpdateContent(realIndex, data);
+                item.UpdateContent(realIndex, data, this);
                 
                 for (int i = index; i < transform.childCount; i++)
                 {
@@ -250,8 +246,7 @@ namespace PowerCellStudio
             itemGo.SetSiblingIndex(Mathf.Min(index, usedIndex));
             var item1 = itemGo.GetComponent<IListItem>();
             if (item1 == null) return;
-            item1.itemHolder = this;
-            item1.UpdateContent(Mathf.Min(index, usedIndex), data);
+            item1.UpdateContent(Mathf.Min(index, usedIndex), data, this);
             for (int i = index; i < transform.childCount; i++)
             {
                 var child = transform.GetChild(i);

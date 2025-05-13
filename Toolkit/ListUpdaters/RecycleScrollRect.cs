@@ -34,17 +34,13 @@ namespace PowerCellStudio
         public Mask maskObj;
         public RectTransform prefab;
         public ListDirection direction = ListDirection.HORIZONTAL;
-        public float spacing;
         public bool optimize = true;
-        public int numPerLine;
         
         #endregion
         
         private int _count = 1;
         public int count => _count;
         private RectTransform _container => scroll.content;
-        private RectTransform _maskRT;
-        private int _numVisible;
         private int _numBuffer = 1;
         public int numberBuffer
         {
@@ -52,14 +48,11 @@ namespace PowerCellStudio
             set => _numBuffer = Math.Max(1, value);
         }
         // private float _containerHalfSize;
-        private float _prefabSize;
-        private RectOffset _padding;
 
         private Dictionary<int, RecycleItem> _itemDict = new Dictionary<int, RecycleItem>();
-        private int _numItems = 0;
-        private Vector2 _startPos;
-        private Vector2 _offsetVec;
         private List<object> _dataList;
+
+        private IRecycleScrollRectLayout _layoutHandler;
 
         public event OnItemInteraction onItemInteraction;
 
@@ -72,11 +65,8 @@ namespace PowerCellStudio
         private void Awake()
         {
             layoutGroup.enabled = false;
-            _padding = layoutGroup.padding;
             if (!scroll) return;
-            if (optimize) scroll.onValueChanged.AddListener(ReorderItemsByPos);
-            scroll.horizontal = direction == ListDirection.HORIZONTAL;
-            scroll.vertical = direction == ListDirection.VERTICAL;
+            if (optimize) scroll.onValueChanged.AddListener(OnScrollValueChanged);
             _container.anchorMin = Vector2.up;
             _container.anchorMax = Vector2.up;
             _container.pivot = Vector2.up;
@@ -87,7 +77,7 @@ namespace PowerCellStudio
         private void OnDestroy()
         {
             if (!scroll) return;
-            if (optimize) scroll.onValueChanged.RemoveListener(ReorderItemsByPos);
+            if (optimize) scroll.onValueChanged.RemoveListener(OnScrollValueChanged);
         }
 
         /// <summary>
@@ -97,7 +87,6 @@ namespace PowerCellStudio
         public void UpdateList(IList datas, bool destroyUnused = false)
         {
             if (datas == null) return;
-            numPerLine = Mathf.Max(1, numPerLine);
             _count = datas.Count;
             _itemDict.Clear();
             if (_dataList == null) _dataList = new List<object>();
@@ -125,30 +114,24 @@ namespace PowerCellStudio
         // Use this for initialization
         private void Init()
         {
-            _maskRT = maskObj.GetComponent<RectTransform>(); 
             Vector2 prefabRectSize = prefab.rect.size;
-            _prefabSize = (direction == ListDirection.HORIZONTAL ? prefabRectSize.x : prefabRectSize.y) + spacing;
-
-            if (direction == ListDirection.HORIZONTAL)
+            
+            if (_layoutHandler == null)
             {
-                var w = _prefabSize * _count - spacing + _padding.left + _padding.right;
-                var h = prefabRectSize.y + _padding.top * 2f;
-                _container.sizeDelta = new Vector2(w, h);
-            }
-            else
-            {
-                var w = prefabRectSize.x + _padding.left * 2f;
-                var h = _prefabSize * _count - spacing + _padding.top + _padding.bottom;
-                _container.sizeDelta = new Vector2(w, h);
+                if (layoutGroup is GridLayoutGroup gridLayoutGroup)
+                {
+                    prefabRectSize = gridLayoutGroup.cellSize;
+                }
+                _layoutHandler = CreateLayoutHandler(prefabRectSize);
+                if (_layoutHandler == null) return;
+                _layoutHandler.InitScroll(scroll);
             }
 
-            _numVisible = Mathf.CeilToInt((direction == ListDirection.HORIZONTAL ? _maskRT.rect.width : _maskRT.rect.height) / _prefabSize);
-
-            _offsetVec = direction == ListDirection.HORIZONTAL ? Vector2.right : Vector2.down;
-            _startPos = _offsetVec * (direction == ListDirection.HORIZONTAL ? _padding.left : _padding.top);
-            _numItems = optimize ? Mathf.Min(_count, _numVisible + _numBuffer) : _count;
+            _container.sizeDelta = _layoutHandler.GetContainerSize(_count);
+            _layoutHandler.CalVisibleNum(maskObj.GetComponent<RectTransform>().rect.size, _numBuffer, out var numItems);
+            numItems = optimize ? Mathf.Min(_count, numItems) : _count;
             var anchorValue = Vector2.up;
-            for (int i = 0; i < _numItems; i++)
+            for (int i = 0; i < numItems; i++)
             {
                 var obj = _container.transform.childCount > i
                     ? _container.transform.GetChild(i).gameObject
@@ -157,18 +140,18 @@ namespace PowerCellStudio
                 t.anchorMax = anchorValue;
                 t.anchorMin = anchorValue;
                 t.pivot = anchorValue;
-                t.anchoredPosition = _startPos + (_offsetVec * (i * _prefabSize));
+                t.sizeDelta = prefabRectSize;
+                t.anchoredPosition = _layoutHandler.GetItemLocalPos(i);
                 obj.SetActive(true);
                 var li = obj.GetComponent<IListItem>();
-                li.itemHolder = this;
-                li.UpdateContent(i, _dataList[i]);
+                li?.UpdateContent(i, _dataList[i], this);
                 _itemDict.Add(i, new RecycleItem{index = i, transform = t, listItem = li});
             }
             var removeNumber = _container.transform.childCount;
-            if (_numItems < removeNumber)
+            if (numItems < removeNumber)
             {
                 var toDestroy = ListPool<GameObject>.Get();
-                for (int i = _numItems; i < removeNumber; i++)
+                for (int i = numItems; i < removeNumber; i++)
                 {
                     toDestroy.Add(_container.transform.GetChild(i).gameObject);
                 }
@@ -179,17 +162,37 @@ namespace PowerCellStudio
                 ListPool<GameObject>.Release(toDestroy);
             }
             _previousIndex = -1;
-            // _container.anchoredPosition += _offsetVec * (_containerHalfSize - ((direction == ListDirection.HORIZONTAL ? _maskRT.rect.width : _maskRT.rect.height) * 0.5f));
             ApplicationManager.instance.StartCoroutine(DelayReorderItemsByPos());
         }
-        
+
+        private IRecycleScrollRectLayout CreateLayoutHandler(Vector2 prefabRectSize)
+        {
+            if (layoutGroup is HorizontalLayoutGroup horizontalLayoutGroup)
+            {
+                return new RSHorizontalLayout(prefabRectSize, layoutGroup.padding,
+                    new Vector2(horizontalLayoutGroup.spacing, 0f));
+            }
+            if (layoutGroup is VerticalLayoutGroup verticalLayoutGroup)
+            {
+                return new RSVerticalLayout(prefabRectSize, layoutGroup.padding,
+                    new Vector2(0, verticalLayoutGroup.spacing));
+            }
+            if (layoutGroup is GridLayoutGroup gridLayoutGroup)
+            {
+                return new RSGridLayout(gridLayoutGroup.startAxis, prefabRectSize, layoutGroup.padding,
+                    gridLayoutGroup.spacing);
+            }
+
+            return null;
+        }
+
         private IEnumerator DelayReorderItemsByPos()
         {
             yield return null;
             ForceRebuild();
         }
 
-        private void ReorderItemsByPos(Vector2 normVector)
+        private void OnScrollValueChanged(Vector2 normVector)
         {
             ForceRebuild();
         }
@@ -201,13 +204,18 @@ namespace PowerCellStudio
         public void ForceRebuild()
         {
             if(_dataList == null) return;
+            
             var passLength = direction == ListDirection.HORIZONTAL
-                ? -_container.localPosition.x - _padding.left
-                : _container.localPosition.y - _padding.top;
-            passLength = Mathf.Clamp(passLength, 0f, (_count - _numVisible + 0.5f) * _prefabSize);
-            var firstIndex = Mathf.Clamp(Mathf.FloorToInt(passLength / _prefabSize), 0, _dataList.Count - _numVisible);
+                ? -_container.localPosition.x
+                : _container.localPosition.y;
+            var firstIndex = 0;
+            var maxVisibleIndex = _layoutHandler.visibleNum - 1 + _numBuffer;
+            _layoutHandler.GetViewIndexRange(passLength, _numBuffer, _count, ref  firstIndex, ref maxVisibleIndex);
+            // passLength = Mathf.Clamp(passLength, 0f, (_count - _numVisible + 0.5f) * _prefabSize);
+            // var firstIndex = Mathf.Clamp(Mathf.FloorToInt(passLength / _prefabSize), 0, _count - _numVisible);
+            
             if (_previousIndex == firstIndex) return;
-            var maxVisibleIndex = firstIndex + _numVisible - 1 + _numBuffer;
+            // var maxVisibleIndex = firstIndex + _numVisible - 1 + _numBuffer;
             var newKeys = ListPool<int>.Get();
             for (var i = firstIndex; i <= maxVisibleIndex; i++)
             {
@@ -226,7 +234,9 @@ namespace PowerCellStudio
                 ListPool<int>.Release(newKeys);
                 return;
             }
-            for (var i = 0; i < removeKeys.Count; i++)
+
+            var loopCount = Mathf.Min(removeKeys.Count, newKeys.Count);
+            for (var i = 0; i < loopCount; i++)
             {
                 var item = _itemDict[removeKeys[i]];
                 var newIndex = newKeys[i];
@@ -242,10 +252,9 @@ namespace PowerCellStudio
         private void MoveItemByIndex(RecycleItem item, int index)
         {
             var posIndex = (index >= 0 && index <= _dataList.Count - 1) ? index : -2;
-            item.transform.anchoredPosition = _startPos + (_offsetVec * (posIndex * _prefabSize));
+            item.transform.anchoredPosition = _layoutHandler.GetItemLocalPos(posIndex);
             if(_dataList.Count - 1 < index) return; 
-            item.listItem.itemHolder = this;
-            item.listItem.UpdateContent(index, _dataList[index]);
+            item.listItem?.UpdateContent(index, _dataList[index], this);
         }
 
         /// <summary>
@@ -264,8 +273,7 @@ namespace PowerCellStudio
             if (index > _dataList.Count - 1 || index < 0) return;
             _dataList[index] = data;
             if (!_itemDict.TryGetValue(index, out var item)) return;
-            item.listItem.itemHolder = this;
-            item.listItem.UpdateContent(index, data);
+            item.listItem?.UpdateContent(index, data, this);
         }
 
         public void AddItem(int index, object data)
@@ -309,7 +317,7 @@ namespace PowerCellStudio
         public IEnumerator GetEnumerator()
         {
             yield return _dataList.GetEnumerator();
-            ReorderItemsByPos(scroll.normalizedPosition);
+            // ReorderItemsByPos(scroll.normalizedPosition);
         }
 
         public object this[int index]

@@ -1,19 +1,16 @@
 ﻿using System.Linq;
-using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace PowerCellStudio
 {
-    public class TestListManager : MonoBehaviour
+    public class TestListManager : SceneMainBase
     {
-        [FormerlySerializedAs("listManager")] public RecycleScrollRect recycleScrollRect;
-        public GridManager gridManager;
+        public RecycleScrollRect recycleScrollRect;
         public int testNumber = 20;
 
-        private void OnEnable()
+        protected override void ReadyForStart()
         {
-            if(recycleScrollRect) recycleScrollRect.UpdateList(Enumerable.Repeat(1, testNumber).ToList());
-            if(gridManager) gridManager.UpdateList(Enumerable.Repeat(1, testNumber).ToList());
+            if (!recycleScrollRect) return;
+            recycleScrollRect.UpdateList(Enumerable.Range(0, testNumber).ToList());
         }
     }
 }

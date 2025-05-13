@@ -11,9 +11,9 @@ namespace PowerCellStudio
         public Text txtStack;
         public ScrollRect scrollRect;
 
-        public override void UpdateContent(int index, object data)
+        public override void UpdateContent(int index, object data, IListUpdater holder)
         {
-            base.UpdateContent(index, data);
+            base.UpdateContent(index, data, holder);
             var logInfo = (DebugBtn.LogInfo)data;
             switch (logInfo.logType)
             {

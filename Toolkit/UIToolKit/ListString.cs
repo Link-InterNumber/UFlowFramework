@@ -6,9 +6,9 @@ namespace PowerCellStudio
     {
         public Text txt;
         
-        public override void UpdateContent(int index, object data)
+        public override void UpdateContent(int index, object data, IListUpdater holder)
         {
-            base.UpdateContent(index, data);
+            base.UpdateContent(index, data, holder);
             if (data is string str)
             {
                 txt.text = str;
