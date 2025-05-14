@@ -29,11 +29,13 @@ namespace PowerCellStudio
             base.Awake();
             _cameraCom = transform.GetComponent<Camera>();
             _volume = transform.GetComponent<Volume>();
-            _cameraRoot = new GameObject("cameraRoot", _cameraCom.transform.parent);
+            _cameraRoot = new GameObject("cameraRoot").transform;
+            _cameraRoot.SetParent(_cameraCom.transform.parent); 
             _cameraRoot.localPosition = _cameraCom.transform.localPosition;
             _cameraRoot.localRotation = Quaternion.identity;
             _cameraCom.transform.SetParent(_cameraRoot);
             _cameraCom.transform.localPosition = Vector3.zero;
+            _rootOriginPos = _cameraRoot.localPosition;
         }
 
         private void Update()
@@ -64,7 +66,7 @@ namespace PowerCellStudio
             get => _offsetPosition;
             set
             {
-                _tweenSpeed = value;
+                _offsetPosition = value;
             }
         }
 
@@ -77,7 +79,7 @@ namespace PowerCellStudio
                 _inMoveTween = false;
                 return;
             }
-            _cameraCom.transform.localPosition = Mathf.LerpValue(_cameraCom.transform.localPosition, _targetPosition + _offsetPosition, dt * _tweenSpeed);
+            _cameraCom.transform.localPosition = Vector3.Lerp(_cameraCom.transform.localPosition, _targetPosition + _offsetPosition, dt * _tweenSpeed);
         }
 
         public void TweenTargetPos(Vector3 targetPos)
@@ -141,15 +143,18 @@ namespace PowerCellStudio
         //     public float shakeAmplitude = 0f; // 当前震动幅度（控制值）
         // }
 
+        private Vector3 _rootOriginPos;
         // public float shakeDuration = 1f; // 震动持续时间
         public float shakeFrequency = 25f; // Perlin Noise 的频率
+        public float shakeScale = 1f;
+        public float rotationShakeAmplitude = 15f;
         private float _shakeAmplitude = 0f; // 当前震动幅度（控制值）
         private float _shakeTime = 0f; // 当前震动时间
         private ShakeType _currentShakeType; // 当前震动类型
 
         private void CheckShake(float dt)
         {
-            if (_shakeTime <= 0) return
+            if (_shakeTime <= 0) return;
             // 根据震动类型执行不同的震动逻辑
             if ((_currentShakeType & ShakeType.Position) != 0)
             {
@@ -166,43 +171,54 @@ namespace PowerCellStudio
             // 如果震动结束，重置摄像机位置和旋转
             if (_shakeTime <= 0)
             {
-                _cameraRoot.transform.localPosition = Vector3.zero;
+                _cameraRoot.transform.localPosition = _rootOriginPos;
                 _cameraCom.transform.localRotation = Quaternion.identity;
                 _currentShakeType = ShakeType.None;
             }
         }
 
+        private float _shakeX, _shakeY;
+        
         /// <summary>
         /// 应用位移震动
         /// </summary>
         private void ApplyPositionShake(float dt)
         {
+            _shakeX += dt * shakeFrequency;
+            if (_shakeX > 1080f) _shakeX = 0f;
+            _shakeY += dt * shakeFrequency;
+            if (_shakeY > 1080f) _shakeY = 0f;
             // 使用 Perlin Noise 生成随机偏移
-            float noiseX = Mathf.PerlinNoise(dt * shakeFrequency, 0f) * 2f - 1f;
-            float noiseY = Mathf.PerlinNoise(0f, dt * shakeFrequency) * 2f - 1f;
+            float noiseX = Mathf.PerlinNoise(_shakeX, 0f) * 2f - 1f;
+            float noiseY = Mathf.PerlinNoise(0f, _shakeY) * 2f - 1f;
 
             // 根据控制值的平方计算实际震动幅度
-            float amplitude = _shakeAmplitude * _shakeAmplitude;
+            float amplitude = _shakeAmplitude * _shakeAmplitude * shakeScale;
 
             // 应用震动偏移
-            Vector3 shakeOffset = new Vector3(noiseX, noiseY, 0f) * amplitude;
+            Vector3 shakeOffset = new Vector3(noiseX * amplitude, noiseY * amplitude, _rootOriginPos.z);
             _cameraRoot.transform.localPosition = shakeOffset;
         }
 
+
+        private float _rotationXY;
+        
         /// <summary>
         /// 应用旋转震动
         /// </summary>
         private void ApplyRotationShake(float dt)
         {
+            _rotationXY += dt * shakeFrequency;
+            if (_rotationXY > 1080f) _rotationXY = 0f;
             // 使用 Perlin Noise 生成随机旋转
-            float noiseY = Mathf.PerlinNoise(dt * shakeFrequency, dt * shakeFrequency) * 2f - 1f;
+            float noiseY = Mathf.PerlinNoise(_rotationXY, _rotationXY) * 2f - 1f;
             // float noiseY = Mathf.PerlinNoise(0f, dt * shakeFrequency) * 2f - 1f;
 
             // 根据控制值的平方计算实际震动幅度
-            float amplitude = _shakeAmplitude * _shakeAmplitude;
+            float amplitude = _shakeAmplitude * _shakeAmplitude * shakeScale;
 
             // 应用震动旋转
-            Vector3 shakeRotation = new Vector3(0f, 0f, noiseY) * amplitude * 10f; // 旋转幅度可以适当放大
+            Vector3 shakeRotation = new Vector3(0f, 0f, noiseY) * (amplitude * rotationShakeAmplitude); // 旋转幅度可以适当放大
             _cameraCom.transform.localRotation = Quaternion.Euler(shakeRotation);
         }
 
