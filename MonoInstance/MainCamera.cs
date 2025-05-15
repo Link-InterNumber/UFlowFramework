@@ -185,9 +185,9 @@ namespace PowerCellStudio
         private void ApplyPositionShake(float dt)
         {
             _shakeX += dt * shakeFrequency;
-            if (_shakeX > 1080f) _shakeX = 0f;
+            if (_shakeX > 1080f || _shakeX < -1080f) _shakeX = 0f;
             _shakeY += dt * shakeFrequency;
-            if (_shakeY > 1080f) _shakeY = 0f;
+            if (_shakeY > 1080f || _shakeY < -1080f) _shakeY = 0f;
             // 使用 Perlin Noise 生成随机偏移
             float noiseX = Mathf.PerlinNoise(_shakeX, 0f) * 2f - 1f;
             float noiseY = Mathf.PerlinNoise(0f, _shakeY) * 2f - 1f;
