@@ -414,10 +414,29 @@ namespace PowerCellStudio
                 AddRef(name);
             }
         }
+
+        private static Dictionary<string, ILoaderYieldInstruction> _preloadHandles;
+
+        public void PreloadAsset(string path)
+        {
+            if (_preloadHandles == null) _preloadHandles = new Dictionary<string, ILoaderYieldInstruction>();
+            if (_preloadHandles.ContainsKey(path)) return;
+            var loadAssetRequest = new LoaderYieldInstruction<T>(path);
+            var bundleName = GetBundleNameByAsset(path);
+            LoadAssetAsync<Object>(bundleName, path, loadAssetRequest);
+            _preloadHandles.Add(path, handle);
+        }
         
         public LoaderYieldInstruction<T> LoadAsset<T>(string bundleName, string assetPath)
             where T : Object
         {
+            if (_preloadHandles.ContainsKey(assetPath))
+            {
+                var handle = _preloadHandles[assetPath];
+                _preloadHandles.Remove(assetPath);
+                return handle as LoaderYieldInstruction<T>;
+            }
+
             var loadAssetRequest = new LoaderYieldInstruction<T>(assetPath);
             if (GetAssetBundle(bundleName, out var bundle))
             {
@@ -440,6 +459,24 @@ namespace PowerCellStudio
             where T : Object
         {
             if (loadAssetRequest == null) return;
+            if (_preloadHandles.ContainsKey(assetPath))
+            {
+                var handle = _preloadHandles[assetPath];
+                _preloadHandles.Remove(assetPath);
+                if (handle.isDone)
+                {
+                    loadAssetRequest.SetAsset(handle.asset);
+                }
+                else
+                {
+                    handle.onLoadSuccess += (a, path) =>
+                    {
+                        loadAssetRequest.SetAsset(a);
+                    };
+                }
+                return;
+            }
+
             var loadBundleRequest = GetAssetsBundleAsync(bundleName);
             if (loadBundleRequest.isDone)
             {

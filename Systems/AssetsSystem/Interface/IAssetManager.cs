@@ -22,5 +22,7 @@ namespace PowerCellStudio
         public void LoadScene(string sceneName, Action onComplete, bool unLoadOtherScene = false);
 
         public void UnloadScene(string name);
+
+        public void PreloadAsset(string path);
     }
 }
