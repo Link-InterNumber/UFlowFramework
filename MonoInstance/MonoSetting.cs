@@ -2,6 +2,7 @@
 
 namespace PowerCellStudio
 {
+    [DonotInitModuleIAutoly]
     public class MonoSetting : MonoSingleton<MonoSetting>
     {
         public Material grayMat;

@@ -26,14 +26,12 @@ namespace PowerCellStudio
             {
                 entityGroup.Update(deltaTime);
             }
-            if (_waitToRemove.Count > 0)
+            if (_waitToRemove.Count <= 0) return;
+            foreach (var index in _waitToRemove)
             {
-                foreach (var index in _waitToRemove)
-                {
-                    RemoveEntityByIndex(index);
-                }
-                _waitToRemove.Clear();
+                RemoveEntityByIndex(index);
             }
+            _waitToRemove.Clear();
         }
 
         public T GetEntityGroup<T>() where T : class, IEntityGroup
@@ -72,12 +70,12 @@ namespace PowerCellStudio
                     added = true;
                 }
             }
-            if(added) _entities.Add(entity.index, entity);
+            if (added) _entities.Add(entity.index, entity);
         }
         
         private void RemoveEntity(ILinkEntity entity)
         {
-            if(entity == null) return;
+            if (entity == null) return;
             foreach (var entityGroup in _entityGroups)
             {
                 entityGroup.RemoveEntity(entity);
@@ -121,11 +119,7 @@ namespace PowerCellStudio
         
         public ILinkEntity GetEntity(long index)
         {
-            if (_entities.TryGetValue(index, out var entity))
-            {
-                return entity;
-            }
-            return null;
+            return _entities.TryGetValue(index, out var entity) ? entity : null;
         }
         
         public ILinkEntity[] GetEntityByGroup<T>() where T : class, IEntityGroup
@@ -141,12 +135,10 @@ namespace PowerCellStudio
         public void ForEachEntity<T>(Action<ILinkEntity> action) where T : class, IEntityGroup
         {
             var entityGroup = GetEntityGroup<T>();
-            if (entityGroup != null)
+            if (entityGroup == null) return;
+            foreach (var entity in entityGroup.AllEntity())
             {
-                foreach (var entity in entityGroup.AllEntity())
-                {
-                    action(entity);
-                }
+                action(entity);
             }
         }
         

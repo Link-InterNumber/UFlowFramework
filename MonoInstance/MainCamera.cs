@@ -5,6 +5,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace PowerCellStudio
 {
+    [DonotInitModuleIAutoly]
     public class MainCamera: MonoSingleton<MainCamera>
     {
         private Camera _cameraCom;
@@ -29,7 +30,7 @@ namespace PowerCellStudio
             base.Awake();
             _cameraCom = transform.GetComponent<Camera>();
             _volume = transform.GetComponent<Volume>();
-            _cameraRoot = new GameObject("cameraRoot").transform;
+            _cameraRoot = new GameObject("CameraRoot").transform;
             _cameraRoot.SetParent(_cameraCom.transform.parent); 
             _cameraRoot.localPosition = _cameraCom.transform.localPosition;
             _cameraRoot.localRotation = Quaternion.identity;
