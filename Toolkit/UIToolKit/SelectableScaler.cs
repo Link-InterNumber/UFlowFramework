@@ -35,8 +35,10 @@ namespace PowerCellStudio
         private void OnEnable()
         {
             _scaling = State.None;
-            if (target) target.transform.localScale = _oriScale;
-            target.Select();
+            if (target)
+            {
+                target.transform.localScale = _oriScale;
+            }
             _isEnter = false;
             _isDown = false;
         }

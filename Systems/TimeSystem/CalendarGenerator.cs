@@ -91,9 +91,9 @@ namespace PowerCellStudio
                 : ((int)firstDayOfMonth.DayOfWeek + 6) % 7;
 
             // 填充前一个月的天数
-            DateTime prevMonth = date.AddMonths(-1);
-            var nextMonth = date.AddMonths(1);
-            int daysInPrevMonth = DateTime.DaysInMonth(prevMonth.Year, prevMonth.Month);
+            // DateTime prevMonth = date.AddMonths(-1);
+            // var nextMonth = date.AddMonths(1);
+            // int daysInPrevMonth = DateTime.DaysInMonth(prevMonth.Year, prevMonth.Month);
 
             var result = new CalendarDay[42];
             // 创建日期格子
