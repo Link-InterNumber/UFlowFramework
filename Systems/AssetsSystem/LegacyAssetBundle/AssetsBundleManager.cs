@@ -88,6 +88,7 @@ namespace PowerCellStudio
                 callBack?.Invoke();
                 return;
             }
+            _preloadHandles = new Dictionary<string, LoaderYieldInstruction<Object>>();
             _loadedBundleDic = new Dictionary<string, AssetsBundleRef>();
             _waitForLoadList = new Dictionary<string, LoaderYieldInstruction<AssetBundle>>();
             
@@ -415,16 +416,16 @@ namespace PowerCellStudio
             }
         }
 
-        private static Dictionary<string, ILoaderYieldInstruction> _preloadHandles;
+        private static Dictionary<string, LoaderYieldInstruction<Object>> _preloadHandles;
 
         public void PreloadAsset(string path)
         {
-            if (_preloadHandles == null) _preloadHandles = new Dictionary<string, ILoaderYieldInstruction>();
+            if (_preloadHandles == null) _preloadHandles = new Dictionary<string, LoaderYieldInstruction<Object>>();
             if (_preloadHandles.ContainsKey(path)) return;
-            var loadAssetRequest = new LoaderYieldInstruction<T>(path);
+            var loadAssetRequest = new LoaderYieldInstruction<Object>(path);
             var bundleName = GetBundleNameByAsset(path);
             LoadAssetAsync<Object>(bundleName, path, loadAssetRequest);
-            _preloadHandles.Add(path, handle);
+            _preloadHandles.Add(path, loadAssetRequest);
         }
         
         public LoaderYieldInstruction<T> LoadAsset<T>(string bundleName, string assetPath)
@@ -465,13 +466,13 @@ namespace PowerCellStudio
                 _preloadHandles.Remove(assetPath);
                 if (handle.isDone)
                 {
-                    loadAssetRequest.SetAsset(handle.asset);
+                    loadAssetRequest.SetAsset(handle.asset as T);
                 }
                 else
                 {
                     handle.onLoadSuccess += (a, path) =>
                     {
-                        loadAssetRequest.SetAsset(a);
+                        loadAssetRequest.SetAsset(a as T);
                     };
                 }
                 return;

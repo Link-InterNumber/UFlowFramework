@@ -23,7 +23,12 @@ namespace PowerCellStudio
 
         public void Init(MonoBehaviour coroutineRunner, Action callBack)
         {
-            if(inited) return;
+            if(inited)
+            {
+                callBack?.Invoke();
+                return;
+            }
+            _preloadHandles = new Dictionary<string, AsyncOperationHandle>();
             _pool = new ObjectPool<AddressableAssetLoader>(() => new AddressableAssetLoader(),
                 loader => loader.Init(),
                 loader => loader.Deinit(),
@@ -177,7 +182,7 @@ namespace PowerCellStudio
             {
                 var handle = _preloadHandles[address];
                 _preloadHandles.Remove(address);
-                return handle as AsyncOperationHandle<T>;
+                return handle.Convert<T>();
             }
             return Addressables.LoadAssetAsync<T>(address);
         }

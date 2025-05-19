@@ -46,6 +46,7 @@ namespace PowerCellStudio
             tglLog.isOn = true;
             tglWarning.isOn = true;
             tglError.isOn = true;
+            base.RegisterEvent();
         }
         
         public override void OnOpen(object data)

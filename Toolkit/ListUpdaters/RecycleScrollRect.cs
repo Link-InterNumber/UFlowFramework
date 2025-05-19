@@ -203,7 +203,7 @@ namespace PowerCellStudio
         /// </summary>
         public void ForceRebuild()
         {
-            if(_dataList == null) return;
+            if(_dataList == null || _dataList.Count == 0 || _layoutHandler == null) return;
             
             var passLength = direction == ListDirection.HORIZONTAL
                 ? -_container.localPosition.x
