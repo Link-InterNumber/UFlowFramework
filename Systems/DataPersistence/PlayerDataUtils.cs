@@ -315,6 +315,7 @@ namespace PowerCellStudio
                 yield break;
             }
             string uri = "file://" + path;
+            T data = null;
             using (UnityWebRequest request = UnityWebRequest.Get(uri))
             {
                 yield return request.SendWebRequest();
@@ -322,22 +323,15 @@ namespace PowerCellStudio
                 if (request.result == UnityWebRequest.Result.Success)
                 {
                     string jsonEn = request.downloadHandler.text;
-                    if (decrypt)
-                    {
-                        var json = Decrypt(jsonEn);
-                        var dataDe = JsonConvert.DeserializeObject<T>(json);
-                        loadHandler.SetAsset(dataDe);
-                        yield break;
-                    }
-                    var data = JsonConvert.DeserializeObject<T>(jsonEn);
-                    loadHandler.SetAsset(data);
+                    var json = decrypt ? Decrypt(jsonEn) : jsonEn;
+                    data = JsonConvert.DeserializeObject<T>(json);
                 }
                 else
                 {
                     Debug.LogError("Failed to read file: " + request.error);
-                    loadHandler.SetAsset(null);
                 }
             }
+            loadHandler.SetAsset(data);
             // var task = File.ReadAllTextAsync(path);
             // yield return task.AsCoroutine();
             // var jsonEn = task.Result;
@@ -481,7 +475,7 @@ namespace PowerCellStudio
             }
 
             string uri = "file://" + filePath;
-            byte[] decryptedData;
+            byte[] decryptedData = null;
             using (UnityWebRequest request = UnityWebRequest.Get(uri))
             {
                 yield return request.SendWebRequest();
@@ -494,32 +488,24 @@ namespace PowerCellStudio
                 else
                 {
                     Debug.LogError("Failed to read file: " + request.error);
-                    loadHandler.SetAsset(null);
-                    yield break;
                 }
             }
+            if (decryptedData == null)
+            {
+                loadHandler.SetAsset(null);
+                yield break;
+            }
 
+            T data = null;
             using (MemoryStream memoryStream = new MemoryStream(decryptedData))
             {
                 // 使用BinaryFormatter进行反序列化
                 BinaryFormatter formatter = new BinaryFormatter();
-                T data = (T)formatter.Deserialize(memoryStream);
+                data = (T)formatter.Deserialize(memoryStream);
                 // 关闭文件流
                 memoryStream.Close();
-                loadHandler.SetAsset(data);
             }
-
-            // var task = File.ReadAllBytesAsync(filePath);
-            // yield return task.AsCoroutine();
-            // var encryptedData = task.Result;
-            // var decryptedData = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
-            // using MemoryStream memoryStream = new MemoryStream(decryptedData);
-            // // 使用BinaryFormatter进行反序列化
-            // BinaryFormatter formatter = new BinaryFormatter();
-            // T data = (T)formatter.Deserialize(memoryStream);
-            // // 关闭文件流
-            // memoryStream.Close();
-            // callback?.Invoke(data);
+            loadHandler.SetAsset(data);
         }
         
         public static LoaderYieldInstruction<T> ReadBinaryAsync<T>(string fileName, Action<T> callback, bool decrypt = true)
@@ -699,7 +685,7 @@ namespace PowerCellStudio
             }
             // 使用 file:// 协议加载本地文件
             string url = "file://" + path;
-
+            Sprite sprite = null;
             using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(url))
             {
                 // 发送请求并等待完成
@@ -711,21 +697,18 @@ namespace PowerCellStudio
                     Texture2D texture = DownloadHandlerTexture.GetContent(request);
 
                     // 创建 Sprite
-                    Sprite sprite = Sprite.Create(
+                    sprite = Sprite.Create(
                         texture,
                         new Rect(0, 0, texture.width, texture.height),
                         new Vector2(0.5f, 0.5f) // 设置 Sprite 的锚点为中心
                     );
-
-                    // 回调返回生成的 Sprite
-                    loadHandler.SetAsset(sprite);
                 }
                 else
                 {
                     Debug.LogError("加载图片失败: " + request.error);
-                    loadHandler.SetAsset(null);
                 }
             }
+            loadHandler.SetAsset(sprite);
             // FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read);
             // byte[] imgByte = new byte[stream.Length];
             // yield return stream.ReadAsync(imgByte, 0, imgByte.Length).AsCoroutine();

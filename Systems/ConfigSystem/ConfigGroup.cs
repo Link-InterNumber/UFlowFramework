@@ -29,6 +29,7 @@ namespace PowerCellStudio
         {
             _loadStatus = AssetLoadStatus.Unload;
             _configs = new List<ConfBaseCollections>();
+            if (configs == null || configs.Length == 0) return;
             foreach (var confBaseCollections in configs)
             {
                 _configs.Add(confBaseCollections);
