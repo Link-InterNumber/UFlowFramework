@@ -59,25 +59,29 @@ namespace PowerCellStudio
         {
             if (_calendarGenerator == null || _changeMonthCoroutine != null) return;
             _calendarGenerator.ChangeMonth(-1);
-            _changeMonthCoroutine = ApplicationManager.instance.StartCoroutine(OnChangeMonthHandler());
+            UpdateTable(_calendarGenerator);
+            onChangeMonth.Invoke();
+            // _changeMonthCoroutine = ApplicationManager.instance.StartCoroutine(OnChangeMonthHandler());
         }
 
         private void OnClickNextMonth()
         {
             if (_calendarGenerator == null || _changeMonthCoroutine != null) return;
             _calendarGenerator.ChangeMonth(1);
-            _changeMonthCoroutine = ApplicationManager.instance.StartCoroutine(OnChangeMonthHandler());
+            UpdateTable(_calendarGenerator);
+            onChangeMonth.Invoke();
+            // _changeMonthCoroutine = ApplicationManager.instance.StartCoroutine(OnChangeMonthHandler());
         }
 
-        private Coroutine _changeMonthCoroutine;
-        private IEnumerator OnChangeMonthHandler()
-        {
-            UpdateTable(_calendarGenerator);
-            yield return OpoopManager.instance.ResetOpoopSaveData(_calendarGenerator.currentDate);
-            yield return OpoopManager.instance.ResetMoodSaveData(_calendarGenerator.currentDate);
-            onChangeMonth.Invoke();
-            _changeMonthCoroutine = null;
-        }
+        // private Coroutine _changeMonthCoroutine;
+        // private IEnumerator OnChangeMonthHandler()
+        // {
+        //     UpdateTable(_calendarGenerator);
+        //     yield return OpoopManager.instance.ResetOpoopSaveData(_calendarGenerator.currentDate);
+        //     yield return OpoopManager.instance.ResetMoodSaveData(_calendarGenerator.currentDate);
+        //     onChangeMonth.Invoke();
+        //     _changeMonthCoroutine = null;
+        // }
 
         private void UpdateWeekOfDay()
         {
