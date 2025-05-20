@@ -18,14 +18,19 @@ namespace PowerCellStudio
         {
             if(!DrawDebug)
                 return;
+            // Gizmos.color = Color.magenta;
+            var elements = transform.GetComponentsInChildren<MaskableGraphic>(true);
+            if (elements == null || elements.Length == 0) return; 
             var originColor = Gizmos.color;
-            Gizmos.color = Color.magenta;
-            foreach (var text in transform.GetComponentsInChildren<MaskableGraphic>(true))
+            var elementsCount = elements.Length;
+            for (var i = 0; i < elementsCount; i++)
             {
+                var text = elements[i];
                 if (text.raycastTarget)
                 {
                     RectTransform rectTransform = text.transform as RectTransform;
                     rectTransform.GetWorldCorners(fourCorners);
+                    Gizmos.color = Color.Lerp(Color.blue, Color.magenta, i * 1f / Mathf.Max(1, elementsCount - 1));
                     for (int i = 0; i < 4; i++)
                     {
                         Gizmos.DrawLine(fourCorners[i], fourCorners[(i+1)%4]);

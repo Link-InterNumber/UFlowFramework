@@ -114,6 +114,7 @@ namespace PowerCellStudio
 
         private void Update()
         {
+            if (target == null) return;
             switch (_scaling)
             {
                 case State.None:

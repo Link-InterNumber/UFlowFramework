@@ -4,7 +4,7 @@ using UnityEngine.EventSystems;
 
 namespace PowerCellStudio
 {
-    public class SelectableClicker : MonoBehaviour, IPointerClickHandler, ISubmitHandler
+    public class SelectableClicker : SelectableInteractor, IPointerClickHandler, ISubmitHandler
     {
         public UnityEvent onClick = new UnityEvent();
         
