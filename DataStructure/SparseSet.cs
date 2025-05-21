@@ -27,7 +27,7 @@ namespace PowerCellStudio
         {
             _count = 0;
             _dense = new T[_pageSize * 3];
-            _sparse = Enumerable.Repeat(0L, _pageSize * 3).ToArray();
+            _sparse = new long[_pageSize * 3];
         }
 
         public SparseSet(int pageSize)
@@ -35,7 +35,7 @@ namespace PowerCellStudio
             _pageSize = pageSize;
             _count = 0;
             _dense = new T[_pageSize * 3];
-            _sparse = Enumerable.Repeat(0L, _pageSize * 3).ToArray();
+            _sparse = new long[_pageSize * 3];
         }
 
         // private int GetPage(int index)
@@ -65,29 +65,27 @@ namespace PowerCellStudio
         {
             if (item == null) return;
             var index = item.index;
-            // var page = GetPage(index);
-            // var pageIndex = GetPageIndex(index);
-            if (_sparse.Length - 1 < index)
+            if (index < 0) throw new ArgumentOutOfRangeException();
+            
+            if (index >= _sparse.Length)
             {
-                var lengthBefore = _sparse.Length;
-                Array.Resize(ref _sparse, Mathf.CeilToInt((index + 1f) / _pageSize) * _pageSize);
-                for (int i = _sparse.Length - 1; i >= lengthBefore; i--)
-                {
-                    _sparse[i] = 0L;
-                }
+                int newSize = Mathf.CeilToInt((index + 1f) / _pageSize) * _pageSize;
+                Array.Resize(ref _sparse, newSize);
             }
-            if(_count >= _dense.Length) Array.Resize(ref _dense, _dense.Length + _pageSize);
-            var realIndex = _sparse[index];
-            if (realIndex < 1)
+            
+            if (_count >= _dense.Length)
+                Array.Resize(ref _dense, _dense.Length + _pageSize);
+            
+            long existing = _sparse[index];
+            if (existing == 0)
             {
                 _dense[_count] = item;
-                _sparse[index] = _count;
+                _sparse[index] = _count + 1; // 存储索引+1
                 _count++;
-
             }
             else
             {
-                _dense[realIndex] = item;
+                _dense[existing - 1] = item; // 使用存储的索引-1
             }
         }
 
@@ -102,38 +100,24 @@ namespace PowerCellStudio
         {
             if (item == null || _count == 0) return false;
             var index = item.index;
-            // var page = GetPage(index);
-            if (_sparse.Length - 1 < index || _sparse[index] == 0L) return false;
-            // var pageIndex = GetPageIndex(index);
-            // var pageData = _sparse[page];
-            // if (pageData == null) return false;
-            var realIndex = _sparse[index];
-            // if (realIndex < 0) return false;
-            var data = _dense[realIndex];
-            return data != null && data.index == index;
+            return Contains(index);
         }
         
         public bool Contains(int index)
         {
-            // var page = GetPage(index);
-            if (_sparse.Length - 1 < index || _sparse[index] == 0L) return false;
-            // var pageIndex = GetPageIndex(index);
-            // var pageData = _sparse[page];
-            // if (pageData == null) return false;
-            var realIndex = _sparse[index];
-            // if (realIndex < 0) return false;
-            var data = _dense[realIndex];
-            return data != null && data.index == index;
+            if (index < 0) return false;
+            return index < _sparse.Length && 
+                _sparse[index] != 0 && 
+                _dense[_sparse[index] - 1].index == index;
         }
 
         public void CopyTo(T[] array, int arrayIndex)
         {
-            var loopCount = array.Length;
-            for (int i = 0; i < loopCount; i++)
-            {
-                if (i > _dense.Length - 1) break;
-                array[i] = _dense[i];
-            }
+            if (array == null) throw new ArgumentNullException();
+            if (arrayIndex < 0) throw new ArgumentOutOfRangeException();
+            if (array.Length - arrayIndex < _count) throw new ArgumentException();
+            
+            Array.Copy(_dense, 0, array, arrayIndex, _count);
         }
 
         public bool Remove(T item)
@@ -143,9 +127,11 @@ namespace PowerCellStudio
 
         public bool Remove(long itemIndex)
         {
-            if (itemIndex < 1 || _count == 0) return false;
-            // var page = GetPage(itemIndex);
-            if (_sparse.Length - 1 < itemIndex || _sparse[itemIndex] == 0L) return false;
+            if (itemIndex < 0 || _count == 0) return false;
+            if (itemIndex >= _sparse.Length) return false;
+            
+            long storedIndex = _sparse[itemIndex];
+            if (storedIndex == 0) return false;
             // var pageIndex = GetPageIndex(itemIndex);
             var realIndex = _sparse[itemIndex];
             if (realIndex < 0 || _dense.Length - 1 < realIndex) return false;
@@ -164,7 +150,7 @@ namespace PowerCellStudio
             _sparse[itemIndex] = 0L;
             // var lastPage = GetPage(last.Index);
             // var lastPageIndex = GetPageIndex(last.Index);
-            _sparse[last.index] = realIndex;
+            _sparse[last.index] = realIndex + 1;
             _count--;
             return true;
         }

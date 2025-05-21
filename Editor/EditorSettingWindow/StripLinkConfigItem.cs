@@ -27,19 +27,17 @@ namespace PowerCellStudio
 
             assemblyToggles = assemblies.ToDictionary(name => name, _ => false);
 
-            if (System.IO.File.Exists(LinkFilePath))
-            {
-                XElement root = XElement.Load(LinkFilePath);
-                var preservedAssemblies = root.Descendants("assembly")
-                    .Select(element => element.Attribute("fullname")?.Value)
-                    .Where(name => !string.IsNullOrEmpty(name));
+            if (!System.IO.File.Exists(LinkFilePath)) return;
+            XElement root = XElement.Load(LinkFilePath);
+            var preservedAssemblies = root.Descendants("assembly")
+                .Select(element => element.Attribute("fullname")?.Value)
+                .Where(name => !string.IsNullOrEmpty(name));
 
-                foreach (var assembly in preservedAssemblies)
+            foreach (var assembly in preservedAssemblies)
+            {
+                if (assemblyToggles.ContainsKey(assembly))
                 {
-                    if (assemblyToggles.ContainsKey(assembly))
-                    {
-                        assemblyToggles[assembly] = true;
-                    }
+                    assemblyToggles[assembly] = true;
                 }
             }
         }
