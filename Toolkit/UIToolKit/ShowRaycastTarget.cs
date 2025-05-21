@@ -31,9 +31,9 @@ namespace PowerCellStudio
                     RectTransform rectTransform = text.transform as RectTransform;
                     rectTransform.GetWorldCorners(fourCorners);
                     Gizmos.color = Color.Lerp(Color.blue, Color.magenta, i * 1f / Mathf.Max(1, elementsCount - 1));
-                    for (int i = 0; i < 4; i++)
+                    for (int j = 0; j < 4; j++)
                     {
-                        Gizmos.DrawLine(fourCorners[i], fourCorners[(i+1)%4]);
+                        Gizmos.DrawLine(fourCorners[j], fourCorners[(j+1)%4]);
                     }
                 }
             }

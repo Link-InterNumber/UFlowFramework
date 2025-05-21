@@ -57,7 +57,7 @@ namespace PowerCellStudio
 
         private void OnClickLastMonth()
         {
-            if (_calendarGenerator == null || _changeMonthCoroutine != null) return;
+            if (_calendarGenerator == null) return;
             _calendarGenerator.ChangeMonth(-1);
             UpdateTable(_calendarGenerator);
             onChangeMonth.Invoke();
@@ -66,7 +66,7 @@ namespace PowerCellStudio
 
         private void OnClickNextMonth()
         {
-            if (_calendarGenerator == null || _changeMonthCoroutine != null) return;
+            if (_calendarGenerator == null) return;
             _calendarGenerator.ChangeMonth(1);
             UpdateTable(_calendarGenerator);
             onChangeMonth.Invoke();

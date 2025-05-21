@@ -100,7 +100,7 @@ namespace PowerCellStudio
         {
             if (item == null || _count == 0) return false;
             var index = item.index;
-            return Contains(index);
+            return Contains((int)index);
         }
         
         public bool Contains(int index)
