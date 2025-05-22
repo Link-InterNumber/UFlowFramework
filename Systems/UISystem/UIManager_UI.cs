@@ -152,7 +152,9 @@ namespace PowerCellStudio
                 return;
             }
             if (currentPage.GetType() == typeof(T))
+            {
                 PopPage(callback);
+            }
             else
             {
                 var page = _pageStack.LastOrDefault(x => x is T);
@@ -195,19 +197,24 @@ namespace PowerCellStudio
         /// </summary>
         /// <typeparam name="T">窗口类型。</typeparam>
         /// <param name="onClosed">关闭后的操作。</param>
-        public void CloseWindow<T>(Action onClosed = null) where T : UIBehaviour, IUIChild
+        /// <param name="destroy">是否关闭后销毁</param>
+        public void CloseWindow<T>(Action onClosed = null, bool destroy = false) where T : UIBehaviour, IUIChild
         {
             if(typeof(IUIStandAlone).IsAssignableFrom(typeof(T)))
             {
-                if (_standAlonePage.CloseUI<T>(onClosed))
+                if (_standAlonePage.CloseUI<T>(onClosed) && destroy)
                 {
                     var window = _standAlonePage.GetUI<T>();
                     UIUtils.RemoveChild(window);
                     UIUtils.DestroyUI(window, null);
                 }
-                return;
             }
-            currentPage.CloseUI<T>(onClosed);
+            else if (currentPage.CloseUI<T>(onClosed) && destroy)
+            {
+                var window = currentPage.GetUI<T>();
+                UIUtils.RemoveChild(window);
+                UIUtils.DestroyUI(window, null);
+            }
         }
 
         /// <summary>
