@@ -12,18 +12,18 @@ namespace PowerCellStudio
         {
             get
             {
-                var screenHeight = ConstSetting.DefaultResolution.y;
-                var screenWidth = ConstSetting.DefaultResolution.x;
+                var screenHeight = ConstSetting.DefaultUISize.y;
+                var screenWidth = ConstSetting.DefaultUISize.x;
                 // var newRes = Vector2Int.zero;
                 if (screenHeight < screenWidth)
                 {
-                    var baseHeight = ConstSetting.Resolution[2];
+                    var baseHeight = ConstSetting.DefaultUISize.y;
                     var rate = (float)baseHeight / Screen.height;
                     return new Vector2(Screen.width * rate, baseHeight);
                 }
                 else
                 {
-                    var baseWidth = ConstSetting.Resolution[2];
+                    var baseWidth = ConstSetting.DefaultUISize.x;
                     var rate = (float)baseWidth / Screen.width;
                     return new Vector2(baseWidth, Screen.height * rate);
                 }

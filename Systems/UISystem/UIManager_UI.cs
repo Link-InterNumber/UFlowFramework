@@ -65,7 +65,7 @@ namespace PowerCellStudio
         public T GetPage<T>() where T : UIBehaviour, IUIParent
         {
             var page = _pageStack.LastOrDefault(x => x is T);
-            return page;
+            return page as T;
         }
 
         /// <summary>
@@ -192,9 +192,9 @@ namespace PowerCellStudio
             var windowType = typeof(T);
             if (typeof(IUIStandAlone).IsAssignableFrom(windowType))
             {
-                return includeClosed ? _standAlonePage.GetUI<T>() : _standAlonePage.GetOpenedWindow<T>();
+                return includeClosed ? _standAlonePage.GetUI<T>() : _standAlonePage.GetOpenedUI<T>();
             }
-            return includeClosed ? currentPage.GetUI<T>() : currentPage.GetOpenedWindow<T>();
+            return includeClosed ? currentPage.GetUI<T>() : currentPage.GetOpenedUI<T>();
         }
 
         /// <summary>

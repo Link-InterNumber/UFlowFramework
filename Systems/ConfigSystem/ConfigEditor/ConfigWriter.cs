@@ -497,7 +497,7 @@ namespace PowerCellStudio
                 paras);
             for (var i = 0; i < _configTypeInfoList.Length; i++)
             {
-                _csFile.WriteLine($"_{_configTypeInfoList[i].fieldName} = {_configTypeInfoList[i].fieldName.ToLower()};");
+                _csFile.WriteLine($"this._{_configTypeInfoList[i].fieldName} = {_configTypeInfoList[i].fieldName.ToLower()};");
             }
             _csFile.EndWriteMethod();
 

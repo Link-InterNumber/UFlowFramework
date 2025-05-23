@@ -40,6 +40,11 @@ namespace PowerCellStudio
         /// 获取已经加载的UI
         /// </summary>
         T GetUI<T>() where T : UIBehaviour, IUIChild;
+        
+        /// <summary>
+        /// 获取打开的UI
+        /// </summary>
+        T GetOpenedUI<T>() where T : UIBehaviour, IUIChild;
 
         /// <summary>
         /// 界面是否在加载中

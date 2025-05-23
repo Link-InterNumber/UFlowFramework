@@ -93,7 +93,7 @@ namespace PowerCellStudio
                 }
 
                 var split = fieldNameTemp.Split(':');
-                var fieldName = split[0];
+                var fieldName = char.ToLower(split[0][0]) + split[0].Substring(1);
                 var isKey = split.Length > 1 && split[1].ToLower() == "key";
                 if (_fieldMap.TryGetValue(fieldName, out var typeInfo))
                 {

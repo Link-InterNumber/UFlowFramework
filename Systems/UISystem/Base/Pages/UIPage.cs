@@ -96,14 +96,14 @@ namespace PowerCellStudio
             return true;
         }
 
-        public T GetOpenedWindow<T>() where T : UIBehaviour, IUIChild
+        public T GetOpenedUI<T>() where T : UIBehaviour, IUIChild
         {
-            return _openedUIs.LastOrDefault(x => x is T);
+            return _openedUIs.LastOrDefault(x => x is T) as T;
         }
 
         public bool IsWindowOpened<T>() where T : UIBehaviour, IUIChild
         {
-            return GetOpenedWindow<T>() != null;
+            return GetOpenedUI<T>() != null;
         }
 
         public T GetUI<T>() where T : UIBehaviour, IUIChild

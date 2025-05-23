@@ -48,10 +48,10 @@ namespace PowerCellStudio
                 _uiPrefab = null;
             }
 
-            if (!guidanceInfo.conf.UiPrefab.isNull)
+            if (!guidanceInfo.conf.uiPrefab.isNull)
             {
                 _canSkip = false;
-                assetsLoader.AsyncLoadNInstantiate(guidanceInfo.conf.UiPrefab.assetName, OnLoadUiPrefab);
+                assetsLoader.AsyncLoadNInstantiate(guidanceInfo.conf.uiPrefab.assetName, OnLoadUiPrefab);
             }
             else
             {
