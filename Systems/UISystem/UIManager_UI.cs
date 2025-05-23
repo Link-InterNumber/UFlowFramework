@@ -10,6 +10,7 @@ namespace PowerCellStudio
         private HashStack<IUIParent> _pageStack = new HashStack<IUIParent>();
         private PoolWindowPage _poolPage;
         private IUIParent _standAlonePage;
+        private PagePushMode _currentPagePushMode;
 
         /// <summary>
         /// 获取当前页面。
@@ -57,13 +58,24 @@ namespace PowerCellStudio
         }
 
         /// <summary>
+        /// 获取页面。
+        /// </summary>
+        /// <typeparam name="T">页面类型。</typeparam>
+        /// <returns>页面实例，未找到则返回null。</returns>
+        public T GetPage<T>() where T : UIBehaviour, IUIParent
+        {
+            var page = _pageStack.LastOrDefault(x => x is T);
+            return page;
+        }
+
+        /// <summary>
         /// 获取或创建页面。
         /// </summary>
         /// <typeparam name="T">页面类型。</typeparam>
         /// <returns>页面实例。</returns>
         private T GetOrCreatePage<T>() where T : UIBehaviour, IUIParent
         {
-            var page = _pageStack.FirstOrDefault(x => x is T);
+            var page = GetPage<T>();
             if (page == null || typeof(T) == typeof(TempPage))
             {
                 return UIUtils.CreatePage<T>(transform, canvasRenderMode);
@@ -92,9 +104,9 @@ namespace PowerCellStudio
         /// </summary>
         /// <typeparam name="T">页面类型。</typeparam>
         /// <param name="data">页面数据。</param>
-        /// <param name="replaceMode">是否替换模式。true时会将当前Page销毁</param>
+        /// <param name="pushMode">页面的开启方式。CloseOther：会在之后窗口打开时关闭之前的页面；Replace：会将当前Page销毁，Overlap：和之前的页面重叠打开</param>
         /// <returns>页面实例。</returns>
-        public T PushPage<T>(object data = null, bool replaceMode = false) where T : UIBehaviour, IUIParent
+        public T PushPage<T>(object data = null, PagePushMode pushMode = PagePushMode.CloseOther) where T : UIBehaviour, IUIParent
         {
             if (IsAnyWindowOpening(currentPage))
             {
@@ -102,12 +114,13 @@ namespace PowerCellStudio
             }
             var page = GetOrCreatePage<T>();
             if (page == null) return null;
+            _currentPagePushMode = pushMode;
             if (currentPage != null && currentPage.GetHashCode() == page.GetHashCode())
             {
                 UIUtils.OpenUI(currentPage, data);
                 return currentPage as T;
             }
-            if (replaceMode && _pageStack.Count > 1)
+            if (pushMode == PagePushMode.Replace && _pageStack.Count > 1)
             {
                 var pageToClose = _pageStack.Pop();
                 UIUtils.ClosePage(pageToClose, true, null, _poolPage);
@@ -118,7 +131,7 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 弹出页面。
+        /// 弹出当前页面。
         /// </summary>
         /// <param name="callback">回调函数。</param>
         public void PopPage(Action callback = null)
@@ -157,7 +170,7 @@ namespace PowerCellStudio
             }
             else
             {
-                var page = _pageStack.LastOrDefault(x => x is T);
+                var page = GetPage<T>();
                 if (page == null) return;
                 if (IsAnyWindowOpening(page))
                 {
@@ -169,7 +182,23 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 打开窗口。
+        /// 获取当前页面上的窗口。
+        /// </summary>
+        /// <typeparam name="T">窗口类型。</typeparam>
+        /// <param name="includeClosed">是否包括关闭的界面，默认包括。</param>
+        /// <returns>窗口实例，当前界面上没有该类型窗口则返回null。</returns>
+        public T GetWindow<T>(bool includeClosed = true) where T : UIBehaviour, IUIChild
+        {
+            var windowType = typeof(T);
+            if (typeof(IUIStandAlone).IsAssignableFrom(windowType))
+            {
+                return includeClosed ? _standAlonePage.GetUI<T>() : _standAlonePage.GetOpenedWindow<T>();
+            }
+            return includeClosed ? currentPage.GetUI<T>() : currentPage.GetOpenedWindow<T>();
+        }
+
+        /// <summary>
+        /// 在当前页面打开窗口。
         /// </summary>
         /// <typeparam name="T">窗口类型。</typeparam>
         /// <param name="data">窗口数据。</param>
@@ -193,7 +222,7 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 关闭窗口。
+        /// 关闭当前页面上的窗口。
         /// </summary>
         /// <typeparam name="T">窗口类型。</typeparam>
         /// <param name="onClosed">关闭后的操作。</param>
@@ -218,12 +247,12 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 当UI窗口打开时，将之前门没关闭的Page关闭。
+        /// 当UI窗口打开时，将之前没关闭的Page关闭。
         /// </summary>
         /// <param name="data">窗口数据。</param>
         private void OnUIWindowOpened(IUIChild data)
         {
-            if (_pageStack.Count < 2) return;
+            if (_pageStack.Count < 2 || _currentPagePushMode == PagePushMode.Overlap) return;
             var index = 0;
             foreach (var uiParent in _pageStack)
             {

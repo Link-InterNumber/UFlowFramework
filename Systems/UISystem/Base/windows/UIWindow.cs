@@ -56,7 +56,13 @@ namespace PowerCellStudio
             adaptiveRoot.offsetMax = safeArea.max * scale - UIManager.ScreenSize;
         }
 
+        protected virtual void OnWindowInit()
+        {
+
+        }
+
         public RectTransform rectTransform => transform as RectTransform;
+        
         void IUIComponent.Open(object data)
         {
             if(_assetsLoader == null || !_assetsLoader.spawned)
@@ -78,6 +84,7 @@ namespace PowerCellStudio
 
         public virtual void RegisterEvent()
         {
+            OnWindowInit();
             if (closeBtn == null) return;
             foreach (var button in closeBtn)
             {

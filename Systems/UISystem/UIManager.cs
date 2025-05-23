@@ -31,5 +31,12 @@ namespace PowerCellStudio
         {
             EventManager.instance.onUIOpen.RemoveListener(OnUIWindowOpened);
         }
+
+        public enum PagePushMode
+        {
+            CloseOther,
+            Replace,
+            Overlap
+        }
     }
 }

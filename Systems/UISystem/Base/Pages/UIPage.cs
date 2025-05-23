@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -93,6 +94,16 @@ namespace PowerCellStudio
                 GetTopUI()?.OnFocus();
             }
             return true;
+        }
+
+        public T GetOpenedWindow<T>() where T : UIBehaviour, IUIChild
+        {
+            return _openedUIs.LastOrDefault(x => x is T);
+        }
+
+        public bool IsWindowOpened<T>() where T : UIBehaviour, IUIChild
+        {
+            return GetOpenedWindow<T>() != null;
         }
 
         public T GetUI<T>() where T : UIBehaviour, IUIChild
