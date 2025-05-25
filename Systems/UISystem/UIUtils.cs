@@ -172,7 +172,7 @@ namespace PowerCellStudio
             }
         }
 
-        public static bool CloseUI<T>(T ui, Action onClose, bool force = false) where T : IUIComponent
+        public static bool CloseUI<T>(T ui, Action afterClosed, bool force = false) where T : IUIComponent
         {
             if (ui == null || !ui.isOpened) return false;
             if (force)
@@ -184,7 +184,6 @@ namespace PowerCellStudio
                 return false;
             }
             ui.transform.gameObject.SetActive(false);
-            onClose?.Invoke();
             if(ui is IUIParent parent)
             {
                 EventManager.instance.onPageClose.Invoke(parent);
@@ -194,6 +193,8 @@ namespace PowerCellStudio
                 child.parent.openedUIs.Remove(child);
                 EventManager.instance.onUIClose.Invoke(child);
             }
+            ui.OnClose();
+            afterClosed?.Invoke();
             return true;
         }
 

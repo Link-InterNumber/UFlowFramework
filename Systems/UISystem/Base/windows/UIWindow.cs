@@ -76,7 +76,6 @@ namespace PowerCellStudio
 
         bool IUIComponent.Close()
         {
-            OnClose();
             return true;
         }
 
@@ -115,9 +114,9 @@ namespace PowerCellStudio
             CloseUI(null);
         }
 
-        protected void CloseUI(Action onClosed)
+        protected void CloseUI(Action afterClosed)
         {
-            _parent.CloseUI(this, onClosed);
+            _parent.CloseUI(this, afterClosed);
         }
     }
 }

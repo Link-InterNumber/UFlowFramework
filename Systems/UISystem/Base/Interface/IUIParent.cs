@@ -34,7 +34,7 @@ namespace PowerCellStudio
         /// <returns>是否成功关闭界面</returns>
         public bool CloseUI<T>(Action onClosed = null) where T : UIBehaviour, IUIChild;
         
-        internal bool CloseUI<T>(T uiChild, Action onClosed = null) where T : UIBehaviour, IUIChild;
+        internal bool CloseUI<T>(T uiChild, Action afterClosed = null) where T : UIBehaviour, IUIChild;
         
         /// <summary>
         /// 获取已经加载的UI
