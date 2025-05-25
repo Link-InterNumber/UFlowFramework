@@ -106,14 +106,21 @@ namespace PowerCellStudio
         /// <returns>UI位置在主摄像机中的位置。</returns>
         public static Vector3 GetUIToMainCameraPosition(Vector3 uiPosition)
         {
-            var screenPos = instance.canvasRenderMode switch
+            Vector2 viewportPoint;
+            switch (instance.canvasRenderMode)
             {
-                RenderMode.ScreenSpaceOverlay => new Vector2(uiPosition.x / ScreenSize.x, uiPosition.y / ScreenSize.y),
-                RenderMode.ScreenSpaceCamera => RectTransformUtility.WorldToScreenPoint(UICamera.instance.cameraCom, uiPosition),
-                RenderMode.WorldSpace => RectTransformUtility.WorldToScreenPoint(UICamera.instance.cameraCom, uiPosition),
-                _ => throw new ArgumentOutOfRangeException(),
-            };
-            return MainCamera.instance.CameraCom.ScreenToWorldPoint(screenPos);
+                case RenderMode.ScreenSpaceOverlay:
+                    viewportPoint = new Vector2(uiPosition.x / ScreenSize.x, uiPosition.y / ScreenSize.y);
+                    break;
+                case RenderMode.ScreenSpaceCamera:
+                    viewportPoint = (Vector2)UICamera.instance.cameraCom.WorldToViewportPoint(uiPosition);
+                    break;
+                case RenderMode.WorldSpace:
+                    return uiPosition;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            return MainCamera.instance.CameraCom.ViewportToWorldPoint(viewportPoint);
         }
 
         /// <summary>
@@ -123,8 +130,8 @@ namespace PowerCellStudio
         /// <returns>UI位置的Vector2。</returns>
         public static Vector2 MainCamaraPosToUIPos(Vector3 pos)
         {
-            var screenPos = MainCamera.instance.CameraCom.WorldToScreenPoint(pos);
-            return UICamera.instance.cameraCom.ScreenToWorldPoint(screenPos);
+            var viewportPoint = MainCamera.instance.CameraCom.WorldToViewportPoint(pos);
+            return UICamera.instance.cameraCom.ViewportToWorldPoint(viewportPoint);
         }
 
         public static void OpenMaskWindow(Func<bool> canClose, bool showWaiting = true)
