@@ -93,9 +93,8 @@ namespace PowerCellStudio
 
         public IEnumerator PushGameObjectPool(string path, int maxNum, int initNum, Action callBack)
         {
-            if (_gameObjectPools.ContainsKey(path))
+            if (_gameObjectPools.TryGetValue(path, out var existPool))
             {
-                var existPool = _gameObjectPools[path];
                 if (existPool.loadStatus == AssetLoadStatus.Loaded)
                 {
                     callBack?.Invoke();

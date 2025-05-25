@@ -470,10 +470,10 @@ namespace PowerCellStudio
                 }
                 else
                 {
-                    handle.onLoadSuccess += (a, path) =>
+                    handle.OnLoadSuccess((a, path) =>
                     {
                         loadAssetRequest.SetAsset(a as T);
-                    };
+                    });
                 }
                 return;
             }
@@ -501,7 +501,7 @@ namespace PowerCellStudio
                 };
                 return;
             }
-            loadBundleRequest.onLoadSuccess += (bundle, bundleName) =>
+            loadBundleRequest.OnLoadSuccess((bundle, bundleName) =>
             {
                 if (!bundle)
                 {
@@ -520,7 +520,7 @@ namespace PowerCellStudio
                     var asset = operationHandle.asset as T;
                     loadAssetRequest.SetAsset(asset);
                 };
-            };
+            });
         }
 
         #endregion

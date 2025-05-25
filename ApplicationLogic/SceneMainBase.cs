@@ -13,6 +13,7 @@ namespace PowerCellStudio
         
         protected virtual void Awake()
         {
+            EventManager.instance = new EventManager();
             if (Camera.main.GetComponent<MainCamera>())
             {
                 Camera.main.gameObject.name = nameof(MainCamera);

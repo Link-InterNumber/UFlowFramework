@@ -53,6 +53,9 @@ namespace PowerCellStudio
         private List<object> _dataList;
 
         private IRecycleScrollRectLayout _layoutHandler;
+        
+        private IAssetLoader _assetLoader;
+        public IAssetLoader AssetLoader  => _assetLoader;
 
         public event OnItemInteraction onItemInteraction;
 
@@ -64,6 +67,7 @@ namespace PowerCellStudio
 
         private void Awake()
         {
+            _assetLoader = AssetUtils.SpawnLoader();
             layoutGroup.enabled = false;
             if (!scroll) return;
             if (optimize) scroll.onValueChanged.AddListener(OnScrollValueChanged);
@@ -76,6 +80,7 @@ namespace PowerCellStudio
         
         private void OnDestroy()
         {
+            AssetUtils.DeSpawnLoader(_assetLoader);
             if (!scroll) return;
             if (optimize) scroll.onValueChanged.RemoveListener(OnScrollValueChanged);
         }

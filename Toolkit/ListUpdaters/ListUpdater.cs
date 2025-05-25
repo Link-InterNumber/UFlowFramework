@@ -9,6 +9,8 @@ namespace PowerCellStudio
 
     public interface IListUpdater
     {
+        public IAssetLoader AssetLoader { get; }
+        
         /// <summary>
         /// 触发注册的子节点逻辑
         /// </summary>
@@ -53,12 +55,25 @@ namespace PowerCellStudio
     {
         private GameObject _prefab;
         
+        private IAssetLoader _assetLoader;
+        public IAssetLoader AssetLoader  => _assetLoader;
+        
         public event OnItemInteraction onItemInteraction;
 
         public void ItemInteraction(IListItem item, object passData)
         {
             if(item == null) return;
             onItemInteraction?.Invoke(item, item.itemIndex, passData);
+        }
+
+        private void Awake()
+        {
+            _assetLoader = AssetUtils.SpawnLoader();
+        }
+
+        private void OnDestroy()
+        {
+            AssetUtils.DeSpawnLoader(_assetLoader);
         }
 
         public int count

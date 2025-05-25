@@ -288,7 +288,7 @@ namespace PowerCellStudio
             if (string.IsNullOrEmpty(fileName)) return null;
             var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
             var loadHandler = new LoaderYieldInstruction<T>(path);
-            if (action != null) loadHandler.onLoadSuccess += (savedData, path) => {action.Invoke(savedData);};
+            if (action != null) loadHandler.OnLoadSuccess((savedData, path) => {action.Invoke(savedData);});
             ApplicationManager.instance.StartCoroutine(ReadJsonHandle(path, loadHandler, decrypt));
             return loadHandler;
         }
@@ -514,7 +514,7 @@ namespace PowerCellStudio
             if(string.IsNullOrEmpty(fileName)) return null;
             var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
             var loadHandler = new LoaderYieldInstruction<T>(filePath);
-            if (callback != null) loadHandler.onLoadSuccess += (savedData, path) => {callback.Invoke(savedData);};
+            if (callback != null) loadHandler.OnLoadSuccess((savedData, path) => {callback.Invoke(savedData);});
             ApplicationManager.instance.StartCoroutine(ReadBinaryCoroutineHandle(filePath, loadHandler, decrypt));
             return loadHandler;
         }
@@ -671,7 +671,7 @@ namespace PowerCellStudio
             var path = Path.Combine(SavePath, CaptureDirectory, $"{fileName}.png");
             if (!File.Exists(path)) return null;
             var loadHandler = new LoaderYieldInstruction<Sprite>(path);
-            if (action != null) loadHandler.onLoadSuccess += (asset, path) => {action.Invoke(asset);};
+            if (action != null) loadHandler.OnLoadSuccess((asset, path) => {action.Invoke(asset);});
             ApplicationManager.instance.StartCoroutine(LoadCaptureHandle(path, loadHandler));
             return loadHandler;
         }

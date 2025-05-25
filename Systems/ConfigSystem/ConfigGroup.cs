@@ -13,9 +13,8 @@ namespace PowerCellStudio
         private List<ConfBaseCollections> _configs;
         private AssetLoadStatus _loadStatus;
         public AssetLoadStatus loadStatus => _loadStatus;
-
-
-        public OnLoadCompleted onLoadCompleted;
+        
+        public event OnLoadCompleted onLoadCompleted;
 
         public string[] failLoadConfigs
         {

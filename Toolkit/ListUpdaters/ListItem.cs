@@ -19,6 +19,8 @@ namespace PowerCellStudio
         public int itemIndex => _index;
 
         public IListUpdater itemHolder {private set; get;}
+        
+        protected IAssetLoader assetLoader => itemHolder.AssetLoader;
     
         public virtual void UpdateContent(int index, object data, IListUpdater holder)
         {

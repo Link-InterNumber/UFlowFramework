@@ -55,18 +55,20 @@ namespace PowerCellStudio
             adaptiveRoot.offsetMin = safeArea.min * scale;
             adaptiveRoot.offsetMax = safeArea.max * scale - UIManager.ScreenSize;
         }
-
+        
+        /// <summary>
+        /// UI加载后优先执行、
+        /// </summary>
         protected virtual void OnWindowInit()
         {
-
+            if(_assetsLoader == null || !_assetsLoader.spawned)
+                _assetsLoader = AssetUtils.SpawnLoader(this.GetType().Name);
         }
 
         public RectTransform rectTransform => transform as RectTransform;
         
         void IUIComponent.Open(object data)
         {
-            if(_assetsLoader == null || !_assetsLoader.spawned)
-                _assetsLoader = AssetUtils.SpawnLoader(this.GetType().Name);
             OnOpen(data);
         }
 

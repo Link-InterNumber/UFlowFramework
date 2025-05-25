@@ -141,5 +141,24 @@ namespace PowerCellStudio
             }
             return NumberDisplay.FormatIndexCn(num, isTraditional);
         }
+        
+        public static string IntToEnglishDay(int num, bool abbreviate = false)
+        {
+            if (num < 1 || num > 31)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(num), 
+                    "Day must be between 1 and 31");
+            }
+
+            // 创建任意年份的日期对象（仅用于获取日期名称）
+            DateTime date = new DateTime(2023, 1, num);
+        
+            // 根据选项选择格式模式
+            string formatPattern = abbreviate ? "d" : "dd";
+        
+            // 返回不依赖本地化设置的英文日期名称
+            return date.ToString(formatPattern, CultureInfo.InvariantCulture);
+        }
     }
 }
