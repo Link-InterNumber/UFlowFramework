@@ -5,21 +5,26 @@ namespace PowerCellStudio
 {
     public class CircleGenerator
     {
-        public static List<Vector3> GenerateCirclePositions(Vector3 center, int count, float radius)
+        /// <summary>
+        /// 计算在2D指定位置生成的数个圆形位置
+        /// </summary>
+        /// <param name="center">生成的中心位置</param>
+        /// <param name="count">生成数量</param>
+        /// <param name="radius">圆形半径</param>
+        /// <param name="denseStacking">是否使用密堆积。默认true</param>
+        /// <returns>排列好的圆形位置列表</returns>
+        public static List<Vector3> GenerateCirclePositions(Vector3 center, int count, float radius, bool denseStacking = true)
         {
             List<Vector3> positions = new List<Vector3>();
-
             if (count <= 0) return positions;
-
-            // 添加中心点（当数量为奇数时）
-            bool hasCenter = count % 2 != 0;
-            if (hasCenter)
+            Vector3 averagePos = center;
+            positions.Add(center);
+            count--;
+            if (count == 0)
             {
-                positions.Add(center);
-                count--;
+                return positions;
             }
 
-            // 分层生成六边形排列
             int layer = 1;
             while (count > 0)
             {
@@ -27,17 +32,55 @@ namespace PowerCellStudio
                 int layerCapacity = 6 * layer;
                 int currentLayerCount = Mathf.Min(layerCapacity, count);
 
-                // 生成层的位置
-                GenerateHexLayer(positions, center, radius, layer, currentLayerCount);
+                averagePos = denseStacking 
+                    ? GenerateDenseStacking(positions, center, averagePos, radius, layer, currentLayerCount)
+                    : GenerateHexLayer(positions, center, averagePos, radius, layer, currentLayerCount);
 
                 count -= currentLayerCount;
                 layer++;
+            }
+            averagePos = averagePos / positions.Count;
+            var offset = center - averagePos;
+            offset.z = 0;
+            for (var i = 0; i < positions.Count; i++)
+            {
+                positions[i] = positions[i] + offset;
             }
 
             return positions;
         }
 
-        private static void GenerateHexLayer(List<Vector3> list, Vector3 center, float radius, int layer, int count)
+        // 密堆积算法
+        private static Vector3 GenerateDenseStacking(List<Vector3> list, Vector3 center, Vector3 posSum, float radius, int layer, int count)
+        {
+            float layerRadius = 2 * radius * layer; 
+            for (var i = 0; i < count; i++)
+            {
+                var isAnglePos = i % layer == 0;
+                var angleIndex = Mathf.FloorToInt(i + 0.1f / layer);
+                var angle = angleIndex * (Mathf.PI / 3);
+                var posAngle = new Vector3(Mathf.Cos(angle) * layerRadius, Mathf.Sin(angle) * layerRadius, center.z);
+                if (isAnglePos)
+                {
+                    list.Add(posAngle);
+                    posSum = posSum + posAngle;
+                }
+                else
+                {
+                    var angleNext = angle + (Mathf.PI / 3);
+                    var posAngleNext = new Vector3(Mathf.Cos(angleNext) * layerRadius, Mathf.Sin(angleNext) * layerRadius, center.z);
+                    var indexInLine = i % layer;
+                    var lerpValue = indexInLine * 1f / layer;
+                    var pos = Vector3.Lerp(posAngle, posAngleNext, lerpValue);
+                    list.Add(pos);
+                    posSum = posSum + pos;
+                }
+            }
+            return posSum;
+        }
+
+        // 圆形排列
+        private static Vector3 GenerateHexLayer(List<Vector3> list, Vector3 center, Vector3 posSum, float radius, int layer, int count)
         {
             float layerRadius = 2 * radius * layer;
             float angleStep = 360f / count;
@@ -52,19 +95,10 @@ namespace PowerCellStudio
                     0
                 );
 
-                // 添加对称点对（保证平均位置）
                 list.Add(center + offset);
-                list.Add(center - offset);
-
-                // 跳过重复生成
-                i++;
+                posSum = posSum + center + offset;
             }
-
-            // 移除多余的对称点
-            if (count % 2 != 0)
-            {
-                list.RemoveRange(list.Count - 2, 2);
-            }
+            return posSum;
         }
 
         // 验证平均位置的测试方法
