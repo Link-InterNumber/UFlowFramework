@@ -111,7 +111,7 @@ namespace PowerCellStudio
                 foreach (var keyValuePair in page.children)
                 {
                     var child = keyValuePair.Value;
-                    CloseUI(child, null);
+                    CloseUI(child, null, true);
                     if (child is IUIPoolable 
                         && !poolParent.children.ContainsKey(child.GetType()) 
                         && !poolParent.windowRequests.IsUIGoingToOpen(keyValuePair.Key, out _))
@@ -175,11 +175,7 @@ namespace PowerCellStudio
         public static bool CloseUI<T>(T ui, Action afterClosed, bool force = false) where T : IUIComponent
         {
             if (ui == null || !ui.isOpened) return false;
-            if (force)
-            {
-                ui.OnClose();
-            }
-            else if (!ui.Close())
+            if (!force && !ui.Close())
             {
                 return false;
             }

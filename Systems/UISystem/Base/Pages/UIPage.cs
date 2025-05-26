@@ -8,6 +8,9 @@ namespace PowerCellStudio
 {
     public abstract class UIPage : UIBehaviour, IUIParent
     {
+        protected PagePushMode _pushMode;
+        public PagePushMode pushMode {get => _pushMode; set => _pushMode = value;}
+
         protected IAssetLoader _assetsLoader;
         public IAssetLoader assetsLoader => _assetsLoader;
         

@@ -10,7 +10,7 @@ namespace PowerCellStudio
         private HashStack<IUIParent> _pageStack = new HashStack<IUIParent>();
         private PoolWindowPage _poolPage;
         private IUIParent _standAlonePage;
-        private PagePushMode _currentPagePushMode;
+        // private PagePushMode _currentPagePushMode;
 
         /// <summary>
         /// 获取当前页面。
@@ -114,7 +114,8 @@ namespace PowerCellStudio
             }
             var page = GetOrCreatePage<T>();
             if (page == null) return null;
-            _currentPagePushMode = pushMode;
+            page.pushMode = pushMode;
+            // _currentPagePushMode = pushMode;
             if (currentPage != null && currentPage.GetHashCode() == page.GetHashCode())
             {
                 UIUtils.OpenUI(currentPage, data);
@@ -142,11 +143,42 @@ namespace PowerCellStudio
             }
             if (_pageStack.Count < 2) return;
             var page = _pageStack.Pop();
-            currentPage.transform.gameObject.SetActive(true);
-            currentPage.OnFocus();
-            foreach (var parentOpenedUI in currentPage.openedUIs)
+            if (currentPage.pushMode == PagePushMode.Overlap)
             {
-                parentOpenedUI.OnFocus();
+                // 获取重叠显示的page
+                var tempStack = new Stack<T>();
+                tempStack.Push(_pageStack.Pop());
+
+                while (_pageStack.count > 0)
+                {
+                    var tempPage = _pageStack.Peek();
+                    if (tempPage.pushMode != PagePushMode.Overlap)
+                        break;
+                    tempStack.Push(_pageStack.Pop());
+                }
+                tempStack.Push(_pageStack.Pop());
+                
+                // 按照原本page打开的顺序再次打开界面
+                while (tempStack.count > 0)
+                {
+                    var tempPage = tempStack.Pop();
+                    tempPage.transform.gameObject.SetActive(true);
+                    tempPage.OnFocus();
+                    foreach (var parentOpenedUI in tempPage.openedUIs)
+                    {
+                        parentOpenedUI.OnFocus();
+                    }
+                    _pageStack.Push(tempPage);
+                }
+            }
+            else
+            {
+                currentPage.transform.gameObject.SetActive(true);
+                currentPage.OnFocus();
+                foreach (var parentOpenedUI in currentPage.openedUIs)
+                {
+                    parentOpenedUI.OnFocus();
+                }
             }
             UIUtils.ClosePage(page, true, callback, _poolPage);
         }
@@ -252,7 +284,7 @@ namespace PowerCellStudio
         /// <param name="data">窗口数据。</param>
         private void OnUIWindowOpened(IUIChild data)
         {
-            if (_pageStack.Count < 2 || _currentPagePushMode == PagePushMode.Overlap) return;
+            if (_pageStack.Count < 2 || currentPage.pushMode == PagePushMode.Overlap) return;
             var index = 0;
             foreach (var uiParent in _pageStack)
             {

@@ -4,6 +4,13 @@ using UnityEngine.EventSystems;
 
 namespace PowerCellStudio
 {
+    public enum PagePushMode
+    {
+        CloseOther,
+        Replace,
+        Overlap
+    }
+
     public interface IUIParent : IUIComponent
     {
         internal HashStack<IUIChild> openedUIs { get; }
@@ -11,6 +18,8 @@ namespace PowerCellStudio
         internal Dictionary<Type, IUIChild> children { get; }
         
         internal OpenWindowRequestHolder windowRequests { get; set; }
+
+        public PagePushMode pushMode {get; set;}
 
         /// <summary>
         /// 在Page中打开UI
