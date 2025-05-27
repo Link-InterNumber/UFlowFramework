@@ -6,13 +6,58 @@ namespace PowerCellStudio
     public static class Bezier
     {
         /// <summary>
+        /// 操作transform进行贝塞尔曲线移动
+        /// </summary>
+        /// <param name="transform">控制节点</param>
+        /// <param name="duration">动画时长</param>
+        /// <param name="points">起/终点和控制点，第一个为起点，最后一个为终点</param>
+        /// <param name="unscaleTime">不受时间缩放影响，默认false</param>
+        /// <param name="isLocalPos">使用本地位置，默认false</param>
+        /// <returns>协程，由ApplicationManager启动</returns>
+        public static Coroutine BezierMove(Transform transform, float duration, IList<Vector3> points, bool unscaleTime = false, bool isLocalPos = false)
+        {
+            if (!transform || points == null || points.Count < 2) return null;
+            duration = Mathf.Max(0f, duration);
+            return ApplicationManager.instance.StartCoroutine(BezierMoveHandler(transform, duration, points, unscaleTime, isLocalPos));
+        }
+
+        private static IEnumerator BezierMoveHandler(Transform transform, float duration, IList<Vector3> points, bool unscaleTime = false, bool isLocalPos = false)
+        {
+            var time = 0f;
+            while (time < duration)
+            {
+                var t = time / duration;
+                var pos = CalcBezierPoint(t, points);
+                if (isLocalPos)
+                {
+                    transform.LocalPosition = pos;
+                }
+                else
+                {
+                    transform.position = pos;
+                }
+                time += unscaleTime ? Time.unscaleDeltaTime : Time.DeltaTime;
+                yield return null;
+            }
+            var lastPos = points[points.Count -1];
+            if (isLocalPos)
+            {
+                transform.LocalPosition = lastPos;
+            }
+            else
+            {
+                transform.position = lastPos;
+            }
+        }
+
+        /// <summary>
         /// 根据T值，计算二次贝塞尔曲线上面相对应的点
         /// </summary>
-        /// <param name="t"></param>T值（0-1）
-        /// <param name="p0"></param>起始点
-        /// <param name="p1"></param>控制点
-        /// <param name="p2"></param>目标点
-        /// <returns></returns>根据T值计算出来的贝赛尔曲线点
+        /// <param name="t">T值（0-1）</param>
+        /// <param name="p0">起始点</param>
+        /// <param name="p1">控制点</param>
+        /// <param name="p2">目标点</param>
+        /// <returns>根据T值计算出来的贝赛尔曲线点</returns>
         public static Vector3 CalcBezierPoint(float t, Vector3 p0, Vector3 p1, Vector3 p2) {
             float u = 1 - t;
             float tt = t * t;
@@ -56,28 +101,55 @@ namespace PowerCellStudio
         /// <param name="points"></param>
         /// <returns></returns>
         public static Vector3 CalcBezierPoint(float t, List<Vector3> points) {
-            var pointCount = points.Count;
-            if (pointCount == 3) {
-                return CalcBezierPoint(t, points[0], points[1], points[2]);
-            }
-            else if (pointCount == 4) {
-                return CalcBezierPoint(t, points[0], points[1], points[2], points[3]);
-            }
-            else {
-                Debug.LogWarning("Bezier now can not over 4 points");
+            if (points == null || points.Count == 0)
+            {
+                LinkLog.Error("控制点列表不能为空");
                 return Vector3.zero;
             }
-        }
+            if (points.Count == 1)
+            {
+                LinkLog.Error("控制点数量需要大于1");
+                return points[0];
+            }
+            if (points.Count == 2)
+            {
+                return Vector3.Lerp(points[0], points[1], t);
+            }
+            else if (points.Count == 3)
+            {
+                return CalcBezierPoint(t, points[0], points[1], points[2]);
+            }
+            else if (points.Count == 4)
+            {
+                return CalcBezierPoint(t, points[0], points[1], points[2], points[3]);
+            }
+            
+            int n = points.Count;
+            Vector3[] tempPoints = new Vector3[n];
+            for (int i = 0; i < n; i++)
+            {
+                tempPoints[i] = points[i];
+            }
 
+            for (int j = 1; j < n; j++)
+            {
+                for (int i = 0; i < n - j; i++)
+                {
+                    tempPoints[i] = (1 - t) * tempPoints[i] + t * tempPoints[i + 1];
+                }
+            }
+
+            return tempPoints[0];
+        }
 
         /// <summary>
         /// 获取存储贝塞尔曲线采样点
         /// </summary>
-        /// <param name="startPoint"></param>起始点
-        /// <param name="controlPoint"></param>控制点
-        /// <param name="endPoint"></param>目标点
-        /// <param name="segmentNum"></param>采样点的数量(最小2，即起点和终点)
-        /// <returns></returns>存储贝塞尔曲线点的数组
+        /// <param name="startPoint">起始点</param>
+        /// <param name="controlPoint">控制点</param>
+        /// <param name="endPoint">目标点</param>
+        /// <param name="segmentNum">采样点的数量(最小2，即起点和终点)</param>
+        /// <returns>存储贝塞尔曲线点的数组</returns>
         public static Vector3[] SampleBeizerPath(Vector3 startPoint, Vector3 controlPoint, Vector3 endPoint, int segmentNum)
         {
             segmentNum = Mathf.Max(2, segmentNum);
@@ -104,6 +176,11 @@ namespace PowerCellStudio
             return result;
         }
 
+        /// <summary>
+        /// 计算Bezier曲线上的点
+        /// </summary>
+        /// <param name="poss">贝塞尔曲线控制点坐标</param>
+        /// <returns>该条贝塞尔曲线上的点（二维坐标）</returns>
         public static Vector2[] Path(List<Vector2> poss)
         {
             var precision = Bezier.Precision(poss);
@@ -176,6 +253,11 @@ namespace PowerCellStudio
             return result;
         }
 
+        /// <summary>
+        /// 计算Bezier曲线上的点
+        /// </summary>
+        /// <param name="poss">贝塞尔曲线控制点坐标</param>
+        /// <returns>该条贝塞尔曲线上的点（二维坐标）</returns>
         public static Vector3[] Path(List<Vector3> poss)
         {
             var precision = Bezier.Precision(poss);
