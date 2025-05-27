@@ -30,10 +30,15 @@ namespace PowerCellStudio
             }
         }
 
+        /// <summary>
+        /// 获取UI系统显示的缩放值
+        /// </summary>
         public static float PixelScale
         {
             get
             {
+                if (instance.canvasRenderMode == RenderMode.ScreenSpaceOverlay)
+                    return 1f;
                 if (UICamera.instance)
                 {
                     return ScreenSize.x / UICamera.instance.cameraCom.pixelWidth;
@@ -132,25 +137,6 @@ namespace PowerCellStudio
         {
             var viewportPoint = MainCamera.instance.CameraCom.WorldToViewportPoint(pos);
             return UICamera.instance.cameraCom.ViewportToWorldPoint(viewportPoint);
-        }
-
-        public static void OpenMaskWindow(Func<bool> canClose, bool showWaiting = true)
-        {
-            var maskWindowData = new MaskWindow.MaskWindowData(showWaiting, canClose, null);
-            instance.OpenWindow<MaskWindow>(maskWindowData);
-        }
-        
-        public static void OpenMaskWindow(YieldInstruction yieldInstruction, bool showWaiting = true)
-        {
-            var maskWindowData = new MaskWindow.MaskWindowData(showWaiting, null, yieldInstruction);
-            instance.OpenWindow<MaskWindow>(maskWindowData);
-        }
-        
-        public static void OpenMaskWindow(float realTime, bool showWaiting = true)
-        {
-            var newWaitForSeconds = new WaitForSeconds(realTime);
-            var maskWindowData = new MaskWindow.MaskWindowData(showWaiting, null, newWaitForSeconds);
-            instance.OpenWindow<MaskWindow>(maskWindowData);
         }
         
         public static void EnableUIInput(bool enable)

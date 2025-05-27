@@ -14,8 +14,11 @@ namespace PowerCellStudio
         private Color _yellow = new Color(1f, 0.92f, 0.016f, 0.5f);
         private Color _red = new Color(1f, 0, 0, 0.5f);
         private int _errorCount;
+        private bool _isDrag;
+
         private void Awake()
         {
+            _isDrag = false;
             var btnRect = transform as RectTransform;
             btnRect.localScale = Vector3.one;
             var size = Mathf.Min(UIManager.ScreenSize.x, UIManager.ScreenSize.y) * 0.1f; 
@@ -32,6 +35,7 @@ namespace PowerCellStudio
             var debugBtn = gameObject.AddComponent<Button>();
             debugBtn.onClick.AddListener(() =>
             {
+                if (_isDrag) return;
                 _errorCount = 0;
                 img.color = _yellow;
                 UIManager.instance.OpenWindow<DebugWindow>();
@@ -73,6 +77,7 @@ namespace PowerCellStudio
 
         public void OnDrag(PointerEventData eventData)
         {
+            _isDrag = true;
             transform.position = UIManager.ScreenPosToUIPos(eventData.position);
         }
 
@@ -83,7 +88,7 @@ namespace PowerCellStudio
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            
+            _isDrag = false;
         }
     }
 }

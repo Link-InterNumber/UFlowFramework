@@ -296,7 +296,9 @@ namespace PowerCellStudio
             }
         }
 
-        // 关闭并销毁没开启的UI
+        /// <summary>
+        // 关闭并销毁没开启的UI。
+        /// </summary>
         public void Clear()
         {
             var pages = _pageStack.Where(o=>o != currentPage).ToArray();

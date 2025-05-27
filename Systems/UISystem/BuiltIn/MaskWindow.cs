@@ -107,5 +107,24 @@ namespace PowerCellStudio
             OnClose();
             return true;
         }
+
+        public static void Open(Func<bool> canClose, bool showWaiting = true)
+        {
+            var maskWindowData = new MaskWindow.MaskWindowData(showWaiting, canClose, null);
+            UIManager.instance.OpenWindow<MaskWindow>(maskWindowData);
+        }
+        
+        public static void Open(YieldInstruction yieldInstruction, bool showWaiting = true)
+        {
+            var maskWindowData = new MaskWindow.MaskWindowData(showWaiting, null, yieldInstruction);
+            UIManager.instance.OpenWindow<MaskWindow>(maskWindowData);
+        }
+        
+        public static void Open(float realTime, bool showWaiting = true)
+        {
+            var newWaitForSeconds = new WaitForSeconds(realTime);
+            var maskWindowData = new MaskWindow.MaskWindowData(showWaiting, null, newWaitForSeconds);
+            UIManager.instance.OpenWindow<MaskWindow>(maskWindowData);
+        }
     }
 }
