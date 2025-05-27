@@ -64,8 +64,11 @@ namespace PowerCellStudio
         /// <returns>页面实例，未找到则返回null。</returns>
         public T GetPage<T>() where T : UIBehaviour, IUIParent
         {
-            var page = _pageStack.LastOrDefault(x => x is T);
-            return page as T;
+            foreach (var page in _pageStack)
+            {
+                if (page is T casedPage) return casedPage;
+            }
+            return null;
         }
 
         /// <summary>
