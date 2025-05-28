@@ -33,12 +33,15 @@ namespace PowerCellStudio
         private NotifyNode[] _nodes;
         // public LinkEvent notifyTreeChanged = new LinkEvent();
 
+        /// <summary>
+        /// 初始化通知节点树。
+        /// </summary>
         public void OnInit()
         {
             if (_nodes != null) return;
-            var Number = Enum.GetValues(typeof(NotifyType));
-            _nodes = new NotifyNode[Number.Length];
-            for (int i = 0; i < Number.Length; i++)
+            var notifyNumber = Enum.GetValues(typeof(NotifyType));
+            _nodes = new NotifyNode[notifyNumber.Length];
+            for (int i = 0; i < notifyNumber.Length; i++)
             {
                 var node = new NotifyNode
                 {
@@ -154,18 +157,33 @@ namespace PowerCellStudio
             CalNodeNotify(parent, isOn, notifyValue);
         }
 
+        /// <summary>
+        /// 重新计算指定节点的通知状态。
+        /// </summary>
+        /// <param name="nodeType">节点类型</param>
         public void ReCalNodeNotify(NotifyType nodeType)
         {
             var node = GetNode(nodeType);
-            if (node.children.Count >= 0)
+            if (node.children.Count > 0)
             {
                 node.notifyNumber = node.children.Count(o => GetNode((NotifyType) o).isOn);
                 node.notifyValue = node.children.Sum(o => GetNode((NotifyType) o).notifyValue);
+            }
+            else
+            {
+                node.notifyNumber = 0;
+                node.notifyValue = 0;
             }
             node.isOn = node.notifyNumber > 0;
             CalNodeNotify(node, node.isOn, node.notifyValue);
         }
 
+        /// <summary>
+        /// 设置通知节点的状态。
+        /// </summary>
+        /// <param name="nodeType">节点类型</param>
+        /// <param name="isOn">是否开启</param>
+        /// <param name="notifyValue">通知值</param>
         public void SetNotify(NotifyType nodeType, bool isOn, int notifyValue = 0)
         {
             var node = GetNode(nodeType);
@@ -178,6 +196,12 @@ namespace PowerCellStudio
             CalNodeNotify(node, isOn, notifyValue);
         }
         
+        /// <summary>
+        /// 强制通知节点状态变更。
+        /// </summary>
+        /// <param name="nodeType">节点类型</param>
+        /// <param name="isOn">是否开启</param>
+        /// <param name="notifyValue">通知值</param>
         public void ForceNotify(NotifyType nodeType, bool isOn, int notifyValue = 0)
         {
             var node = GetNode(nodeType);
@@ -187,18 +211,34 @@ namespace PowerCellStudio
             node.Notify();
         }
 
+        /// <summary>
+        /// 注册通知回调。
+        /// </summary>
+        /// <param name="nodeType">节点类型</param>
+        /// <param name="fun">回调方法</param>
         public void Register(NotifyType nodeType, OnNotifyChange fun)
         {
             var node = GetNode(nodeType);
             node.onNotifyChange += fun;
         }
 
+        /// <summary>
+        /// 注销通知回调。
+        /// </summary>
+        /// <param name="nodeType">节点类型</param>
+        /// <param name="fun">回调方法</param>
         public void UnRegister(NotifyType nodeType, OnNotifyChange fun)
         {
             var node = GetNode(nodeType);
             node.onNotifyChange -= fun;
         }
 
+        /// <summary>
+        /// 判断通知节点是否开启。
+        /// </summary>
+        /// <param name="nodeType">节点类型</param>
+        /// <param name="notifyNum">通知数量</param>
+        /// <returns>是否开启</returns>
         public bool IsNotifyOn(NotifyType nodeType, out int notifyNum)
         {
             var node = GetNode(nodeType);
@@ -206,6 +246,12 @@ namespace PowerCellStudio
             return node.isOn;
         }
 
+        /// <summary>
+        /// 获取指定节点的所有子节点。
+        /// </summary>
+        /// <param name="notifyType">节点类型</param>
+        /// <param name="isOnOnly">只返回开启的子节点</param>
+        /// <returns>子节点集合</returns>
         public IEnumerable<NotifyType> GetChildren(NotifyType notifyType, bool isOnOnly = false)
         {
             var node = GetNode(notifyType);
@@ -216,7 +262,12 @@ namespace PowerCellStudio
                 yield return (NotifyType) nodeChild;
             }
         }
-        
+
+        /// <summary>
+        /// 获取指定节点的父节点。
+        /// </summary>
+        /// <param name="notifyType">节点类型</param>
+        /// <returns>父节点类型</returns>
         public NotifyType GetParent(NotifyType notifyType)
         {
             var node = GetNode(notifyType);

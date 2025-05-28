@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using System.Security.Cryptography;
 
 namespace PowerCellStudio
 {
@@ -9,27 +10,39 @@ namespace PowerCellStudio
     {
         #region string hash
 
-        private static System.Security.Cryptography.SHA1 hash =
-            new System.Security.Cryptography.SHA1CryptoServiceProvider();
-
+        /// <summary>
+        /// 生成字符串的哈希代码。
+        /// Generates a hash code for the given string.
+        /// </summary>
+        /// <param name="str">要生成哈希代码的字符串。</param>
+        /// <returns>生成的哈希代码。</returns>
         public static int GenHashCode(this string str)
         {
             int hashCode = 0;
             if (string.IsNullOrEmpty(str)) return hashCode;
             var bytes = Encoding.Unicode.GetBytes(str);
-            byte[] hashText = hash.ComputeHash(bytes);
-            int hashCodeStart = BitConverter.ToInt32(hashText, 0);
-            int hashCodeMedium = BitConverter.ToInt32(hashText, 8);
-            int hashCodeEnd = BitConverter.ToInt32(hashText, 16);
-            hashCode = (hashCodeStart * 31 + hashCodeMedium) * 17 + hashCodeEnd;
+            using (var hash = SHA1.Create())
+            {
+                byte[] hashText = hash.ComputeHash(bytes);
+                int hashCodeStart = BitConverter.ToInt32(hashText, 0);
+                int hashCodeMedium = BitConverter.ToInt32(hashText, 8);
+                int hashCodeEnd = BitConverter.ToInt32(hashText, 16);
+                hashCode = (hashCodeStart * 31 + hashCodeMedium) * 17 + hashCodeEnd;
+            }
             return int.MaxValue - hashCode;
         }
         
         #endregion
 
         #region KMP
-        
-        static int[] ComputePrefixFunction(string pattern)
+
+        /// <summary>
+        /// 计算前缀函数，用于KMP算法。
+        /// Computes prefix function for KMP algorithm.
+        /// </summary>
+        /// <param name="pattern">要查找的模式。</param>
+        /// <returns>前缀函数数组。</returns>
+        private static int[] ComputePrefixFunction(string pattern)
         {
             int m = pattern.Length;
             int[] prefixFunction = new int[m];
@@ -49,13 +62,25 @@ namespace PowerCellStudio
             }
             return prefixFunction;
         }
+
+        /// <summary>
+        /// 使用 KMP 算法查找模式在文本中的所有出现位置。
+        /// Finds all occurrences of the pattern in the text using KMP algorithm.
+        /// </summary>
+        /// <param name="text">要搜索的文本。</param>
+        /// <param name="pattern">要搜索的模式。</param>
+        /// <param name="result">数组，表示模式在文本中出现的起始索引。</param>
+        public static void KMPIndexOf(string text, string pattern, out int[] result)
+        {
+            int[] prefixFunction = ComputePrefixFunction(pattern);
+            result = KMPAlgorithm(text, pattern, prefixFunction);
+        }
         
-        static int[] KMPAlgorithm(string text, string pattern, int[] prefixFunction)
+        private static int[] KMPAlgorithm(string text, string pattern, int[] prefixFunction)
         {
             int n = text.Length;
             int m = pattern.Length;
-            if (n - m + 1 <= 0) return Array.Empty<int>();
-            int[] result = new int[n - m + 1];
+            var indices = new List<int>(); // This will hold the index positions
             int k = 0;
             for (int i = 0; i < n; i++)
             {
@@ -69,31 +94,20 @@ namespace PowerCellStudio
                 }
                 if (k == m)
                 {
-                    result[i - m + 1] = i;
+                    indices.Add(i - m + 1); // Append current match start index
                     k = prefixFunction[k - 1];
                 }
             }
-            return result;
+            return indices.ToArray(); // Convert list to array before returning
         }
 
-        /// <summary>
-        /// 使用 KMP 算法查找模式在文本中的所有出现位置。
-        /// </summary>
-        /// <param name="text">要搜索的文本。</param>
-        /// <param name="pattern">要搜索的模式。</param>
-        /// <param name="result">一个数组，表示模式在文本中出现的起始索引。</param>
-        public static void KMPIndexOf(string text, string pattern, out int[] result)
-        {
-            int[] prefixFunction = ComputePrefixFunction(pattern);
-            result = KMPAlgorithm(text, pattern, prefixFunction);
-        }
-        
         #endregion
 
         #region Set Color
-        
+
         /// <summary>
         /// 将文本中匹配正则表达式的部分设置为指定的颜色（十六进制格式）。
+        /// Sets parts of the text matched by regex to a specified color in hexadecimal encoding.
         /// </summary>
         /// <param name="text">要处理的文本。</param>
         /// <param name="pattern">用于匹配文本的正则表达式。</param>
@@ -101,21 +115,36 @@ namespace PowerCellStudio
         /// <returns>处理后的文本，匹配的部分被设置为指定的颜色。</returns>
         public static string SetColor(this string text, Regex pattern, string colorInHex)
         {
-            if(!colorInHex.StartsWith("#")) colorInHex = "#" + colorInHex;
-            var matched = pattern.Matches(text);
-            if (matched.Count == 0) return text;
-            var enumeratorIndex = 0;
-            var  result = pattern.Replace(text, o =>
+            if (string.IsNullOrEmpty(text) || pattern == null) return text;
+            if (!colorInHex.StartsWith("#")) colorInHex = "#" + colorInHex;
+
+            ReadOnlySpan<char> span = text.AsSpan();
+            var matches = pattern.Matches(text);
+            if (matches.Count == 0) return text;
+
+            int lastIndex = 0;
+            var sb = new System.Text.StringBuilder(text.Length + matches.Count * 20);
+
+            foreach (Match match in matches)
             {
-                var re = $"<color={colorInHex}>{matched[enumeratorIndex].Value}</color>";
-                enumeratorIndex++;
-                return re;
-            });
-            return result;
+                // Append text before match
+                sb.Append(span.Slice(lastIndex, match.Index - lastIndex));
+                // Append colored match
+                sb.Append("<color=");
+                sb.Append(colorInHex);
+                sb.Append('>');
+                sb.Append(span.Slice(match.Index, match.Length));
+                sb.Append("</color>");
+                lastIndex = match.Index + match.Length;
+            }
+            // Append the rest
+            sb.Append(span.Slice(lastIndex));
+            return sb.ToString();
         }
-        
+
         /// <summary>
         /// 将文本中匹配正则表达式的部分设置为指定的颜色（Color 对象）。
+        /// Sets parts of the text matched by regex to a specified color as a Color object.
         /// </summary>
         /// <param name="text">要处理的文本。</param>
         /// <param name="pattern">用于匹配文本的正则表达式。</param>
@@ -129,6 +158,7 @@ namespace PowerCellStudio
 
         /// <summary>
         /// 将文本中的数字部分设置为指定的颜色。
+        /// Sets the numeric parts of the text to a specified color.
         /// </summary>
         /// <param name="text">要处理的文本。</param>
         /// <param name="color">指定的颜色（Color 对象）。</param>
@@ -143,6 +173,7 @@ namespace PowerCellStudio
 
         /// <summary>
         /// 安全格式化字符串。
+        /// Formats the string safely, returning the original string on failure.
         /// </summary>
         /// <param name="format">要格式化的字符串。</param>
         /// <param name="args">格式化字符串的参数。</param>
@@ -155,18 +186,29 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                LinkLog.LogError(e.ToString());
+                Debug.LogError(e.ToString()); // Ensure Debug.LogError is used for logging
                 return format;
             }
         }
 
+        /// <summary>
+        /// 将分号分隔的字符串转换为包含两个整数的元组。
+        /// Converts a semicolon-separated string into a tuple containing two integers.
+        /// </summary>
+        /// <param name="input">要转换的字符串 / The string to convert.</param>
+        /// <returns>包含两个整数的元组。如果转换失败则返回 (0, 0)。/ A tuple containing two integers. Returns (0, 0) if conversion fails.</returns>
         public static (int item1, int item2) ToI2(this string input)
         {
-            if (string.IsNullOrEmpty(input)) return default;
-            var split = input.Split(';');
-            if (split.Length < 2) return default;
-            if (int.TryParse(split[0], out var number1)
-                && int.TryParse(split[0], out var number2))
+            if (string.IsNullOrWhiteSpace(input)) return default;
+
+            ReadOnlySpan<char> span = input.AsSpan();
+            int sepIndex = span.IndexOf(';');
+            if (sepIndex < 1 || sepIndex == span.Length - 1) return default;
+
+            var first = span.Slice(0, sepIndex).Trim();
+            var second = span.Slice(sepIndex + 1).Trim();
+
+            if (int.TryParse(first, out var number1) && int.TryParse(second, out var number2))
             {
                 return (number1, number2);
             }

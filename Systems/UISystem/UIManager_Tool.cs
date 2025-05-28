@@ -7,6 +7,7 @@ namespace PowerCellStudio
     {
         /// <summary>
         /// 获取UI系统下的屏幕尺寸。
+        /// Retrieve the screen size under the UI system.
         /// </summary>
         public static Vector2 ScreenSize
         {
@@ -14,7 +15,6 @@ namespace PowerCellStudio
             {
                 var screenHeight = ConstSetting.DefaultUISize.y;
                 var screenWidth = ConstSetting.DefaultUISize.x;
-                // var newRes = Vector2Int.zero;
                 if (screenHeight < screenWidth)
                 {
                     var baseHeight = ConstSetting.DefaultUISize.y;
@@ -31,7 +31,8 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 获取UI系统显示的缩放值
+        /// 获取UI系统显示的缩放值。
+        /// Get the scaling value for display in the UI system.
         /// </summary>
         public static float PixelScale
         {
@@ -47,6 +48,12 @@ namespace PowerCellStudio
             }
         }
 
+        /// <summary>
+        /// 将屏幕坐标转换为UI坐标。
+        /// Convert screen position to UI position.
+        /// </summary>
+        /// <param name="screenPos">屏幕坐标 / Screen position</param>
+        /// <returns>UI坐标 / UI position</returns>
         public static Vector3 ScreenPosToUIPos(Vector2 screenPos)
         {
             switch (instance.canvasRenderMode)
@@ -62,23 +69,25 @@ namespace PowerCellStudio
                     throw new ArgumentOutOfRangeException();
             }
         }
-        
+
         /// <summary>
         /// 获取UI元素在屏幕上的位置。
+        /// Get the screen position of a UI element.
         /// </summary>
-        /// <param name="uiElement">UI元素的RectTransform。</param>
-        /// <returns>UI元素在屏幕上的位置。</returns>
+        /// <param name="uiElement">UI元素的RectTransform / RectTransform of the UI element</param>
+        /// <returns>UI元素在屏幕上的位置 / Screen position of the UI element</returns>
         public static Vector2 GetScreenPosition(RectTransform uiElement)
         {
-            if(!uiElement) return Vector2.zero;
+            if (!uiElement) return Vector2.zero;
             return GetScreenPosition(uiElement.position);
         }
-        
+
         /// <summary>
         /// 获取UI位置在屏幕上的位置。
+        /// Get screen position from a UI position.
         /// </summary>
-        /// <param name="uiPosition">UI位置的Vector3。</param>
-        /// <returns>UI位置在屏幕上的位置。</returns>
+        /// <param name="uiPosition">UI位置的Vector3 / Vector3 of the UI position</param>
+        /// <returns>UI位置在屏幕上的位置 / Screen position of the UI</returns>
         public static Vector2 GetScreenPosition(Vector3 uiPosition)
         {
             switch (instance.canvasRenderMode)
@@ -92,23 +101,25 @@ namespace PowerCellStudio
                     throw new ArgumentOutOfRangeException();
             }
         }
-        
+
         /// <summary>
         /// 获取UI元素在主摄像机中的位置。
+        /// Get the position of a UI element in the main camera.
         /// </summary>
-        /// <param name="uiElement">UI元素的RectTransform。</param>
-        /// <returns>UI元素在主摄像机中的位置。</returns>
+        /// <param name="uiElement">UI元素的RectTransform / RectTransform of the UI element</param>
+        /// <returns>UI元素在主摄像机中的位置 / Position of the UI element in the main camera</returns>
         public static Vector3 GetUIToMainCameraPosition(RectTransform uiElement)
         {
-            if(!uiElement) return Vector2.zero;
+            if (!uiElement) return Vector2.zero;
             return GetUIToMainCameraPosition(uiElement.position);
         }
-        
+
         /// <summary>
         /// 获取UI位置在主摄像机中的位置。
+        /// Get the position from a UI to the main camera.
         /// </summary>
-        /// <param name="uiPosition">UI位置的Vector3。</param>
-        /// <returns>UI位置在主摄像机中的位置。</returns>
+        /// <param name="uiPosition">UI位置的Vector3 / Vector3 of the UI position</param>
+        /// <returns>UI位置在主摄像机中的位置 / Position of the UI in the main camera</returns>
         public static Vector3 GetUIToMainCameraPosition(Vector3 uiPosition)
         {
             Vector2 viewportPoint;
@@ -130,19 +141,25 @@ namespace PowerCellStudio
 
         /// <summary>
         /// 将主摄像机位置转换为UI位置。
+        /// Convert main camera position to UI position.
         /// </summary>
-        /// <param name="pos">主摄像机位置的Vector3。</param>
-        /// <returns>UI位置的Vector2。</returns>
+        /// <param name="pos">主摄像机位置的Vector3 / Vector3 of the main camera position</param>
+        /// <returns>UI位置的Vector2 / UI position as a Vector2</returns>
         public static Vector2 MainCamaraPosToUIPos(Vector3 pos)
         {
             var viewportPoint = MainCamera.instance.CameraCom.WorldToViewportPoint(pos);
             return UICamera.instance.cameraCom.ViewportToWorldPoint(viewportPoint);
         }
-        
+
+        /// <summary>
+        /// 启用或禁用UI输入。
+        /// Enable or disable UI input.
+        /// </summary>
+        /// <param name="enable">是否启用 / Whether to enable</param>
         public static void EnableUIInput(bool enable)
         {
             EventManager.instance.onUIInputEnable?.Invoke(enable);
-            if(enable) instance.CloseWindow<MaskWindow>();
+            if (enable) instance.CloseWindow<MaskWindow>();
             else instance.OpenWindow<MaskWindow>();
         }
     }

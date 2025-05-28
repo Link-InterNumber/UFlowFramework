@@ -6,7 +6,7 @@ namespace PowerCellStudio
     [Serializable]
     public class LissajousCurve
     {
-        [Tooltip("宽度")] [Min(0f)] public float weight;
+        [Tooltip("宽度")] [Min(0f)] public float width;
         [Tooltip("高度")] [Min(0f)] public float height;
         [Tooltip("x频率")] [Min(0f)] public float frequencyX;
         [Tooltip("y频率")] [Min(0f)] public float frequencyY;
@@ -14,41 +14,51 @@ namespace PowerCellStudio
 
         private float _curTime;
         private Vector2 _curPos;
-        
-        public LissajousCurve(float weight, float height, float frequencyX, float frequencyY, float offset, float startTime = 0f)
+
+        /// <summary>
+        /// 构造一个新的Lissajous曲线实例。
+        /// Construct a new instance of LissajousCurve.
+        /// </summary>
+        /// <param name="width">曲线的宽度 / Width of the curve</param>
+        /// <param name="height">曲线的高度 / Height of the curve</param>
+        /// <param name="frequencyX">X轴的频率 / Frequency on the X-axis</param>
+        /// <param name="frequencyY">Y轴的频率 / Frequency on the Y-axis</param>
+        /// <param name="offset">曲线的偏移 / Offset of the curve</param>
+        /// <param name="startTime">起始时间 / Start time</param>
+        public LissajousCurve(float width, float height, float frequencyX, float frequencyY, float offset, float startTime = 0f)
         {
-            this.weight = Mathf.Max(weight, 0f);
+            this.width = Mathf.Max(width, 0f);
             this.height = Mathf.Max(height, 0f);
             this.frequencyX = Mathf.Max(frequencyX, 0f);
             this.frequencyY = Mathf.Max(frequencyY, 0f);
             this.offset = Mathf.Clamp(offset, 0f, Mathf.PI * 0.5f);
-            _curTime = startTime;
-            _curPos.x = this.weight * Mathf.Sin(this.frequencyX * _curTime);
-            _curPos.y = this.height * Mathf.Sin(this.frequencyY * _curTime + this.offset);
+            UpdateTime(startTime);
         }
 
         /// <summary>
-        /// 推进曲线更新
+        /// 更新曲线的当前位置，推进时间。
+        /// Update the current position of the curve, advancing the time.
         /// </summary>
-        /// <param name="dt">更新时间差</param>
-        /// <returns>二维位置</returns>
+        /// <param name="dt">时间增量 / Time increment</param>
+        /// <returns>曲线的当前二维位置 / Current 2D position of the curve</returns>
         public Vector2 Update(float dt)
         {
             _curTime += dt;
-            _curPos.x = weight * Mathf.Sin(frequencyX * _curTime);
+            _curPos.x = width * Mathf.Sin(frequencyX * _curTime);
             _curPos.y = height * Mathf.Sin(frequencyY * _curTime + offset);
             return _curPos;
         }
         
         /// <summary>
-        /// 将曲线设置在给定的时间点
+        /// 设置曲线在给定的时间点。
+        /// Set the curve at a given time point.
         /// </summary>
-        /// <param name="time">时间点位置</param>
-        /// <returns>二维位置</returns>
+        /// <param name="time">设置时间点 / Set the time point</param>
+        /// <returns>曲线的当前二维位置 / Current 2D position of the curve</returns>
         public Vector2 UpdateTime(float time)
         {
             _curTime = time;
-            _curPos.x = weight * Mathf.Sin(frequencyX * _curTime);
+            _curPos.x = width * Mathf.Sin(frequencyX * _curTime);
             _curPos.y = height * Mathf.Sin(frequencyY * _curTime + offset);
             return _curPos;
         }

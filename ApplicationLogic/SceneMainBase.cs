@@ -80,6 +80,10 @@ namespace PowerCellStudio
             ReadyForStart();
         }
 
+        /// <summary>
+        /// 程序初始化完成，可以开始业务逻辑
+        /// The program initialization was completed, the game logic can be started
+        /// </summary>
         protected abstract void ReadyForStart();
     }
 }

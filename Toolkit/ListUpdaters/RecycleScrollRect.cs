@@ -87,8 +87,10 @@ namespace PowerCellStudio
 
         /// <summary>
         /// 将数据列表传入并刷新列表
+        /// Updates the list with the given data and refreshes the list.
         /// </summary>
-        /// <param name="datas"></param>
+        /// <param name="datas">数据列表 - The list of data.</param>
+        /// <param name="destroyUnused">是否销毁未使用的对象 - Whether to destroy unused objects.</param>
         public void UpdateList(IList datas, bool destroyUnused = false)
         {
             if (datas == null) return;
@@ -203,8 +205,10 @@ namespace PowerCellStudio
         }
         
         private int _previousIndex = -1;
+
         /// <summary>
-        /// 强制刷新显示范围内的数据
+        /// 强制重建列表的可见部分
+        /// Forces a rebuild of the visible portion of the list.
         /// </summary>
         public void ForceRebuild()
         {
@@ -263,16 +267,23 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 获取索引位上的数据
+        /// 获取指定索引的数据
+        /// Retrieves data at the specified index.
         /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
+        /// <param name="index">要检索的数据的索引 - The index of the data to retrieve.</param>
+        /// <returns>指定索引处的数据 - The data at the specified index.</returns>
         public object GetData(int index)
         {
             if (_dataList.Count - 1 >= index && index >= 0) return _dataList[index];
             return null;
         }
 
+        /// <summary>
+        /// 更新指定索引的列表项内容
+        /// Updates the content of the list item at the specified index.
+        /// </summary>
+        /// <param name="index">要更新的项的索引 - The index of the item to update.</param>
+        /// <param name="data">新的数据 - The new data for the item.</param>
         public void UpdateItem(int index, object data)
         {
             if (index > _dataList.Count - 1 || index < 0) return;
@@ -281,6 +292,12 @@ namespace PowerCellStudio
             item.listItem?.UpdateContent(index, data, this);
         }
 
+        /// <summary>
+        /// 添加新项目到指定索引位置
+        /// Adds a new item at the specified index position.
+        /// </summary>
+        /// <param name="index">插入新项的索引位置 - The index position to insert the new item.</param>
+        /// <param name="data">要插入的新数据 - The new data to insert.</param>
         public void AddItem(int index, object data)
         {
             if (index < 0) return;
@@ -301,6 +318,11 @@ namespace PowerCellStudio
             UpdateList(newdata);
         }
 
+        /// <summary>
+        /// 从列表中移除指定索引的项目
+        /// Removes the item at the specified index from the list.
+        /// </summary>
+        /// <param name="index">要移除的项的索引位置 - The index position of the item to remove.</param>
         public void RemoveItem(int index)
         {
             if (index < 0 || index > _dataList.Count - 1) return;
@@ -313,6 +335,10 @@ namespace PowerCellStudio
             UpdateList(newdata);
         }
 
+        /// <summary>
+        /// 清空列表中的所有项目
+        /// Clears all items from the list.
+        /// </summary>
         public void Clear()
         {
             var newdata = new List<object>();
@@ -321,7 +347,7 @@ namespace PowerCellStudio
 
         public IEnumerator GetEnumerator()
         {
-            yield return _dataList.GetEnumerator();
+            return _dataList.GetEnumerator();
             // ReorderItemsByPos(scroll.normalizedPosition);
         }
 
@@ -332,11 +358,12 @@ namespace PowerCellStudio
         }
         
         /// <summary>
-        /// 索引位的数据是否在显示范围内
+        /// 检查索引处的数据是否在可见范围内
+        /// Checks whether the data at the specified index is within the visible range.
         /// </summary>
-        /// <param name="index"></param>
-        /// <param name="item"></param>
-        /// <returns></returns>
+        /// <param name="index">检查的索引 - The index to check.</param>
+        /// <param name="item">如果可见，返回项目；否则返回null - Returns the item if visible, otherwise returns null.</param>
+        /// <returns>返回是否在可见范围内 - Returns whether the item is within the visible range.</returns>
         public bool IsDataInVisible(int index, out IListItem item)
         {
             if (_itemDict.TryGetValue(index, out var listItem))
