@@ -239,5 +239,58 @@ namespace PowerCellStudio
 
 #endregion
 
+#region Tool
+
+        /// <summary>
+        /// 获取摄像机视野内的世界包围盒（AABB）。
+        /// Get the world axis-aligned bounding box (AABB) of the camera's view.
+        /// </summary>
+        /// <param name="camera">目标摄像机 / Target camera.</param>
+        /// <param name="z">世界空间下的深度 / Z value in world space.</param>
+        /// <returns>包围盒Bounds / The bounds in world space.</returns>
+        public static Bounds GetViewBounds(this Camera camera, float z = 0f)
+        {
+            Vector3 min = camera.ViewportToWorldPoint(new Vector3(0, 0, z));
+            Vector3 max = camera.ViewportToWorldPoint(new Vector3(1, 1, z));
+            return new Bounds((min + max) * 0.5f, max - min);
+        }
+
+        /// <summary>
+        /// 判断某点是否在摄像机视野内。
+        /// Check if a point is within the camera's view.
+        /// </summary>
+        public bool IsInView(Vector3 worldPos)
+        {
+            Vector3 viewportPoint = _cameraCom.WorldToViewportPoint(worldPos);
+            return viewportPoint.x >= 0 && viewportPoint.x <= 1 &&
+                viewportPoint.y >= 0 && viewportPoint.y <= 1 &&
+                viewportPoint.z > 0;
+        }
+
+        /// <summary>
+        /// 获取摄像机屏幕中心的世界坐标。
+        /// Get the world position at the center of the camera's screen.
+        /// </summary>
+        /// <param name="camera">目标摄像机 / Target camera.</param>
+        /// <param name="z">世界空间下的深度 / Z value in world space.</param>
+        /// <returns>世界坐标 / World position.</returns>
+        public static Vector3 GetScreenCenterWorldPosition(this Camera camera, float z = 0f)
+        {
+            Vector3 screenCenter = new Vector3(Screen.width / 2f, Screen.height / 2f, z);
+            return camera.ScreenToWorldPoint(screenCenter);
+        }
+
+        /// <summary>
+        /// 将摄像机对准目标点。
+        /// Make the camera look at a target position.
+        /// </summary>
+        /// <param name="camera">目标摄像机 / Target camera.</param>
+        /// <param name="target">目标点 / Target position.</param>
+        public static void LookAt(this Camera camera, Vector3 target)
+        {
+            camera.transform.LookAt(target);
+        }
+
+#endregion
     }
 }

@@ -7,85 +7,141 @@ using UnityRandom = UnityEngine.Random;
 
 namespace PowerCellStudio
 {
+    /// <summary>
+    /// 随机化工具类，包含各种随机化方法。
+    /// Randomizer utility class containing various methods for randomization.
+    /// </summary>
     public class Randomizer
     {
         private static Random _random = new Random();
         
+        /// <summary>
+        /// 设置随机种子。
+        /// Set random seed for Unity's random number generator.
+        /// </summary>
+        /// <param name="seed">种子值 / Seed value</param>
         public static void SetSeed(int seed)
         {
             UnityRandom.InitState(seed);
         }
 
+        /// <summary>
+        /// 获取一个介于0和1之间的随机值。
+        /// Get a random value between 0 and 1.
+        /// </summary>
+        /// <returns>随机值 / Random value</returns>
         public static float Value01()
         {
             return UnityRandom.value;
         }
 
+        /// <summary>
+        /// 获取一个介于min和max之间的随机浮点数。
+        /// Get a random float between <paramref name="min"/> and <paramref name="max"/>.
+        /// </summary>
+        /// <param name="min">最小值 / Minimum value</param>
+        /// <param name="max">最大值 / Maximum value</param>
+        /// <returns>随机浮点数 / Random float</returns>
         public static float Range(float min, float max)
         {
             return UnityRandom.Range(min, max);
         }
         
+        /// <summary>
+        /// 获取一个介于min和max之间的随机整数。
+        /// Get a random integer between <paramref name="min"/> and <paramref name="max"/>.
+        /// </summary>
+        /// <param name="min">最小值 / Minimum value</param>
+        /// <param name="max">最大值 / Maximum value</param>
+        /// <returns>随机整数 / Random integer</returns>
         public static int Range(int min, int max)
         {
             return UnityRandom.Range(min, max);
         }
         
+        /// <summary>
+        /// 获取一个介于min和max之间的随机长整型数。
+        /// Get a random long between <paramref name="min"/> and <paramref name="max"/>.
+        /// </summary>
+        /// <param name="min">最小值 / Minimum value</param>
+        /// <param name="max">最大值 / Maximum value</param>
+        /// <returns>随机长整型数 / Random long</returns>
         public static long Range(long min, long max)
         {
-            if (min >= max)
+            if (min == max) return min;
+            if (min > max)
             {
-                throw new ArgumentException("max 必须大于 min");
+                var temp = min;
+                min = max;
+                max = min;
             }
 
-            // 生成一个介于 [0, 1) 的随机比例
             byte[] buffer = new byte[8];
             _random.NextBytes(buffer);
             double randomDouble = (double)BitConverter.ToUInt64(buffer, 0) / ulong.MaxValue;
 
-            // 将比例映射到 [min, max] 范围
             long range = max - min;
             return (long)(randomDouble * range) + min;
         }
         
+        /// <summary>
+        /// 生成一个随机长整数。
+        /// Generate a random long integer.
+        /// </summary>
+        /// <returns>随机长整数 / Random long</returns>
         public static long RandomLong()
         {
-            // 生成8字节的随机数组
             byte[] buffer = new byte[8];
             _random.NextBytes(buffer);
         
-            // 将字节数组转换为 long
             long randomLong = BitConverter.ToInt64(buffer, 0);
             return randomLong;
         }
 
         /// <summary>
-        /// [0f, 1f]内判断
+        /// 在[0f, 1f]范围内进行判断。
+        /// Check whether a value meets a random condition within [0f, 1f].
         /// </summary>
-        /// <param name="val"></param>
-        /// <returns></returns>
+        /// <param name="val">要判断的值 / Value to check against</param>
+        /// <returns>结果，是否符合 / Result, whether it meets the condition</returns>
         public static bool True(float val)
         {
             return val >= UnityRandom.value;
         }
         
+        /// <summary>
+        /// 在给定权重和总计范围内进行判断。
+        /// Check whether a condition is met based on weight and total range.
+        /// </summary>
+        /// <param name="weight">权重值 / Weight value</param>
+        /// <param name="total">总计范围 / Total range</param>
+        /// <returns>结果，是否符合 / Result, whether it meets the condition</returns>
         public static bool True(float weight, float total)
         {
             if (total <= weight) return true;
             return weight >= UnityRandom.Range(0f, total);
         }
         
+        /// <summary>
+        /// 在给定整数权重和总计范围内进行判断。
+        /// Check whether a condition is met based on integer weight and total range.
+        /// </summary>
+        /// <param name="weight">权重值 / Weight value</param>
+        /// <param name="total">总计范围 / Total range</param>
+        /// <returns>结果，是否符合 / Result, whether it meets the condition</returns>
         public static bool True(int weight, int total)
         {
             if (total <= weight) return true;
-            return weight >= UnityRandom.Range(0f, total);
+            return weight >= UnityRandom.Range(0, total);
         }
 
         /// <summary>
-        /// 随机抽取
+        /// 从数组中随机选择一个元素。
+        /// Randomly select an element from an array.
         /// </summary>
-        /// <param name="elements">抽取池</param>
-        /// <returns></returns>
+        /// <typeparam name="T">元素类型 / Type of element</typeparam>
+        /// <param name="elements">抽取池 / Pool of elements to select from</param>
+        /// <returns>选中的元素 / Selected element</returns>
         public static T RandomSelection<T>(T[] elements)
         {
             if (elements == null || elements.Length == 0) return default;
@@ -95,10 +151,12 @@ namespace PowerCellStudio
         }
         
         /// <summary>
-        /// 随机抽取
+        /// 从列表中随机选择一个元素。
+        /// Randomly select an element from a list.
         /// </summary>
-        /// <param name="elements">抽取池</param>
-        /// <returns></returns>
+        /// <typeparam name="T">元素类型 / Type of element</typeparam>
+        /// <param name="elements">抽取池 / Pool of elements to select from</param>
+        /// <returns>选中的元素 / Selected element</returns>
         public static T RandomSelection<T>(IList<T> elements)
         {
             if (elements == null || elements.Count == 0) return default;
@@ -108,16 +166,19 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 带权重的随机抽取
+        /// 根据权重从数组中随机选择一个元素。
+        /// Randomly select an element from an array based on weights.
         /// </summary>
-        /// <param name="elements">抽取池</param>
-        /// <param name="weights">对应权重</param>
-        /// <returns>被抽中元素</returns>
+        /// <typeparam name="T">元素类型 / Type of element</typeparam>
+        /// <param name="elements">抽取池 / Pool of elements to select from</param>
+        /// <param name="weights">对应权重 / Corresponding weights</param>
+        /// <returns>选中的元素 / Selected element</returns>
         public static T WeightedRandomSelection<T>(T[] elements, int[] weights)
         {
             if (elements == null || elements.Length == 0 || weights == null) return default;
             if (weights.Length == 0) return RandomSelection(elements);
             if (elements.Length == 1) return elements[0];
+
             int totalWeight = weights.Sum();
             int randomNumber = UnityRandom.Range(0, totalWeight);
             int cumulativeWeight = 0;
@@ -134,16 +195,19 @@ namespace PowerCellStudio
         }
         
         /// <summary>
-        /// 带权重的随机抽取
+        /// 根据权重从列表中随机选择一个元素。
+        /// Randomly select an element from a list based on weights.
         /// </summary>
-        /// <param name="elements">抽取池</param>
-        /// <param name="weights">对应权重</param>
-        /// <returns>被抽中元素</returns>
+        /// <typeparam name="T">元素类型 / Type of element</typeparam>
+        /// <param name="elements">抽取池 / Pool of elements to select from</param>
+        /// <param name="weights">对应权重 / Corresponding weights</param>
+        /// <returns>选中的元素 / Selected element</returns>
         public static T WeightedRandomSelection<T>(List<T> elements, List<int> weights)
         {
             if (elements == null || elements.Count == 0 || weights == null) return default;
             if (weights.Count == 0) return RandomSelection(elements);
             if (elements.Count == 1) return elements[0];
+
             int totalWeight = weights.Sum();
             int randomNumber = UnityRandom.Range(0, totalWeight);
             int cumulativeWeight = 0;
@@ -160,13 +224,16 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 带权重的随机抽取
+        /// 根据权重从字典中随机选择一个元素。
+        /// Randomly select an element from a dictionary based on weights.
         /// </summary>
-        /// <param name="itemWeightPair">抽取池和对应权重</param>
-        /// <returns>被抽中元素</returns>
+        /// <typeparam name="T">元素类型 / Type of element</typeparam>
+        /// <param name="itemWeightPair">元素与权重 / Element-weight pairs</param>
+        /// <returns>选中的元素 / Selected element</returns>
         public static T WeightedRandomSelection<T>(Dictionary<T, int> itemWeightPair)
         {
             if (itemWeightPair == null || itemWeightPair.Count == 0) return default;
+
             int totalWeight = itemWeightPair.Values.Sum();
             int randomNumber = UnityRandom.Range(0, totalWeight);
             int cumulativeWeight = 0;
@@ -180,23 +247,25 @@ namespace PowerCellStudio
         }
         
         /// <summary>
-        /// 不重复抽取
+        /// 从列表中随机选择多个元素，选取元素不重复。
+        /// Randomly select multiple elements from a list, without duplication.
         /// </summary>
-        /// <param name="elements">抽取池</param>
-        /// <param name="count">抽取数</param>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
+        /// <typeparam name="T">元素类型 / Type of element</typeparam>
+        /// <param name="elements">抽取的元素池 / Pool of elements to select from</param>
+        /// <param name="count">抽取的数量 / Number of elements to select</param>
+        /// <returns>选中的元素集合 / List of selected elements</returns>
         public static List<T> RandomSelectionWithoutDuplicates<T>(IList<T> elements, int count)
         {
             if (elements == null || elements.Count == 0) return default;
             if (elements.Count == 1) return new List<T>(elements);
-            List<T> result = new List<T>();
 
+            List<T> result = new List<T>();
             if (count > elements.Count)
             {
                 Debug.LogWarning("Count exceeds the number of elements!");
                 return result;
             }
+
             List<T> remainingElements = elements.ToList();
             for (int i = 0; i < count; i++)
             {
@@ -209,12 +278,13 @@ namespace PowerCellStudio
         }
         
         /// <summary>
-        /// 不重复抽取
+        /// 从数组中随机选择多个元素，选取元素不重复。
+        /// Randomly select multiple elements from an array, without duplication.
         /// </summary>
-        /// <param name="elements">抽取池</param>
-        /// <param name="count">抽取数</param>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
+        /// <typeparam name="T">元素类型 / Type of element</typeparam>
+        /// <param name="elements">抽取的元素池 / Pool of elements to select from</param>
+        /// <param name="count">抽取的数量 / Number of elements to select</param>
+        /// <returns>选中的元素集合 / List of selected elements</returns>
         public static List<T> RandomSelectionWithoutDuplicates<T>(T[] elements, int count)
         {
             List<T> result = new List<T>();
@@ -223,6 +293,7 @@ namespace PowerCellStudio
                 Debug.LogWarning("Count exceeds the number of elements!");
                 return result;
             }
+
             List<T> remainingElements = elements.ToList();
             for (int i = 0; i < count; i++)
             {
@@ -239,6 +310,12 @@ namespace PowerCellStudio
             public T Element;
             public int Weight;
 
+            /// <summary>
+            /// 初始化带权重的元素。
+            /// Initialize a weighted element.
+            /// </summary>
+            /// <param name="element">元素 / Element</param>
+            /// <param name="weight">权重 / Weight</param>
             public WeightedElement(T element, int weight)
             {
                 Element = element;
@@ -247,30 +324,28 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 带权重不重复抽取
+        /// 带权重随机选择多个元素，不重复。
+        /// Randomly select multiple weighted elements without duplication.
         /// </summary>
-        /// <param name="ItemWeightsPair">元素与权重</param>
-        /// <param name="count">抽取数</param>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
+        /// <typeparam name="T">元素类型 / Type of element</typeparam>
+        /// <param name="ItemWeightsPair">元素与权重的字典 / Dictionary of elements and weights</param>
+        /// <param name="count">要选取的数量 / Number of elements to select</param>
+        /// <returns>选中的元素集合 / List of selected elements</returns>
         public static List<T> WeightedRandomSelectionWithoutDuplicates<T>(Dictionary<T, int> ItemWeightsPair, int count)
         {
             if (ItemWeightsPair == null || ItemWeightsPair.Count <= 0 || count <= 0) return new List<T>();
             if (count > ItemWeightsPair.Count) return ItemWeightsPair.Keys.ToList();
+
             List<T> result = new List<T>();
-            // 创建一个带权重的元素列表
             List<WeightedElement<T>> weightedElements = ItemWeightsPair.Select(item => new WeightedElement<T>(item.Key, item.Value)).ToList();
-            // 按权重从高到低排序
             weightedElements.Sort((a, b) => b.Weight.CompareTo(a.Weight));
-            // 随机抽取元素
+
             for (int i = 0; i < count; i++)
             {
                 WeightedElement<T> selected = weightedElements[0];
-                // 计算总权重
                 float totalWeight = weightedElements.Aggregate<WeightedElement<T>, float>(0, (current, element) => current + element.Weight);
-                // 随机选择一个元素
                 float randomValue = UnityRandom.Range(0, totalWeight);
-                // 根据随机值确定选中的元素
+
                 foreach (WeightedElement<T> element in weightedElements)
                 {
                     randomValue -= element.Weight;
@@ -280,7 +355,6 @@ namespace PowerCellStudio
                         break;
                     }
                 }
-                // 添加选中的元素到结果列表，并从权重列表中移除
                 result.Add(selected.Element);
                 weightedElements.Remove(selected);
             }

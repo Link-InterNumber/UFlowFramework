@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -6,13 +7,14 @@ namespace PowerCellStudio
 {
     public sealed class EntityManager
     {
-        private LinkedList<IEntityGroup> _entityGroups = new LinkedList<IEntityGroup>();
+        private List<IEntityGroup> _entityGroups = new List<IEntityGroup>();
         private Dictionary<long, ILinkEntity> _entities = new Dictionary<long, ILinkEntity>();
         private HashSet<long> _waitToRemove = new HashSet<long>();
+        private Queue<ILinkEntity> _waitToAdd = new Queue<ILinkEntity>();
 
         public void AddEntityGroup(IEntityGroup entityGroup)
         {
-            _entityGroups.AddLast(entityGroup);
+            _entityGroups.Add(entityGroup);
         }
         
         public void RemoveEntityGroup(IEntityGroup entityGroup)
@@ -22,10 +24,34 @@ namespace PowerCellStudio
         
         public void Update(float deltaTime)
         {
+            // 添加新entity
+            if (_waitToAdd.Count > 0)
+            {
+                while (_waitToAdd.Count > 0)
+                {
+                    var entity = _waitToAdd.Dequeue();
+                    var added = false;
+                    // Use for loop instead of foreach for better performance
+                    for (int i = 0; i < _entityGroups.Count; i++)
+                    {
+                        if (_entityGroups[i].AddEntity(entity))
+                        {
+                            added = true;
+                            // Break early if entity can only belong to one group
+                            // break;
+                        }
+                    }
+                    if (added) _entities.Add(entity.index, entity);
+                }
+            }
+
+            // 运行Group逻辑
             foreach (var entityGroup in _entityGroups)
             {
                 entityGroup.Update(deltaTime);
             }
+
+            // 移除entity
             if (_waitToRemove.Count <= 0) return;
             foreach (var index in _waitToRemove)
             {
@@ -36,11 +62,12 @@ namespace PowerCellStudio
 
         public T GetEntityGroup<T>() where T : class, IEntityGroup
         {
-            foreach (var entityGroup in _entityGroups)
+            // Optimized type checking with direct cast
+            for (int i = 0; i < _entityGroups.Count; i++)
             {
-                if (entityGroup is T)
+                if (_entityGroups[i] is T entityGroup)
                 {
-                    return entityGroup as T;
+                    return entityGroup;
                 }
             }
             return null;
@@ -62,44 +89,33 @@ namespace PowerCellStudio
         
         public void AddEntity(ILinkEntity entity)
         {
-            var added = false;
-            foreach (var entityGroup in _entityGroups)
-            {
-                if(entityGroup.AddEntity(entity) && !added)
-                {
-                    added = true;
-                }
-            }
-            if (added) _entities.Add(entity.index, entity);
-        }
-        
-        private void RemoveEntity(ILinkEntity entity)
-        {
             if (entity == null) return;
-            foreach (var entityGroup in _entityGroups)
-            {
-                entityGroup.RemoveEntity(entity);
-            }
-            _entities.Remove(entity.index);
-            entity.Destroy();
+            _waitToAdd.Enqueue(entity);
         }
         
-        private void RemoveEntityByIndex(long index)
+        public void RemoveEntity(ILinkEntity entity)
         {
-            foreach (var entityGroup in _entityGroups)
-            {
-                entityGroup.RemoveEntity(index);
-            }
-            if(_entities.TryGetValue(index, out var entity))
-            {
-                _entities.Remove(index);
-                entity.Destroy();
-            }
+            // Optimized group removal with for loop
+            _waitToRemove.Add(entity.index);
         }
         
         public void RemoveEntity(long index)
         {
             _waitToRemove.Add(index);
+        }
+
+        private void RemoveEntityByIndex(long index)
+        {
+            for (int i = 0; i < _entityGroups.Count; i++)
+            {
+                _entityGroups[i].RemoveEntity(index);
+            }
+            
+            if (_entities.TryGetValue(index, out var entity))
+            {
+                _entities.Remove(index);
+                entity.Destroy();
+            }
         }
         
         public void ClearEntity()
