@@ -239,6 +239,17 @@ namespace PowerCellStudio
         }
 
         /// <summary>
+        /// 获取当前窗口上的资源加载器。
+        /// Get the assetsLoader from window.
+        /// </summary>
+        /// <typeparam name="T">窗口类型 / Type of window</typeparam>
+        /// <returns>资源加载器, 如果没有则返回null / Instance of the assetsLoader of window, or null if not found</returns>
+        public IAssetLoader GetAssetLoader<T>() where T : UIBehaviour, IUIChild
+        {
+            return GetWindow<T>()?.assetsLoader ?? null;
+        }
+
+        /// <summary>
         /// 在当前页面打开窗口。
         /// Open a window on the current page.
         /// </summary>
