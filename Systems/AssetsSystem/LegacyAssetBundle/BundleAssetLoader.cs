@@ -156,7 +156,7 @@ namespace PowerCellStudio
 #endif
             if (TryGetExitRequest(address, out var instruction) && instruction is LoaderYieldInstruction<T> request)
             {
-                request.onLoadSuccess += (a, path) =>
+                request.OnLoadSuccess((a, path) =>
                 {
                     if(!a)
                     {
@@ -164,12 +164,12 @@ namespace PowerCellStudio
                         return;
                     }
                     onSuccess?.Invoke(a);
-                };
+                });
                 return;
             }
             var bundleName = GetBundleName(address);
             var loadRequest = new LoaderYieldInstruction<T>(address);
-            loadRequest.onLoadSuccess += (a, path) =>
+            loadRequest.OnLoadSuccess((a, path) =>
             {
                 if(!a)
                 {
@@ -177,7 +177,7 @@ namespace PowerCellStudio
                     return;
                 }
                 OnLoadSuccess(path, onSuccess, a);
-            };
+            });
             _waitForLoaded.Add(address, loadRequest);
             _assetsBundleManager.LoadAssetAsync<T>(bundleName, address, loadRequest);
         }
@@ -216,7 +216,7 @@ namespace PowerCellStudio
             }
             var bundleName = GetBundleName(address);
             var loadRequest = new LoaderYieldInstruction<T>(address);
-            loadRequest.onLoadSuccess += OnLoadSuccess<T>;
+            loadRequest.OnLoadSuccess(OnLoadSuccess<T>);
             _waitForLoaded.Add(address, loadRequest);
             _assetsBundleManager.LoadAssetAsync<T>(bundleName, address,loadRequest);
             return loadRequest.Task;
@@ -247,7 +247,7 @@ namespace PowerCellStudio
 #endif
             var bundleName = GetBundleName(address);
             var loadRequest = new LoaderYieldInstruction<T>(address);
-            loadRequest.onLoadSuccess += OnLoadSuccess<T>;
+            loadRequest.OnLoadSuccess(OnLoadSuccess<T>);
             _waitForLoaded.Add(address, loadRequest);
             _assetsBundleManager.LoadAssetAsync<T>(bundleName, address, loadRequest);
             return loadRequest;

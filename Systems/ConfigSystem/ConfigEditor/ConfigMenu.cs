@@ -237,7 +237,7 @@ namespace PowerCellStudio
                 var sb = new StringBuilder();
                 byte[] bytes = null;
 
-                using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read))
+                using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
                     bytes = new byte[fs.Length];
                     fs.Read(bytes, 0, bytes.Length);

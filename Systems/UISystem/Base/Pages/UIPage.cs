@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -7,6 +8,9 @@ namespace PowerCellStudio
 {
     public abstract class UIPage : UIBehaviour, IUIParent
     {
+        protected PagePushMode _pushMode;
+        public PagePushMode pushMode {get => _pushMode; set => _pushMode = value;}
+
         protected IAssetLoader _assetsLoader;
         public IAssetLoader assetsLoader => _assetsLoader;
         
@@ -83,16 +87,26 @@ namespace PowerCellStudio
             return true;
         }
 
-        bool IUIParent.CloseUI<T>(T uiChild, Action onClosed)
+        bool IUIParent.CloseUI<T>(T uiChild, Action afterClosed)
         {
             if(uiChild == null || !_openedUIs.Contains(uiChild)) return false;
             var isPeek = GetTopUI().Equals(uiChild);
-            if (!UIUtils.CloseUI<T>(uiChild, onClosed)) return false;
+            if (!UIUtils.CloseUI<T>(uiChild, afterClosed)) return false;
             if(isPeek)
             {
                 GetTopUI()?.OnFocus();
             }
             return true;
+        }
+
+        public T GetOpenedUI<T>() where T : UIBehaviour, IUIChild
+        {
+            return _openedUIs?.LastOrDefault(x => x is T) as T;
+        }
+
+        public bool IsWindowOpened<T>() where T : UIBehaviour, IUIChild
+        {
+            return GetOpenedUI<T>() != null;
         }
 
         public T GetUI<T>() where T : UIBehaviour, IUIChild
@@ -107,7 +121,7 @@ namespace PowerCellStudio
 
         public IUIChild GetTopUI()
         {
-            return _openedUIs.Count > 0 ? _openedUIs.Peek() : null;
+            return (_openedUIs != null && _openedUIs.Count > 0) ? _openedUIs.Peek() : null;
         }
 
         void IUIComponent.Open(object data)

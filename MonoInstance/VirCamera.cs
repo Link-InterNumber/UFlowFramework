@@ -4,6 +4,7 @@
 //
 // namespace PowerCellStudio
 // {
+//     [DonotInitModuleIAutoly]
 //     public class VirCamera: MonoSingleton<VirCamera>
 //     {
 //         [HideInInspector] public CinemachineVirtualCamera cameraCom;

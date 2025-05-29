@@ -17,21 +17,23 @@ namespace PowerCellStudio
         
         public static string GetBuildTargetName(BuildTarget target)
         {
+            var dateNow = DateTime.Now;
+            var dateStamp = dateNow.Year * 100000000L + dateNow.Month * 1000000L + dateNow.Day * 10000L + dateNow.Hour * 100L + dateNow.Minute;
             switch (target)
             {
                 case BuildTarget.Android:
-                    return $"{GameName}.apk";
+                    return $"{GameName}{dateStamp}.apk";
                 case BuildTarget.StandaloneWindows:
                 case BuildTarget.StandaloneWindows64:
-                    return $"{GameName}.exe";
+                    return $"{GameName}{dateStamp}.exe";
                 case BuildTarget.StandaloneOSXIntel:
                 case BuildTarget.StandaloneOSXIntel64:
                 case BuildTarget.StandaloneOSX:
-                    return $"{GameName}.app";
+                    return $"{GameName}{dateStamp}.app";
                 case BuildTarget.iOS:
-                    return $"{GameName}-local";
+                    return $"{GameName}{dateStamp}-local";
                 case BuildTarget.WebGL:
-                    return $"{GameName}";
+                    return $"{GameName}{dateStamp}";
                 default:
                     Debug.Log("Target not implemented.");
                     return null;

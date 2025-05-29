@@ -88,6 +88,10 @@ namespace PowerCellStudio
             enableWarning = false;
             enableError = true;
             var debugLogSaver = new GameObject("DebugLogSaver").AddComponent<DebugLogSaver>();
+#elif ENABLE_LOG
+            enableLog = true;
+            enableWarning = true;
+            enableError = true;
 #else
             enableLog = false;
             enableWarning = false;

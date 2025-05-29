@@ -55,12 +55,20 @@ namespace PowerCellStudio
             adaptiveRoot.offsetMin = safeArea.min * scale;
             adaptiveRoot.offsetMax = safeArea.max * scale - UIManager.ScreenSize;
         }
-
-        public RectTransform rectTransform => transform as RectTransform;
-        void IUIComponent.Open(object data)
+        
+        /// <summary>
+        /// UI加载后优先执行、
+        /// </summary>
+        protected virtual void OnWindowInit()
         {
             if(_assetsLoader == null || !_assetsLoader.spawned)
                 _assetsLoader = AssetUtils.SpawnLoader(this.GetType().Name);
+        }
+
+        public RectTransform rectTransform => transform as RectTransform;
+        
+        void IUIComponent.Open(object data)
+        {
             OnOpen(data);
         }
 
@@ -68,7 +76,6 @@ namespace PowerCellStudio
 
         bool IUIComponent.Close()
         {
-            OnClose();
             return true;
         }
 
@@ -78,6 +85,7 @@ namespace PowerCellStudio
 
         public virtual void RegisterEvent()
         {
+            OnWindowInit();
             if (closeBtn == null) return;
             foreach (var button in closeBtn)
             {
@@ -106,9 +114,9 @@ namespace PowerCellStudio
             CloseUI(null);
         }
 
-        protected void CloseUI(Action onClosed)
+        protected void CloseUI(Action afterClosed)
         {
-            _parent.CloseUI(this, onClosed);
+            _parent.CloseUI(this, afterClosed);
         }
     }
 }

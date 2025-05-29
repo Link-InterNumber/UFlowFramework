@@ -13,9 +13,8 @@ namespace PowerCellStudio
         private List<ConfBaseCollections> _configs;
         private AssetLoadStatus _loadStatus;
         public AssetLoadStatus loadStatus => _loadStatus;
-
-
-        public OnLoadCompleted onLoadCompleted;
+        
+        public event OnLoadCompleted onLoadCompleted;
 
         public string[] failLoadConfigs
         {
@@ -29,6 +28,7 @@ namespace PowerCellStudio
         {
             _loadStatus = AssetLoadStatus.Unload;
             _configs = new List<ConfBaseCollections>();
+            if (configs == null || configs.Length == 0) return;
             foreach (var confBaseCollections in configs)
             {
                 _configs.Add(confBaseCollections);

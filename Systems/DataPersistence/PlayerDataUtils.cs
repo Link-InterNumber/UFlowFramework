@@ -18,10 +18,70 @@ namespace PowerCellStudio
     {
         public static readonly string SavePath = $"{Application.persistentDataPath}";
 
+        private static readonly string JsonDirectory = "Json";
+        private static readonly string BinaryDirectory = "Binary";
+        private static readonly string CaptureDirectory = "Capture";
+
         private static void CheckDirectory(string name)
         {
             var directory = Path.Combine(SavePath, name);
             if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
+        }
+
+        public static bool HasPlayerPrefsSave(string saveKey)
+        {
+            return PlayerPrefs.HasKey(saveKey);
+        }
+        
+        public static bool HasPlayerPrefsSave<T>()
+            where T : IPersistenceData
+        {
+            var key = $"{typeof(T).Namespace}_{typeof(T).Name}";
+            return PlayerPrefs.HasKey(key);
+        }
+        
+        public static bool HasJsonSave(string fileName)
+        {
+            var directory = Path.Combine(SavePath, JsonDirectory);
+            if (!Directory.Exists(directory)) return false;
+            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
+            return File.Exists(path);
+        }
+        
+        public static bool HasJsonSave<T>()
+            where T : IPersistenceData
+        {
+            var directory = Path.Combine(SavePath, JsonDirectory);
+            if (!Directory.Exists(directory)) return false;
+            var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
+            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
+            return File.Exists(path);
+        }
+        
+        public static bool HasBinarySave(string fileName)
+        {
+            var directory = Path.Combine(SavePath, BinaryDirectory);
+            if (!Directory.Exists(directory)) return false;
+            var path = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
+            return File.Exists(path);
+        }
+        
+        public static bool HasBinarySave<T>()
+            where T : IPersistenceData
+        {
+            var directory = Path.Combine(SavePath, BinaryDirectory);
+            if (!Directory.Exists(directory)) return false;
+            var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
+            var path = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
+            return File.Exists(path);
+        }
+
+        public static bool HasCapture(string fileName)
+        {
+            var directory = Path.Combine(SavePath, CaptureDirectory);
+            if (!Directory.Exists(directory)) return false;
+            var path = Path.Combine(SavePath, CaptureDirectory, $"{fileName}.png");
+            return File.Exists(path);
         }
         
         #region PlayerPrefsSave
@@ -134,9 +194,9 @@ namespace PowerCellStudio
             where T : IPersistenceData
         {
             if (string.IsNullOrEmpty(fileName)) return;
-            CheckDirectory("Json");
+            CheckDirectory(JsonDirectory);
             string json = JsonConvert.SerializeObject(data);
-            var path = Path.Combine(SavePath, "Json", $"{fileName}.json");
+            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
             if (encrypt)
             {
                 var jsonEn = Encrypt(json);
@@ -177,10 +237,10 @@ namespace PowerCellStudio
         private static IEnumerator SaveJsonHandle<T>(string fileName, T data, Action action, bool encrypt = true)
             where T : IPersistenceData
         {
-            CheckDirectory("Json");
+            CheckDirectory(JsonDirectory);
             yield return null;
             string json = JsonConvert.SerializeObject(data);
-            var path = Path.Combine(SavePath, "Json", $"{fileName}.json");
+            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
             if (encrypt)
             {
                 var jsonEn = Encrypt(json);
@@ -204,7 +264,7 @@ namespace PowerCellStudio
             where T : IPersistenceData
         {
             if(string.IsNullOrEmpty(fileName)) return default;
-            var path = Path.Combine(SavePath, "Json", $"{fileName}.json");
+            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
             if (!File.Exists(path)) return default;
             var jsonEn = File.ReadAllText(path);
             if (decrypt)
@@ -226,9 +286,9 @@ namespace PowerCellStudio
             where T : class, IPersistenceData
         {
             if (string.IsNullOrEmpty(fileName)) return null;
-            var path = Path.Combine(SavePath, "Json", $"{fileName}.json");
+            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
             var loadHandler = new LoaderYieldInstruction<T>(path);
-            if (action != null) loadHandler.onLoadSuccess += (savedData, path) => {action.Invoke(savedData);};
+            if (action != null) loadHandler.OnLoadSuccess((savedData, path) => {action.Invoke(savedData);});
             ApplicationManager.instance.StartCoroutine(ReadJsonHandle(path, loadHandler, decrypt));
             return loadHandler;
         }
@@ -239,7 +299,7 @@ namespace PowerCellStudio
             var typ = typeof(T);
             var fileName = $"{typ.Namespace}_{typ.Name}";
             // if (string.IsNullOrEmpty(fileName)) return null;
-            // var path = Path.Combine(SavePath, "Json", $"{fileName}.json");
+            // var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
             // var loaderYieldInstruction = new LoaderYieldInstruction<T>(path)
             // if (action != null) loaderYieldInstruction.onLoadSuccess += (savedData, path) => {action.Invoke(savedData)};
             // ApplicationManager.instance.StartCoroutine(ReadJsonHandle(fileName, actiloaderYieldInstructionon, decrypt));
@@ -255,6 +315,7 @@ namespace PowerCellStudio
                 yield break;
             }
             string uri = "file://" + path;
+            T data = null;
             using (UnityWebRequest request = UnityWebRequest.Get(uri))
             {
                 yield return request.SendWebRequest();
@@ -262,22 +323,15 @@ namespace PowerCellStudio
                 if (request.result == UnityWebRequest.Result.Success)
                 {
                     string jsonEn = request.downloadHandler.text;
-                    if (decrypt)
-                    {
-                        var json = Decrypt(jsonEn);
-                        var dataDe = JsonConvert.DeserializeObject<T>(json);
-                        loadHandler.SetAsset(dataDe);
-                        yield break;
-                    }
-                    var data = JsonConvert.DeserializeObject<T>(jsonEn);
-                    loadHandler.SetAsset(data);
+                    var json = decrypt ? Decrypt(jsonEn) : jsonEn;
+                    data = JsonConvert.DeserializeObject<T>(json);
                 }
                 else
                 {
                     Debug.LogError("Failed to read file: " + request.error);
-                    loadHandler.SetAsset(null);
                 }
             }
+            loadHandler.SetAsset(data);
             // var task = File.ReadAllTextAsync(path);
             // yield return task.AsCoroutine();
             // var jsonEn = task.Result;
@@ -294,7 +348,7 @@ namespace PowerCellStudio
         
         public static void ClearJson(string fileName)
         {
-            var path = Path.Combine(SavePath, "Json", $"{fileName}.json");
+            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
             if (!File.Exists(path)) return;
             File.Delete(path);
         }
@@ -303,14 +357,14 @@ namespace PowerCellStudio
             where T : IPersistenceData
         {
             var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            var path = Path.Combine(SavePath, "Json", $"{fileName}.json");
+            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
             if (!File.Exists(path)) return;
             File.Delete(path);
         }
         
         public static void ClearAllJson()
         {
-            var path = Path.Combine(SavePath, "Json");
+            var path = Path.Combine(SavePath, JsonDirectory);
             if (!Directory.Exists(path)) return;
             DirectoryInfo di = new DirectoryInfo(path);
             di.Delete(true);
@@ -324,8 +378,8 @@ namespace PowerCellStudio
             where T : IPersistenceData
         {
             if (string.IsNullOrEmpty(fileName)) return;
-            CheckDirectory("Binary");
-            var filePath = Path.Combine(SavePath, "Binary", $"{fileName}.bytes");
+            CheckDirectory(BinaryDirectory);
+            var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
             using (MemoryStream memoryStream = new MemoryStream())
             {
                 BinaryFormatter formatter = new BinaryFormatter();
@@ -350,8 +404,8 @@ namespace PowerCellStudio
             where T : IPersistenceData
         {
             if(string.IsNullOrEmpty(fileName)) return;
-            CheckDirectory("Binary");
-            var filePath = Path.Combine(SavePath, "Binary", $"{fileName}.bytes");
+            CheckDirectory(BinaryDirectory);
+            var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
             using (MemoryStream memoryStream = new MemoryStream())
             {
                 BinaryFormatter formatter = new BinaryFormatter();
@@ -389,8 +443,8 @@ namespace PowerCellStudio
         private static IEnumerator SaveDataBinaryHandler<T>(string fileName, T data, Action action, bool encrypt = true)
             where T : IPersistenceData
         {
-            CheckDirectory("Binary");
-            var filePath = Path.Combine(SavePath, "Binary", $"{fileName}.bytes");
+            CheckDirectory(BinaryDirectory);
+            var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
             // 创建一个文件流用于保存数据
             using (MemoryStream memoryStream = new MemoryStream())
             {
@@ -413,7 +467,7 @@ namespace PowerCellStudio
             where T : class, IPersistenceData
         {
             // if (string.IsNullOrEmpty(fileName)) yield break;
-            // var filePath = Path.Combine(SavePath, "Binary", $"{fileName}.bytes");
+            // var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
             if (!File.Exists(filePath)) 
             {
                 loadHandler.SetAsset(null);
@@ -421,7 +475,7 @@ namespace PowerCellStudio
             }
 
             string uri = "file://" + filePath;
-            byte[] decryptedData;
+            byte[] decryptedData = null;
             using (UnityWebRequest request = UnityWebRequest.Get(uri))
             {
                 yield return request.SendWebRequest();
@@ -434,41 +488,33 @@ namespace PowerCellStudio
                 else
                 {
                     Debug.LogError("Failed to read file: " + request.error);
-                    loadHandler.SetAsset(null);
-                    yield break;
                 }
             }
+            if (decryptedData == null)
+            {
+                loadHandler.SetAsset(null);
+                yield break;
+            }
 
+            T data = null;
             using (MemoryStream memoryStream = new MemoryStream(decryptedData))
             {
                 // 使用BinaryFormatter进行反序列化
                 BinaryFormatter formatter = new BinaryFormatter();
-                T data = (T)formatter.Deserialize(memoryStream);
+                data = (T)formatter.Deserialize(memoryStream);
                 // 关闭文件流
                 memoryStream.Close();
-                loadHandler.SetAsset(data);
             }
-
-            // var task = File.ReadAllBytesAsync(filePath);
-            // yield return task.AsCoroutine();
-            // var encryptedData = task.Result;
-            // var decryptedData = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
-            // using MemoryStream memoryStream = new MemoryStream(decryptedData);
-            // // 使用BinaryFormatter进行反序列化
-            // BinaryFormatter formatter = new BinaryFormatter();
-            // T data = (T)formatter.Deserialize(memoryStream);
-            // // 关闭文件流
-            // memoryStream.Close();
-            // callback?.Invoke(data);
+            loadHandler.SetAsset(data);
         }
         
         public static LoaderYieldInstruction<T> ReadBinaryAsync<T>(string fileName, Action<T> callback, bool decrypt = true)
             where T : class, IPersistenceData
         {
             if(string.IsNullOrEmpty(fileName)) return null;
-            var filePath = Path.Combine(SavePath, "Binary", $"{fileName}.bytes");
+            var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
             var loadHandler = new LoaderYieldInstruction<T>(filePath);
-            if (callback != null) loadHandler.onLoadSuccess += (savedData, path) => {callback.Invoke(savedData);};
+            if (callback != null) loadHandler.OnLoadSuccess((savedData, path) => {callback.Invoke(savedData);});
             ApplicationManager.instance.StartCoroutine(ReadBinaryCoroutineHandle(filePath, loadHandler, decrypt));
             return loadHandler;
         }
@@ -484,7 +530,7 @@ namespace PowerCellStudio
         //     where T : IPersistenceData
         // {
         //     if(string.IsNullOrEmpty(fileName)) return default;
-        //     var filePath = Path.Combine(SavePath, "Binary", $"{fileName}.bytes");
+        //     var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
         //     if (!File.Exists(filePath)) return default;
         //     byte[] encryptedData = await File.ReadAllBytesAsync(filePath);
         //     var decryptedData = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
@@ -508,7 +554,7 @@ namespace PowerCellStudio
             where T : IPersistenceData
         {
             if(string.IsNullOrEmpty(fileName)) return default;
-            var filePath = Path.Combine(SavePath, "Binary", $"{fileName}.bytes");
+            var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
             if (!File.Exists(filePath)) return default;
             byte[] encryptedData = File.ReadAllBytes(filePath);
             var decryptedData = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
@@ -530,7 +576,7 @@ namespace PowerCellStudio
 
         public static void ClearBinary(string fileName)
         {
-            var path = Path.Combine(SavePath, "Binary", $"{fileName}.bytes");
+            var path = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
             if (!File.Exists(path)) return;
             File.Delete(path);
         }
@@ -544,7 +590,7 @@ namespace PowerCellStudio
         
         public static void ClearAllBinary()
         {
-            var path = Path.Combine(SavePath, "Binary");
+            var path = Path.Combine(SavePath, BinaryDirectory);
             if (!Directory.Exists(path)) return;
             DirectoryInfo di = new DirectoryInfo(path);
             di.Delete(true);
@@ -567,9 +613,9 @@ namespace PowerCellStudio
 
         private static IEnumerator CameraCapture(Camera camera, string fileName, Rect rect)
         {
-            CheckDirectory("Capture");
+            CheckDirectory(CaptureDirectory);
             yield return new WaitForEndOfFrame();
-            var path = Path.Combine(SavePath, "Capture", $"{fileName}.png");
+            var path = Path.Combine(SavePath, CaptureDirectory, $"{fileName}.png");
             RenderTexture rt = new RenderTexture((int)rect.width, (int)rect.height, 0);
             camera.targetTexture = rt;
             camera.Render();
@@ -591,9 +637,9 @@ namespace PowerCellStudio
         
         private static IEnumerator ScreenCapture(string fileName, Rect rect)
         {
-            CheckDirectory("Capture");
+            CheckDirectory(CaptureDirectory);
             yield return new WaitForEndOfFrame();
-            var path = Path.Combine(SavePath, "Capture", $"{fileName}.png");
+            var path = Path.Combine(SavePath, CaptureDirectory, $"{fileName}.png");
             Texture2D texture2D = new Texture2D((int)rect.width, (int)rect.height, TextureFormat.RGB24, false);
             texture2D.ReadPixels(rect, 0,0);
             texture2D.Apply();
@@ -608,7 +654,7 @@ namespace PowerCellStudio
 
         public static Sprite LoadCapture(string fileName)
         {
-            var path = Path.Combine(SavePath, "Capture", $"{fileName}.png");
+            var path = Path.Combine(SavePath, CaptureDirectory, $"{fileName}.png");
             if (!File.Exists(path)) return null;
             FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read);
             byte[] imgByte = new byte[stream.Length];
@@ -622,10 +668,10 @@ namespace PowerCellStudio
         
         public static LoaderYieldInstruction<Sprite> LoadCaptureAsync(string fileName, Action<Sprite> action)
         {
-            var path = Path.Combine(SavePath, "Capture", $"{fileName}.png");
+            var path = Path.Combine(SavePath, CaptureDirectory, $"{fileName}.png");
             if (!File.Exists(path)) return null;
             var loadHandler = new LoaderYieldInstruction<Sprite>(path);
-            if (action != null) loadHandler.onLoadSuccess += (asset, path) => {action.Invoke(asset);};
+            if (action != null) loadHandler.OnLoadSuccess((asset, path) => {action.Invoke(asset);});
             ApplicationManager.instance.StartCoroutine(LoadCaptureHandle(path, loadHandler));
             return loadHandler;
         }
@@ -639,7 +685,7 @@ namespace PowerCellStudio
             }
             // 使用 file:// 协议加载本地文件
             string url = "file://" + path;
-
+            Sprite sprite = null;
             using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(url))
             {
                 // 发送请求并等待完成
@@ -651,21 +697,18 @@ namespace PowerCellStudio
                     Texture2D texture = DownloadHandlerTexture.GetContent(request);
 
                     // 创建 Sprite
-                    Sprite sprite = Sprite.Create(
+                    sprite = Sprite.Create(
                         texture,
                         new Rect(0, 0, texture.width, texture.height),
                         new Vector2(0.5f, 0.5f) // 设置 Sprite 的锚点为中心
                     );
-
-                    // 回调返回生成的 Sprite
-                    loadHandler.SetAsset(sprite);
                 }
                 else
                 {
                     Debug.LogError("加载图片失败: " + request.error);
-                    loadHandler.SetAsset(null);
                 }
             }
+            loadHandler.SetAsset(sprite);
             // FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read);
             // byte[] imgByte = new byte[stream.Length];
             // yield return stream.ReadAsync(imgByte, 0, imgByte.Length).AsCoroutine();
@@ -679,14 +722,14 @@ namespace PowerCellStudio
         
         public static void DeleteCapture(string fileName)
         {
-            var path = Path.Combine(SavePath, "Capture", $"{fileName}.png");
+            var path = Path.Combine(SavePath, CaptureDirectory, $"{fileName}.png");
             if (!File.Exists(path)) return;
             File.Delete(path);
         }
         
         public static void ClearCapture()
         {
-            var path = Path.Combine(SavePath, "Capture");
+            var path = Path.Combine(SavePath, CaptureDirectory);
             if (!Directory.Exists(path)) return;
             DirectoryInfo di = new DirectoryInfo(path);
             di.Delete(true);

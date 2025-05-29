@@ -60,18 +60,19 @@ namespace PowerCellStudio
             return GetAllGameObjectsByPointerEventData(eventDataCurrentPosition);
         }
         
-        public static void InitCanvas(IUIComponent uiChild, bool ignoreRaycaster, RenderMode canvasRenderMode)
+        public static void InitCanvas(IUIComponent uiChild, bool ignoreRaycaster, bool standaloneCanvas, RenderMode canvasRenderMode)
         {
             uiChild.transform.gameObject.SetLayerRecursively("UI");
-            var canvas =  uiChild.rectTransform.gameObject.GetComponent<Canvas>();
-            if(!canvas)  canvas = uiChild.rectTransform.gameObject.AddComponent<Canvas>();
-            canvas.renderMode = canvasRenderMode;
-            canvas.planeDistance = 10;
             uiChild.rectTransform.localScale = Vector3.one;
             uiChild.rectTransform.Adapt2Parent();
-            if (canvasRenderMode != RenderMode.ScreenSpaceOverlay) canvas.worldCamera = UICamera.instance.cameraCom;
+
             if (uiChild is IUIParent)
             {
+                var canvas = uiChild.rectTransform.gameObject.GetComponent<Canvas>();
+                if (!canvas) canvas = uiChild.rectTransform.gameObject.AddComponent<Canvas>();
+                canvas.renderMode = canvasRenderMode;
+                canvas.planeDistance = 10;
+                if (canvasRenderMode != RenderMode.ScreenSpaceOverlay) canvas.worldCamera = UICamera.instance.cameraCom;
                 var canvasScale = uiChild.rectTransform.gameObject.TryAddComponent<CanvasScaler>();
                 canvasScale.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 canvasScale.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
@@ -88,7 +89,15 @@ namespace PowerCellStudio
                 }
                 canvasScale.referenceResolution = ConstSetting.DefaultUISize;
             }
-            uiChild.rectTransform.gameObject.TryAddComponent<GraphicRaycaster>().enabled = uiChild is IUIParent || !ignoreRaycaster;
+            else
+            {
+                if (standaloneCanvas) 
+                {
+                    var canvas = uiChild.rectTransform.gameObject.GetComponent<Canvas>();
+                    if (!canvas) canvas = uiChild.rectTransform.gameObject.AddComponent<Canvas>();
+                }
+                uiChild.rectTransform.gameObject.TryAddComponent<GraphicRaycaster>().enabled = uiChild is IUIParent || !ignoreRaycaster;
+            }
         }
 
         #region Page
@@ -99,7 +108,7 @@ namespace PowerCellStudio
             var newPage = new GameObject(typeof(T).Name).AddComponent<T>();
             newPage.transform.SetParent(parent);
             newPage.gameObject.AddComponent<RectTransform>();
-            InitUI(newPage, true, canvasRenderMode);
+            InitUI(newPage, true, true, canvasRenderMode);
             return newPage;
         }
         
@@ -111,7 +120,7 @@ namespace PowerCellStudio
                 foreach (var keyValuePair in page.children)
                 {
                     var child = keyValuePair.Value;
-                    CloseUI(child, null);
+                    CloseUI(child, null, true);
                     if (child is IUIPoolable 
                         && !poolParent.children.ContainsKey(child.GetType()) 
                         && !poolParent.windowRequests.IsUIGoingToOpen(keyValuePair.Key, out _))
@@ -143,9 +152,9 @@ namespace PowerCellStudio
             parent.children[childType] = child;
         }
         
-        public static void InitUI<T>(T ui, bool ignoreRaycaster, RenderMode renderMode) where T : IUIComponent
+        public static void InitUI<T>(T ui, bool ignoreRaycaster, bool standaloneCanvas, RenderMode renderMode) where T : IUIComponent
         {
-            InitCanvas(ui, ignoreRaycaster, renderMode);
+            InitCanvas(ui, ignoreRaycaster, standaloneCanvas, renderMode);
             ui.RegisterEvent();
         }
         
@@ -173,19 +182,14 @@ namespace PowerCellStudio
             }
         }
 
-        public static bool CloseUI<T>(T ui, Action onClose, bool force = false) where T : IUIComponent
+        public static bool CloseUI<T>(T ui, Action afterClosed, bool force = false) where T : IUIComponent
         {
             if (ui == null || !ui.isOpened) return false;
-            if (force)
-            {
-                ui.OnClose();
-            }
-            else if (!ui.Close())
+            if (!force && !ui.Close())
             {
                 return false;
             }
             ui.transform.gameObject.SetActive(false);
-            onClose?.Invoke();
             if(ui is IUIParent parent)
             {
                 EventManager.instance.onPageClose.Invoke(parent);
@@ -195,6 +199,8 @@ namespace PowerCellStudio
                 child.parent.openedUIs.Remove(child);
                 EventManager.instance.onUIClose.Invoke(child);
             }
+            ui.OnClose();
+            afterClosed?.Invoke();
             return true;
         }
 

@@ -84,5 +84,10 @@ namespace PowerCellStudio
             else 
                 SceneManager.UnloadSceneAsync(name);
         }
+
+        public static void PreloadAsset(string path)
+        {
+            _assetManager?.PreloadAsset(path);
+        }
     }
 }

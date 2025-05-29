@@ -41,9 +41,9 @@ namespace PowerCellStudio
             itemHolder.ItemInteraction(this, null);
         }
 
-        public override void UpdateContent(int index, object data)
+        public override void UpdateContent(int index, object data, IListUpdater holder)
         {
-            base.UpdateContent(index, data);
+            base.UpdateContent(index, data, holder);
             var passData = (PassData) data;
             Init(passData.day, passData.generator);
         }

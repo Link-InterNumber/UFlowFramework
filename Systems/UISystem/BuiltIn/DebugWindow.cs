@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace PowerCellStudio
 {
-    [WindowInfo("Assets/Res/UI/DebugWindow.prefab")]
+    [WindowInfo("Assets/Res/UI/Common/DebugWindow.prefab")]
     public class DebugWindow : UIWindow, IUIStandAlone, IUIComponent
     {
         public Text txtDeltaTime;
@@ -46,6 +46,7 @@ namespace PowerCellStudio
             tglLog.isOn = true;
             tglWarning.isOn = true;
             tglError.isOn = true;
+            base.RegisterEvent();
         }
         
         public override void OnOpen(object data)
@@ -110,6 +111,7 @@ namespace PowerCellStudio
 
         private void OnLoged(DebugBtn.LogInfo logInfo)
         {
+            if (!ApplicationManager.instance) return;
             switch(logInfo.logType)
             {
                 case LogType.Log:

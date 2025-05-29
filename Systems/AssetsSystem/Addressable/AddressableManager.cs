@@ -23,7 +23,12 @@ namespace PowerCellStudio
 
         public void Init(MonoBehaviour coroutineRunner, Action callBack)
         {
-            if(inited) return;
+            if(inited)
+            {
+                callBack?.Invoke();
+                return;
+            }
+            _preloadHandles = new Dictionary<string, AsyncOperationHandle>();
             _pool = new ObjectPool<AddressableAssetLoader>(() => new AddressableAssetLoader(),
                 loader => loader.Init(),
                 loader => loader.Deinit(),
@@ -173,6 +178,12 @@ namespace PowerCellStudio
 
         public static AsyncOperationHandle<T> LoadAsync<T>(string address) where T : Object
         {
+            if(_preloadHandles.ContainsKey(address))
+            {
+                var handle = _preloadHandles[address];
+                _preloadHandles.Remove(address);
+                return handle.Convert<T>();
+            }
             return Addressables.LoadAssetAsync<T>(address);
         }
         
@@ -202,6 +213,16 @@ namespace PowerCellStudio
                 return;
             }
             Addressables.Release(handle);
+        }
+
+        private static Dictionary<string, AsyncOperationHandle> _preloadHandles;
+
+        public void PreloadAsset(string path)
+        {
+            if(_preloadHandles == null) _preloadHandles = new Dictionary<string, AsyncOperationHandle>();
+            if(_preloadHandles.ContainsKey(path)) return;
+            var handle = LoadAsync<Object>(path);
+            _preloadHandles.Add(path, handle);
         }
 
         private List<AsyncOperationHandle<SceneInstance> > _sceneInstances = new List<AsyncOperationHandle<SceneInstance>>();

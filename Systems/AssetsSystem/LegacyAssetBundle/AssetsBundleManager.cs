@@ -88,6 +88,7 @@ namespace PowerCellStudio
                 callBack?.Invoke();
                 return;
             }
+            _preloadHandles = new Dictionary<string, LoaderYieldInstruction<Object>>();
             _loadedBundleDic = new Dictionary<string, AssetsBundleRef>();
             _waitForLoadList = new Dictionary<string, LoaderYieldInstruction<AssetBundle>>();
             
@@ -414,10 +415,29 @@ namespace PowerCellStudio
                 AddRef(name);
             }
         }
+
+        private static Dictionary<string, LoaderYieldInstruction<Object>> _preloadHandles;
+
+        public void PreloadAsset(string path)
+        {
+            if (_preloadHandles == null) _preloadHandles = new Dictionary<string, LoaderYieldInstruction<Object>>();
+            if (_preloadHandles.ContainsKey(path)) return;
+            var loadAssetRequest = new LoaderYieldInstruction<Object>(path);
+            var bundleName = GetBundleNameByAsset(path);
+            LoadAssetAsync<Object>(bundleName, path, loadAssetRequest);
+            _preloadHandles.Add(path, loadAssetRequest);
+        }
         
         public LoaderYieldInstruction<T> LoadAsset<T>(string bundleName, string assetPath)
             where T : Object
         {
+            if (_preloadHandles.ContainsKey(assetPath))
+            {
+                var handle = _preloadHandles[assetPath];
+                _preloadHandles.Remove(assetPath);
+                return handle as LoaderYieldInstruction<T>;
+            }
+
             var loadAssetRequest = new LoaderYieldInstruction<T>(assetPath);
             if (GetAssetBundle(bundleName, out var bundle))
             {
@@ -440,6 +460,24 @@ namespace PowerCellStudio
             where T : Object
         {
             if (loadAssetRequest == null) return;
+            if (_preloadHandles.ContainsKey(assetPath))
+            {
+                var handle = _preloadHandles[assetPath];
+                _preloadHandles.Remove(assetPath);
+                if (handle.isDone)
+                {
+                    loadAssetRequest.SetAsset(handle.asset as T);
+                }
+                else
+                {
+                    handle.OnLoadSuccess((a, path) =>
+                    {
+                        loadAssetRequest.SetAsset(a as T);
+                    });
+                }
+                return;
+            }
+
             var loadBundleRequest = GetAssetsBundleAsync(bundleName);
             if (loadBundleRequest.isDone)
             {
@@ -463,7 +501,7 @@ namespace PowerCellStudio
                 };
                 return;
             }
-            loadBundleRequest.onLoadSuccess += (bundle, bundleName) =>
+            loadBundleRequest.OnLoadSuccess((bundle, bundleName) =>
             {
                 if (!bundle)
                 {
@@ -482,7 +520,7 @@ namespace PowerCellStudio
                     var asset = operationHandle.asset as T;
                     loadAssetRequest.SetAsset(asset);
                 };
-            };
+            });
         }
 
         #endregion

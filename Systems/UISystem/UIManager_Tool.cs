@@ -7,33 +7,39 @@ namespace PowerCellStudio
     {
         /// <summary>
         /// 获取UI系统下的屏幕尺寸。
+        /// Retrieve the screen size under the UI system.
         /// </summary>
         public static Vector2 ScreenSize
         {
             get
             {
-                var screenHeight = ConstSetting.DefaultResolution.y;
-                var screenWidth = ConstSetting.DefaultResolution.x;
-                // var newRes = Vector2Int.zero;
+                var screenHeight = ConstSetting.DefaultUISize.y;
+                var screenWidth = ConstSetting.DefaultUISize.x;
                 if (screenHeight < screenWidth)
                 {
-                    var baseHeight = ConstSetting.Resolution[2];
+                    var baseHeight = ConstSetting.DefaultUISize.y;
                     var rate = (float)baseHeight / Screen.height;
                     return new Vector2(Screen.width * rate, baseHeight);
                 }
                 else
                 {
-                    var baseWidth = ConstSetting.Resolution[2];
+                    var baseWidth = ConstSetting.DefaultUISize.x;
                     var rate = (float)baseWidth / Screen.width;
                     return new Vector2(baseWidth, Screen.height * rate);
                 }
             }
         }
 
+        /// <summary>
+        /// 获取UI系统显示的缩放值。
+        /// Get the scaling value for display in the UI system.
+        /// </summary>
         public static float PixelScale
         {
             get
             {
+                if (instance.canvasRenderMode == RenderMode.ScreenSpaceOverlay)
+                    return 1f;
                 if (UICamera.instance)
                 {
                     return ScreenSize.x / UICamera.instance.cameraCom.pixelWidth;
@@ -42,6 +48,12 @@ namespace PowerCellStudio
             }
         }
 
+        /// <summary>
+        /// 将屏幕坐标转换为UI坐标。
+        /// Convert screen position to UI position.
+        /// </summary>
+        /// <param name="screenPos">屏幕坐标 / Screen position</param>
+        /// <returns>UI坐标 / UI position</returns>
         public static Vector3 ScreenPosToUIPos(Vector2 screenPos)
         {
             switch (instance.canvasRenderMode)
@@ -57,23 +69,25 @@ namespace PowerCellStudio
                     throw new ArgumentOutOfRangeException();
             }
         }
-        
+
         /// <summary>
         /// 获取UI元素在屏幕上的位置。
+        /// Get the screen position of a UI element.
         /// </summary>
-        /// <param name="uiElement">UI元素的RectTransform。</param>
-        /// <returns>UI元素在屏幕上的位置。</returns>
+        /// <param name="uiElement">UI元素的RectTransform / RectTransform of the UI element</param>
+        /// <returns>UI元素在屏幕上的位置 / Screen position of the UI element</returns>
         public static Vector2 GetScreenPosition(RectTransform uiElement)
         {
-            if(!uiElement) return Vector2.zero;
+            if (!uiElement) return Vector2.zero;
             return GetScreenPosition(uiElement.position);
         }
-        
+
         /// <summary>
         /// 获取UI位置在屏幕上的位置。
+        /// Get screen position from a UI position.
         /// </summary>
-        /// <param name="uiPosition">UI位置的Vector3。</param>
-        /// <returns>UI位置在屏幕上的位置。</returns>
+        /// <param name="uiPosition">UI位置的Vector3 / Vector3 of the UI position</param>
+        /// <returns>UI位置在屏幕上的位置 / Screen position of the UI</returns>
         public static Vector2 GetScreenPosition(Vector3 uiPosition)
         {
             switch (instance.canvasRenderMode)
@@ -87,69 +101,65 @@ namespace PowerCellStudio
                     throw new ArgumentOutOfRangeException();
             }
         }
-        
+
         /// <summary>
         /// 获取UI元素在主摄像机中的位置。
+        /// Get the position of a UI element in the main camera.
         /// </summary>
-        /// <param name="uiElement">UI元素的RectTransform。</param>
-        /// <returns>UI元素在主摄像机中的位置。</returns>
+        /// <param name="uiElement">UI元素的RectTransform / RectTransform of the UI element</param>
+        /// <returns>UI元素在主摄像机中的位置 / Position of the UI element in the main camera</returns>
         public static Vector3 GetUIToMainCameraPosition(RectTransform uiElement)
         {
-            if(!uiElement) return Vector2.zero;
+            if (!uiElement) return Vector2.zero;
             return GetUIToMainCameraPosition(uiElement.position);
         }
-        
+
         /// <summary>
         /// 获取UI位置在主摄像机中的位置。
+        /// Get the position from a UI to the main camera.
         /// </summary>
-        /// <param name="uiPosition">UI位置的Vector3。</param>
-        /// <returns>UI位置在主摄像机中的位置。</returns>
+        /// <param name="uiPosition">UI位置的Vector3 / Vector3 of the UI position</param>
+        /// <returns>UI位置在主摄像机中的位置 / Position of the UI in the main camera</returns>
         public static Vector3 GetUIToMainCameraPosition(Vector3 uiPosition)
         {
-            var screenPos = instance.canvasRenderMode switch
+            Vector2 viewportPoint;
+            switch (instance.canvasRenderMode)
             {
-                RenderMode.ScreenSpaceOverlay => new Vector2(uiPosition.x / ScreenSize.x, uiPosition.y / ScreenSize.y),
-                RenderMode.ScreenSpaceCamera => RectTransformUtility.WorldToScreenPoint(UICamera.instance.cameraCom, uiPosition),
-                RenderMode.WorldSpace => RectTransformUtility.WorldToScreenPoint(UICamera.instance.cameraCom, uiPosition),
-                _ => throw new ArgumentOutOfRangeException(),
-            };
-            return MainCamera.instance.CameraCom.ScreenToWorldPoint(screenPos);
+                case RenderMode.ScreenSpaceOverlay:
+                    viewportPoint = new Vector2(uiPosition.x / ScreenSize.x, uiPosition.y / ScreenSize.y);
+                    break;
+                case RenderMode.ScreenSpaceCamera:
+                    viewportPoint = (Vector2)UICamera.instance.cameraCom.WorldToViewportPoint(uiPosition);
+                    break;
+                case RenderMode.WorldSpace:
+                    return uiPosition;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            return MainCamera.instance.CameraCom.ViewportToWorldPoint(viewportPoint);
         }
 
         /// <summary>
         /// 将主摄像机位置转换为UI位置。
+        /// Convert main camera position to UI position.
         /// </summary>
-        /// <param name="pos">主摄像机位置的Vector3。</param>
-        /// <returns>UI位置的Vector2。</returns>
+        /// <param name="pos">主摄像机位置的Vector3 / Vector3 of the main camera position</param>
+        /// <returns>UI位置的Vector2 / UI position as a Vector2</returns>
         public static Vector2 MainCamaraPosToUIPos(Vector3 pos)
         {
-            var screenPos = MainCamera.instance.CameraCom.WorldToScreenPoint(pos);
-            return UICamera.instance.cameraCom.ScreenToWorldPoint(screenPos);
+            var viewportPoint = MainCamera.instance.CameraCom.WorldToViewportPoint(pos);
+            return UICamera.instance.cameraCom.ViewportToWorldPoint(viewportPoint);
         }
 
-        public static void OpenMaskWindow(Func<bool> canClose, bool showWaiting = true)
-        {
-            var maskWindowData = new MaskWindow.MaskWindowData(showWaiting, canClose, null);
-            instance.OpenWindow<MaskWindow>(maskWindowData);
-        }
-        
-        public static void OpenMaskWindow(YieldInstruction yieldInstruction, bool showWaiting = true)
-        {
-            var maskWindowData = new MaskWindow.MaskWindowData(showWaiting, null, yieldInstruction);
-            instance.OpenWindow<MaskWindow>(maskWindowData);
-        }
-        
-        public static void OpenMaskWindow(float realTime, bool showWaiting = true)
-        {
-            var newWaitForSeconds = new WaitForSeconds(realTime);
-            var maskWindowData = new MaskWindow.MaskWindowData(showWaiting, null, newWaitForSeconds);
-            instance.OpenWindow<MaskWindow>(maskWindowData);
-        }
-        
+        /// <summary>
+        /// 启用或禁用UI输入。
+        /// Enable or disable UI input.
+        /// </summary>
+        /// <param name="enable">是否启用 / Whether to enable</param>
         public static void EnableUIInput(bool enable)
         {
             EventManager.instance.onUIInputEnable?.Invoke(enable);
-            if(enable) instance.CloseWindow<MaskWindow>();
+            if (enable) instance.CloseWindow<MaskWindow>();
             else instance.OpenWindow<MaskWindow>();
         }
     }

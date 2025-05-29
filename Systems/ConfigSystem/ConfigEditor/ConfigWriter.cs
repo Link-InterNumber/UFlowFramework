@@ -497,7 +497,7 @@ namespace PowerCellStudio
                 paras);
             for (var i = 0; i < _configTypeInfoList.Length; i++)
             {
-                _csFile.WriteLine($"_{_configTypeInfoList[i].fieldName} = {_configTypeInfoList[i].fieldName.ToLower()};");
+                _csFile.WriteLine($"this._{_configTypeInfoList[i].fieldName} = {_configTypeInfoList[i].fieldName.ToLower()};");
             }
             _csFile.EndWriteMethod();
 
@@ -541,6 +541,18 @@ namespace PowerCellStudio
                     .WriteLine($"public {confCollections[i]} {fieldName} => _{fieldName};")
                     .Space();
             }
+
+            csFile.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.None, "ConfigGroup<CommonConfigLoader>", "GetGroupOfAllConfig");
+            csFile.WriteVar("configGroup",  "new ConfigGroup<CommonConfigLoader>()");
+            for (var i = 0; i < confCollections.Count; i++)
+            {
+                var fieldName = confCollections[i].Replace("Collections", "");
+                fieldName = fieldName[0].ToString().ToLower() + fieldName.Substring(1);
+                csFile.WriteLine($"configGroup.Append(_{fieldName});");
+            }
+            csFile.WriteLine("return configGroup;");
+            csFile.EndWriteMethod();
+
             csFile.EndWriteBody();
             csFile.EndWriteBody();
             return csFile.ToString();

@@ -4,6 +4,13 @@ using UnityEngine.EventSystems;
 
 namespace PowerCellStudio
 {
+    public enum PagePushMode
+    {
+        CloseOther,
+        Replace,
+        Overlap
+    }
+
     public interface IUIParent : IUIComponent
     {
         internal HashStack<IUIChild> openedUIs { get; }
@@ -11,6 +18,8 @@ namespace PowerCellStudio
         internal Dictionary<Type, IUIChild> children { get; }
         
         internal OpenWindowRequestHolder windowRequests { get; set; }
+
+        public PagePushMode pushMode {get; set;}
 
         /// <summary>
         /// 在Page中打开UI
@@ -34,12 +43,17 @@ namespace PowerCellStudio
         /// <returns>是否成功关闭界面</returns>
         public bool CloseUI<T>(Action onClosed = null) where T : UIBehaviour, IUIChild;
         
-        internal bool CloseUI<T>(T uiChild, Action onClosed = null) where T : UIBehaviour, IUIChild;
+        internal bool CloseUI<T>(T uiChild, Action afterClosed = null) where T : UIBehaviour, IUIChild;
         
         /// <summary>
         /// 获取已经加载的UI
         /// </summary>
         T GetUI<T>() where T : UIBehaviour, IUIChild;
+        
+        /// <summary>
+        /// 获取打开的UI
+        /// </summary>
+        T GetOpenedUI<T>() where T : UIBehaviour, IUIChild;
 
         /// <summary>
         /// 界面是否在加载中

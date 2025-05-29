@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace PowerCellStudio
 {
-    [ModuleInitOrder(0)]
+    [DonotInitModuleIAutoly]
     public sealed partial class EventManager : SingletonBase<EventManager> , ILaterExecutionModule
     {
         #region 游戏逻辑

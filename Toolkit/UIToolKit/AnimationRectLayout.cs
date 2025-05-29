@@ -5,7 +5,6 @@ using UnityEngine.EventSystems;
 namespace PowerCellStudio
 {
     [RequireComponent(typeof(RectTransform))]
-
     public class AnimationRectLayout : UIBehaviour
     {
         public enum LayoutType

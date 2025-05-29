@@ -9,7 +9,6 @@ namespace PowerCellStudio
     public class SelectablePointer : SelectableInteractor, IPointerDownHandler, IPointerUpHandler,
         IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
     {
-        private Selectable target;
         /// <summary>
         /// onDown 之后触发
         /// </summary>

@@ -3,6 +3,10 @@ using UnityEngine;
 
 namespace PowerCellStudio
 {
+    /// <summary>
+    /// 音频管理器类，负责不同类型音频的音量控制和静音处理。
+    /// Audio manager class for handling volume control and muting of different audio types.
+    /// </summary>
     public partial class AudioManager : MonoSingleton<AudioManager>
     {
         protected override void Awake()
@@ -29,6 +33,13 @@ namespace PowerCellStudio
             base.Deinit();
         }
 
+        /// <summary>
+        /// 获取指定类型音频的当前音量。
+        /// Get the current volume of the specified audio source type.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
+        /// <param name="isReal">是否获取真实音量 / Whether to get the real volume value</param>
+        /// <returns>当前音量值 / Current volume value</returns>
         public float GetVolume(AudioSourceType type, bool isReal = false)
         {
             switch (type)
@@ -47,7 +58,14 @@ namespace PowerCellStudio
                     return 0f;
             }
         }
-        
+
+        /// <summary>
+        /// 设置指定类型音频的新音量。
+        /// Set a new volume for the specified audio source type.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
+        /// <param name="newValue">新的音量值 / New volume value</param>
+        /// <param name="transferTime">过渡时间 / Transition duration</param>
         public void SetVolume(AudioSourceType type, float newValue, float transferTime = 0.3f)
         {
             var v = Mathf.Clamp01(newValue);
@@ -72,7 +90,13 @@ namespace PowerCellStudio
                     break;
             }
         }
-        
+
+        /// <summary>
+        /// 获取指定类型音频的最大音量。
+        /// Get the maximum volume of the specified audio source type.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
+        /// <returns>最大音量值 / Maximum volume value</returns>
         public float GetMaxVolume(AudioSourceType type)
         {
             switch (type)
@@ -91,7 +115,13 @@ namespace PowerCellStudio
                     return 0f;
             }
         }
-        
+
+        /// <summary>
+        /// 设置指定类型音频的最大音量。
+        /// Set the maximum volume for the specified audio source type.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
+        /// <param name="newValue">新的最大音量值 / New maximum volume value</param>
         public void SetMaxVolume(AudioSourceType type, float newValue)
         {
             var v = Mathf.Clamp01(newValue);
@@ -116,7 +146,13 @@ namespace PowerCellStudio
                     break;
             }
         }
-        
+
+        /// <summary>
+        /// 检查指定类型音频是否静音。
+        /// Check whether the specified audio source type is muted.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
+        /// <returns>是否静音 / Whether it is muted</returns>
         public bool IsMute(AudioSourceType type)
         {
             switch (type)
@@ -135,7 +171,13 @@ namespace PowerCellStudio
                     return true;
             }
         }
-        
+
+        /// <summary>
+        /// 静音指定类型音频。
+        /// Mute the specified audio source type.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
+        /// <param name="transferDuration">静音过渡时间 / Muting transition duration</param>
         public void Mute(AudioSourceType type, float transferDuration)
         {
             switch (type)
@@ -159,7 +201,13 @@ namespace PowerCellStudio
                     break;
             }
         }
-        
+
+        /// <summary>
+        /// 取消静音指定类型音频。
+        /// Unmute the specified audio source type.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
+        /// <param name="transferDuration">取消静音过渡时间 / Unmuting transition duration</param>
         public void Unmute(AudioSourceType type, float transferDuration)
         {
             switch (type)

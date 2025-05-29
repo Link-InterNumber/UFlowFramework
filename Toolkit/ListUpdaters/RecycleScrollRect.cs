@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace PowerCellStudio
 {
-    public sealed class RecycleScrollRect : MonoBehaviour, IEnumerable, IListUpdater
+    public partial class RecycleScrollRect : MonoBehaviour, IEnumerable, IListUpdater
     {
         #region define
 
@@ -27,19 +27,20 @@ namespace PowerCellStudio
 
         #endregion
         
+        #region opened field
+        
         public LayoutGroup layoutGroup;
         public ScrollRect scroll;
         public Mask maskObj;
         public RectTransform prefab;
         public ListDirection direction = ListDirection.HORIZONTAL;
-        public float spacing;
         public bool optimize = true;
+        
+        #endregion
         
         private int _count = 1;
         public int count => _count;
         private RectTransform _container => scroll.content;
-        private RectTransform _maskRT;
-        private int _numVisible;
         private int _numBuffer = 1;
         public int numberBuffer
         {
@@ -47,14 +48,14 @@ namespace PowerCellStudio
             set => _numBuffer = Math.Max(1, value);
         }
         // private float _containerHalfSize;
-        private float _prefabSize;
-        private RectOffset _padding;
 
         private Dictionary<int, RecycleItem> _itemDict = new Dictionary<int, RecycleItem>();
-        private int _numItems = 0;
-        private Vector2 _startPos;
-        private Vector2 _offsetVec;
         private List<object> _dataList;
+
+        private IRecycleScrollRectLayout _layoutHandler;
+        
+        private IAssetLoader _assetLoader;
+        public IAssetLoader AssetLoader  => _assetLoader;
 
         public event OnItemInteraction onItemInteraction;
 
@@ -66,29 +67,30 @@ namespace PowerCellStudio
 
         private void Awake()
         {
+            _assetLoader = AssetUtils.SpawnLoader();
             layoutGroup.enabled = false;
-            _padding = layoutGroup.padding;
             if (!scroll) return;
-            if (optimize) scroll.onValueChanged.AddListener(ReorderItemsByPos);
-            scroll.horizontal = direction == ListDirection.HORIZONTAL;
-            scroll.vertical = direction == ListDirection.VERTICAL;
+            if (optimize) scroll.onValueChanged.AddListener(OnScrollValueChanged);
             _container.anchorMin = Vector2.up;
             _container.anchorMax = Vector2.up;
             _container.pivot = Vector2.up;
-            var ContentSizeFitter = _container.GetComponent<ContentSizeFitter>();
-            if(ContentSizeFitter) ContentSizeFitter.enabled = false;
+            var contentSizeFitter = _container.GetComponent<ContentSizeFitter>();
+            if (contentSizeFitter) contentSizeFitter.enabled = false;
         }
         
         private void OnDestroy()
         {
+            AssetUtils.DeSpawnLoader(_assetLoader);
             if (!scroll) return;
-            if (optimize) scroll.onValueChanged.RemoveListener(ReorderItemsByPos);
+            if (optimize) scroll.onValueChanged.RemoveListener(OnScrollValueChanged);
         }
 
         /// <summary>
         /// 将数据列表传入并刷新列表
+        /// Updates the list with the given data and refreshes the list.
         /// </summary>
-        /// <param name="datas"></param>
+        /// <param name="datas">数据列表 - The list of data.</param>
+        /// <param name="destroyUnused">是否销毁未使用的对象 - Whether to destroy unused objects.</param>
         public void UpdateList(IList datas, bool destroyUnused = false)
         {
             if (datas == null) return;
@@ -119,24 +121,24 @@ namespace PowerCellStudio
         // Use this for initialization
         private void Init()
         {
-            _maskRT = maskObj.GetComponent<RectTransform>(); 
             Vector2 prefabRectSize = prefab.rect.size;
-            _prefabSize = (direction == ListDirection.HORIZONTAL ? prefabRectSize.x : prefabRectSize.y) + spacing;
+            
+            if (_layoutHandler == null)
+            {
+                if (layoutGroup is GridLayoutGroup gridLayoutGroup)
+                {
+                    prefabRectSize = gridLayoutGroup.cellSize;
+                }
+                _layoutHandler = CreateLayoutHandler(prefabRectSize);
+                if (_layoutHandler == null) return;
+                _layoutHandler.InitScroll(scroll);
+            }
 
-            _container.sizeDelta = direction == ListDirection.HORIZONTAL
-                ? (new Vector2(_prefabSize * _count - spacing + _padding.left + _padding.right, prefabRectSize.y + _padding.top * 2f))
-                : (new Vector2(prefabRectSize.x + _padding.left * 2f, _prefabSize * _count - spacing + _padding.top + _padding.bottom));
-            // _containerHalfSize = direction == ListDirection.HORIZONTAL
-            //     ? (_container.rect.size.x * 0.5f)
-            //     : (_container.rect.size.y * 0.5f);
-
-            _numVisible = Mathf.CeilToInt((direction == ListDirection.HORIZONTAL ? _maskRT.rect.width : _maskRT.rect.height) / _prefabSize);
-
-            _offsetVec = direction == ListDirection.HORIZONTAL ? Vector2.right : Vector2.down;
-            _startPos = _offsetVec * (direction == ListDirection.HORIZONTAL ? _padding.left : _padding.top);
-            _numItems = optimize ? Mathf.Min(_count, _numVisible + _numBuffer) : _count;
+            _container.sizeDelta = _layoutHandler.GetContainerSize(_count);
+            _layoutHandler.CalVisibleNum(maskObj.GetComponent<RectTransform>().rect.size, _numBuffer, out var numItems);
+            numItems = optimize ? Mathf.Min(_count, numItems) : _count;
             var anchorValue = Vector2.up;
-            for (int i = 0; i < _numItems; i++)
+            for (int i = 0; i < numItems; i++)
             {
                 var obj = _container.transform.childCount > i
                     ? _container.transform.GetChild(i).gameObject
@@ -145,18 +147,18 @@ namespace PowerCellStudio
                 t.anchorMax = anchorValue;
                 t.anchorMin = anchorValue;
                 t.pivot = anchorValue;
-                t.anchoredPosition = _startPos + (_offsetVec * (i * _prefabSize));
+                t.sizeDelta = prefabRectSize;
+                t.anchoredPosition = _layoutHandler.GetItemLocalPos(i);
                 obj.SetActive(true);
                 var li = obj.GetComponent<IListItem>();
-                li.itemHolder = this;
-                li.UpdateContent(i, _dataList[i]);
+                li?.UpdateContent(i, _dataList[i], this);
                 _itemDict.Add(i, new RecycleItem{index = i, transform = t, listItem = li});
             }
             var removeNumber = _container.transform.childCount;
-            if (_numItems < removeNumber)
+            if (numItems < removeNumber)
             {
                 var toDestroy = ListPool<GameObject>.Get();
-                for (int i = _numItems; i < removeNumber; i++)
+                for (int i = numItems; i < removeNumber; i++)
                 {
                     toDestroy.Add(_container.transform.GetChild(i).gameObject);
                 }
@@ -167,35 +169,62 @@ namespace PowerCellStudio
                 ListPool<GameObject>.Release(toDestroy);
             }
             _previousIndex = -1;
-            // _container.anchoredPosition += _offsetVec * (_containerHalfSize - ((direction == ListDirection.HORIZONTAL ? _maskRT.rect.width : _maskRT.rect.height) * 0.5f));
             ApplicationManager.instance.StartCoroutine(DelayReorderItemsByPos());
         }
-        
+
+        private IRecycleScrollRectLayout CreateLayoutHandler(Vector2 prefabRectSize)
+        {
+            if (layoutGroup is HorizontalLayoutGroup horizontalLayoutGroup)
+            {
+                return new RSHorizontalLayout(prefabRectSize, layoutGroup.padding,
+                    new Vector2(horizontalLayoutGroup.spacing, 0f));
+            }
+            if (layoutGroup is VerticalLayoutGroup verticalLayoutGroup)
+            {
+                return new RSVerticalLayout(prefabRectSize, layoutGroup.padding,
+                    new Vector2(0, verticalLayoutGroup.spacing));
+            }
+            if (layoutGroup is GridLayoutGroup gridLayoutGroup)
+            {
+                return new RSGridLayout(gridLayoutGroup.startAxis, prefabRectSize, layoutGroup.padding,
+                    gridLayoutGroup.spacing);
+            }
+
+            return null;
+        }
+
         private IEnumerator DelayReorderItemsByPos()
         {
             yield return null;
             ForceRebuild();
         }
 
-        private void ReorderItemsByPos(Vector2 normVector)
+        private void OnScrollValueChanged(Vector2 normVector)
         {
             ForceRebuild();
         }
         
         private int _previousIndex = -1;
+
         /// <summary>
-        /// 强制刷新显示范围内的数据
+        /// 强制重建列表的可见部分
+        /// Forces a rebuild of the visible portion of the list.
         /// </summary>
         public void ForceRebuild()
         {
-            if(_dataList == null) return;
+            if(_dataList == null || _dataList.Count == 0 || _layoutHandler == null) return;
+            
             var passLength = direction == ListDirection.HORIZONTAL
-                ? -_container.localPosition.x - _padding.left
-                : _container.localPosition.y - _padding.top;
-            passLength = Mathf.Clamp(passLength, 0f, (_count - _numVisible + 0.5f) * _prefabSize);
-            var firstIndex = Mathf.Clamp(Mathf.FloorToInt(passLength / _prefabSize), 0, _dataList.Count - _numVisible);
+                ? -_container.localPosition.x
+                : _container.localPosition.y;
+            var firstIndex = 0;
+            var maxVisibleIndex = _layoutHandler.visibleNum - 1 + _numBuffer;
+            _layoutHandler.GetViewIndexRange(passLength, _numBuffer, _count, ref  firstIndex, ref maxVisibleIndex);
+            // passLength = Mathf.Clamp(passLength, 0f, (_count - _numVisible + 0.5f) * _prefabSize);
+            // var firstIndex = Mathf.Clamp(Mathf.FloorToInt(passLength / _prefabSize), 0, _count - _numVisible);
+            
             if (_previousIndex == firstIndex) return;
-            var maxVisibleIndex = firstIndex + _numVisible - 1 + _numBuffer;
+            // var maxVisibleIndex = firstIndex + _numVisible - 1 + _numBuffer;
             var newKeys = ListPool<int>.Get();
             for (var i = firstIndex; i <= maxVisibleIndex; i++)
             {
@@ -214,7 +243,9 @@ namespace PowerCellStudio
                 ListPool<int>.Release(newKeys);
                 return;
             }
-            for (var i = 0; i < removeKeys.Count; i++)
+
+            var loopCount = Mathf.Min(removeKeys.Count, newKeys.Count);
+            for (var i = 0; i < loopCount; i++)
             {
                 var item = _itemDict[removeKeys[i]];
                 var newIndex = newKeys[i];
@@ -230,32 +261,43 @@ namespace PowerCellStudio
         private void MoveItemByIndex(RecycleItem item, int index)
         {
             var posIndex = (index >= 0 && index <= _dataList.Count - 1) ? index : -2;
-            item.transform.anchoredPosition = _startPos + (_offsetVec * (posIndex * _prefabSize));
+            item.transform.anchoredPosition = _layoutHandler.GetItemLocalPos(posIndex);
             if(_dataList.Count - 1 < index) return; 
-            item.listItem.itemHolder = this;
-            item.listItem.UpdateContent(index, _dataList[index]);
+            item.listItem?.UpdateContent(index, _dataList[index], this);
         }
 
         /// <summary>
-        /// 获取索引位上的数据
+        /// 获取指定索引的数据
+        /// Retrieves data at the specified index.
         /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
+        /// <param name="index">要检索的数据的索引 - The index of the data to retrieve.</param>
+        /// <returns>指定索引处的数据 - The data at the specified index.</returns>
         public object GetData(int index)
         {
             if (_dataList.Count - 1 >= index && index >= 0) return _dataList[index];
             return null;
         }
 
+        /// <summary>
+        /// 更新指定索引的列表项内容
+        /// Updates the content of the list item at the specified index.
+        /// </summary>
+        /// <param name="index">要更新的项的索引 - The index of the item to update.</param>
+        /// <param name="data">新的数据 - The new data for the item.</param>
         public void UpdateItem(int index, object data)
         {
             if (index > _dataList.Count - 1 || index < 0) return;
             _dataList[index] = data;
             if (!_itemDict.TryGetValue(index, out var item)) return;
-            item.listItem.itemHolder = this;
-            item.listItem.UpdateContent(index, data);
+            item.listItem?.UpdateContent(index, data, this);
         }
 
+        /// <summary>
+        /// 添加新项目到指定索引位置
+        /// Adds a new item at the specified index position.
+        /// </summary>
+        /// <param name="index">插入新项的索引位置 - The index position to insert the new item.</param>
+        /// <param name="data">要插入的新数据 - The new data to insert.</param>
         public void AddItem(int index, object data)
         {
             if (index < 0) return;
@@ -276,6 +318,11 @@ namespace PowerCellStudio
             UpdateList(newdata);
         }
 
+        /// <summary>
+        /// 从列表中移除指定索引的项目
+        /// Removes the item at the specified index from the list.
+        /// </summary>
+        /// <param name="index">要移除的项的索引位置 - The index position of the item to remove.</param>
         public void RemoveItem(int index)
         {
             if (index < 0 || index > _dataList.Count - 1) return;
@@ -288,6 +335,10 @@ namespace PowerCellStudio
             UpdateList(newdata);
         }
 
+        /// <summary>
+        /// 清空列表中的所有项目
+        /// Clears all items from the list.
+        /// </summary>
         public void Clear()
         {
             var newdata = new List<object>();
@@ -296,8 +347,8 @@ namespace PowerCellStudio
 
         public IEnumerator GetEnumerator()
         {
-            yield return _dataList.GetEnumerator();
-            ReorderItemsByPos(scroll.normalizedPosition);
+            return _dataList.GetEnumerator();
+            // ReorderItemsByPos(scroll.normalizedPosition);
         }
 
         public object this[int index]
@@ -307,11 +358,12 @@ namespace PowerCellStudio
         }
         
         /// <summary>
-        /// 索引位的数据是否在显示范围内
+        /// 检查索引处的数据是否在可见范围内
+        /// Checks whether the data at the specified index is within the visible range.
         /// </summary>
-        /// <param name="index"></param>
-        /// <param name="item"></param>
-        /// <returns></returns>
+        /// <param name="index">检查的索引 - The index to check.</param>
+        /// <param name="item">如果可见，返回项目；否则返回null - Returns the item if visible, otherwise returns null.</param>
+        /// <returns>返回是否在可见范围内 - Returns whether the item is within the visible range.</returns>
         public bool IsDataInVisible(int index, out IListItem item)
         {
             if (_itemDict.TryGetValue(index, out var listItem))

@@ -13,13 +13,13 @@ namespace PowerCellStudio
             standAlonePage.transform.SetParent(parent);
             standAlonePage.transform.localScale = Vector3.one;
             standAlonePage.transform.localPosition = Vector2.zero;
-            UIUtils.InitCanvas(standAlonePage, true, canvasRenderMode);
+            UIUtils.InitCanvas(standAlonePage, false, true, canvasRenderMode);
             standAlonePage.transform.GetComponent<Canvas>().sortingLayerID = SortingLayer.NameToID("UI");
             standAlonePage.RegisterEvent();
             standAlonePage.OnOpen(null);
             standAlonePage.OnFocus();
             // standAlonePage.PreloadUI<MaskWindow>();
-#if UNITY_EDITOR || DEBUG
+#if UNITY_EDITOR || DEBUG || ENABLE_LOG
             var debugBtnGameObject = new GameObject("DebugBtn");
             var btnRect = debugBtnGameObject.AddComponent<RectTransform>();
             btnRect.SetParent(standAlonePage.transform);
