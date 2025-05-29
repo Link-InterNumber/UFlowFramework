@@ -108,6 +108,19 @@ namespace PowerCellStudio
         
         #endregion
         
+        private Stack<TimeScaler> _stack = new Stack<TimeScaler>();
+        private float _target;
+        private float _duration;
+        private float _time;
+        private bool _blending = false;
+        private long _startTime;
+        private long _timeWithoutPause;
+        private long _unscaleTimeWithoutPause;
+        private RefCountBool _paused = new RefCountBool();
+        private bool _inTimeRecording = false;
+        private float _globalScale = 1f;
+        private float globalScale => _globalScale;
+        
         /// <summary>
         /// 当前是否处于执行状态。
         /// Indicates whether the manager is in execution state.
@@ -175,6 +188,26 @@ namespace PowerCellStudio
         /// Gets the current time scaling value in execution.
         /// </summary>
         public float currentScale => _target;
+        
+        private long GetStartTime()
+        {
+            var timeSave = PlayerDataUtils.ReadPlayerPrefs<TimeSave>();
+            if (timeSave.startTime == 0L)
+            {
+                timeSave.startTime = DateTime.Now.Ticks;
+                PlayerDataUtils.SavePlayerPrefs<TimeSave>(timeSave);
+            }
+            return timeSave.startTime;
+        }
+        
+        private void SaveStartTime()
+        {
+            var timeSave = new TimeSave()
+            {
+                startTime = _startTime + _unscaleTimeWithoutPause,
+            };
+            PlayerDataUtils.SavePlayerPrefs<TimeSave>(timeSave);
+        }
 
         /// <summary>
         /// 开始记录时间。
@@ -211,6 +244,12 @@ namespace PowerCellStudio
         {
             _globalScale = Mathf.Max(0f, val);
             UpdateTarget(duration);
+        }
+        
+        private TimeScaler GetCurTimeScaler()
+        {
+            if (_stack.Count == 0) _stack.Push(TimeScaler.One);
+            return _stack.Peek();
         }
 
         /// <summary>
@@ -388,6 +427,16 @@ namespace PowerCellStudio
             var curTimeScaler = GetCurTimeScaler();
             curTimeScaler.PopBlend();
             UpdateTarget(duration);
+        }
+        
+        private void UpdateTarget(float duration)
+        {
+            var tsReplace = _stack.Peek();
+            _target = tsReplace.calculatedValue * _globalScale;
+            _blending = true;
+            _time = 0f;
+            _duration = duration;
+            EventManager.instance.onTimeScaleReplaced?.Invoke(tsReplace.calculatedValue);
         }
 
         /// <summary>

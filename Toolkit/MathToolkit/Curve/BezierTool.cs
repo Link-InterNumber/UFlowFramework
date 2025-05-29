@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -219,7 +220,7 @@ namespace PowerCellStudio
             }
             if (result.Length < 2)
             {
-                for (int i = 0; i < result.Lengt; i++)
+                for (int i = 0; i < result.Length; i++)
                 {
                     result[i] = poss[i];
                 }

@@ -13,7 +13,7 @@ namespace PowerCellStudio
             standAlonePage.transform.SetParent(parent);
             standAlonePage.transform.localScale = Vector3.one;
             standAlonePage.transform.localPosition = Vector2.zero;
-            UIUtils.InitCanvas(standAlonePage, true, canvasRenderMode);
+            UIUtils.InitCanvas(standAlonePage, false, true, canvasRenderMode);
             standAlonePage.transform.GetComponent<Canvas>().sortingLayerID = SortingLayer.NameToID("UI");
             standAlonePage.RegisterEvent();
             standAlonePage.OnOpen(null);

@@ -248,10 +248,10 @@ namespace PowerCellStudio
         /// <param name="camera">目标摄像机 / Target camera.</param>
         /// <param name="z">世界空间下的深度 / Z value in world space.</param>
         /// <returns>包围盒Bounds / The bounds in world space.</returns>
-        public static Bounds GetViewBounds(this Camera camera, float z = 0f)
+        public Bounds GetViewBounds(float z = 0f)
         {
-            Vector3 min = camera.ViewportToWorldPoint(new Vector3(0, 0, z));
-            Vector3 max = camera.ViewportToWorldPoint(new Vector3(1, 1, z));
+            Vector3 min = _cameraCom.ViewportToWorldPoint(new Vector3(0, 0, z));
+            Vector3 max = _cameraCom.ViewportToWorldPoint(new Vector3(1, 1, z));
             return new Bounds((min + max) * 0.5f, max - min);
         }
 
@@ -274,10 +274,10 @@ namespace PowerCellStudio
         /// <param name="camera">目标摄像机 / Target camera.</param>
         /// <param name="z">世界空间下的深度 / Z value in world space.</param>
         /// <returns>世界坐标 / World position.</returns>
-        public static Vector3 GetScreenCenterWorldPosition(this Camera camera, float z = 0f)
+        public Vector3 GetScreenCenterWorldPosition(float z = 0f)
         {
             Vector3 screenCenter = new Vector3(Screen.width / 2f, Screen.height / 2f, z);
-            return camera.ScreenToWorldPoint(screenCenter);
+            return _cameraCom.ScreenToWorldPoint(screenCenter);
         }
 
         /// <summary>
@@ -286,9 +286,9 @@ namespace PowerCellStudio
         /// </summary>
         /// <param name="camera">目标摄像机 / Target camera.</param>
         /// <param name="target">目标点 / Target position.</param>
-        public static void LookAt(this Camera camera, Vector3 target)
+        public void LookAt(Vector3 target)
         {
-            camera.transform.LookAt(target);
+            _cameraCom.transform.LookAt(target);
         }
 
 #endregion
