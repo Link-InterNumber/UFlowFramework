@@ -102,6 +102,7 @@ namespace PowerCellStudio
         
         private AssetLoadStatus _assetLoadStatus;
         private bool _ignoreRaycaster;
+        private bool _standaloneCanvas;
         private string _windowPath;
         public AssetLoadStatus assetLoadStatus => _assetLoadStatus;
         public Type currentWindowType => _windowType;
@@ -136,6 +137,7 @@ namespace PowerCellStudio
             _windowPath = null;
             
             _ignoreRaycaster = false;
+            _standaloneCanvas = false;
             object[] attributes = _windowType.GetCustomAttributes(true);
             foreach (var attribute in attributes)
             {
@@ -143,6 +145,7 @@ namespace PowerCellStudio
                 if(windowInfo == null) continue;
                 _windowPath = windowInfo.path;
                 _ignoreRaycaster = windowInfo.ignoreRaycast;
+                _standaloneCanvas = windowInfo.standaloneCanvas;
                 break;
             }
             _assetLoadStatus = AssetLoadStatus.Loading;
@@ -183,7 +186,7 @@ namespace PowerCellStudio
                 return;
             }
             UIUtils.SetUIChildToParent(ui, _parent);
-            UIUtils.InitUI(ui, _ignoreRaycaster, UIManager.instance.canvasRenderMode);
+            UIUtils.InitUI(ui, _ignoreRaycaster, _standaloneCanvas, UIManager.instance.canvasRenderMode);
             if (_isPreLoad)
             {
                 ui.transform.gameObject.SetActive(false);
