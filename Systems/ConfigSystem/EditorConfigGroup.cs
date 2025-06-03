@@ -1,9 +1,11 @@
 #if UNITY_EDITOR
 
-using System.Collections;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using Newtonsoft.Json;
+using UnityEditor;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -12,17 +14,17 @@ namespace PowerCellStudio
     {
         private Dictionary<Type, ConfBaseCollections> _configs;
 
-        public void Append<T>() : ConfBaseCollections, new()
+        public void Append<T>() where T: ConfBaseCollections, new()
         {
             _configs.Add(typeof(T), new T());
         }
 
         public void LoadConfig()
         {
-            if (_configs.TryGetValue(typeof(T), out var config))
+            foreach (var keyValue in _configs)
             {
                 var handle = new EditorConfigLoadHandle();
-                config.LoadConfAsync(handle);
+                keyValue.Value.LoadConfAsync(handle);
             }
         }
 
@@ -35,7 +37,7 @@ namespace PowerCellStudio
             return null;
         }
 
-        private void Dispose()
+        public void Dispose()
         {
             foreach(var keyValue in _configs)
             {
@@ -49,11 +51,13 @@ namespace PowerCellStudio
     {
         public override void LoadScriptableObject(string path)
         {
+#if SCRIPTABLE_OBJECT_CONFIG
             var asset = AssetDatabase.LoadAssetAtPath<ConfBaseData>(path);
             Completed?.Invoke(asset);
+#endif
         }
 
-        public override void LoadJson<T>(string path) where T : ConfBaseData
+        public override void LoadJson<T>(string path)
         {
             var asset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
             var jsonString = EncryptUtils.AESDecrypt(asset.text, ConstSetting.FileEncryptionKey); // 解密配置文件
@@ -61,7 +65,7 @@ namespace PowerCellStudio
             Completed?.Invoke(data);
         }
 
-        public override void LoadBinary<T>(string path) where T : ConfBaseData
+        public override void LoadBinary<T>(string path)
         {
             var asset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
             var bytes = EncryptUtils.AESDecrypt(asset.bytes, ConstSetting.FileEncryptionKey); // 解密配置文件
