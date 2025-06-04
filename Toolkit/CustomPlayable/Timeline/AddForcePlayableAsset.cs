@@ -3,19 +3,23 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Playables;
 
-[System.Serializable]
-public class AddForcePlayableAsset : PlayableAsset
+namespace PowerCellStudio
 {
-    public ExposedReference<Rigidbody2D> rigidbody2D;
-    public Vector2 force;
-
-    // Factory method that generates a playable based on this asset
-    public override Playable CreatePlayable(PlayableGraph graph, GameObject go)
+    [System.Serializable]
+    public class AddForcePlayableAsset : PlayableAsset
     {
-        var playable = ScriptPlayable<AddForcePlayableBehaviour>.Create(graph);
-        var behaviour = playable.GetBehaviour();
-        behaviour.rigidbody2D = rigidbody2D.Resolve(graph.GetResolver());
-        behaviour.force = force;
-        return playable;
+        public ExposedReference<Rigidbody2D> rigidbody2D;
+        public Vector2 force;
+
+        // Factory method that generates a playable based on this asset
+        public override Playable CreatePlayable(PlayableGraph graph, GameObject go)
+        {
+            var playable = ScriptPlayable<AddForcePlayableBehaviour>.Create(graph);
+            var behaviour = playable.GetBehaviour();
+            behaviour.rigidbody2D = rigidbody2D.Resolve(graph.GetResolver());
+            behaviour.force = force;
+            return playable;
+        }
     }
 }
+
