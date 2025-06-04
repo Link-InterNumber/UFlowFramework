@@ -11,16 +11,19 @@ namespace PowerCellStudio
 
         private bool _paused;
 
+        public LinkEvent onActEnd = new LinkEvent();
+
         public TimelineActRunner(string runnerName)
         {
             // 初始化PlayableGraph
             _playableGraph = PlayableGraph.Create(runnerName);
-        }
-
-        public void SetUpdateMode(DirectorUpdateMode updateMode)
-        {
             _playableGraph.SetTimeUpdateMode(updateMode);
         }
+
+        // public void SetUpdateMode(DirectorUpdateMode updateMode)
+        // {
+            
+        // }
 
         public void SetTimelineAsset(PlayableAsset timelineAsset)
         {
@@ -32,17 +35,20 @@ namespace PowerCellStudio
 
             // 创建一个新的Playable
             _playable = timelineAsset.CreatePlayable(_playableGraph, null);
+            _playable.SetLoopTime(false);
             _playableOutput = ScriptPlayableOutput.Create(_playableGraph, "TimelineOutput");
             _playableOutput.SetSourcePlayable(_playable);
         }
 
         public void UpdateManually(float dt)
         {
-            if (!_paused && _playableGraph.IsValid() && _playableGraph.GetTimeUpdateMode() == DirectorUpdateMode.Manual)
-            {
-                // 手动更新Graph
-                _playableGraph.Evaluate(dt);
-            }
+            if (_paused || _playableGraph.IsValid()) // && _playableGraph.GetTimeUpdateMode() == DirectorUpdateMode.Manual)
+                return;
+            // 手动更新Graph
+            _playableGraph.Evaluate(dt);
+            if (!_clipPlayable.IsValid() || _clipPlayable.isDone || _clipPlayable.GetTime() <= _clipPlayable.duration)
+                return;
+            onActEnd.Invoke();
         }
 
         public void Clear()
