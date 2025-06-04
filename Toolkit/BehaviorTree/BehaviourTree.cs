@@ -8,14 +8,19 @@ namespace PowerCellStudio
     [CreateAssetMenu(menuName = "AI/Behaviour Tree")]
     public class BehaviourTree : ScriptableObject
     {
-        public List<BehaviourTreeNode> nodes = new List<BehaviourTreeNode>();
         public BehaviourTreeNode rootNode;
 
-        public void Execute()
+        public BehaviourTree(BehaviourTreeNode node)
+        {
+            rootNode = node;
+            return this;
+        }
+
+        public void Tick()
         {
             if (rootNode != null)
             {
-                rootNode.Execute();
+                rootNode.Tick();
             }
         }
     }

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace PowerCellStudio
 {
-    public abstract class BehaviourTreeNode : ScriptableObject
+    public abstract class BehaviourTreeNode
     {
         public enum NodeState
         {
@@ -11,55 +11,116 @@ namespace PowerCellStudio
             Success,
             Failure
         }
-
-        [HideInInspector] public string guid;
-        [HideInInspector] public Vector2 position;
-        [TextArea] public string description;
         
-        public abstract NodeState Execute();
+        public abstract NodeState Tick();
     }
 
-    // CompositeNode.cs
     public abstract class CompositeNode : BehaviourTreeNode
     {
         public BehaviourTreeNode[] children;
     }
 
-    // SelectorNode.cs
     public class SelectorNode : CompositeNode
     {
-        public override NodeState Execute()
+        public SelectorNode(params BehaviourTreeNode[] nodes)
+        {
+            children.AddRange(nodes);
+        }
+
+        public override NodeState Tick()
         {
             foreach (var child in children)
             {
-                switch (child.Execute())
+                switch (child.Tick())
                 {
                     case NodeState.Success:
                         return NodeState.Success;
                     case NodeState.Running:
                         return NodeState.Running;
+                    default:
+                        break;
                 }
             }
             return NodeState.Failure;
         }
     }
 
-    // SequenceNode.cs
     public class SequenceNode : CompositeNode
     {
-        public override NodeState Execute()
+        public SequenceNode(params BehaviourTreeNode[] nodes)
+        {
+            children.AddRange(nodes);
+        }
+
+        public override NodeState Tick()
         {
             foreach (var child in children)
             {
-                switch (child.Execute())
+                switch (child.Tick())
                 {
                     case NodeState.Failure:
                         return NodeState.Failure;
                     case NodeState.Running:
                         return NodeState.Running;
+                    default:
+                        break;
                 }
             }
             return NodeState.Success;
+        }
+    }
+
+    public class ActionNode : BehaviourTreeNode
+    {
+        private System.Func<NodeState> action;
+
+        public ActionNode(System.Func<NodeState> action)
+        {
+            this.action = action;
+        }
+
+        public override NodeState Tick()
+        {
+            return action();
+        }
+    }
+
+    public class ConditionNode : BehaviourTreeNode
+    {
+        private System.Func<bool> condition;
+
+        public ConditionNode(System.Func<bool> condition)
+        {
+            this.condition = condition;
+        }
+
+        public override NodeState Tick()
+        {
+            return condition() ? NodeState.Success : NodeState.Failure;
+        }
+    }
+
+    public class ParallelNode : BehaviourTreeNode
+    {
+        private List<BehaviourTreeNode> children = new List<BehaviourTreeNode>();
+
+        public ParallelNode(params BehaviourTreeNode[] nodes)
+        {
+            children.AddRange(nodes);
+        }
+
+        public override NodeState Tick()
+        {
+            bool anyRunning = false;
+            foreach (var child in children)
+            {
+                var result = child.Tick();
+                if (result == NodeState.Failure)
+                    return NodeState.Failure;
+                if (result == NodeState.Running)
+                    anyRunning = true;
+            }
+            return anyRunning ? NodeState.Running : NodeState.Success;
         }
     }
 }
