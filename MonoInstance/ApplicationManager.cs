@@ -181,6 +181,18 @@ namespace PowerCellStudio
             call?.Invoke();
         }
 
+        public void EnableDynamicResolution(bool enable)
+        {
+            if (enable)
+            {
+                gameObject.TryAddComponent<DynamicResolutionController>();
+            }
+            else
+            {
+                gameObject.RemoveComponent<DynamicResolutionController>();
+            }
+        }
+
 #if UNITY_EDITOR
 
         [TestSlider(0, 10)]
