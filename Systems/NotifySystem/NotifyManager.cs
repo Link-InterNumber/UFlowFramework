@@ -93,6 +93,7 @@ namespace PowerCellStudio
 
         private bool CheckIsChainLoop(NotifyNode child, NotifyNode parent)
         {
+#if UNITY_EDITOR
             if( child.children.Contains(parent.index) || parent.parent == child.index)
             {
                 return true;
@@ -104,6 +105,7 @@ namespace PowerCellStudio
                 if (checkNode.index == child.index)
                     return true;
             }
+#endif
             return false;
         }
 
