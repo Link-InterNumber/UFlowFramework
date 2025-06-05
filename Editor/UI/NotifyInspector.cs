@@ -11,7 +11,6 @@ using TreeView = UnityEditor.IMGUI.Controls.TreeView;
 namespace PowerCellStudio
 {
     [Serializable]
-//TreeElement 数据类已经过扩展以便保存额外数据，您可以在前端 TreeView 中显示和编辑这些数据。
     public class NotifyTreeElement : TreeViewItem
     {
         public NotifyType notifyType;

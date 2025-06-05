@@ -10,7 +10,7 @@ namespace PowerCellStudio
         public float minScale = 0.5f;
         [Range(0.5f, 1.0f)]
         public float maxScale = 1.0f;
-        public float targetFPS = 60f;
+        public int targetFPS = 60f;
         public float adjustSpeed = 0.1f; // 调整速度
         public float checkInterval = 1f;
 
