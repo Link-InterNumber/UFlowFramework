@@ -93,12 +93,12 @@ namespace PowerCellStudio
 
         private bool CheckIsChainLoop(NotifyNode child, NotifyNode parent)
         {
-            if( childNode.children.Contains(parentNode.index) || parentNode.parent == childNode.index)
+            if( child.children.Contains(parent.index) || parent.parent == child.index)
             {
                 return true;
             }
             var checkNode = parent;
-            while (parent.parent >= 0)
+            while (checkNode.parent >= 0)
             {
                 checkNode = GetNode(parent.parent);
                 if (checkNode.index == child.index)
