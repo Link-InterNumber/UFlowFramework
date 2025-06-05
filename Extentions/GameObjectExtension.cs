@@ -17,6 +17,17 @@ namespace PowerCellStudio
             return component;
         }
 
+        public static bool RemoveComponent<T>(this GameObject gameObject) where T : Behaviour
+        {
+            var component = gameObject.GetComponent<T>();
+            if (component)
+            {
+                GameObject.Destroy(component);
+                return true;
+            }
+            return false;
+        }
+
         public static void ReActive(this GameObject go)
         {
             if(!go) return;

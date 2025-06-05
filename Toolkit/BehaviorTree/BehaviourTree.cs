@@ -13,7 +13,6 @@ namespace PowerCellStudio
         public BehaviourTree(BehaviourTreeNode node)
         {
             rootNode = node;
-            return this;
         }
 
         public void Tick()

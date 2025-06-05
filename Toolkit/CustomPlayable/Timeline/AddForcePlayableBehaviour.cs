@@ -36,10 +36,12 @@ namespace PowerCellStudio
         // }
 
         // Called each frame while the state is set to Play
-        public override void PrepareFrame(Playable playable, FrameData info)
+        public override void ProcessFrame(Playable playable, FrameData info, object playerData)
         {
-            base.PrepareFrame(playable, info);
+            base.ProcessFrame(playable, info, playerData);
+            // var rigidbody2D = playerData as Rigidbody2D;
             rigidbody2D.AddForce(force);
+            Debug.LogError(rigidbody2D.gameObject.name);
         }
     }
 }

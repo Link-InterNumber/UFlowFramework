@@ -24,7 +24,7 @@ namespace PowerCellStudio
     {
         public SelectorNode(params BehaviourTreeNode[] nodes)
         {
-            children.AddRange(nodes);
+            children = nodes;
         }
 
         public override NodeState Tick()
@@ -49,7 +49,7 @@ namespace PowerCellStudio
     {
         public SequenceNode(params BehaviourTreeNode[] nodes)
         {
-            children.AddRange(nodes);
+            children = nodes;
         }
 
         public override NodeState Tick()
@@ -102,11 +102,11 @@ namespace PowerCellStudio
 
     public class ParallelNode : BehaviourTreeNode
     {
-        private List<BehaviourTreeNode> children = new List<BehaviourTreeNode>();
+        private BehaviourTreeNode[] children;
 
         public ParallelNode(params BehaviourTreeNode[] nodes)
         {
-            children.AddRange(nodes);
+            children = nodes;
         }
 
         public override NodeState Tick()

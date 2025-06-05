@@ -31,7 +31,6 @@ namespace PowerCellStudio
 
             // 创建AnimationClipPlayable并连接到输出
             _clipPlayable = AnimationClipPlayable.Create(_playableGraph, clip);
-            _clipPlayable.SetLoopTime(loop);
             _output = AnimationPlayableOutput.Create(_playableGraph, "AnimationOutput", GetComponent<Animator>());
             _output.SetSourcePlayable(_clipPlayable);
 
@@ -50,7 +49,7 @@ namespace PowerCellStudio
         {
             if (!_clipPlayable.IsValid())
                 return;
-            if (_clipPlayable.GetTime() <= _clipPlayable.duration)
+            if (_clipPlayable.GetTime() <= _clipPlayable.GetDuration())
                 return;
             
         }
@@ -100,7 +99,6 @@ namespace PowerCellStudio
             _clipPlayable = AnimationClipPlayable.Create(_playableGraph, clip);
             _output.SetSourcePlayable(_clipPlayable);
             _clipPlayable.SetTime(0);
-            _clipPlayable.SetLoopTime(isloop);
         }
 
         public void Replay()

@@ -10,7 +10,7 @@ namespace PowerCellStudio
         public float minScale = 0.5f;
         [Range(0.5f, 1.0f)]
         public float maxScale = 1.0f;
-        public int targetFPS = 60f;
+        public int targetFPS = 60;
         public float adjustSpeed = 0.1f; // 调整速度
         public float checkInterval = 1f;
 
@@ -25,7 +25,7 @@ namespace PowerCellStudio
             if (DynamicResolutionHandler.instance != null)
             {
                 DynamicResolutionHandler.SetDynamicResScaler(ScaleFunc, DynamicResScalePolicyType.ReturnsMinMaxLerpFactor);
-                DynamicResolutionHandler.instance.SetDynamicResolutionEnabled(true);
+                DynamicResolutionHandler.instance.DynamicResolutionEnabled();
             }
         }
 
@@ -42,7 +42,7 @@ namespace PowerCellStudio
         private void CheckPerformance()
         {
             float fps = _frameCount / _deltaTime;
-            _frameCount = 0f;
+            _frameCount = 0;
             _deltaTime = 0f;
 
             // 根据帧率调整分辨率比例
@@ -54,7 +54,7 @@ namespace PowerCellStudio
             // SRP动态分辨率
             if (DynamicResolutionHandler.instance == null) // 非SRP，手动设置分辨率
             {
-                var currentResolution = ApplicationManager.curResolution;
+                var currentResolution = ApplicationManager.instance.curResolution;
                 int width = Mathf.RoundToInt(currentResolution.x * _currentScale);
                 int height = Mathf.RoundToInt(currentResolution.y * _currentScale);
                 Screen.SetResolution(width, height, Screen.fullScreenMode);

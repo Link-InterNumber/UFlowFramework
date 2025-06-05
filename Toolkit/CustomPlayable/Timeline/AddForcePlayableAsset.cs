@@ -17,6 +17,7 @@ namespace PowerCellStudio
             var playable = ScriptPlayable<AddForcePlayableBehaviour>.Create(graph);
             var behaviour = playable.GetBehaviour();
             behaviour.rigidbody2D = rigidbody2D.Resolve(graph.GetResolver());
+            // Debug.LogError(behaviour.rigidbody2D.gameObject.name);
             behaviour.force = force;
             return playable;
         }

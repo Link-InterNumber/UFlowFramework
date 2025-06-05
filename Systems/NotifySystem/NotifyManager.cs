@@ -101,7 +101,7 @@ namespace PowerCellStudio
             var checkNode = parent;
             while (checkNode.parent >= 0)
             {
-                checkNode = GetNode(parent.parent);
+                checkNode = GetNode((NotifyType)parent.parent);
                 if (checkNode.index == child.index)
                     return true;
             }
@@ -211,7 +211,7 @@ namespace PowerCellStudio
             {
                 var childNode = _nodes[nodeChild];
                 if (!childNode.isOn) continue;
-                ClearNodeNotify(childNode)
+                ClearNodeNotify(childNode);
             }
         }
 
