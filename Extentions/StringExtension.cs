@@ -158,6 +158,21 @@ namespace PowerCellStudio
         }
 
         /// <summary>
+        /// 将文本中的特点部分设置为指定的颜色。
+        /// Sets the pattern of the text to a specified color.
+        /// </summary>
+        /// <param name="text">要处理的文本。</param>
+        /// <param name="pattern">要查找的文本。</param>
+        /// <param name="color">指定的颜色（Color 对象）。</param>
+        /// <returns>处理后的文本，数字部分被设置为指定的颜色。</returns>
+        public static string ColorText(this string text, string pattern, Color color)
+        {
+            string pattern = Regex.Escape(input);
+            var regex = new Regex(pattern);
+            return SetColor(text, regex, color);   
+        }
+
+        /// <summary>
         /// 将文本中的数字部分设置为指定的颜色。
         /// Sets the numeric parts of the text to a specified color.
         /// </summary>

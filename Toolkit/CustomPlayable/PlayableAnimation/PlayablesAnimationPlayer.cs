@@ -69,7 +69,7 @@ namespace PowerCellStudio
 
         private void PlayableHandler(AnimationClip clip)
         {
-            if(!_playableGraph.IsValid())
+            if (!_playableGraph.IsValid())
             {
                 // 创建PlayableGraph
                 _playableGraph = PlayableGraph.Create();
