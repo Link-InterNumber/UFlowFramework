@@ -14,12 +14,23 @@ namespace PowerCellStudio
 
         public void AddEntityGroup(IEntityGroup entityGroup)
         {
-            _entityGroups.Add(entityGroup);
+            int idx = _entityGroups.BinarySearch(entityGroup);
+            if (idx < 0)
+            {
+                _entityGroups.Insert(~idx, entityGroup); // ~idx 是插入点
+            }
+
+            // _entityGroups.Add(entityGroup);
         }
         
         public void RemoveEntityGroup(IEntityGroup entityGroup)
         {
-            _entityGroups.Remove(entityGroup);
+            int idx = _entityGroups.BinarySearch(entityGroup);
+            if (idx >= 0)
+            {
+                _entityGroups.RemoveAt(idx); // ~idx 是插入点
+            }
+            // _entityGroups.Remove(entityGroup);
         }
         
         public void Update(float deltaTime)

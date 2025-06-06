@@ -2,8 +2,10 @@ using System.Collections.Generic;
 
 namespace PowerCellStudio
 {
-    public interface IEntityGroup
+    public interface IEntityGroup : IComparable<IEntityGroup>
     {
+        public int sortingOrder {get;}
+
         internal Dictionary<long, ILinkEntity> entities { get; }
         
         public long count { get; }

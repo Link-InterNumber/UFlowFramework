@@ -11,6 +11,8 @@ namespace PowerCellStudio
             _entities = new Dictionary<long, ILinkEntity>();
         }
 
+        public abstract int sortingOrder {get;}
+
         private Dictionary<long, ILinkEntity> _entities;
         Dictionary<long, ILinkEntity> IEntityGroup.entities => _entities;
         public long count => _entities.Count;
@@ -60,5 +62,10 @@ namespace PowerCellStudio
         }
 
         public abstract void Update(float deltaTime);
+
+        public int CompareTo(IEntityGroup other)
+        {
+            return sortingOrder.CompareTo(other.sortingOrder);
+        }
     }
 }
