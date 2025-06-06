@@ -7,7 +7,7 @@ namespace PowerCellStudio
 {
     [TrackClipType(typeof(AddForcePlayableAsset))]
     [TrackBindingType(typeof(Rigidbody2D))]
-    public class AddForceTrack : TrackAsset
+    public class AddForceTrack : TrackAsset, IActTack
     {
 
     }

@@ -6,6 +6,7 @@ using UnityEngine.Playables;
 namespace PowerCellStudio
 {
     [System.Serializable]
+    [ExecuteInEditMode]
     public class AddForcePlayableAsset : PlayableAsset
     {
         public ExposedReference<Rigidbody2D> rigidbody2D;

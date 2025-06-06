@@ -8,7 +8,7 @@ namespace PowerCellStudio
         protected Stack<T> _stack = new Stack<T>();
         protected HashSet<T> _set = new HashSet<T>();
         protected Func<T> _createFun;
-        protected int _maxSize;
+        protected int _maxSize = 10;
 
         /// <summary>
         /// 池内对象数量
@@ -49,7 +49,7 @@ namespace PowerCellStudio
             }
         }
 
-        protected LinkPool() { }
+        protected LinkPool() { _createFun = () => new T(); }
 
         /// <summary>
         /// 从对象池中获取对象

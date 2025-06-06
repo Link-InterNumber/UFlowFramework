@@ -5,7 +5,7 @@ using UnityEngine.UI.Extensions;
 
 namespace PowerCellStudio
 {
-    public class TimelineActRunner
+    public class TimelineActRunner : PoolObject
     {
         private PlayableGraph _playableGraph;
         private Playable _playable;
@@ -15,12 +15,12 @@ namespace PowerCellStudio
 
         public LinkEvent onActEnd = new LinkEvent();
 
-        public TimelineActRunner(string runnerName)
-        {
-            // 初始化PlayableGraph
-            _playableGraph = PlayableGraph.Create(runnerName);
-            _playableGraph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
-        }
+        // public TimelineActRunner(string runnerName)
+        // {
+        //     // 初始化PlayableGraph
+        //     _playableGraph = PlayableGraph.Create(runnerName);
+        //     _playableGraph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
+        // }
 
         // public void SetUpdateMode(DirectorUpdateMode updateMode)
         // {
@@ -36,7 +36,7 @@ namespace PowerCellStudio
             Clear();
 
             // 创建一个新的Playable
-            _playable = timelineAsset.CreatePlayable(_playableGraph, owner);
+            _playable = timelineAsset.CreatePlayable(_playableGraph, owner); //TimelinePlayable.Create(graph, timelineAsset, gameObject, false, true);
             // _playable.SetLoopTime(false);
             // var _playableOutput = AnimationPlayableOutput.Create(_playableGraph, "Animation Output", owner.GetOrAddComponent<Animator>());
             // // _playableOutput = ScriptPlayableOutput.Create(_playableGraph, "TimelineOutput");
@@ -88,5 +88,24 @@ namespace PowerCellStudio
             // 设置播放速度
             _playableGraph.GetRootPlayable(0).SetSpeed(Mathf.Max(0, speed));
         }
+
+        public override void Dispose()
+        {
+            Clear();
+            if (_playableGraph.IsValid())
+                _playableGraph.Destroy();
+        }
+
+        public override void OnSpawn()
+        {
+            _playableGraph = PlayableGraph.Create();
+            _playableGraph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
+        }
+
+        public override void OnDeSpawn()
+        {
+            Clear();
+        }
+
     }
 }
