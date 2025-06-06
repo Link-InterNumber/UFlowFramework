@@ -26,6 +26,7 @@ namespace PowerCellStudio
         public List<ModuleInfo> moduleInfos = new List<ModuleInfo>();
 #endif
 
+        private Dictionary<Type, IFixedExecutionModule> _fixedExecutionModule = new Dictionary<Type, IFixedExecutionModule>();
         private Dictionary<Type, IExecutionModule> _executionModule = new Dictionary<Type, IExecutionModule>();
         private Dictionary<Type, ILaterExecutionModule> _laterExecutionModule = new Dictionary<Type, ILaterExecutionModule>();
         private Dictionary<Type, IModule> _modules = new Dictionary<Type, IModule>();
@@ -157,6 +158,7 @@ namespace PowerCellStudio
             _modules = null;
             _executionModule = null;
             _laterExecutionModule = null;
+            _fixedExecutionModule = null;
         }
 
         private void OnStartGame()
@@ -183,6 +185,11 @@ namespace PowerCellStudio
             {
                 eventModule.RegisterEvent();
             }
+            if ((module is IFixedExecutionModule fixedExecutionModule && _fixedExecutionModule != null))
+            {
+                fixedExecutionModule.inExecution = true;
+                _fixedExecutionModule[type] = fixedExecutionModule;
+            }
             if (module is IExecutionModule executionModule && _executionModule != null)
             {
                 executionModule.inExecution = true;
@@ -198,6 +205,7 @@ namespace PowerCellStudio
         
         public void RemoveModule(Type type)
         {
+            _fixedExecutionModule?.Remove(type);
             _executionModule?.Remove(type);
             _laterExecutionModule?.Remove(type);
             if(_modules?.TryGetValue(type, out var module) ?? false)
@@ -220,6 +228,16 @@ namespace PowerCellStudio
 #if UNITY_EDITOR
             moduleInfos.RemoveAll(o => o.name.Equals(type.Name));
 #endif
+        }
+
+        private void FixedUpdate()
+        {
+            if(_fixedExecutionModule == null) return;
+            foreach (var (key, value) in _fixedExecutionModule)
+            {
+                if(!value.inExecution) continue;
+                value.FixedExecute(Time.fixedDeltaTime);
+            }
         }
         
         private void Update()

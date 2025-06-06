@@ -25,6 +25,15 @@ namespace PowerCellStudio
         /// </summary>
         public void OnGameReset();
     }
+
+    public interface IFixedExecutionModule : IModule
+    {
+        public bool inExecution { set; get; }
+        /// <summary>
+        /// 在Unity的Update中执行
+        /// </summary>
+        public void FixedExecute(float fixedDt);
+    }
     
     public interface IExecutionModule : IModule
     {

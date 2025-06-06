@@ -10,11 +10,10 @@ namespace PowerCellStudio
     
     public abstract class TempMonoSingleton<T> : TempMonoSingletonBase where T : TempMonoSingletonBase
     {
-        private static T _instance;
-        private static bool _isExist;
-
+        protected static bool _isExist;
         public static bool isExist => _isExist;
 
+        private static T _instance;
         public static T instance => _instance;
 
         public override void Init(object data)

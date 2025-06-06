@@ -17,6 +17,8 @@ namespace PowerCellStudio
 
         private bool _paused;
 
+        private LinkEvent _onPlayEnd = new LinkEvent();
+
         private void OnEnable()
         {
             if (clip == null)
@@ -51,7 +53,9 @@ namespace PowerCellStudio
                 return;
             if (_clipPlayable.GetTime() <= _clipPlayable.GetDuration())
                 return;
-            
+            _onPlayEnd.Invoke();
+            _clipPlayable.SetTime(0);
+            if (!clip.loop) _playableGraph.Pause();
         }
 
         public void SetUpdateMode(DirectorUpdateMode updateMode)
