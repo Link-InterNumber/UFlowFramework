@@ -29,7 +29,7 @@ namespace PowerCellStudio
             base.OnDestroy();
         }
 
-        public TimelineActRunner GetRunner()
+        private TimelineActRunner GetRunner()
         {
             return _runnerPool.Get();
         }
@@ -57,14 +57,17 @@ namespace PowerCellStudio
             actBinder.actRunner = null;
         }
 
-        public void Rebind(PlayableAsset timelineAsset, ActBinder actBinder)
+        private void Rebind(PlayableAsset timelineAsset, ActBinder actBinder)
         {
             foreach (var output in timelineAsset.outputs)
             {
                 // 判断类型和名称
+                if (output.streamType == DataStreamType.Animation)
+                {
+                    director.SetGenericBinding(output.sourceObject, actBinder.gameObject.GetComponent<Animator>());
+                }
                 if (output.sourceObject is IActTack)
                 {
-                    // 设置绑定
                     director.SetGenericBinding(output.sourceObject, actBinder);
                 }
             }
