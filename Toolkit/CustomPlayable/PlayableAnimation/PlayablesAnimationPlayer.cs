@@ -7,13 +7,13 @@ namespace PowerCellStudio
     [RequireComponent(typeof(Animator))] // 确保物体上有Animator组件
     public class PlayablesAnimationPlayer : MonoBehaviour
     {
-        public AnimationClip clip; // 拖入需要播放的AnimationClip
+        public AnimationClip[] clips; // 拖入需要播放的AnimationClip
         public bool playAwake;
-        public bool loop;
 
         private PlayableGraph _playableGraph;
         private AnimationClipPlayable _clipPlayable;
         private AnimationPlayableOutput _output;
+        private int _currentIndex = -1;
 
         private bool _paused;
 
@@ -23,21 +23,73 @@ namespace PowerCellStudio
         {
             if (clip == null)
             {
-                Debug.LogError("未指定AnimationClip！", this);
+                LinkLog.LogError("未指定AnimationClip！", this);
                 return;
             }
 
-            // 创建PlayableGraph
-            _playableGraph = PlayableGraph.Create();
-            _playableGraph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
+            // 播放动画
+            if (playAwake && clips.Length > 0) 
+                Play(1);
+        }
 
+        public void Play(string clipName)
+        {
+            if (clips == null)
+            {
+                return;
+            }
+            for (var i = 0; i < clips.Length; i++)
+            {
+                var clip = clips[index];
+                if (!clip) continue;
+                if (!clip.name.Equals(clipName)) continue;
+                Play(i);
+                return;
+            }
+            LinkLog.LogWarning($"clips do not contains [{clipName}]!");
+        }
+
+        public void Play(int index)
+        {
+            if (clips == null || index < 0 || index > clips.Length - 1)
+            {
+                LinkLog.LogError("index out of clips length!");
+                return;
+            }
+            if (_currentIndex == index) return;
+            var clip = clips[index];
+            if (!clip)
+            {
+                LinkLog.LogWarning($"clips[{index}] is null!");
+                return;
+            }
+            _currentIndex = index;
+            PlayableHandler(clip);
+        }
+
+        private void PlayableHandler(AnimationClip clip)
+        {
+            if(!_playableGraph.IsValid())
+            {
+                // 创建PlayableGraph
+                _playableGraph = PlayableGraph.Create();
+                _playableGraph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
+            }
+
+            if (_clipPlayable.IsValid())
+            {
+                _playableGraph.DestroyPlayable(_clipPlayable);
+            }
             // 创建AnimationClipPlayable并连接到输出
             _clipPlayable = AnimationClipPlayable.Create(_playableGraph, clip);
-            _output = AnimationPlayableOutput.Create(_playableGraph, "AnimationOutput", GetComponent<Animator>());
+
+            if (!_output.IsValid())
+            {
+                _output = AnimationPlayableOutput.Create(_playableGraph, "AnimationOutput", GetComponent<Animator>());
+            }
             _output.SetSourcePlayable(_clipPlayable);
 
-            // 播放动画
-            if (playAwake) _playableGraph.Play();
+            _playableGraph.Play();
         }
 
         private void OnDisable()
@@ -90,19 +142,13 @@ namespace PowerCellStudio
             _paused = false;
         }
 
-        public void ResetClip(AnimationClip newClip, bool isloop)
+        public void PlayClip(AnimationClip newClip)
         {
-            if (clip == null)
+            if (newClip == null)
             {
-                Debug.LogError("未指定AnimationClip！", this);
                 return;
             }
-            clip = newClip;
-            loop = isloop;
-            if (_clipPlayable.IsValid()) _playableGraph.DestroyPlayable(_clipPlayable);
-            _clipPlayable = AnimationClipPlayable.Create(_playableGraph, clip);
-            _output.SetSourcePlayable(_clipPlayable);
-            _clipPlayable.SetTime(0);
+            PlayableHandler(newClip);
         }
 
         public void Replay()
