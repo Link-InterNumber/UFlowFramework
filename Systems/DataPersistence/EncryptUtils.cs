@@ -162,11 +162,13 @@ namespace PowerCellStudio
             if (string.IsNullOrEmpty(encryptionKey)) return data;
             try
             {
-                byte[] keyBytes = Encoding.UTF8.GetBytes(encryptionKey);
-                Array.Resize(ref keyBytes, 16);
+                Span<byte> keyBytes = stackalloc byte[16];
+                int len = Encoding.UTF8.GetBytes(encryptionKey, keyBytes);
+                if (len < 16) keyBytes.Slice(len, 16 - len).Clear();
+
                 using (Aes aes = Aes.Create())
                 {
-                    aes.Key = keyBytes;
+                    aes.Key = keyBytes.ToArray();
                     aes.GenerateIV();
                     aes.Padding = PaddingMode.PKCS7;
                     using (MemoryStream ms = new MemoryStream())
@@ -193,11 +195,13 @@ namespace PowerCellStudio
             if (string.IsNullOrEmpty(encryptionKey)) return encryptData;
             try
             {
-                byte[] keyBytes = Encoding.UTF8.GetBytes(encryptionKey);
-                Array.Resize(ref keyBytes, 16);
+                Span<byte> keyBytes = stackalloc byte[16];
+                int len = Encoding.UTF8.GetBytes(encryptionKey, keyBytes);
+                if (len < 16) keyBytes.Slice(len, 16 - len).Clear();
+
                 using (Aes aes = Aes.Create())
                 {
-                    aes.Key = keyBytes;
+                    aes.Key = keyBytes.ToArray();
                     aes.Padding = PaddingMode.PKCS7;
                     using (MemoryStream ms = new MemoryStream(encryptData))
                     {

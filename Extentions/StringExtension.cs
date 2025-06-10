@@ -158,7 +158,7 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 将文本中的特点部分设置为指定的颜色。
+        /// 将文本中的特定部分设置为指定的颜色。
         /// Sets the pattern of the text to a specified color.
         /// </summary>
         /// <param name="text">要处理的文本。</param>
