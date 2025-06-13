@@ -17,10 +17,6 @@ namespace GameProtocol
         private string _address = "127.0.0.1";
         private int _port = 6000;
         
-        [Tooltip("Number of times the message is repeated to simulate more requests.")]
-        [SerializeField]
-        private int _repeatMessage = 0;
-        
         [Tooltip("Try to reconnect if connection could not be established or was lost")]
         [SerializeField]
         private bool _autoTryReconnect = true;
@@ -85,14 +81,14 @@ namespace GameProtocol
         private IEnumerator DisconnectHandler()
         {
             _disconnectingManually = true;
+            _client.OnConnectedEvent -= OnConnected;
+            _client.OnDisconnectedEvent -= OnDisconnected;
+            _client.OnErrorEvent -= OnError;
             _client.Disconnect();
             while (_client.IsConnected)
             {
                 yield return null;
             }
-            _client.OnConnectedEvent -= OnConnected;
-            _client.OnDisconnectedEvent -= OnDisconnected;
-            _client.OnErrorEvent -= OnError;
             _disconnectingManually = false;
             _listenerHandlers.Clear();
             _waitHandlers.Clear();
@@ -102,6 +98,7 @@ namespace GameProtocol
         private void OnConnected()
         {
             QueueLog(QueueLogLevel.Info, $"{_client.GetType()} connected a session with Id {_client.Id}");
+            EventManager.instance?.onNetConnect?.Invoke();
         }
 
         private void OnDisconnected()
@@ -112,6 +109,7 @@ namespace GameProtocol
                 logMessage = $"{_client.GetType()} disconnected a session with Id {_client.Id}"
             };
             _logQueue.Enqueue(log);
+            EventManager.instance?.onNetDisconnect?.Invoke();
             if (ApplicationManager.appState == ApplicationState.Quit)
             {
                 return;

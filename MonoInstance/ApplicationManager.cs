@@ -124,9 +124,9 @@ namespace PowerCellStudio
         
         public void ClearUnusedAsset()
         {
+            EventManager.instance?.onClearUnusedAsset?.Invoke();
             PoolManager.instance?.ClearAllPool();
             UIManager.instance?.Clear();
-            EventManager.instance?.onClearUnusedAsset?.Invoke();
             Resources.UnloadUnusedAssets();
             GC.Collect();
         }

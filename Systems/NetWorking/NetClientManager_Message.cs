@@ -6,6 +6,9 @@ namespace GameProtocol
 {
     public partial class NetClientManager
     {
+#if NET_TEST
+        private int _repeatMessage = 1;
+#endif
 
 #region 消息监听注册
 
@@ -38,6 +41,7 @@ namespace GameProtocol
             if(messageReceiveHandler.EventListenerCount == 0)
             {
                 _listenerHandlers.Remove(typeof(T));
+                messageReceiveHandler.Dispose();
             }
         }
 
@@ -45,12 +49,16 @@ namespace GameProtocol
 
 #region 消息发送
 
-        private void SendAsync(byte[] message)
+        private bool SendAsync(byte[] message)
         {
+#if NET_TEST
             for (int i = 0; i < 1 + _repeatMessage; i++)
+#endif
             {
-                _client.SendAsync(message);
+                var success = _client.SendAsync(message);
+                if (!success) return false;
             }
+            return true;
         }
 
         private class SendDataBuffer : IDisposable
@@ -103,13 +111,7 @@ namespace GameProtocol
             var buffer = NetworkSerializer.Serialize(message);
             var handler = new MessageReceiveHandler<T>(true);
             var messageType = typeof(T);
-            if (_waitHandlers.ContainsKey(messageType))
-            {
-                _sendDataBuffers.Add(new SendDataBuffer(messageType, buffer, handler));
-                return handler;
-            }
-            _waitHandlers.Add(messageType, handler);
-            SendAsync(buffer);
+            _sendDataBuffers.Add(new SendDataBuffer(messageType, buffer, handler));
             return handler;
         }
 
@@ -124,8 +126,11 @@ namespace GameProtocol
                     i++;
                     continue;
                 }
+                if (!SendAsync(sendDataBuffer.Buffer))
+                {
+                    break;
+                }
                 _waitHandlers.Add(sendDataBuffer.MessageType, sendDataBuffer.Handler);
-                SendAsync(sendDataBuffer.Buffer);
                 sendDataBuffer.Dispose();
                 _sendDataBuffers.RemoveAt(i);
             }
