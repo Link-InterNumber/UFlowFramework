@@ -1,44 +1,59 @@
+using System;
 using UnityEngine;
 using UnityEditor;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using UnityEditor.Compilation;
+using UnityEngine.UI;
+using Assembly = System.Reflection.Assembly;
 
 namespace PowerCellStudio
 {
-    public class UICodeGenerator
+    public class UICodeGenerator 
     {
         private static GameObject _CurrentPrefab;
         private static List<CompInfo> _CompInfos;
         private static string _scriptPath;
+        private static string _prefabPath;
+        private static string _namespace;
 
         private class CompInfo
         {
-            public string gameObjectName;
+            // public string gameObjectName;
             public Type compType;
             public string fieldName;
+            public string methodName;
             public string relativePath;
         }
 
-        [MenuItem("Assets/Create UI Script", true)]
+        [MenuItem("Assets/UFlow/Create UI Script", true, 1)]
         private static bool ValidateCreateUIScript()
         {
             GameObject selected = Selection.activeObject as GameObject;
             return selected != null && PrefabUtility.GetPrefabAssetType(selected) != PrefabAssetType.NotAPrefab;
         }
 
-        private static Type[] _findType = new []{typeof(Button), typeof(Toggle), typeof(Slider), typeof(InputField), typeof(ListUpdater)}
+        private static Type[] _findType = new[]
+            { typeof(Button), typeof(Toggle), typeof(Slider), typeof(InputField), typeof(ListUpdater) };
 
-        [MenuItem("Assets/Create UI Script")]
+
+        [MenuItem("Assets/UFlow/Create UI Script", false, 1)]
         private static void CreateUIScript()
         {
             _CurrentPrefab = Selection.activeObject as GameObject;
-            if (_CurrentPrefab == null) return;
+            if (_CurrentPrefab == null)
+            {
+                Dispose();
+                return;
+            }
 
+            _prefabPath = AssetDatabase.GetAssetPath(_CurrentPrefab);
             string prefabName = _CurrentPrefab.name.Replace(" ", "");
-            string scriptName = prefabName + "Script";
-            string defaultPath = Path.GetDirectoryName(AssetDatabase.GetAssetPath(_CurrentPrefab));
+            string scriptName = prefabName;
+            string defaultPath = Path.GetDirectoryName(_prefabPath);
             
             _scriptPath = EditorUtility.SaveFilePanelInProject(
                 "Save UI Script",
@@ -48,11 +63,22 @@ namespace PowerCellStudio
                 defaultPath
             );
 
-            if (string.IsNullOrEmpty(_scriptPath)) return;
+            if (string.IsNullOrEmpty(_scriptPath))
+            {
+                Dispose();
+                return;
+            }
+
+            if (File.Exists(_scriptPath))
+            {
+                Debug.LogError($"{scriptName} exists At {_scriptPath}");
+                Dispose();
+                return;
+            }
 
             // 递归收集所有按钮组件
             _CompInfos = new List<CompInfo>();
-            FindAllTargetComps(_findType, _CurrentPrefab.transform, "", _CurrentPrefab.transform.name);
+            FindAllTargetComps(_findType, _CurrentPrefab.transform, "", _CompInfos);
             
             // 处理重复名称
             ResolveDuplicateNames();
@@ -61,7 +87,7 @@ namespace PowerCellStudio
             ContentInputWindow.ShowWindow(GenerateScript, "Define Namespace", "");
         }
 
-        private static void FindAllTargetComps(Type[] targets, Transform parent, string currentPath, string rootName)
+        private static void FindAllTargetComps(Type[] targets, Transform parent, string currentPath, List<CompInfo> compInfos)
         {
             foreach (Transform child in parent)
             {
@@ -76,12 +102,13 @@ namespace PowerCellStudio
                     var target = targets[i];
                     var comp = child.GetComponent(target);
                     if (comp == null) continue;
-                    _CompInfos.Add(new CompInfo
+                    compInfos.Add(new CompInfo
                     {
-                        gameObjectName = comp.gameObject.name;
-                        compType = target;
+                        // gameObjectName = comp.gameObject.name,
+                        compType = target,
                         relativePath = newPath,
-                        fieldName = target.Name.ToLower() + MakeValidVariableName(child.name)
+                        fieldName = target.Name.ToLower() + MakeValidVariableName(child.name),
+                        methodName = target.Name + MakeValidVariableName(child.name),
                     });
                     if (i == targets.Length -1) hasList = true;
                     break;
@@ -91,7 +118,7 @@ namespace PowerCellStudio
                 // 递归查找子节点
                 if (child.childCount > 0)
                 {
-                    FindAllTargetComps(child, newPath, rootName);
+                    FindAllTargetComps(_findType, child, newPath, compInfos);
                 }
             }
         }
@@ -109,6 +136,7 @@ namespace PowerCellStudio
                 {
                     // 添加索引解决冲突
                     CompInfo.fieldName = $"{CompInfo.fieldName}{index + 1}";
+                    CompInfo.methodName = $"{CompInfo.methodName}{index + 1}";
                     index++;
                 }
             }
@@ -136,64 +164,66 @@ namespace PowerCellStudio
             if (_CurrentPrefab == null || _CompInfos == null || string.IsNullOrEmpty(_scriptPath))
             {
                 Debug.LogError("UI Script generation failed: Missing parameters");
+                Dispose();
                 return;
             }
             
             string prefabName = _CurrentPrefab.name.Replace(" ", "");
-            string fileName = Path.Combine(_scriptPath, $"{prefabName}.cs");
+            // string fileName = Path.Combine(_scriptPath, $"{prefabName}.cs");
 
             // 构建脚本内容
             var sb = new CsWriter();
 
-            sb.AppendLine("using UnityEngine;");
-            sb.AppendLine("using UnityEngine.UI;");
-            sb.AppendLine("using PowerCellStudio;");
+            sb.WriteLine("using UnityEngine;");
+            sb.WriteLine("using UnityEngine.UI;");
+            sb.WriteLine("using PowerCellStudio;");
             sb.Space();
-            
+
+            _namespace = namespaceName;
             // 添加命名空间
-            if (!string.IsNullOrEmpty(namespaceName))
+            if (!string.IsNullOrEmpty(_namespace))
             {
-                sb.AppendLine($"namespace {namespaceName}");
+                sb.WriteLine($"namespace {_namespace}");
                 sb.StartWriteBody();
             }
 
-            sb.AppendLine($"[WindowInfo(\"{AssetDatabase.GetAssetPath(_CurrentPrefab)}\")]")
-            sb.AppendLine($"public class {prefabName} : UIWindow");
-            sb.StartWriteBody();
+            sb.WriteLine($"[WindowInfo(\"{AssetDatabase.GetAssetPath(_CurrentPrefab)}\")]")
+                .WriteLine($"public class {prefabName} : UIWindow")
+                .StartWriteBody();
 
             // 添加按钮字段和路径注释
             foreach (var CompInfo in _CompInfos)
             {
-                sb.AppendLine($"[Header(\"Path: {CompInfo.relativePath}\")]")
-                    .AppendLine($"public {CompInfo.compType.Name} {CompInfo.fieldName};")
+                sb.WriteLine($"// Path: {CompInfo.relativePath}")
+                    .WriteLine($"public {CompInfo.compType.Name} {CompInfo.fieldName};")
                     .Space();
             }
 
-            sb.StartWriteMethod(MethodSign.Public, MethodSign.Override, "void", "RegisterEvent")
-                .AppendLine("base.RegisterEvent();");
+            sb.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Override, "void", "RegisterEvent")
+                .WriteLine("base.RegisterEvent();");
             foreach (var CompInfo in _CompInfos)
             {
                 AddListenerStr(CompInfo, sb);
             }
             sb.EndWriteMethod();
 
-            sb.StartWriteMethod(MethodSign.Public, MethodSign.Override, "void", "DeregisterEvent")
-                .AppendLine("base.DeregisterEvent();")
+            sb.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Override, "void", "DeregisterEvent")
+                .WriteLine("base.DeregisterEvent();");
             foreach (var CompInfo in _CompInfos)
             {
-                RemoveListenerStr(CompInfo, sb)
+                RemoveListenerStr(CompInfo, sb);
             }
             sb.EndWriteMethod();
 
-            sb.StartWriteMethod(MethodSign.Public, MethodSign.Override, "void", "OnOpen", "object data")
+            sb.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Override, "void", "OnOpen", "object data")
                 .Space()
                 .EndWriteMethod();
             
-            sb.StartWriteMethod(MethodSign.Public, MethodSign.Override, "void", "OnClose")
+            sb.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Override, "void", "OnFocus")
                 .Space()
                 .EndWriteMethod();
 
-            sb.StartWriteMethod(MethodSign.Public, MethodSign.Override, "void", "OnClose")
+            sb.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Override, "void", "OnClose")
                 .Space()
                 .EndWriteMethod();
 
@@ -203,74 +233,75 @@ namespace PowerCellStudio
             }
 
             sb.EndWriteBody();
-            if (!string.IsNullOrEmpty(namespaceName))
+            if (!string.IsNullOrEmpty(_namespace))
             {
                 sb.EndWriteBody();
             }
 
             // 写入文件
-            File.WriteAllText(fileName, sb.ToString());
+            File.WriteAllText(_scriptPath, sb.ToString());
             AssetDatabase.Refresh();
             
-            Debug.Log($"UI script generated at: {_scriptPath}");
+            // CompilationPipeline.compilationFinished += AddUIComponentToPrefab;
+            // CompilationPipeline.RequestScriptCompilation();
             
+
             // 清理静态变量
-            _CurrentPrefab = null;
-            _CompInfos = null;
-            _scriptPath = null;
+            Debug.Log($"UI script generated at: {_scriptPath}");
+            Dispose();
         }
+        
 
         private static void AddListenerStr(CompInfo info, CsWriter sb)
         {
             if (info.compType == typeof(Button))
-                sb.AppendLine($"{info.fieldName}.onClick.AddListener(On{info.fieldName}Clicked);");
+                sb.WriteLine($"{info.fieldName}.onClick.AddListener(On{info.methodName}Clicked);");
             else if (info.compType == typeof(Toggle))
-                sb.AppendLine($"{info.fieldName}.onValueChanged.AddListener(On{info.fieldName}ValueChanged);");
+                sb.WriteLine($"{info.fieldName}.onValueChanged.AddListener(On{info.methodName}ValueChanged);");
             else if (info.compType == typeof(Slider))
-                sb.AppendLine($"{info.fieldName}.onValueChanged.AddListener(On{info.fieldName}ValueChanged);");
+                sb.WriteLine($"{info.fieldName}.onValueChanged.AddListener(On{info.methodName}ValueChanged);");
             else if (info.compType == typeof(InputField))
-                sb.AppendLine($"{info.fieldName}.onValueChanged.AddListener(On{info.fieldName}ValueChanged);");
+                sb.WriteLine($"{info.fieldName}.onValueChanged.AddListener(On{info.methodName}ValueChanged);");
             else if (info.compType == typeof(ListUpdater))
-                sb.AppendLine($"{info.fieldName}.onItemInteraction += On{info.fieldName}Invoke;");
+                sb.WriteLine($"{info.fieldName}.onItemInteraction += On{info.methodName}Invoke;");
             // 其他类型可根据需要扩展
         }
 
         private static void RemoveListenerStr(CompInfo info, CsWriter sb)
         {
             if (info.compType == typeof(Button))
-                sb.AppendLine($"{info.fieldName}.onClick.RemoveListener(On{info.fieldName}Clicked);");
+                sb.WriteLine($"{info.fieldName}.onClick.RemoveListener(On{info.methodName}Clicked);");
             else if (info.compType == typeof(Toggle))
-                sb.AppendLine($"{info.fieldName}.onValueChanged.RemoveListener(On{info.fieldName}ValueChanged);");
+                sb.WriteLine($"{info.fieldName}.onValueChanged.RemoveListener(On{info.methodName}ValueChanged);");
             else if (info.compType == typeof(Slider))
-                sb.AppendLine($"{info.fieldName}.onValueChanged.RemoveListener(On{info.fieldName}ValueChanged);");
+                sb.WriteLine($"{info.fieldName}.onValueChanged.RemoveListener(On{info.methodName}ValueChanged);");
             else if (info.compType == typeof(InputField))
-                sb.AppendLine($"{info.fieldName}.onValueChanged.RemoveListener(On{info.fieldName}ValueChanged);");
+                sb.WriteLine($"{info.fieldName}.onValueChanged.RemoveListener(On{info.methodName}ValueChanged);");
             else if (info.compType == typeof(ListUpdater))
-                sb.AppendLine($"{info.fieldName}.onItemInteraction -= On{info.fieldName}Invoke;");
+                sb.WriteLine($"{info.fieldName}.onItemInteraction -= On{info.methodName}Invoke;");
             // 其他类型可根据需要扩展
-            return $"// No listener for {info.compType.Name}";
         }
 
         private static void AddListenerMethod(CompInfo info, CsWriter sb)
         {
             if (info.compType == typeof(Button))
-                sb.StartWriteMethod(MethodSign.Private, MethodSign.None, "void", $"On{info.fieldName}Clicked")
+                sb.StartWriteMethod(CsWriter.MethodSign.Private, CsWriter.MethodSign.None, "void", $"On{info.methodName}Clicked")
                     .Space()
                     .EndWriteMethod();
             else if (info.compType == typeof(Toggle))
-                sb.StartWriteMethod(MethodSign.Private, MethodSign.None, "void", $"On{info.fieldName}ValueChanged", "bool isOn")
+                sb.StartWriteMethod(CsWriter.MethodSign.Private, CsWriter.MethodSign.None, "void", $"On{info.methodName}ValueChanged", "bool isOn")
                     .Space()
                     .EndWriteMethod();
             else if (info.compType == typeof(Slider))
-                sb.StartWriteMethod(MethodSign.Private, MethodSign.None, "void", $"On{info.fieldName}ValueChanged", "float sliderValue")
+                sb.StartWriteMethod(CsWriter.MethodSign.Private, CsWriter.MethodSign.None, "void", $"On{info.methodName}ValueChanged", "float sliderValue")
                     .Space()
                     .EndWriteMethod();
             else if (info.compType == typeof(InputField))
-                sb.StartWriteMethod(MethodSign.Private, MethodSign.None, "void", $"On{info.fieldName}ValueChanged", "string input")
+                sb.StartWriteMethod(CsWriter.MethodSign.Private, CsWriter.MethodSign.None, "void", $"On{info.methodName}ValueChanged", "string input")
                     .Space()
                     .EndWriteMethod();
             else if (info.compType == typeof(ListUpdater))
-                sb.StartWriteMethod(MethodSign.Private, MethodSign.None, "void", $"On{info.fieldName}Invoke", "IListItem item", "int index", "object passData")
+                sb.StartWriteMethod(CsWriter.MethodSign.Private, CsWriter.MethodSign.None, "void", $"On{info.methodName}Invoke", "IListItem item", "int index", "object passData")
                     .Space()
                     .EndWriteMethod();
         }
@@ -296,6 +327,67 @@ namespace PowerCellStudio
             }
 
             return sb.ToString();
+        }
+
+        [MenuItem("Assets/UFlow/Add UI Component", false, 2)]
+        private static void AddUIComponentToPrefab()
+        {
+            var prefab = Selection.activeObject as GameObject;
+            if (prefab == null) return;
+            var scriptName = prefab.name;
+            
+            var compInfos = new List<CompInfo>();
+            FindAllTargetComps(_findType, prefab.transform, "", compInfos);
+            var baseType = typeof(UIWindow);
+            var types = baseType.Assembly.GetTypes();
+            Type uiType = null;// Assembly.Load("Assembly-CSharp").GetType($"Test.{scriptName}");
+
+            foreach (var type in types)
+            {
+                if (type.IsSubclassOf(baseType) && type.Name == scriptName)
+                {
+                    uiType = type;
+                    break;
+                }
+            }
+            
+            if (uiType != null)
+            {
+                var uiComp = prefab.AddComponent(uiType);
+                foreach (var compInfo in compInfos)
+                {
+                    FieldInfo fields = uiType.GetField(compInfo.fieldName, BindingFlags.Public | BindingFlags.Instance);
+                    if (fields == null)
+                    {
+                        continue;
+                    }
+                    
+                    var nodes = compInfo.relativePath.Split('/');
+                    var currentNode = prefab.transform;
+                    foreach (var node in nodes)
+                    {
+                        currentNode = currentNode.Find(node);
+                    }
+                    var compValue = currentNode.gameObject.GetComponent(compInfo.compType);
+                    fields.SetValue(uiComp, compValue);
+                }
+            }
+            else
+            {
+                Debug.LogError($"Type[{scriptName}] Not Found!");
+            }
+            PrefabUtility.SavePrefabAsset(prefab);
+            AssetDatabase.Refresh();
+            Dispose();
+        }
+
+        public static void Dispose()
+        {
+            _CurrentPrefab = null;
+            _CompInfos = null;
+            _scriptPath = null;
+            _prefabPath = null;
+            _namespace = null;
         }
     }
 }

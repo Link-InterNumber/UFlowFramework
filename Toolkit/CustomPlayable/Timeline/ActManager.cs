@@ -18,7 +18,7 @@ namespace PowerCellStudio
         {
             base.Init(data);
             _runnerPool = new LinkPool<TimelineActRunner>(() => new TimelineActRunner(), 5, 5);
-            _director = gameObject.AddComponent<PlayableDirector>()
+            _director = gameObject.AddComponent<PlayableDirector>();
             _loader = AssetUtils.SpawnLoader("ActManager");
         }
 
@@ -47,8 +47,8 @@ namespace PowerCellStudio
         {
             var runner = GetRunner();
             actBinder.actRunner = runner;
-            Rebind(asset, actBinder);
-            actBinder.actRunner.SetTimelineAsset(asset, actBinder.gameObject);
+            Rebind(timelineAsset, actBinder);
+            actBinder.actRunner.SetTimelineAsset(timelineAsset, actBinder.gameObject);
         }
 
         public void RemoveAct(ActBinder actBinder)
@@ -62,13 +62,13 @@ namespace PowerCellStudio
             foreach (var output in timelineAsset.outputs)
             {
                 // 判断类型和名称
-                if (output.streamType == DataStreamType.Animation)
+                if (output.outputTargetType == typeof(Animator))
                 {
-                    director.SetGenericBinding(output.sourceObject, actBinder.gameObject.GetComponent<Animator>());
+                    _director.SetGenericBinding(output.sourceObject, actBinder.gameObject.GetComponent<Animator>());
                 }
                 if (output.sourceObject is IActTack)
                 {
-                    director.SetGenericBinding(output.sourceObject, actBinder);
+                    _director.SetGenericBinding(output.sourceObject, actBinder);
                 }
             }
         }

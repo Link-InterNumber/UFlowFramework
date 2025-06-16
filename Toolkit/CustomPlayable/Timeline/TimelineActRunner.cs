@@ -33,7 +33,8 @@ namespace PowerCellStudio
             if (!_playableGraph.IsValid())
                 return;
             // 清理现有Graph（如果存在）
-            Clear();
+            _playableGraph = PlayableGraph.Create(owner.name);
+            _playableGraph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
 
             // 创建一个新的Playable
             _playable = timelineAsset.CreatePlayable(_playableGraph, owner); //TimelinePlayable.Create(graph, timelineAsset, gameObject, false, true);
@@ -98,8 +99,7 @@ namespace PowerCellStudio
 
         public override void OnSpawn()
         {
-            _playableGraph = PlayableGraph.Create();
-            _playableGraph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
+
         }
 
         public override void OnDeSpawn()

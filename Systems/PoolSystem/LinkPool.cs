@@ -49,7 +49,7 @@ namespace PowerCellStudio
             }
         }
 
-        protected LinkPool() { _createFun = () => new T(); }
+        protected LinkPool() {}
 
         /// <summary>
         /// 从对象池中获取对象

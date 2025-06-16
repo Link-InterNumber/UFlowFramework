@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEditor;
 
@@ -10,17 +11,21 @@ namespace PowerCellStudio
         public string inputContent {set => _inputContent = value;}
 
         private Action<string> _callback;
+        public Action<string> callback
+        {
+            set => _callback = value;
+        }
         
         public static void ShowWindow(Action<string> callback, string title, string defaultValue)
         {
-            _callback = callback;
             ContentInputWindow window = GetWindow<ContentInputWindow>(true, title, true);
+            window.callback = callback;
             window.inputContent = defaultValue;
             window.minSize = new Vector2(300, 100);
             window.maxSize = new Vector2(600, 100);
             window.ShowModalUtility();
         }
-        
+
         void OnGUI()
         {
             GUILayout.Space(10);
@@ -36,7 +41,7 @@ namespace PowerCellStudio
             
             if (GUILayout.Button("Confirm", GUILayout.Width(100)))
             {
-                callback?.Invoke(_inputContent.Trim());
+                _callback?.Invoke(_inputContent.Trim());
                 Close();
             }
             

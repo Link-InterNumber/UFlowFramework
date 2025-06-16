@@ -21,9 +21,9 @@ namespace PowerCellStudio
 
         private void OnEnable()
         {
-            if (clip == null)
+            if (clips == null)
             {
-                LinkLog.LogError("未指定AnimationClip！", this);
+                LinkLog.LogError("未指定AnimationClip！");
                 return;
             }
 
@@ -40,7 +40,7 @@ namespace PowerCellStudio
             }
             for (var i = 0; i < clips.Length; i++)
             {
-                var clip = clips[index];
+                var clip = clips[i];
                 if (!clip) continue;
                 if (!clip.name.Equals(clipName)) continue;
                 Play(i);
@@ -83,7 +83,7 @@ namespace PowerCellStudio
             // 创建AnimationClipPlayable并连接到输出
             _clipPlayable = AnimationClipPlayable.Create(_playableGraph, clip);
 
-            if (!_output.IsValid())
+            if (!_output.IsOutputValid())
             {
                 _output = AnimationPlayableOutput.Create(_playableGraph, "AnimationOutput", GetComponent<Animator>());
             }
@@ -107,7 +107,7 @@ namespace PowerCellStudio
                 return;
             _onPlayEnd.Invoke();
             _clipPlayable.SetTime(0);
-            if (!clip.loop) _playableGraph.Pause();
+            if (!clips[_currentIndex].isLooping) _playableGraph.Stop();
         }
 
         public void SetUpdateMode(DirectorUpdateMode updateMode)
