@@ -182,7 +182,7 @@ namespace PowerCellStudio
         public static string ColorNumber(this string text, Color color)
         {
             var numberRegex = new Regex(@"(\-|\+)?\d+(\.\d+)?(\%)?");
-            return SetColor(text, numberRegex, color);   
+            return SetColor(text, numberRegex, color);
         }
         
         #endregion
