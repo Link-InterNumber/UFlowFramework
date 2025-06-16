@@ -28,7 +28,7 @@ namespace PowerCellStudio
             return selected != null && PrefabUtility.GetPrefabAssetType(selected) != PrefabAssetType.NotAPrefab;
         }
 
-        private Type[] _findType = new []{typeof(Button), typeof(Toggle), typeof(Slider), typeof(InputField), typeof(ListUpdater)}
+        private static Type[] _findType = new []{typeof(Button), typeof(Toggle), typeof(Slider), typeof(InputField), typeof(ListUpdater)}
 
         [MenuItem("Assets/Create UI Script")]
         private static void CreateUIScript()
