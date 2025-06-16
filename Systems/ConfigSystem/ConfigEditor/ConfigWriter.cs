@@ -253,13 +253,13 @@ namespace PowerCellStudio
                 .WriteLine($"_loadHandle.LoadAsync<{_fileName}Data>(_assetPath);")
                 .EndWriteMethod();
 
-            _csFile.StartWriteMethod(CsWriter.MethodSign.Private, CsWriter.MethodSign.None, "void", "LoadHandler", "ConfBaseData handle")
-                .StartWriteIf("handle == null")
+            _csFile.StartWriteMethod(CsWriter.MethodSign.Private, CsWriter.MethodSign.None, "void", "LoadHandler", "ConfBaseData configData")
+                .StartWriteIf("configData == null")
                 .WriteLine("_loadStatus = AssetLoadStatus.Unload;")
                 .WriteLine("return;")
                 .EndWriteIf()
                 .WriteLine("_refCount = 1;")
-                .WriteLine($"rawData = (handle as {_fileName}Data)?.source;")
+                .WriteLine($"rawData = (configData as {_fileName}Data)?.source;")
                 .WriteLine("MapData();")
                 .WriteLine("OnLoaded();")
                 .WriteLine("_loadStatus = AssetLoadStatus.Loaded;")

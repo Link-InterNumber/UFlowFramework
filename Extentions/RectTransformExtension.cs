@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -30,6 +31,33 @@ namespace PowerCellStudio
         {
             rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
             rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
+        }
+
+        public static Bounds GetWorldBounds(this RectTransform rt)
+        {
+            var corners = new Vector3[4];
+            rt.GetWorldCorners(corners);
+
+            var center = new Vector3(corners.Sum(o => o.x) / 4f, corners.Sum(o => o.y) / 4f);
+            var size = new Vector3(corners.Max(o => o.x) - corners.Min(o => o.x), corners.Max(o => o.y) - corners.Min(o => o.y));
+            var bounds = new Bounds(center, size);
+
+            return bounds;
+        }
+
+        public static Vector3 GetWorldCenter(this RectTransform rt)
+        {
+            var corners = new Vector3[4];
+            rt.GetWorldCorners(corners);
+            var center = new Vector3(corners.Sum(o => o.x) / 4f, corners.Sum(o => o.y) / 4f);
+            return center;
+        }
+
+        public static bool IsOverlap(this RectTransform rt, RectTransform other)
+        {
+            if (!rt || !other) return false;
+            
+            return rt.GetWorldBounds().Intersects(other.GetWorldBounds());
         }
     }
 }

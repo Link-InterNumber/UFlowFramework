@@ -9,7 +9,7 @@ namespace PowerCellStudio
     /// TimeManager类，用于管理时间缩放和相关的时间记录。
     /// Manages time scaling and related time recording functionalities.
     /// </summary>
-    public sealed class TimeManager : SingletonBase<TimeManager>, IExecutionModule, IEventModule, IOnGameStartModule
+    public sealed class TimeManager : SingletonBase<TimeManager>, IFixedExecutionModule, IEventModule, IOnGameStartModule
     {
         #region define
 
@@ -444,12 +444,12 @@ namespace PowerCellStudio
         /// Execute the transition and record scaling time.
         /// </summary>
         /// <param name="dt">deltaTime</param>
-        public void Execute(float dt)
+        public void FixedExecute(float dt)
         {
             if (_inTimeRecording && !_paused)
             {
-                _timeWithoutPause += (long)(Time.deltaTime * 1000);
-                _unscaleTimeWithoutPause += (long)(Time.unscaledDeltaTime * 1000);
+                _timeWithoutPause += (long)(dt * 1000);
+                _unscaleTimeWithoutPause += (long)(Time.fixedUnscaledDeltaTime * 1000);
             }
             if (!_blending) return;
             if (_time >= _duration)
@@ -458,7 +458,7 @@ namespace PowerCellStudio
                 Time.timeScale = _target;
                 return;
             }
-            _time += Time.unscaledDeltaTime;
+            _time += Time.fixedUnscaledDeltaTime;
             var progress = Mathf.Clamp01(_time / _duration);
             Time.timeScale = Mathf.Lerp(Time.timeScale, _target, progress);
         }

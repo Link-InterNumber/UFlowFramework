@@ -91,13 +91,36 @@ namespace PowerCellStudio
             notifyValue = node.notifyValue;
         }
 
+        private bool CheckIsChainLoop(NotifyNode child, NotifyNode parent)
+        {
+#if UNITY_EDITOR
+            if( child.children.Contains(parent.index) || parent.parent == child.index)
+            {
+                return true;
+            }
+            var checkNode = parent;
+            while (checkNode.parent >= 0)
+            {
+                checkNode = GetNode((NotifyType)parent.parent);
+                if (checkNode.index == child.index)
+                    return true;
+            }
+#endif
+            return false;
+        }
+
         private void SetNodeParent(NotifyType child, NotifyType parent)
         {
+            if (child == parent)
+            {
+                ModuleLog<NotifyManager>.LogError($"Can not set [{child}] as child node to himself");
+                return;
+            }
             var childNode = GetNode(child);
             var parentNode = GetNode(parent);
-            if( childNode.children.Contains(parentNode.index) || parentNode.parent == childNode.index)
+            if (CheckIsChainLoop(childNode, parentNode))
             {
-                ModuleLog<NotifyManager>.LogError($"Can not set [{child}] as child node to [{parent}], because [{child}] is [{parent}]'s parent node!");
+                ModuleLog<NotifyManager>.LogError($"Can not set [{child}] as child node to [{parent}], because the two nodes forming a loop");
                 return;
             }
             childNode.parent = parentNode.index;
@@ -164,18 +187,32 @@ namespace PowerCellStudio
         public void ReCalNodeNotify(NotifyType nodeType)
         {
             var node = GetNode(nodeType);
-            if (node.children.Count > 0)
-            {
-                node.notifyNumber = node.children.Count(o => GetNode((NotifyType) o).isOn);
-                node.notifyValue = node.children.Sum(o => GetNode((NotifyType) o).notifyValue);
-            }
-            else
-            {
-                node.notifyNumber = 0;
-                node.notifyValue = 0;
-            }
-            node.isOn = node.notifyNumber > 0;
             CalNodeNotify(node, node.isOn, node.notifyValue);
+        }
+
+        /// <summary>
+        /// 清空节点状态，并通过树结构向上计算节点状态
+        /// </summary>
+        /// <param name="nodeType">节点类型</param>
+        public void ClearNodeNotify(NotifyType nodeType)
+        {
+            var node = GetNode(nodeType);
+            ClearNodeNotify(node);
+            ReCalNodeNotify(nodeType);
+        }
+
+        private void ClearNodeNotify(NotifyNode node)
+        {
+            node.notifyValue = 0;
+            node.notifyNumber = 0;
+            node.isOn = false;
+            node.Notify();
+            foreach (var nodeChild in node.children)
+            {
+                var childNode = _nodes[nodeChild];
+                if (!childNode.isOn) continue;
+                ClearNodeNotify(childNode);
+            }
         }
 
         /// <summary>
@@ -192,7 +229,7 @@ namespace PowerCellStudio
                 ModuleLog<NotifyManager>.LogError($"Can not set [{nodeType}], because [{nodeType}] is driven by its child nodes!");
                 return;
             }  
-            if (node.isOn == isOn && notifyValue == 0) return;
+            if (node.isOn == isOn && node.notifyValue == notifyValue) return;
             CalNodeNotify(node, isOn, notifyValue);
         }
         
@@ -209,6 +246,7 @@ namespace PowerCellStudio
             node.notifyValue = notifyValue;
             node.notifyNumber = isOn ? Mathf.Max(1, node.notifyNumber + 1) : 0;
             node.Notify();
+            ReCalNodeNotify(nodeType);
         }
 
         /// <summary>

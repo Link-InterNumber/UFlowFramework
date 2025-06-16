@@ -124,9 +124,9 @@ namespace PowerCellStudio
         
         public void ClearUnusedAsset()
         {
+            EventManager.instance?.onClearUnusedAsset?.Invoke();
             PoolManager.instance?.ClearAllPool();
             UIManager.instance?.Clear();
-            EventManager.instance?.onClearUnusedAsset?.Invoke();
             Resources.UnloadUnusedAssets();
             GC.Collect();
         }
@@ -179,6 +179,18 @@ namespace PowerCellStudio
             if (ignoreTimeScale) yield return new WaitForSecondsRealtime(timeInSecond);
             else yield return new WaitForSeconds(timeInSecond);
             call?.Invoke();
+        }
+
+        public void EnableDynamicResolution(bool enable)
+        {
+            if (enable)
+            {
+                gameObject.TryAddComponent<DynamicResolutionController>();
+            }
+            else
+            {
+                gameObject.RemoveComponent<DynamicResolutionController>();
+            }
         }
 
 #if UNITY_EDITOR

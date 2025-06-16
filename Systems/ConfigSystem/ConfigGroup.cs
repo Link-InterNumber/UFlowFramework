@@ -52,7 +52,7 @@ namespace PowerCellStudio
             _loadStatus = AssetLoadStatus.Loading;
             foreach (var confBaseCollections in _configs)
             {
-                if (confBaseCollections.loadStatus == AssetLoadStatus.Loaded) continue;
+                // if (confBaseCollections.loadStatus == AssetLoadStatus.Loaded) continue;
                 var handle = new T();
                 confBaseCollections.LoadConfAsync(handle);
             }

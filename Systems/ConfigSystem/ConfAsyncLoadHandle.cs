@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using Newtonsoft.Json;
@@ -37,6 +38,61 @@ namespace PowerCellStudio
         public abstract void LoadBinary<T>(string path) where T : ConfBaseData;
 
         public abstract void Release();
+    }
+
+    // 服务器使用
+    public class NativeConfigLoader : ConfAsyncLoadHandle
+    {
+        public override void LoadScriptableObject(string path)
+        {
+            Console.WriteLine("不支持的配置表类型!");
+        }
+
+        public override void LoadJson<T>(string path)
+        {
+            T data = null;
+            try 
+            {
+                string text = File.ReadAllText(path);
+                var jsonString = EncryptUtils.AESDecrypt(text, ConstSetting.FileEncryptionKey); // 解密配置文件
+                data = JsonConvert.DeserializeObject<T>(jsonString);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            finally
+            {
+                Completed?.Invoke(data);
+            }
+        }
+
+        public override void LoadBinary<T>(string path)
+        {
+            T data = null;
+            try 
+            {
+                byte[] readAllBytes = File.ReadAllBytes(path);
+                var bytes = EncryptUtils.AESDecrypt(readAllBytes, ConstSetting.FileEncryptionKey); // 解密配置文件
+                using MemoryStream stream = new MemoryStream(bytes);
+                BinaryFormatter formatter = new BinaryFormatter();
+                data = (T) formatter.Deserialize(stream);
+                stream.Close();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            finally
+            {
+                Completed?.Invoke(data);
+            }
+        }
+
+        public override void Release()
+        {
+
+        }
     }
 
     public class CommonConfigLoader : ConfAsyncLoadHandle
