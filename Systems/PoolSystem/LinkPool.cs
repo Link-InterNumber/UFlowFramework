@@ -48,8 +48,10 @@ namespace PowerCellStudio
                 _stack.Push(_createFun());
             }
         }
+        
+        protected LinkPool(){}
 
-        protected LinkPool() { _createFun = () => new T(); }
+        // protected LinkPool() { _createFun = () => new T(); }
 
         /// <summary>
         /// 从对象池中获取对象

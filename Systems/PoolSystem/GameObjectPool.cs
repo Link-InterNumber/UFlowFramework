@@ -6,7 +6,7 @@ namespace PowerCellStudio
 {
     public class GameObjectPool : LinkPool<GameObject>
     {
-        protected IAssetLoader assetLoader;
+        protected IAssetLoader _assetLoader;
         protected GameObject _prefab;
         protected AssetLoadStatus _loadStatus;
         protected readonly string _tag;
@@ -15,11 +15,28 @@ namespace PowerCellStudio
         public AssetLoadStatus loadStatus => _loadStatus;
         public string tag => _tag;
 
+        public GameObjectPool(GameObject prefab, int maxSize, int initSize, Transform root)
+        {
+            _prefab = prefab;
+            _maxSize = maxSize;
+            _root = root;
+            _tag = $"{Path.GetFileNameWithoutExtension(prefab.name)}_{IndexGetter.instance.Get<GameObjectPool>()}";
+            _createFun = InstantiateFromPrefab;
+            for (int i = 0; i < initSize; i++)
+            {
+                var go = InstantiateFromPrefab();
+                go.SetActive(false);
+                go.transform.SetParent(_root);
+                _stack.Push(go);
+            }
+            _loadStatus = AssetLoadStatus.Loaded;
+        }
+
         public GameObjectPool(string path, int maxSize, int initSize, Transform root)
         {
             _loadStatus = AssetLoadStatus.Loading;
             _maxSize = maxSize;
-            assetLoader = AssetUtils.SpawnLoader(nameof(PoolManager));
+            _assetLoader = AssetUtils.SpawnLoader(nameof(PoolManager));
             _root = root;
             _tag = $"{Path.GetFileNameWithoutExtension(path)}_{IndexGetter.instance.Get<GameObjectPool>()}";
             ApplicationManager.instance.StartCoroutine(InitPoolHandle(path, initSize));
@@ -36,13 +53,13 @@ namespace PowerCellStudio
         private IEnumerator InitPoolHandle(string path, int initSize)
         {
             _loadStatus = AssetLoadStatus.Loading;
-            var handle = assetLoader.LoadAsYieldInstruction<GameObject>(path);
+            var handle = _assetLoader.LoadAsYieldInstruction<GameObject>(path);
             yield return handle;
             _prefab = handle.asset;
             if (_prefab == null)
             {
                 _loadStatus = AssetLoadStatus.Unload;
-                AssetUtils.DeSpawnLoader(assetLoader);
+                AssetUtils.DeSpawnLoader(_assetLoader);
                 LinkLog.LogError($"Pool init failed, path: {path}");
                 yield break;
             }
@@ -130,8 +147,8 @@ namespace PowerCellStudio
         public override void Dispose()
         {
             base.Dispose();
-            AssetUtils.DeSpawnLoader(assetLoader);
-            assetLoader = null;
+            AssetUtils.DeSpawnLoader(_assetLoader);
+            _assetLoader = null;
             _prefab = null;
             _loadStatus = AssetLoadStatus.Unload;
         }
