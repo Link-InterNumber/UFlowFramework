@@ -1,6 +1,4 @@
 using PowerCellStudio;
-using System;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace GameProtocol
@@ -9,7 +7,7 @@ namespace GameProtocol
     {
         private Queue<QueueLog> _logQueue = new Queue<QueueLog>();
 
-        private void QueueLog(QueueLogLevel logLevel, string message)
+        private void AppendLog(QueueLogLevel logLevel, string message)
         {
             var log = new QueueLog()
             {

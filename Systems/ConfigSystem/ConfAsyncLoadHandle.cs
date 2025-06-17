@@ -50,11 +50,14 @@ namespace PowerCellStudio
     {
         public override void LoadScriptableObject(string path)
         {
-            var dataAsset = AssetDatabase.LoadAssetAtPath<ConfBaseData>(path);
+            ConfBaseData dataAsset = null;
+#if SCRIPTABLE_OBJECT_CONFIG
+            dataAsset = AssetDatabase.LoadAssetAtPath<ConfBaseData>(path);
+#endif
             Completed?.Invoke(dataAsset);
         }
 
-        public override void LoadJson<T>(string path) where T : ConfBaseData
+        public override void LoadJson<T>(string path)
         {
             var textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
             if (!textAsset)
@@ -67,7 +70,7 @@ namespace PowerCellStudio
             Completed?.Invoke(data);
         }
 
-        public override void LoadBinary<T>(string path) where T : ConfBaseData
+        public override void LoadBinary<T>(string path)
         {
             var textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
             if (!textAsset)

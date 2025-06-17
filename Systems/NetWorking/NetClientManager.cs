@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
 using System.Net.Sockets;
 using NetCoreServer;
 using PowerCellStudio;
@@ -90,14 +88,11 @@ namespace GameProtocol
                 yield return null;
             }
             _disconnectingManually = false;
-            _listenerHandlers.Clear();
-            _waitHandlers.Clear();
-            _sendDataBuffers.Clear();
         }
 
         private void OnConnected()
         {
-            QueueLog(QueueLogLevel.Info, $"{_client.GetType()} connected a session with Id {_client.Id}");
+            AppendLog(QueueLogLevel.Info, $"{_client.GetType()} connected a session with Id {_client.Id}");
             EventManager.instance?.onNetConnect?.Invoke();
         }
 
@@ -133,13 +128,13 @@ namespace GameProtocol
             {
                 yield break;
             }
-            QueueLog(QueueLogLevel.Warning, "Trying to reconnect");
+            AppendLog(QueueLogLevel.Warning, "Trying to reconnect");
             _client.ConnectAsync();
         }
         
         private void OnError(SocketError error)
         {
-            QueueLog(QueueLogLevel.Error, $"{_client.GetType()} caught an error with code {error}");
+            AppendLog(QueueLogLevel.Error, $"{_client.GetType()} caught an error with code {error}");
         }
 
         public bool inExecution { get; set; }
