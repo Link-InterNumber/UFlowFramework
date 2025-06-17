@@ -167,8 +167,8 @@ namespace PowerCellStudio
         /// <returns>处理后的文本，数字部分被设置为指定的颜色。</returns>
         public static string ColorText(this string text, string pattern, Color color)
         {
-            var txtRegex = Regex.Escape(pattern);
-            var regex = new Regex(txtRegex);
+            string regexStr = Regex.Escape(pattern);
+            var regex = new Regex(regexStr);
             return SetColor(text, regex, color);   
         }
 
@@ -182,7 +182,7 @@ namespace PowerCellStudio
         public static string ColorNumber(this string text, Color color)
         {
             var numberRegex = new Regex(@"(\-|\+)?\d+(\.\d+)?(\%)?");
-            return SetColor(text, numberRegex, color);   
+            return SetColor(text, numberRegex, color);
         }
         
         #endregion

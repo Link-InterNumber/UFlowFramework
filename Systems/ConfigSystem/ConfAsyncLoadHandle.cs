@@ -1,8 +1,13 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using Newtonsoft.Json;
 using UnityEngine;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace PowerCellStudio
 {
@@ -39,6 +44,53 @@ namespace PowerCellStudio
         public abstract void Release();
     }
 
+#if UNITY_EDITOR
+
+    public class EditorConfigLoader : ConfAsyncLoadHandle
+    {
+        public override void LoadScriptableObject(string path)
+        {
+            var dataAsset = AssetDatabase.LoadAssetAtPath<ConfBaseData>(path);
+            Completed?.Invoke(dataAsset);
+        }
+
+        public override void LoadJson<T>(string path) where T : ConfBaseData
+        {
+            var textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
+            if (!textAsset)
+            {
+                Completed?.Invoke(null);
+                return;
+            }
+            var jsonString = EncryptUtils.AESDecrypt(textAsset.text, ConstSetting.FileEncryptionKey); // 解密配置文件
+            var data = JsonConvert.DeserializeObject<T>(jsonString);
+            Completed?.Invoke(data);
+        }
+
+        public override void LoadBinary<T>(string path) where T : ConfBaseData
+        {
+            var textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
+            if (!textAsset)
+            {
+                Completed?.Invoke(null);
+                return;
+            }
+            var bytes = EncryptUtils.AESDecrypt(textAsset.bytes, ConstSetting.FileEncryptionKey); // 解密配置文件
+            using MemoryStream stream = new MemoryStream(bytes);
+            BinaryFormatter formatter = new BinaryFormatter();
+            T data = (T) formatter.Deserialize(stream);
+            stream.Close();
+            Completed?.Invoke(data);
+        }
+
+        public override void Release()
+        {
+
+        }
+    }
+
+#endif
+
     // 服务器使用
     public class NativeConfigLoader : ConfAsyncLoadHandle
     {
@@ -47,7 +99,7 @@ namespace PowerCellStudio
             Console.WriteLine("不支持的配置表类型!");
         }
 
-        public override void LoadJson<T>(string path) where T : ConfBaseData
+        public override void LoadJson<T>(string path)
         {
             T data = null;
             try 
@@ -66,15 +118,15 @@ namespace PowerCellStudio
             }
         }
 
-        public override void LoadBinary<T>(string path) where T : ConfBaseData;
+        public override void LoadBinary<T>(string path)
         {
             T data = null;
             try 
             {
-                byte[] data = File.ReadAllBytes(path);
-                var bytes = EncryptUtils.AESDecrypt(data, ConstSetting.FileEncryptionKey); // 解密配置文件
+                byte[] readAllBytes = File.ReadAllBytes(path);
+                var bytes = EncryptUtils.AESDecrypt(readAllBytes, ConstSetting.FileEncryptionKey); // 解密配置文件
                 using MemoryStream stream = new MemoryStream(bytes);
-                using BinaryFormatter formatter = new BinaryFormatter();
+                BinaryFormatter formatter = new BinaryFormatter();
                 data = (T) formatter.Deserialize(stream);
                 stream.Close();
             }

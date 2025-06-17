@@ -20,7 +20,7 @@ namespace PowerCellStudio
         {
             if(_instance)
             {
-                Destroy(gameObject);
+                Destroy(_instance.gameObject);
             }
             _instance = this as T;
             ModuleLog<T>.Log($"{typeof(T).Name} Spwaned, GameObject Name: {gameObject.name}.");
