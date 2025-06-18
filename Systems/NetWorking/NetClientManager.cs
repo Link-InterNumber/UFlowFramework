@@ -6,6 +6,7 @@ using UnityEngine;
 
 namespace GameProtocol
 {
+    [DonotInitModuleIAutoly]
     public partial class NetClientManager : SingletonBase<NetClientManager>, IExecutionModule
     {
         private UnityTcpClient _client;
@@ -26,6 +27,7 @@ namespace GameProtocol
         private byte[] _buffer;
         private bool _disconnectingManually;
         public bool IsConnected => _client != null && _client.IsConnected;
+        private INetworkSerializer _networkSerializer;
 
         public void OnInit()
         {
@@ -37,17 +39,18 @@ namespace GameProtocol
             Disconnect();
             _client?.Dispose();
             _client = null;
+            _networkSerializer?.Dispose();
+            _networkSerializer = null;
         }
         
-        [ContextMenu("Connect")]
-        public void Connect()
+        public void Connect<T>() where T: INetworkSerializer, new()
         {
             if (_client != null && (_client.IsConnected || _client.IsConnecting))
             {
                 Disconnect();
                 _client = null;
             }
-            
+            _networkSerializer = new T();
             _client = new UnityTcpClient(_address, _port);
             _buffer = new byte[_client.OptionReceiveBufferSize];
             
@@ -66,7 +69,6 @@ namespace GameProtocol
             }
         }
 
-        [ContextMenu("Disconnect")]
         public void Disconnect()
         {
             if (_client == null || _client.IsConnected)
