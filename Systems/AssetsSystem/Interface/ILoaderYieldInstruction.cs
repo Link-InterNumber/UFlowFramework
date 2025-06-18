@@ -9,6 +9,10 @@ namespace PowerCellStudio
     public interface ILoaderYieldInstruction : IDisposable
     {
         public bool isDone { get; }
+        public bool autoDestroy { get; set;}
+        public T asset { get; }
+        public void OnLoadSuccess(OnLoadCompleted<T> callback);
+        public void SetAsset(T loadedAsset);
     }
     
     public delegate void OnLoadCompleted<T>(T asset, string assetPath);
@@ -43,7 +47,7 @@ namespace PowerCellStudio
 
         public void OnLoadSuccess(OnLoadCompleted<T> callback)
         {
-            if (asset != null)
+            if (isDone)
             {
                 callback?.Invoke(asset, _assetPath);
                 return;
@@ -53,6 +57,7 @@ namespace PowerCellStudio
 
         public void SetAsset(T loadedAsset)
         {
+            if (isDone) return;
             isDone = true;
             asset = loadedAsset;
             // if(asset == null)

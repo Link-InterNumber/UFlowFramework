@@ -344,8 +344,8 @@ namespace PowerCellStudio
             if(_waitForLoadList.TryGetValue(bundleName, out var request))
             {
                 request?.Dispose();
+                _waitForLoadList.Remove(bundleName);
             }
-            _waitForLoadList.Remove(bundleName);
             if (!loadedBundle)
             {
                 AssetLog.LogError($"Bundle: {bundleName} Load Fail");

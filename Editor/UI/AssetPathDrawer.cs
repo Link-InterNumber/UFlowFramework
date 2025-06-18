@@ -8,7 +8,7 @@ namespace PowerCellStudio
     [CustomPropertyDrawer(typeof(AssetPath<>))]
     public class AssetPathDrawer : PropertyDrawer
     {
-        private Object m_obj; 
+        private Object m_obj;
         
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
