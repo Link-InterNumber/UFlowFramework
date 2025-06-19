@@ -225,6 +225,74 @@ namespace PowerCellStudio
             _preloadHandles.Add(path, handle);
         }
 
+        private void Unprepare(PrepareHandler handler)
+        {
+            if (handler == null) return;
+            if (!handler.isDnoe)
+            {
+                ApplicationManager.instance.StartCoroutine(UnprepareHandler(handler));
+                return;
+            }
+            foreach(var bundleName in handler.successLable)
+            {
+                Addressables.Release((AsyncOperationHandle)bundleName);
+            }
+            handler.Dispose();
+        }
+
+        private IEnumerator UnprepareHandler(PrepareHandler handler)
+        {
+            yield return handler;
+            Unprepare(handler);
+        }
+
+        public PrepareHandler Prepare(string[] labels, Action onComplete, bool isConcurrent = false)
+        {
+            if (labels == null || labels.Length == 0)
+            {
+                onProcess?.Invole(1f);
+                onComplete?.Invoke();
+                return;
+            }
+            var handler = new PrepareHandler();
+            handler.OnComplete(onComplete);
+            ApplicationManager.instance.StartCoroutine(PrepareHandler(labels, onComplete, isConcurrent, handler));
+        }
+
+        private IEnumerator PrepareHandler(string[] labels, Action onComplete, bool isConcurrent, PrepareHandler handler)
+        {
+            var waitList = new AsyncOperationHandle[label.Length]();
+            for (var i = 0; i < labels.Length; i++)
+            {
+                var remoteLabel = labels[i];
+                if (isConcurrent)
+                {
+                    var aoh = Addressables.DownloadDependenciesAsync(remoteLabel);
+                    handler.Append(aoh);
+                    waitList[i] = aoh;
+                }
+                else
+                {
+                    handler.SetProcessValue(i * 1f / labels.Length);
+                    var aoh = Addressables.DownloadDependenciesAsync(remoteLabel);
+                    handler.Append(aoh);
+                    yield return aoh;
+                }
+            }
+            if (isConcurrent)
+            {
+                var doneCount = 0
+                while (doneCount < labels.Count))
+                {
+                    doneCount = waitList.AnyAny(o=>o.IsDone);
+                    handler.SetProcessValue(doneCount * 1f / labels.Length);
+                    yield return null;
+                }
+            }
+            handler.SetProcessValue(1f);
+            handler.SetComplete();
+        }
+
         private List<AsyncOperationHandle<SceneInstance> > _sceneInstances = new List<AsyncOperationHandle<SceneInstance>>();
 
         /// <summary>

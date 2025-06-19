@@ -55,6 +55,7 @@ namespace PowerCellStudio
                 var assets = bundle.GetAllAssetNames();
                 foreach (var name in assets)
                 {
+                    if (Path.GetExtension(name) == "shader") continue;
                     assetData.source.Add(new ScriptableAssetBundleData()
                     {
                         // hashCode = name.GenHashCode(),

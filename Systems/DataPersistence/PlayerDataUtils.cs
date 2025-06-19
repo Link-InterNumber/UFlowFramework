@@ -452,7 +452,7 @@ namespace PowerCellStudio
                 formatter.Serialize(memoryStream, data);
                 var bytes = memoryStream.ToArray();
                 if(encrypt) bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
-                yield return File.WriteAllBytesAsync(filePath, bytes).AsCoroutine();
+                yield return File.WriteAllBytes(filePath, bytes).AsCoroutine();
                 memoryStream.Close();
             }
             action?.Invoke();

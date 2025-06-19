@@ -24,5 +24,7 @@ namespace PowerCellStudio
         public void UnloadScene(string name);
 
         public void PreloadAsset(string path);
+
+        // public void Prepare(string[] labels, Action onComplete, Action<float> onProcess = null, bool isConcurrent = false);
     }
 }

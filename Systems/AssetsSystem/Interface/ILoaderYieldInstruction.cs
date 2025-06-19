@@ -9,10 +9,6 @@ namespace PowerCellStudio
     public interface ILoaderYieldInstruction : IDisposable
     {
         public bool isDone { get; }
-        public bool autoDestroy { get; set;}
-        public T asset { get; }
-        public void OnLoadSuccess(OnLoadCompleted<T> callback);
-        public void SetAsset(T loadedAsset);
     }
     
     public delegate void OnLoadCompleted<T>(T asset, string assetPath);
