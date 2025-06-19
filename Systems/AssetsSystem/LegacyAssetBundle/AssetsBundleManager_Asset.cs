@@ -1,10 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.Pool;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
@@ -66,7 +62,7 @@ namespace PowerCellStudio
                 }
                 else
                 {
-                    handle.OnLoadSuccess((a, path) =>
+                    handle.OnLoadCompleted((a, path) =>
                     {
                         loadAssetRequest.SetAsset(a as T);
                     });
@@ -78,16 +74,16 @@ namespace PowerCellStudio
             if (loadBundleRequest.isDone)
             {
                 var bundle = _loadedBundleDic[bundleName].Bundle;
-                GetAssetFomeBundleAsync(bundle, assetPath, loadAssetRequest);
+                GetAssetFromBundleAsync(bundle, assetPath, loadAssetRequest);
                 return;
             }
-            loadBundleRequest.OnLoadSuccess((bundle, bundleName) =>
+            loadBundleRequest.OnLoadCompleted((bundle, bundleName) =>
             {
-                GetAssetFomeBundleAsync(bundle, assetPath, loadAssetRequest);
+                GetAssetFromBundleAsync(bundle, assetPath, loadAssetRequest);
             });
         }
 
-        private void GetAssetFomeBundleAsync(AssetBundle bundle, string assetPath, LoaderYieldInstruction<T> loadAssetRequest)
+        private void GetAssetFromBundleAsync<T>(AssetBundle bundle, string assetPath, LoaderYieldInstruction<T> loadAssetRequest)
             where T : Object
         {
             if (!bundle)

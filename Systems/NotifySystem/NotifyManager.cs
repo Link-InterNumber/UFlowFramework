@@ -113,14 +113,14 @@ namespace PowerCellStudio
         {
             if (child == parent)
             {
-                ModuleLog<NotifyManager>.LogError($"Can not set [{child}] as child node to himself");
+                ModuleLog.LogError<NotifyManager>($"Can not set [{child}] as child node to himself");
                 return;
             }
             var childNode = GetNode(child);
             var parentNode = GetNode(parent);
             if (CheckIsChainLoop(childNode, parentNode))
             {
-                ModuleLog<NotifyManager>.LogError($"Can not set [{child}] as child node to [{parent}], because the two nodes forming a loop");
+                ModuleLog.LogError<NotifyManager>($"Can not set [{child}] as child node to [{parent}], because the two nodes forming a loop");
                 return;
             }
             childNode.parent = parentNode.index;
@@ -226,7 +226,7 @@ namespace PowerCellStudio
             var node = GetNode(nodeType);
             if (node.children.Count > 0)
             {
-                ModuleLog<NotifyManager>.LogError($"Can not set [{nodeType}], because [{nodeType}] is driven by its child nodes!");
+                ModuleLog.LogError<NotifyManager>($"Can not set [{nodeType}], because [{nodeType}] is driven by its child nodes!");
                 return;
             }  
             if (node.isOn == isOn && node.notifyValue == notifyValue) return;

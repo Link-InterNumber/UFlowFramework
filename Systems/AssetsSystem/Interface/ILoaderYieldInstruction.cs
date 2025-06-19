@@ -24,7 +24,7 @@ namespace PowerCellStudio
 #if !UNITY_WEBGL
         private TaskCompletionSource<T> _taskCompletionSource;
 #endif
-        private event OnLoadCompleted<T> _onLoadSuccess;
+        private event OnLoadCompleted<T> _onLoadCompleted;
         // public event OnLoadFailed onLoadFailed;
 
         public LoaderYieldInstruction(string assetPath)
@@ -41,14 +41,14 @@ namespace PowerCellStudio
         public Task<T> Task => _taskCompletionSource?.Task??null;
 #endif
 
-        public void OnLoadSuccess(OnLoadCompleted<T> callback)
+        public void OnLoadCompleted(OnLoadCompleted<T> callback)
         {
             if (isDone)
             {
                 callback?.Invoke(asset, _assetPath);
                 return;
             }
-            _onLoadSuccess += callback;
+            _onLoadCompleted += callback;
         }
 
         public void SetAsset(T loadedAsset)
@@ -59,7 +59,7 @@ namespace PowerCellStudio
             // if(asset == null)
             //     onLoadFailed?.Invoke(_assetPath);
             // else 
-            _onLoadSuccess?.Invoke(loadedAsset, _assetPath);
+            _onLoadCompleted?.Invoke(loadedAsset, _assetPath);
 #if !UNITY_WEBGL
             _taskCompletionSource.SetResult(loadedAsset);
 #endif
@@ -70,7 +70,7 @@ namespace PowerCellStudio
             isDone = true;
             asset = null;
             // onLoadFailed = null;
-            _onLoadSuccess = null;
+            _onLoadCompleted = null;
             _assetPath = null;
 #if !UNITY_WEBGL
             _taskCompletionSource = null;

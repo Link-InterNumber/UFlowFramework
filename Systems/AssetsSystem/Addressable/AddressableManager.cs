@@ -225,10 +225,10 @@ namespace PowerCellStudio
             _preloadHandles.Add(path, handle);
         }
 
-        private void Unprepare(PrepareHandler handler)
+        public void Unprepare(PrepareHandler handler)
         {
             if (handler == null) return;
-            if (!handler.isDnoe)
+            if (!handler.isDone)
             {
                 ApplicationManager.instance.StartCoroutine(UnprepareHandler(handler));
                 return;
@@ -250,18 +250,18 @@ namespace PowerCellStudio
         {
             if (labels == null || labels.Length == 0)
             {
-                onProcess?.Invole(1f);
                 onComplete?.Invoke();
-                return;
+                return null;
             }
             var handler = new PrepareHandler();
             handler.OnComplete(onComplete);
             ApplicationManager.instance.StartCoroutine(PrepareHandler(labels, onComplete, isConcurrent, handler));
+            return handler;
         }
 
         private IEnumerator PrepareHandler(string[] labels, Action onComplete, bool isConcurrent, PrepareHandler handler)
         {
-            var waitList = new AsyncOperationHandle[label.Length]();
+            var waitList = new AsyncOperationHandle[labels.Length];
             for (var i = 0; i < labels.Length; i++)
             {
                 var remoteLabel = labels[i];
@@ -281,10 +281,10 @@ namespace PowerCellStudio
             }
             if (isConcurrent)
             {
-                var doneCount = 0
-                while (doneCount < labels.Count))
+                var doneCount = 0;
+                while (doneCount < labels.Length)
                 {
-                    doneCount = waitList.AnyAny(o=>o.IsDone);
+                    doneCount = waitList.Count(o=>o.IsDone);
                     handler.SetProcessValue(doneCount * 1f / labels.Length);
                     yield return null;
                 }

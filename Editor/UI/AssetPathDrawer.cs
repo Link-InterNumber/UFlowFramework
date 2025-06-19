@@ -47,12 +47,12 @@ namespace PowerCellStudio
                     myStringProperty.stringValue = string.Empty;
                 }
                 EditorGUI.PropertyField(stringRect, myStringProperty, new GUIContent("Asset Path"));
-
+                GUI.enabled = true;
             }
             else
             {
-                GUI.enabled = true;
                 EditorGUI.PropertyField(stringRect, myStringProperty, new GUIContent("Asset Path"));
+                GUI.enabled = true;
             }
             EditorGUILayout.Space();
         }

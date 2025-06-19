@@ -4,10 +4,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Pool;
-using UnityEngine.SceneManagement;
-using Object = UnityEngine.Object;
 using Microsoft.Xbox.Services.Client;
+using UnityEngine.Networking;
 
 namespace PowerCellStudio
 {
@@ -149,10 +147,10 @@ namespace PowerCellStudio
             onBundleLoaded?.Invoke(bundleName, loadedBundle);
         }
 
-        private void Unprepare(PrepareHandler handler)
+        public void Unprepare(PrepareHandler handler)
         {
             if (handler == null) return;
-            if (!handler.isDnoe)
+            if (!handler.isDone)
             {
                 ApplicationManager.instance.StartCoroutine(UnprepareHandler(handler));
                 return;
@@ -174,9 +172,8 @@ namespace PowerCellStudio
         {
             if (labels == null || labels.Length == 0)
             {
-                onProcess?.Invole(1f);
                 onComplete?.Invoke();
-                return;
+                return null;
             }
             var handler = new PrepareHandler();
             handler.OnComplete(onComplete);
@@ -202,10 +199,10 @@ namespace PowerCellStudio
             }
             if (isConcurrent)
             {
-                var doneCount = 0
-                while (doneCount < labels.Length))
+                var doneCount = 0;
+                while (doneCount < labels.Length)
                 {
-                    doneCount = waitList.AnyAny(o=>o.isDone);
+                    doneCount = waitList.Count(o=>o.isDone);
                     handler.SetProcessValue(doneCount * 1f / labels.Length);
                     yield return null;
                 }
@@ -223,10 +220,10 @@ namespace PowerCellStudio
             handler.SetComplete();
         }
 
-        private IEnumerator SaveBundleOnLocal(string bundleName, bytes[] data)
+        private IEnumerator SaveBundleOnLocal(string bundleName, byte[] data)
         {
             var path = Path.Combine(Application.streamingAssetsPath, bundleName);
-            yield return File.WriteAllBytesAsync(path, bundleByte).AsCoroutine();
+            yield return File.WriteAllBytesAsync(path, data).AsCoroutine();
         }
 
         #region Async
@@ -261,7 +258,7 @@ namespace PowerCellStudio
             AssetBundle bundle = null;
             var path = Path.Combine(Application.streamingAssetsPath, bundleName);
             Byte[] bundleByte = null;
-            if (File.Exists(curFile))
+            if (File.Exists(path))
             {
                 var abcr = AssetBundle.LoadFromFileAsync(path);
                 yield return abcr;
@@ -392,13 +389,12 @@ namespace PowerCellStudio
         /// </summary>
         /// <param name="bundleRef"></param>
         /// <returns></returns>
-        public bool UnloadAssetsBundle(AssetsBundleRef bundleRef)
+        private bool UnloadAssetsBundle(AssetsBundleRef bundleRef)
         {
             var preload = _preloadHandles.Keys.ToList();
-            foreach (var keyValue in preload)
+            foreach (var path in preload)
             {
-                path = keyValue.Key;
-                var bundleName = File.Getw GetBundleNameByAsset(path);
+                var bundleName = GetBundleNameByAsset(path);
                 if (Path.GetFileNameWithoutExtension(bundleName) == bundleRef.Bundle.name)
                 {
                     _preloadHandles[path].Dispose();

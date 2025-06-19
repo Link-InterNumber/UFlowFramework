@@ -12,19 +12,14 @@ namespace PowerCellStudio
     [System.Serializable]
     public class RemoteManifest
     {
-        public RemoteManifest()
-        {
-            bundles = new List<BundleInfo>();
-        }
+        public List<BundleInfo> bundles = new List<BundleInfo>();
 
-        public List<BundleInfo> bundles;
-
-        public Dictionary<sting, BundleInfo> GetMap()
+        public Dictionary<string, BundleInfo> GetMap()
         {
-            var map = new Dictionary<sting, BundleInfo>();
+            var map = new Dictionary<string, BundleInfo>();
             foreach (var info in bundles)
             {
-                map.Add(bundles.name, bundles);
+                map.Add(info.name, info);
             }
             return map;
         }
@@ -35,7 +30,7 @@ namespace PowerCellStudio
     {
         public string name;
         public string md5;
-        public int size;
+        public long size;
     }
 }
 

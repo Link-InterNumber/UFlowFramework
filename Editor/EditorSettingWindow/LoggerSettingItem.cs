@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System.IO;
-using System.Linq;
 using System.Text;
 using Color = UnityEngine.Color;
+using Object = UnityEngine.Object;
 
 namespace PowerCellStudio
 {
@@ -20,11 +20,11 @@ namespace PowerCellStudio
             public Color LogColor;
             public string Loglabel; 
             public Color  WarningColor; 
-            public string  Warninglabel; 
+            public string  WarningLabel; 
             public Color  ErrorColor; 
-            public string  Errorlabel; 
+            public string  ErrorLabel; 
             public Color  ExceptionColor; 
-            public string  Exceptionlabel;
+            public string  ExceptionLabel;
         }
 
         public string itemName => "LoggerSetting";
@@ -45,38 +45,34 @@ namespace PowerCellStudio
 
         public void OnGUI(EditorWindow window)
         {
-            _csvTextAsset = EditorGUILayout.ObjectField(_csvTextAsset, typeof(TestAsset), true);
-            if (_csvTextAsset && _loggerFormats.Length == 0)
+            _csvTextAsset = EditorGUILayout.ObjectField(_csvTextAsset, typeof(TextAsset), true);
+            if (_csvTextAsset && _loggerFormats.Count == 0)
             {
-                ReadCSV(TestAsset);
+                ReadCSV(_csvTextAsset as TextAsset);
             }
-            else if (_loggerFormats.Length > 0)
-            {
-                _loggerFormats.Clear();
-            }
-            if (_loggerFormats == null || _loggerFormats.Length == 0) return;
-            for (var i= 0; i < _loggerFormats.Length; i ++)
+            if (_loggerFormats == null || _loggerFormats.Count == 0) return;
+            for (var i= 0; i < _loggerFormats.Count; i ++)
             {
                 var format = _loggerFormats[i];
-                EditorGUILayout.BeginHorizontal()
+                EditorGUILayout.BeginHorizontal();
                 format.LogType = EditorGUILayout.TextField("Log Type", format.LogType);
                 format.GenericArgument = EditorGUILayout.Toggle("GenericArgument", format.GenericArgument);
                 EditorGUILayout.EndHorizontal();
-                EditorGUILayout.BeginHorizontal()
+                EditorGUILayout.BeginHorizontal();
                 format.LogColor = EditorGUILayout.ColorField("Log Color", format.LogColor);
                 format.Loglabel = EditorGUILayout.TextField("Log Label", format.Loglabel);
                 EditorGUILayout.EndHorizontal();
-                EditorGUILayout.BeginHorizontal()
+                EditorGUILayout.BeginHorizontal();
                 format.WarningColor = EditorGUILayout.ColorField("Warning Color", format.WarningColor);
-                format.Warninglabel = EditorGUILayout.TextField("Warning Label", format.Warninglabel);
+                format.WarningLabel = EditorGUILayout.TextField("Warning Label", format.WarningLabel);
                 EditorGUILayout.EndHorizontal();
-                EditorGUILayout.BeginHorizontal()
+                EditorGUILayout.BeginHorizontal();
                 format.ErrorColor = EditorGUILayout.ColorField("Error Color", format.ErrorColor);
-                format.Errorlabel = EditorGUILayout.TextField("Error Label", format.Errorlabel);
+                format.ErrorLabel = EditorGUILayout.TextField("Error Label", format.ErrorLabel);
                 EditorGUILayout.EndHorizontal();
-                EditorGUILayout.BeginHorizontal()
+                EditorGUILayout.BeginHorizontal();
                 format.ExceptionColor = EditorGUILayout.ColorField("Exception Color", format.ExceptionColor);
-                format.Exceptionlabel = EditorGUILayout.TextField("Exception Label", format.Exceptionlabel);
+                format.ExceptionLabel = EditorGUILayout.TextField("Exception Label", format.ExceptionLabel);
                 EditorGUILayout.EndHorizontal();
                 if (GUILayout.Button("-"))
                 {
@@ -103,7 +99,7 @@ namespace PowerCellStudio
             SaveCSV(_loggerFormats);
         }
 
-        private void ReadCSV(TestAsset csv)
+        private void ReadCSV(TextAsset csv)
         {
             _loggerFormats.Clear();
             string csvText = csv.text;
@@ -121,18 +117,18 @@ namespace PowerCellStudio
                         LogColor = ColorExtension.ParseHex(parts[2].Trim()),
                         Loglabel = parts[3].Trim(),
                         WarningColor = ColorExtension.ParseHex(parts[4].Trim()),
-                        Warninglabel = parts[5].Trim(),
+                        WarningLabel = parts[5].Trim(),
                         ErrorColor = ColorExtension.ParseHex(parts[6].Trim()),
-                        Errorlabel = parts[7].Trim(),
+                        ErrorLabel = parts[7].Trim(),
                         ExceptionColor = ColorExtension.ParseHex(parts[8].Trim()),
-                        Exceptionlabel = parts[9].Trim()
+                        ExceptionLabel = parts[9].Trim()
                     };
                     _loggerFormats.Add(format);
                 }
             }
         }
 
-        private void SaveCSV(List<LoggerSettingItem> logFormats)
+        private void SaveCSV(List<LoggerFormat> logFormats)
         {
             // TODO 根据List<LoggerSettingItem>生成csv并保存
             StringBuilder csvBuilder = new StringBuilder();
@@ -140,10 +136,10 @@ namespace PowerCellStudio
 
             foreach (var format in logFormats)
             {
-                csvBuilder.AppendLine($"{format.LogType}, {format.GenericArgument},{ColorToHex(format.LogColor)},{format.Loglabel}," +
-                                      $"{ColorToHex(format.WarningColor)},{format.Warninglabel}," +
-                                      $"{ColorToHex(format.ErrorColor)},{format.Errorlabel}," +
-                                      $"{ColorToHex(format.ExceptionColor)},{format.Exceptionlabel}");
+                csvBuilder.AppendLine($"{format.LogType}, {format.GenericArgument},{ColorExtension.FormatHex(format.LogColor)},{format.Loglabel}," +
+                                      $"{ColorExtension.FormatHex(format.WarningColor)},{format.WarningLabel}," +
+                                      $"{ColorExtension.FormatHex(format.ErrorColor)},{format.ErrorLabel}," +
+                                      $"{ColorExtension.FormatHex(format.ExceptionColor)},{format.ExceptionLabel}");
             }
 
             string csvFilePath = AssetDatabase.GetAssetPath(_csvTextAsset);
@@ -175,7 +171,7 @@ namespace PowerCellStudio
                 writer.WriteLine("namespace PowerCellStudio");
                 writer.WriteLine("{");
 
-                for (var i= 0; i < _loggerFormats.Length; i ++)
+                for (var i= 0; i < _loggerFormats.Count; i ++)
                 {
                     var format = _loggerFormats[i];
                     string logType = format.LogType;
@@ -184,7 +180,7 @@ namespace PowerCellStudio
                     string warningColor = format.WarningColor.FormatHex();
                     string warningLabel = format.WarningLabel;
                     string errorColor = format.ErrorColor.FormatHex();
-                    string errorLabel = format.errorLabel;
+                    string errorLabel = format.ErrorLabel;
                     string exceptionColor = format.ExceptionColor.FormatHex();
                     string exceptionLabel = format.ExceptionLabel;
 
@@ -195,25 +191,25 @@ namespace PowerCellStudio
                     writer.WriteLine($"        public static void Log(object message)");
                     writer.WriteLine("        {");
                     writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableLog) return;");
-                    writer.WriteLine($"            Debug.Log($\"[<color={logColor}>{logType} {logLabel}</color>] \{message\}\");");
+                    writer.WriteLine($"            Debug.Log($\"[<color={logColor}>{logType} {logLabel}</color>] {{message}}\");");
                     writer.WriteLine("        }");
                     writer.WriteLine("");
                     writer.WriteLine($"        public static void LogWarning(object message)");
                     writer.WriteLine("        {");
                     writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableWarning) return;");
-                    writer.WriteLine($"            Debug.LogWarning($\"[<color={warningColor}>{logType} {warningLabel}</color>] \{message\}\");");
+                    writer.WriteLine($"            Debug.LogWarning($\"[<color={warningColor}>{logType} {warningLabel}</color>] {{message}}\");");
                     writer.WriteLine("        }");
                     writer.WriteLine("");
                     writer.WriteLine($"        public static void LogError(object message)");
                     writer.WriteLine("        {");
                     writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableError) return;");
-                    writer.WriteLine($"            Debug.LogError($\"[<color={errorColor}>{logType} {errorLabel}</color>] \{message\}\");");
+                    writer.WriteLine($"            Debug.LogError($\"[<color={errorColor}>{logType} {errorLabel}</color>] {{message}}\");");
                     writer.WriteLine("        }");
                     writer.WriteLine("");
                     writer.WriteLine($"        public static Exception Exception(object message)");
                     writer.WriteLine("        {");
                     writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableError) return null;");
-                    writer.WriteLine($"            return new Exception($\"[<color={exceptionColor}>{logType} {exceptionLabel}</color>] \{message\}\");");
+                    writer.WriteLine($"            return new Exception($\"[<color={exceptionColor}>{logType} {exceptionLabel}</color>] {{message}}\");");
                     writer.WriteLine("        }");
 
                     if (format.GenericArgument)
@@ -221,25 +217,25 @@ namespace PowerCellStudio
                         writer.WriteLine($"        public static void Log<T>(object message)");
                         writer.WriteLine("        {");
                         writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableLog) return;");
-                        writer.WriteLine($"            Debug.Log($\"[<color={logColor}>{logType} {logLabel}</color>:\{typeof(T).Name\}] \{message\}\");");
+                        writer.WriteLine($"            Debug.Log($\"[<color={logColor}>{logType} {logLabel}</color>:{{typeof(T).Name}}] {{message}}\");");
                         writer.WriteLine("        }");
                         writer.WriteLine("");
                         writer.WriteLine($"        public static void LogWarning<T>(object message)");
                         writer.WriteLine("        {");
                         writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableWarning) return;");
-                        writer.WriteLine($"            Debug.LogWarning($\"[<color={warningColor}>{logType} {warningLabel}</color>:\{typeof(T).Name\}] \{message\}\");");
+                        writer.WriteLine($"            Debug.LogWarning($\"[<color={warningColor}>{logType} {warningLabel}</color>:{{typeof(T).Name}}] {{message}}\");");
                         writer.WriteLine("        }");
                         writer.WriteLine("");
                         writer.WriteLine($"        public static void LogError<T>(object message)");
                         writer.WriteLine("        {");
                         writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableError) return;");
-                        writer.WriteLine($"            Debug.LogError($\"[<color={errorColor}>{logType} {errorLabel}</color>:\{typeof(T).Name\}] \{message\}\");");
+                        writer.WriteLine($"            Debug.LogError($\"[<color={errorColor}>{logType} {errorLabel}</color>:{{typeof(T).Name}}] {{message}}\");");
                         writer.WriteLine("        }");
                         writer.WriteLine("");
                         writer.WriteLine($"        public static Exception Exception<T>(object message)");
                         writer.WriteLine("        {");
                         writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableError) return null;");
-                        writer.WriteLine($"            return new Exception($\"[<color={exceptionColor}>{logType} {exceptionLabel}</color>:\{typeof(T).Name\}] \{message\}\");");
+                        writer.WriteLine($"            return new Exception($\"[<color={exceptionColor}>{logType} {exceptionLabel}</color>:{{typeof(T).Name}}] {{message}}\");");
                         writer.WriteLine("        }");
                     }
 
@@ -253,3 +249,4 @@ namespace PowerCellStudio
         }
     }
 }
+#endif

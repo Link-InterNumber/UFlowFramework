@@ -96,14 +96,14 @@ namespace PowerCellStudio
             switch (_loadMode)
             {
                 case LoadMode.AssetBundle:
-                    return (_assetManager as AssetsBundleManager())?.Prepare(labels, onComplete, isConcurrent); 
+                    return (_assetManager as AssetsBundleManager)?.Prepare(labels, onComplete, isConcurrent); 
                 case LoadMode.Addressable:
-                    return (_assetManager as AddressableManager())?.Prepare(labels, onComplete, isConcurrent);
+                    return (_assetManager as AddressableManager)?.Prepare(labels, onComplete, isConcurrent);
                     break;
                 case LoadMode.Resources:
                     break;
                 default:
-                    return (_assetManager as AssetsBundleManager())?.Prepare(labels, onComplete, isConcurrent); 
+                    return (_assetManager as AssetsBundleManager)?.Prepare(labels, onComplete, isConcurrent); 
             }
             return null;
         }
@@ -114,15 +114,15 @@ namespace PowerCellStudio
             switch (_loadMode)
             {
                 case LoadMode.AssetBundle:
-                    (_assetManager as AssetsBundleManager())?.Unprepare(handler); 
+                    (_assetManager as AssetsBundleManager)?.Unprepare(handler); 
                     break;
                 case LoadMode.Addressable:
-                    (_assetManager as AddressableManager())?.Unprepare(handler);
+                    (_assetManager as AddressableManager)?.Unprepare(handler);
                     break;
                 case LoadMode.Resources:
                     break;
                 default:
-                    (_assetManager as AssetsBundleManager())?.Unprepare(handler); 
+                    (_assetManager as AssetsBundleManager)?.Unprepare(handler); 
                     break;
             }
         }

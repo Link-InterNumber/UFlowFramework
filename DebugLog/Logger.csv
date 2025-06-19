@@ -1,8 +1,8 @@
-LogType, GenericArgument, Log Color, Log label, Warning Color, Warning label, Error Color, Error label, Exception Color, Exception label
-Config, false, #ECF304, Log, #ECF304, Warning, #ffff00ff, Error, #ECF304, Exception
-App, false, #005BFF, Log, #005BFF, Warning, #005BFF, Error, #005BFF, Exception
-Asset, false, #FF8D15, Log, #FF8D15, Warning, #FF8D15, Error, #FF8D15, Exception
-UI, true, #FF6800, Log, #FF6800, Warning, #FF6800, Error, #FF6800, Exception
-NetWork, false, #009FFF, Log, #009FFF, Warning, #009FFF, Error, #009FFF, Exception
-Module, true, #FF00DF, Log, #FF00DF, Warning, #FF00DF, Error, #FF00DF, Exception
-Link, false, #00D1FF, |•'-'•) ✧, #00D1FF, (°⌓°), #00D1FF, (◓Д◒)✄╰⋃╯, #00D1FF, (✘Д✘๑ )
+LogType, GenericArgument,Log Color,Log Label,Warning Color,Warning Label,Error Color,Error Label,Exception Color,Exception Label
+Config, False,#ECF304FF,Log,#ECF304FF,Warning,#FFFF00FF,Error,#ECF304FF,Exception
+App, False,#005BFFFF,Log,#005BFFFF,Warning,#005BFFFF,Error,#005BFFFF,Exception
+Asset, False,#FF8D15FF,Log,#FF8D15FF,Warning,#FF8D15FF,Error,#FF8D15FF,Exception
+UI, False,#FF6800FF,Log,#FF6800FF,Warning,#FF6800FF,Error,#FF6800FF,Exception
+NetWork, False,#009FFFFF,Log,#009FFFFF,Warning,#009FFFFF,Error,#009FFFFF,Exception
+Module, True,#FF00DFFF,Log,#FF00DFFF,Warning,#FF00DFFF,Error,#FF00DFFF,Exception
+Link, False,#00D1FFFF,|•'-'•) ✧,#00D1FFFF,(°⌓°),#00D1FFFF,(◓Д◒)✄╰⋃╯,#00D1FFFF,(✘Д✘๑ )

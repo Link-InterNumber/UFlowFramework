@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using System.IO;
-using System.Collections.Generic;
+using System.Security.Cryptography;
 using Newtonsoft.Json;
 
 namespace PowerCellStudio

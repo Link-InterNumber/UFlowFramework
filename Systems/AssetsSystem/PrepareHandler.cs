@@ -13,7 +13,7 @@ namespace PowerCellStudio
         private float _processValue;
 
         private bool _isDone;
-        publuc bool isDone => _isDone;
+        public bool isDone => _isDone;
 
         public override bool keepWaiting => !isDone;
 

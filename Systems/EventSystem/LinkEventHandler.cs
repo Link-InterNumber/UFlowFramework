@@ -54,7 +54,7 @@ namespace PowerCellStudio
                 {
                     var fun2 = eve as BaseLinkAction;
                     if (fun2 != fun) continue;
-                    ModuleLog<EventManager>.LogError("重复添加监听");
+                    ModuleLog.LogError<EventManager>("重复添加监听");
                     return;
                 }
             }
@@ -117,7 +117,7 @@ namespace PowerCellStudio
                 {
                     var fun2 = eve as BaseLinkAction;
                     if (fun2 != fun) continue;
-                    ModuleLog<EventManager>.LogError("重复添加监听");
+                    ModuleLog.LogError<EventManager>("重复添加监听");
                     return;
                 }
             }
@@ -174,7 +174,7 @@ namespace PowerCellStudio
                 {
                     var fun2 = eve as BaseLinkAction<T, TK>;
                     if (fun2 != fun) continue;
-                    ModuleLog<EventManager>.LogError("重复添加监听");
+                    ModuleLog.LogError<EventManager>("重复添加监听");
                     return;
                 }
             }
@@ -231,7 +231,7 @@ namespace PowerCellStudio
                 {
                     var fun2 = eve as BaseLinkAction<T>;
                     if (fun2 != fun) continue;
-                    ModuleLog<EventManager>.LogError("重复添加监听");
+                    ModuleLog.LogError<EventManager>("重复添加监听");
                     return;
                 }
             }
@@ -287,7 +287,7 @@ namespace PowerCellStudio
                 {
                     var fun2 = eve as BaseLinkAction<T, TK, TL>;
                     if (fun2 != fun) continue;
-                    ModuleLog<EventManager>.LogError("重复添加监听");
+                    ModuleLog.LogError<EventManager>("重复添加监听");
                     return;
                 }
             }

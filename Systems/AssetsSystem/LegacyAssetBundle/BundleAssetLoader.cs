@@ -113,7 +113,7 @@ namespace PowerCellStudio
 #if UNITY_EDITOR
         private T EditorSimulateLoad<T>(string address, float delay, Action<T> callback) where T : Object
         {
-            _waitForLoaded.TryGetValue(address, out var handler)
+            if (_waitForLoaded.TryGetValue(address, out var handler))
             {
                 handler.Dispose();
                 _waitForLoaded.Remove(address);
@@ -159,7 +159,7 @@ namespace PowerCellStudio
 #endif
             if (TryGetExitRequest(address, out var instruction) && instruction is LoaderYieldInstruction<T> request)
             {
-                request.OnLoadSuccess((a, path) =>
+                request.OnLoadCompleted((a, path) =>
                 {
                     if(!a)
                     {
@@ -172,7 +172,7 @@ namespace PowerCellStudio
             }
             var bundleName = GetBundleName(address);
             var loadRequest = new LoaderYieldInstruction<T>(address);
-            loadRequest.OnLoadSuccess((a, path) =>
+            loadRequest.OnLoadCompleted((a, path) =>
             {
                 if(!a)
                 {
@@ -187,7 +187,7 @@ namespace PowerCellStudio
 
         private void OnLoadFail(string address, Action onFail)
         {
-            _waitForLoaded.TryGetValue(address, out var handler)
+            if (_waitForLoaded.TryGetValue(address, out var handler))
             {
                 handler.Dispose();
                 _waitForLoaded.Remove(address);
@@ -203,7 +203,7 @@ namespace PowerCellStudio
             onSuccess?.Invoke(asset);
             var bundleName = GetBundleName(address);
             AddRef(bundleName);
-            _waitForLoaded.TryGetValue(address, out var handler)
+            if (_waitForLoaded.TryGetValue(address, out var handler))
             {
                 handler.Dispose();
                 _waitForLoaded.Remove(address);
@@ -227,7 +227,7 @@ namespace PowerCellStudio
             }
             var bundleName = GetBundleName(address);
             var loadRequest = new LoaderYieldInstruction<T>(address);
-            loadRequest.OnLoadSuccess(OnLoadSuccess<T>);
+            loadRequest.OnLoadCompleted(OnLoadFinish<T>);
             _waitForLoaded.Add(address, loadRequest);
             _assetsBundleManager.LoadAssetAsync<T>(bundleName, address,loadRequest);
             return loadRequest.Task;
@@ -258,13 +258,13 @@ namespace PowerCellStudio
 #endif
             var bundleName = GetBundleName(address);
             var loadRequest = new LoaderYieldInstruction<T>(address);
-            loadRequest.OnLoadSuccess(OnLoadSuccess<T>);
+            loadRequest.OnLoadCompleted(OnLoadFinish<T>);
             _waitForLoaded.Add(address, loadRequest);
             _assetsBundleManager.LoadAssetAsync<T>(bundleName, address, loadRequest);
             return loadRequest;
         }
 
-        private void OnLoadSuccess<T>(T asset, string address) where T : Object
+        private void OnLoadFinish<T>(T asset, string address) where T : Object
         {
             if(!asset)
             {

@@ -1,20 +1,17 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using Newtonsoft.Json;
 using UnityEngine;
-using UnityEngine.Pool;
-using UnityEngine.SceneManagement;
-using Object = UnityEngine.Object;
+using UnityEngine.Networking;
 
 namespace PowerCellStudio
 {
     public partial class AssetsBundleManager
     {
-        private Dictionary<sting, BundleInfo> _remoteManifest;
+        private Dictionary<string, BundleInfo> _remoteManifest;
 
-        private Dictionary<sting, BundleInfo> GetClentRemoteManifest()
+        private Dictionary<string, BundleInfo> GetClentRemoteManifest()
         {
             var path = Path.Combine(Application.streamingAssetsPath, "remoteManifest.json");
             if (!File.Exists(path)) return null;
@@ -41,7 +38,7 @@ namespace PowerCellStudio
             }
         }
 
-        private void SaveRemoteManifest(Dictionary<sting, BundleInfo> data)
+        private void SaveRemoteManifest(Dictionary<string, BundleInfo> data)
         {
             if (data == null) return;
             RemoteManifest manifest = new RemoteManifest();
@@ -80,7 +77,7 @@ namespace PowerCellStudio
                 var url = Path.Combine(_remotePath, bundleName);
                 using var webRequest = UnityWebRequestAssetBundle.GetAssetBundle(url);
                 yield return webRequest;
-                bundleByte = webRequest.downloadHandler.data;
+                var bundleByte = webRequest.downloadHandler.data;
                 yield return SaveBundleOnLocal(bundleName, bundleByte);
                 Caching.ClearAllCachedVersions(bundleName);
                 initProcess = i * 1f / loadList.Count;
