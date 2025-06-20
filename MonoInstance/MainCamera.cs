@@ -71,16 +71,20 @@ namespace PowerCellStudio
             }
         }
 
+        public float x => _cameraRoot.position.x;
+        public float y => _cameraRoot.position.y;
+        public float z => _cameraRoot.position.z;
+
         private void CheckTween(float dt)
         {
             if (!_inMoveTween) return;
-            if(_targetPosition.ManhattanDistance(transform.position) < 0.1f)
+            if(_targetPosition.ManhattanDistance(_cameraRoot.position) < 0.1f)
             {
-                _cameraCom.transform.localPosition = _targetPosition + _offsetPosition;
+                _cameraRoot.position = _targetPosition + _offsetPosition;
                 _inMoveTween = false;
                 return;
             }
-            _cameraCom.transform.localPosition = Vector3.Lerp(_cameraCom.transform.localPosition, _targetPosition + _offsetPosition, dt * _tweenSpeed);
+            _cameraRoot.position = Vector3.Lerp(_cameraRoot.localPosition, _targetPosition + _offsetPosition, dt * _tweenSpeed);
         }
 
         public void TweenTargetPos(Vector3 targetPos)
@@ -88,7 +92,7 @@ namespace PowerCellStudio
             _targetPosition = targetPos;
             if (_tweenSpeed <= 0)
             {
-                transform.position = _targetPosition;
+                _cameraRoot.position = _targetPosition;
                 _inMoveTween = false;
             }
             else
@@ -172,7 +176,7 @@ namespace PowerCellStudio
             // 如果震动结束，重置摄像机位置和旋转
             if (_shakeTime <= 0)
             {
-                _cameraRoot.transform.localPosition = _rootOriginPos;
+                _cameraCom.transform.localPosition = _rootOriginPos;
                 _cameraCom.transform.localRotation = Quaternion.identity;
                 _currentShakeType = ShakeType.None;
             }
@@ -198,7 +202,7 @@ namespace PowerCellStudio
 
             // 应用震动偏移
             Vector3 shakeOffset = new Vector3(noiseX * amplitude, noiseY * amplitude, _rootOriginPos.z);
-            _cameraRoot.transform.localPosition = shakeOffset;
+            _cameraCom.transform.localPosition = shakeOffset;
         }
 
 

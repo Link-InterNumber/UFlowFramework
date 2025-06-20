@@ -1,0 +1,97 @@
+namespace PowerCellStudio
+{
+    public class ShakeHandle: CustomYieldInstruction
+    {
+        private ShakeRequest _data;
+
+        private float time;
+
+        public bool isDone => time >= _data.duration;
+
+        public override bool keepWaiting => !isDone;
+
+        public bool isUnscaleTime => _data.isUnscaleTime;
+
+        public ShakeHandle(ShakeRequest data)
+        {
+            _data = data;
+            time = 0;
+        }
+
+        public void Cancel()
+        {
+            time = _data.duration + 1f;
+            _data.target.localPosition = _data.origPos;
+            _data.target.localRotation = _data.origRota;
+        }
+
+        public void Process(float dt)
+        {
+            time += dt;
+            if (!_data.target)
+            {
+                time = _data.duration + 1f;
+                return;
+            }
+            float curvePosition = _data.curve?.Evaluate(elapsed / duration) ?? 1f;
+            if ((_data.shakeType & ShakeUtils.ShakeType.Position) != 0)
+            {
+                float x = Mathf.PerlinNoise(time * _data.frequency, 0) * 2 - 1; // 输出范围 [-1,1]
+                float y = Mathf.PerlinNoise(time * _data.frequency, 1) * 2 - 1;
+                float z = Mathf.PerlinNoise(time * _data.frequency, 2) * 2 - 1;
+                Vector3 shakePosition = new Vector3(x, y, z) * _data.magnitude * curvePosition;
+                _data.target.localPosition = _data.origPos + shakePosition;
+            }
+            if ((_data.shakeType & ShakeUtils.ShakeType.Rotation) != 0)
+            {
+                float x = Mathf.PerlinNoise(time * _data.frequency, 3) * 2 - 1; // 输出范围 [-1,1]
+                float y = Mathf.PerlinNoise(time * _data.frequency, 4) * 2 - 1;
+                float z = Mathf.PerlinNoise(time * _data.frequency, 5) * 2 - 1;
+                Quaternion shakeRotation = Quaternion.Euler(x * _data.magnitude.x * curvePosition, y * _data.magnitude.y * curvePosition, x * _data.magnitude.z * curvePosition);
+                _data.target.localRotation = _data.origRota * shakeRotation;
+            }
+        }
+    }
+
+    public struct ShakeRequest
+    {
+        public ShakeUtils.ShakeType shakeType;
+
+        public Transform target;
+
+        public float duration;
+
+        public float frequency;
+
+        public Vector3  magnitude;
+
+        public AnimationCurve curve;
+
+        public bool isUnscaleTime;
+
+        public Vector3 origPos;
+
+        public Quaternion origRota;
+
+        public ShakeRequest(
+            ShakeUtils.ShakeType shakeType,
+            Transform target,
+            float duration,
+            float frequency,
+            Vector3  magnitude,
+            AnimationCurve curve,
+            bool isUnscaleTime)
+        {
+            this.shakeType = shakeType;
+            this.target = target;
+            this.duration = duration;
+            this.frequency = frequency;
+            this. magnitude = magnitude;
+            this.curve = curve;
+            this.isUnscaleTime = isUnscaleTime;
+
+            origPos = target.position;
+            origRota = target.localRotation;
+        }
+    }
+}
