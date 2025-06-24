@@ -189,35 +189,33 @@ namespace PowerCellStudio
             return ApplicationManager.instance.StartCoroutine(SaveJsonHandle($"{fileName}_DebugLog", data, action, false));
         }
 
-#if !UNITY_WEBGL
-        public static async Task SaveJson<T>(string fileName, T data, bool encrypt = true)
+        public static bool SaveJson<T>(string fileName, T data, bool encrypt = true)
             where T : IPersistenceData
         {
-            if (string.IsNullOrEmpty(fileName)) return;
+            if (string.IsNullOrEmpty(fileName)) return false;
             CheckDirectory(JsonDirectory);
             string json = JsonConvert.SerializeObject(data);
             var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
             if (encrypt)
             {
                 var jsonEn = Encrypt(json);
-                await File.WriteAllTextAsync(path, jsonEn);
+                File.WriteAllText(path, jsonEn);
             }
             else
             {
-                await File.WriteAllTextAsync(path, json);
+                File.WriteAllText(path, json);
             }
-#if UNITY_EDITOR
             LinkLog.Log($"Save a Json at {path}");
-#endif
+            return true;
         }
 
-        public static async Task SaveJson<T>(T data, bool encrypt = true)
+        public static bool SaveJson<T>(T data, bool encrypt = true)
             where T : IPersistenceData
         {
+            if (data == null) return false;
             var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
             await SaveJson(fileName, data, encrypt);
         }
-#endif
 
         public static Coroutine SaveJsonAsync<T>(string fileName, T data, Action action = null, bool encrypt = true)
             where T : IPersistenceData
@@ -251,9 +249,7 @@ namespace PowerCellStudio
                 yield return File.WriteAllTextAsync(path, json).AsCoroutine();
             }
             action?.Invoke();
-#if UNITY_EDITOR
             LinkLog.Log($"Save a Json at {path}");
-#endif
         }
 
         #endregion
@@ -267,12 +263,24 @@ namespace PowerCellStudio
             var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
             if (!File.Exists(path)) return default;
             var jsonEn = File.ReadAllText(path);
-            if (decrypt)
+            T result = default;
+            try
             {
-                var json = Decrypt(jsonEn);
-                return JsonConvert.DeserializeObject<T>(json);
+                if (decrypt)
+                {
+                    var json = Decrypt(jsonEn);
+                    result = JsonConvert.DeserializeObject<T>(json);
+                }
+                result = JsonConvert.DeserializeObject<T>(jsonEn);
             }
-            return JsonConvert.DeserializeObject<T>(jsonEn);
+            catch (Exception e)
+            {
+                Debug.Error(e);
+            }
+            finally
+            {
+                retrun result;
+            }
         }
 
         public static T ReadJson<T>(bool decrypt = true)
@@ -374,10 +382,10 @@ namespace PowerCellStudio
 
         #region BinarySave
         
-        public static void SaveDataBinary<T>(string fileName, T data, bool encrypt = true)
+        public static bool SaveDataBinary<T>(string fileName, T data, bool encrypt = true)
             where T : IPersistenceData
         {
-            if (string.IsNullOrEmpty(fileName)) return;
+            if (string.IsNullOrEmpty(fileName)) return false;
             CheckDirectory(BinaryDirectory);
             var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
             using (MemoryStream memoryStream = new MemoryStream())
@@ -390,13 +398,15 @@ namespace PowerCellStudio
                 memoryStream.Close();
             }
             LinkLog.Log($"Save a Binary at {filePath}");
+            return true;
         }
 
-        public static void SaveDataBinary<T>(T data, bool encrypt = true)
+        public static bool SaveDataBinary<T>(T data, bool encrypt = true)
             where T : IPersistenceData
         {
+            if (data == null) return false;
             var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            SaveDataBinary(fileName, data, encrypt);
+            return SaveDataBinary(fileName, data, encrypt);
         }
 
 #if !UNITY_WEBGL

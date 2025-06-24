@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 namespace PowerCellStudio
 {
     [System.Serializable]
-    public class RemoteManifest
+    public class RemoteManifest : IPersistenceData
     {
         public List<BundleInfo> bundles = new List<BundleInfo>();
 

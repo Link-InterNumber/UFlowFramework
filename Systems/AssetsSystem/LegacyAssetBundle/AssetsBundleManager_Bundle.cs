@@ -263,26 +263,36 @@ namespace PowerCellStudio
                 var abcr = AssetBundle.LoadFromFileAsync(path);
                 yield return abcr;
                 bundle = abcr.assetBundle;
+                if (!bundle)
+                {
+                    loaderYieldInstruction.SetAsset(null);
+                    OnBundleLoaded(bundleName, null);
+                    yield break;
+                }
+                loaderYieldInstruction.SetAsset(bundle);
+                OnBundleLoaded(bundleName, bundle);
             }
             else
             {
-                var url = Path.Combine(_remotePath, bundleName);
-                using var webRequest = UnityWebRequestAssetBundle.GetAssetBundle(url);
-                yield return webRequest;
-                bundle = DownloadHandlerAssetBundle.GetContent(webRequest);
-                bundleByte = webRequest.downloadHandler.data;
+                yield return LoadRemoteBundle(bundleName, loaderYieldInstruction);
+                SaveRemoteManifest(_clientManifest);
+                // var url = Path.Combine(_remotePath, bundleName);
+                // using var webRequest = UnityWebRequestAssetBundle.GetAssetBundle(url);
+                // yield return webRequest;
+                // bundle = DownloadHandlerAssetBundle.GetContent(webRequest);
+                // bundleByte = webRequest.downloadHandler.data;
             }
-            if (!bundle)
-            {
-                loaderYieldInstruction.SetAsset(null);
-                OnBundleLoaded(bundleName, null);
-                yield break;
-            }
-            loaderYieldInstruction.SetAsset(bundle);
-            OnBundleLoaded(bundleName, bundle);
+            // if (!bundle)
+            // {
+            //     loaderYieldInstruction.SetAsset(null);
+            //     OnBundleLoaded(bundleName, null);
+            //     yield break;
+            // }
+            // loaderYieldInstruction.SetAsset(bundle);
+            // OnBundleLoaded(bundleName, bundle);
 
-            if (bundleByte == null || !bundle) yield break;
-            yield return SaveBundleOnLocal(bundleName, bundleByte);
+            // if (bundleByte == null || !bundle) yield break;
+            // yield return SaveBundleOnLocal(bundleName, bundleByte);
         }
 
         private IEnumerator LoadBundleDependenceAsync(string bundleName)

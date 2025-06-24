@@ -109,6 +109,8 @@ namespace PowerCellStudio
         private IEnumerator InitHandler(Action callBack)
         {
             initState = AssetInitState.CheckForResourceUpdates;
+            yield return GetServerRemoteManifest();
+            GetClentRemoteManifest();
             yield return CheckRemoteBundle();
             yield return InitPathMap();
             if (_assetBundleDatas == null) yield break;
