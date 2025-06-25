@@ -184,17 +184,17 @@ namespace PowerCellStudio
         {
             if(_disposed) return;
             var assetName = Path.GetFileNameWithoutExtension(address);
-            var asset = Resources.LoadAsync<GameObject>(assetName);
+            var handle = Resources.LoadAsync<GameObject>(assetName);
             _waitForLoaded.Add(address);
-            asset.completed += operation =>
+            handle.completed += operation =>
             {
                 _waitForLoaded.Remove(address);
-                if(asset.asset == null)
+                if(handle.asset == null)
                 {
                     onFail?.Invoke();
                     return;
                 }
-                var obj = asset.asset as GameObject;
+                var obj = handle.asset as GameObject;
                 if(obj == null)
                 {
                     onFail?.Invoke();

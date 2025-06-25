@@ -43,6 +43,9 @@ namespace PowerCellStudio
                     _assetManager.Init(coroutineRunner, callBack);
                     break;
                 case LoadMode.Resources:
+                    if(_assetManager != null) break;
+                    _assetManager = new ResourceManager();
+                    _assetManager.Init(coroutineRunner, callBack);
                     break;
                 default:
                     if(_assetManager != null) break;
@@ -93,38 +96,13 @@ namespace PowerCellStudio
         public static PrepareHandler Prepare(string[] labels, Action onComplete, bool isConcurrent = false)
         {
             if(_assetManager == null) return null;
-            switch (_loadMode)
-            {
-                case LoadMode.AssetBundle:
-                    return (_assetManager as AssetsBundleManager)?.Prepare(labels, onComplete, isConcurrent); 
-                case LoadMode.Addressable:
-                    return (_assetManager as AddressableManager)?.Prepare(labels, onComplete, isConcurrent);
-                    break;
-                case LoadMode.Resources:
-                    break;
-                default:
-                    return (_assetManager as AssetsBundleManager)?.Prepare(labels, onComplete, isConcurrent); 
-            }
-            return null;
+            return _assetManager.Prepare(labels, onComplete, isConcurrent); 
         }
 
         public static void Unprepare(PrepareHandler handler)
         {
             if(_assetManager == null || handler == null) return;
-            switch (_loadMode)
-            {
-                case LoadMode.AssetBundle:
-                    (_assetManager as AssetsBundleManager)?.Unprepare(handler); 
-                    break;
-                case LoadMode.Addressable:
-                    (_assetManager as AddressableManager)?.Unprepare(handler);
-                    break;
-                case LoadMode.Resources:
-                    break;
-                default:
-                    (_assetManager as AssetsBundleManager)?.Unprepare(handler); 
-                    break;
-            }
+            _assetManager.Unprepare(handler); 
         }
     }
 }
