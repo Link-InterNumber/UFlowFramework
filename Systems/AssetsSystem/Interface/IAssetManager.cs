@@ -91,8 +91,10 @@ namespace PowerCellStudio
         PrepareHandler Prepare(string[] labels, Action onComplete, bool isConcurrent = false);
 
         /// <summary>
-        /// 取消资源准备。
+        /// 卸载准备好的资源。
         /// <para>Cancel asset preparation.</para>
         /// </summary>
         /// <param name="handler">准备处理句柄。<para>Prepare handler.</para></param>
-        void Unprepare(PrepareHandler
+        void Unprepare(PrepareHandler);
+    }
+}

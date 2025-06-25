@@ -83,7 +83,18 @@ namespace PowerCellStudio
             // TODO 添加加号按钮和减号按钮，可以对数据进行赠删
             if (GUILayout.Button("+"))
             {
-                _loggerFormats.Add(new LoggerFormat());
+                _loggerFormats.Add(new LoggerFormat()
+                {
+                    public string LogType = "Custom",
+                    public Color LogColor = Color.white,
+                    public string Loglabel = "Log", 
+                    public Color  WarningColor = Color.yellow, 
+                    public string  WarningLabel = "Warning", 
+                    public Color  ErrorColor = Color.red, 
+                    public string  ErrorLabel = "Error", 
+                    public Color  ExceptionColor = Color.red,  
+                    public string  ExceptionLabel = "Exception",
+                });
             }
 
             if (GUILayout.Button("Create Cs Files"))
@@ -214,6 +225,7 @@ namespace PowerCellStudio
 
                     if (format.GenericArgument)
                     {
+                        writer.WriteLine("");
                         writer.WriteLine($"        public static void Log<T>(object message)");
                         writer.WriteLine("        {");
                         writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableLog) return;");
