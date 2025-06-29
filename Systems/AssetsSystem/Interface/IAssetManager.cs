@@ -95,6 +95,6 @@ namespace PowerCellStudio
         /// <para>Cancel asset preparation.</para>
         /// </summary>
         /// <param name="handler">准备处理句柄。<para>Prepare handler.</para></param>
-        void Unprepare(PrepareHandler);
+        void Unprepare(PrepareHandler handler);
     }
 }

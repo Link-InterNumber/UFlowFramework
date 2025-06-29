@@ -85,15 +85,15 @@ namespace PowerCellStudio
             {
                 _loggerFormats.Add(new LoggerFormat()
                 {
-                    public string LogType = "Custom",
-                    public Color LogColor = Color.white,
-                    public string Loglabel = "Log", 
-                    public Color  WarningColor = Color.yellow, 
-                    public string  WarningLabel = "Warning", 
-                    public Color  ErrorColor = Color.red, 
-                    public string  ErrorLabel = "Error", 
-                    public Color  ExceptionColor = Color.red,  
-                    public string  ExceptionLabel = "Exception",
+                    LogType = "Custom",
+                    LogColor = Color.white,
+                    Loglabel = "Log", 
+                     WarningColor = Color.yellow, 
+                     WarningLabel = "Warning", 
+                     ErrorColor = Color.red, 
+                     ErrorLabel = "Error", 
+                     ExceptionColor = Color.red,  
+                     ExceptionLabel = "Exception",
                 });
             }
 
@@ -141,6 +141,7 @@ namespace PowerCellStudio
 
         private void SaveCSV(List<LoggerFormat> logFormats)
         {
+            if (_csvTextAsset == null) return;
             // TODO 根据List<LoggerSettingItem>生成csv并保存
             StringBuilder csvBuilder = new StringBuilder();
             csvBuilder.AppendLine("LogType, GenericArgument,Log Color,Log Label,Warning Color,Warning Label,Error Color,Error Label,Exception Color,Exception Label");
@@ -161,6 +162,7 @@ namespace PowerCellStudio
 
         private void GenerateScript()
         {
+            if (_csvTextAsset == null) return;
             string csvFilePath = AssetDatabase.GetAssetPath(_csvTextAsset);
             string defaultPath = Path.GetDirectoryName(csvFilePath);
             string outputFilePath = EditorUtility.SaveFilePanelInProject(

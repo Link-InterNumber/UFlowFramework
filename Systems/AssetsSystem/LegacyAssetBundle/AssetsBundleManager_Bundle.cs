@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using Microsoft.Xbox.Services.Client;
+using Newtonsoft.Json;
 using UnityEngine.Networking;
 
 namespace PowerCellStudio
@@ -100,6 +101,46 @@ namespace PowerCellStudio
                 _assetsBundleManager?.UnloadAssetsBundle(this);
             }
         }
+        
+        public static string MainBundleName
+        {
+            get
+            {
+                switch (Application.platform)
+                {
+                    case RuntimePlatform.OSXEditor:
+                    case RuntimePlatform.OSXPlayer:
+                        return "StandaloneOSX";
+                    case RuntimePlatform.WindowsPlayer:
+                    case RuntimePlatform.WindowsEditor:
+                        return "StandaloneWindows";
+                    case RuntimePlatform.IPhonePlayer:
+                        return "iOS";
+                    case RuntimePlatform.Android:
+                        return "Android";
+                    case RuntimePlatform.LinuxPlayer:
+                    case RuntimePlatform.LinuxEditor:
+                        return "StandaloneLinux";
+                    case RuntimePlatform.WebGLPlayer:
+                        return "WebGL";
+                    case RuntimePlatform.PS4:
+                        return "PS4";
+                    case RuntimePlatform.tvOS:
+                        return "tvOS";
+                    case RuntimePlatform.Switch:
+                        return "Switch";
+                    case RuntimePlatform.GameCoreXboxSeries:
+                        return "XboxSeries";
+                    case RuntimePlatform.XboxOne:
+                    case RuntimePlatform.GameCoreXboxOne:
+                        return "XboxOne";
+                    case RuntimePlatform.PS5:
+                        return "PS5";
+                    default:
+                        return "StreamingAssets";
+                }
+            }
+        }
 
         public delegate void BundleLoadEvent(string bundleName, AssetBundle bundle);
 
@@ -107,12 +148,45 @@ namespace PowerCellStudio
 
         private Dictionary<string, AssetsBundleRef> _loadedBundleDic;
         private Dictionary<string, LoaderYieldInstruction<AssetBundle>> _waitForLoadList;
+        
+        #region BundleDependence
+        
+        private AssetBundleManifest _bundleManifest;
+
+        private string _bundleFoldName;
+        private string GetBundlePath(string bundleName)
+        {
+            return Path.Combine(Application.streamingAssetsPath, _bundleFoldName, bundleName);
+        }
+
+        private IEnumerator GetBundleManifest()
+        {
+            var mainBundleName = MainBundleName;
+            var path = GetBundlePath(mainBundleName);
+            _waitForLoadList.Add(mainBundleName, null);
+            _loadedBundleDic.Remove(mainBundleName);
+            var loadedBundleRequest = AssetBundle.LoadFromFileAsync(path);
+            yield return loadedBundleRequest;
+            _waitForLoadList.Remove(mainBundleName);
+            var loadedBundle = loadedBundleRequest.assetBundle;
+            var abf = new AssetsBundleRef(loadedBundle, this);
+            _loadedBundleDic.Add(mainBundleName, abf);
+            abf.AddRef();
+            if (!loadedBundle)
+            {
+                AssetLog.LogError($"MainBundle Name Error: {mainBundleName}");
+                yield break;
+            }
+            _bundleManifest = loadedBundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
+        }
 
         private string[] GetBundleDependencies(string bundleName)
         {
             var dependencies = _bundleManifest.GetAllDependencies(bundleName);
             return dependencies ?? Array.Empty<string>();
         }
+        
+        #endregion
 
         public void AddRef(string bundleName)
         {
@@ -256,7 +330,7 @@ namespace PowerCellStudio
         {
             yield return LoadBundleDependenceAsync(bundleName);
             AssetBundle bundle = null;
-            var path = Path.Combine(Application.streamingAssetsPath, bundleName);
+            var path = GetBundlePath(bundleName);
             Byte[] bundleByte = null;
             if (File.Exists(path))
             {
@@ -275,6 +349,8 @@ namespace PowerCellStudio
             else
             {
                 yield return LoadRemoteBundle(bundleName, loaderYieldInstruction);
+                bundle = loaderYieldInstruction.asset;
+                OnBundleLoaded(bundleName, bundle);
                 SaveRemoteManifest(_clientManifest);
                 // var url = Path.Combine(_remotePath, bundleName);
                 // using var webRequest = UnityWebRequestAssetBundle.GetAssetBundle(url);
@@ -351,7 +427,7 @@ namespace PowerCellStudio
             _waitForLoadList.Add(bundleName, null);
             _loadedBundleDic.Remove(bundleName);
             LoadBundleDependence(bundleName);
-            var path = Path.Combine(Application.streamingAssetsPath, bundleName);
+            var path = GetBundlePath(bundleName);
             AssetBundle loadedBundle = null;
             try
             {

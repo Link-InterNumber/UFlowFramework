@@ -11,18 +11,20 @@ namespace PowerCellStudio
         [MenuItem("Build/AssetBundle/CreateMyData", false, 1)]
         public static void CreateAssetBundleConfig()
         {
-            if (!Directory.Exists(Application.streamingAssetsPath))
+            var buildPath = Path.Combine(Application.streamingAssetsPath,
+                AssetsBundleBuildUtils.GetBuildFoldName(EditorUserBuildSettings.activeBuildTarget));
+            if (!Directory.Exists(buildPath))
                 return;
             // get manifest
-            var manifestList = Directory.GetFiles(Application.streamingAssetsPath)
+            var manifestList = Directory.GetFiles(buildPath)
                 .Where(o => Path.GetExtension(o) == ".manifest")
-                .Select(o => Path.GetFileNameWithoutExtension(o))
+                .Select(Path.GetFileNameWithoutExtension)
                 .ToList();
 
             //创建数据资源文件
             //泛型是继承自ScriptableObject的类
             var assetData = ScriptableObject.CreateInstance<ScriptableAssetBundle>();
-            GetBundleAssetData(manifestList, assetData);
+            GetBundleAssetData(manifestList, buildPath, assetData);
             //前一步创建的资源只是存在内存中，现在要把它保存到本地
             //通过编辑器API，创建一个数据资源文件，第二个参数为资源文件在Assets目录下的路径
             var folder = Path.Combine("Assets", "Resources", ConstSetting.BundleAssetConfigFolder);
@@ -40,12 +42,12 @@ namespace PowerCellStudio
             AssetDatabase.Refresh();
         }
 
-        private static void GetBundleAssetData(List<string> manifestList, ScriptableAssetBundle assetData)
+        private static void GetBundleAssetData(List<string> manifestList, string foldPath, ScriptableAssetBundle assetData)
         {
             AssetBundle.UnloadAllAssetBundles(true);
             foreach (var item in manifestList)
             {
-                var bundle = AssetBundle.LoadFromFile(Path.Combine(Application.streamingAssetsPath, item));
+                var bundle = AssetBundle.LoadFromFile(Path.Combine(foldPath, item));
                 if (string.IsNullOrEmpty(bundle.name))
                 {
                     bundle.Unload(true);

@@ -183,10 +183,10 @@ namespace PowerCellStudio
             return EncryptUtils.Base64Decrypt(data);
         }
         
-        public static Coroutine SaveDebugLog(string fileName, DebugSave data, Action action = null)
+        public static Coroutine SaveLinkLogLog(string fileName, DebugSave data, Action action = null)
         {
             if(string.IsNullOrEmpty(fileName)) return null;
-            return ApplicationManager.instance.StartCoroutine(SaveJsonHandle($"{fileName}_DebugLog", data, action, false));
+            return ApplicationManager.instance.StartCoroutine(SaveJsonHandle($"{fileName}_LinkLogLog", data, action, false));
         }
 
         public static bool SaveJson<T>(string fileName, T data, bool encrypt = true)
@@ -214,7 +214,7 @@ namespace PowerCellStudio
         {
             if (data == null) return false;
             var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            await SaveJson(fileName, data, encrypt);
+            return SaveJson(fileName, data, encrypt);
         }
 
         public static Coroutine SaveJsonAsync<T>(string fileName, T data, Action action = null, bool encrypt = true)
@@ -275,12 +275,9 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                Debug.Error(e);
+                LinkLog.LogError(e);
             }
-            finally
-            {
-                retrun result;
-            }
+            return result;
         }
 
         public static T ReadJson<T>(bool decrypt = true)
@@ -336,7 +333,7 @@ namespace PowerCellStudio
                 }
                 else
                 {
-                    Debug.LogError("Failed to read file: " + request.error);
+                    LinkLog.LogError("Failed to read file: " + request.error);
                 }
             }
             loadHandler.SetAsset(data);
@@ -497,7 +494,7 @@ namespace PowerCellStudio
                 }
                 else
                 {
-                    Debug.LogError("Failed to read file: " + request.error);
+                    LinkLog.LogError("Failed to read file: " + request.error);
                 }
             }
             if (decryptedData == null)
@@ -715,7 +712,7 @@ namespace PowerCellStudio
                 }
                 else
                 {
-                    Debug.LogError("加载图片失败: " + request.error);
+                    LinkLog.LogError("加载图片失败: " + request.error);
                 }
             }
             loadHandler.SetAsset(sprite);

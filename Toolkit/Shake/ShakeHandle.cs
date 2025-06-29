@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace PowerCellStudio
 {
     public class ShakeHandle: CustomYieldInstruction
@@ -33,13 +35,13 @@ namespace PowerCellStudio
                 time = _data.duration + 1f;
                 return;
             }
-            float curvePosition = _data.curve?.Evaluate(elapsed / duration) ?? 1f;
+            float curvePosition = _data.curve?.Evaluate(time / _data.duration) ?? 1f;
             if ((_data.shakeType & ShakeUtils.ShakeType.Position) != 0)
             {
                 float x = Mathf.PerlinNoise(time * _data.frequency, 0) * 2 - 1; // 输出范围 [-1,1]
                 float y = Mathf.PerlinNoise(time * _data.frequency, 1) * 2 - 1;
                 float z = Mathf.PerlinNoise(time * _data.frequency, 2) * 2 - 1;
-                Vector3 shakePosition = new Vector3(x, y, z) * _data.magnitude * curvePosition;
+                var shakePosition = new Vector3(x * _data.magnitude.x, y * _data.magnitude.y, z * _data.magnitude.z) * curvePosition;
                 _data.target.localPosition = _data.origPos + shakePosition;
             }
             if ((_data.shakeType & ShakeUtils.ShakeType.Rotation) != 0)
@@ -63,7 +65,7 @@ namespace PowerCellStudio
 
         public float frequency;
 
-        public Vector3  magnitude;
+        public Vector3 magnitude;
 
         public AnimationCurve curve;
 

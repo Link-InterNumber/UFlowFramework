@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
@@ -9,6 +11,29 @@ namespace PowerCellStudio
     public partial class AssetsBundleManager
     {
         private static Dictionary<string, LoaderYieldInstruction<Object>> _preloadHandles;
+        private Dictionary<string, ScriptableAssetBundleData> _assetPathMap;
+
+        private IEnumerator InitPathMap()
+        {
+            initProcess = 0f;
+            initState = AssetInitState.InitModule;
+            var path = Path.Combine(ConstSetting.BundleAssetConfigFolder, Path.GetFileNameWithoutExtension(ConstSetting.BundleAssetConfigName));
+            var resourceRequest = Resources.LoadAsync<ScriptableAssetBundle>(path);
+            yield return resourceRequest;
+            var bundleDatas = resourceRequest.asset as ScriptableAssetBundle;
+            if (bundleDatas == null)
+            {
+                AssetLog.LogError("AssetsBundleManager initialization failed");
+                yield break;
+            }
+            _assetPathMap = new Dictionary<string, ScriptableAssetBundleData>();
+            foreach (var scriptableAssetBundleData in bundleDatas.source)
+            {
+                if(scriptableAssetBundleData == null || string.IsNullOrEmpty(scriptableAssetBundleData.assetName)) continue;
+                _assetPathMap.Add(scriptableAssetBundleData.assetName, scriptableAssetBundleData);
+            }
+            initProcess = 1f;
+        }
 
         public void PreloadAsset(string path)
         {

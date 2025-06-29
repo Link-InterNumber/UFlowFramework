@@ -53,7 +53,7 @@ namespace PowerCellStudio
             _timeout -= Time.unscaledDeltaTime;
             if(_timeout > 0) return;
             var time = DateTime.Now;
-            PlayerDataUtils.SaveDebugLog($"{time.Year}{time.Month}{time.Day}{time.Hour}", saveLog);
+            PlayerDataUtils.SaveLinkLogLog($"{time.Year}{time.Month}{time.Day}{time.Hour}", saveLog);
             if (_curHour != time.Hour)
             {
                 saveLog.content = "";

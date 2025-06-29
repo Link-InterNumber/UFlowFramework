@@ -28,6 +28,7 @@ namespace PowerCellStudio
     [System.Serializable]
     public class BundleInfo
     {
+        public bool isRemote;
         public string name;
         public string md5;
         public long size;

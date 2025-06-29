@@ -14,12 +14,16 @@ namespace PowerCellStudio
         public static void BuildAsserBundleOnly()
         {
             ConfigMenu.CreateConfigAssetByForce();
-            AssetDatabase.DeleteAsset("StreamingAssets");
-            if (!Directory.Exists(Application.streamingAssetsPath))
+            var buildPath = Path.Combine(Application.streamingAssetsPath,
+                AssetsBundleBuildUtils.GetBuildFoldName(EditorUserBuildSettings.activeBuildTarget));
+            AssetDatabase.DeleteAsset(buildPath);
+            if (!Directory.Exists(buildPath))
             {
-                Directory.CreateDirectory(Application.streamingAssetsPath);
+                Directory.CreateDirectory(buildPath);
             }
-            BuildPipeline.BuildAssetBundles(Application.streamingAssetsPath, BuildAssetBundleOptions.ChunkBasedCompression | BuildAssetBundleOptions.ForceRebuildAssetBundle, EditorUserBuildSettings.activeBuildTarget);
+            BuildPipeline.BuildAssetBundles(buildPath, 
+                BuildAssetBundleOptions.ChunkBasedCompression | BuildAssetBundleOptions.ForceRebuildAssetBundle, 
+                EditorUserBuildSettings.activeBuildTarget);
             AssetBundleConfigTool.CreateAssetBundleConfig();
         }
         
@@ -27,11 +31,16 @@ namespace PowerCellStudio
         public static void BuildAsserBundleIncrementally()
         {
             ConfigMenu.CreateConfigAssetByForce();
-            if (!Directory.Exists(Application.streamingAssetsPath))
+            var buildPath = Path.Combine(Application.streamingAssetsPath,
+                AssetsBundleBuildUtils.GetBuildFoldName(EditorUserBuildSettings.activeBuildTarget));
+            AssetDatabase.DeleteAsset(buildPath);
+            if (!Directory.Exists(buildPath))
             {
-                Directory.CreateDirectory(Application.streamingAssetsPath);
+                Directory.CreateDirectory(buildPath);
             }
-            BuildPipeline.BuildAssetBundles(Application.streamingAssetsPath, BuildAssetBundleOptions.ChunkBasedCompression, EditorUserBuildSettings.activeBuildTarget);
+            BuildPipeline.BuildAssetBundles(buildPath,
+                BuildAssetBundleOptions.ChunkBasedCompression,
+                EditorUserBuildSettings.activeBuildTarget);
             AssetBundleConfigTool.CreateAssetBundleConfig();
         }
 

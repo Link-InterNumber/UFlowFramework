@@ -1,3 +1,6 @@
+using System.Collections;
+using UnityEngine;
+
 namespace PowerCellStudio
 {
     public class ShakeUtils

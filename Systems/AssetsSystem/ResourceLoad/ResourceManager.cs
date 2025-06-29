@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.SceneManagement;
 
 namespace PowerCellStudio
@@ -12,7 +14,7 @@ namespace PowerCellStudio
     /// </summary>
     public class ResourceManager : MonoBehaviour, IAssetManager
     {
-        public AssetInitState initState { get; private set; } = AssetInitState.None;
+        public AssetInitState initState { get; private set; } = AssetInitState.Complete;
         public float initProcess { get; private set; } = 0f;
 
         private MonoBehaviour coroutineRunner;
@@ -28,10 +30,10 @@ namespace PowerCellStudio
                 loader => loader.Deinit(), true, 10, 30);
             _activeLoader = new Dictionary<long, ResourceAssetLoader>();
 
-            initState = AssetInitState.Initializing;
+            initState = AssetInitState.InitModule;
             initProcess = 0.5f;
             // Resources不需要复杂初始化，直接完成
-            initState = AssetInitState.Initialized;
+            initState = AssetInitState.Complete;
             initProcess = 1f;
             callBack?.Invoke();
         }
@@ -127,16 +129,16 @@ namespace PowerCellStudio
             // Resources不支持标签，这里简单实现为批量预加载
             var handler = new PrepareHandler();
             handler.OnComplete(onComplete);
-            coroutineRunner.StartCoroutine(PrepareCoroutine(labels, handler));
+            coroutineRunner.StartCoroutine(PrepareCoroutine(labels, handler, isConcurrent));
             return handler;
         }
 
-        private IEnumerator PrepareCoroutine(string[] paths, PrepareHandler handler)
+        private IEnumerator PrepareCoroutine(string[] labels, PrepareHandler handler, bool isConcurrent)
         {
             var waitList = new ResourceRequest[labels.Length];
             for (var i = 0; i < labels.Length; i++)
             {
-                var remoteLabel = labels[i];
+                var path = labels[i];
                 if (isConcurrent)
                 {
                     var request = Resources.LoadAsync(path);
@@ -179,7 +181,7 @@ namespace PowerCellStudio
             foreach(var asset in handler.successLable)
             {
                 if (asset == null) continue;
-                Resources.UnloadAsset(asset as Object);
+                Resources.UnloadAsset(asset as  UnityEngine.Object);
             }
             handler.Dispose();
         }

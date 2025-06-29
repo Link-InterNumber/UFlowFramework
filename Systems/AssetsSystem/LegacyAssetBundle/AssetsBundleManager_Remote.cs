@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -11,14 +12,12 @@ namespace PowerCellStudio
     {
         private Dictionary<string, BundleInfo> _remoteManifest;
         private Dictionary<string, BundleInfo> _clientManifest;
+        private string _remotePath = "http://localhost:8000/StreamingAssets/";
 
         private void GetClentRemoteManifest()
         {
-            var data = PlayerDataUtils.ReadJson<RemoteManifest>();
-            _clientManifest = data?.GetMap() ?? null;
-            // if (_clientManifest == null) _clientManifest = new Dictionary<string, BundleInfo>();
             var path = Path.Combine(Application.persistentDataPath, "RemoteBundle", "remoteManifest.json");
-            if (!File.Exists(path)) return new Dictionary<string, BundleInfo>();
+            if (!File.Exists(path)) return;
             var json = File.ReadAllText(path);
             Dictionary<string, BundleInfo> result = null;
             try
@@ -28,15 +27,15 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                Debug.Error(e);
+                AssetLog.LogError(e);
             }
             finally
             {
                 if (result == null) result = new Dictionary<string, BundleInfo>();
-                return result;
             }
+            _clientManifest = result;
         }
-
+        
         private IEnumerator GetServerRemoteManifest()
         {
             var url = Path.Combine(_remotePath, "remoteManifest.json");
@@ -83,7 +82,6 @@ namespace PowerCellStudio
                 webRequest.Dispose();
                 if (handler == null) yield break;
                 handler.SetAsset(null);
-                OnBundleLoaded(bundleName, null);
                 yield break;
             }
             var bundleByte = webRequest.downloadHandler.data;
@@ -92,11 +90,9 @@ namespace PowerCellStudio
             if (_remoteManifest.TryGetValue(bundleName, out var bundleInfo))
             {
                 _clientManifest[bundleName] = bundleInfo;
-                _isRemoteManifestDirty = true;
             }
             if (handler == null) yield break;
             handler.SetAsset(bundle);
-            OnBundleLoaded(bundleName, bundle);
         }
 
         private IEnumerator CheckRemoteBundle()
