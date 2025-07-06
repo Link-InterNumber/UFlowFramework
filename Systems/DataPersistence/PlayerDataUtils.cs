@@ -183,41 +183,39 @@ namespace PowerCellStudio
             return EncryptUtils.Base64Decrypt(data);
         }
         
-        public static Coroutine SaveDebugLog(string fileName, DebugSave data, Action action = null)
+        public static Coroutine SaveLinkLogLog(string fileName, DebugSave data, Action action = null)
         {
             if(string.IsNullOrEmpty(fileName)) return null;
-            return ApplicationManager.instance.StartCoroutine(SaveJsonHandle($"{fileName}_DebugLog", data, action, false));
+            return ApplicationManager.instance.StartCoroutine(SaveJsonHandle($"{fileName}_LinkLogLog", data, action, false));
         }
 
-#if !UNITY_WEBGL
-        public static async Task SaveJson<T>(string fileName, T data, bool encrypt = true)
+        public static bool SaveJson<T>(string fileName, T data, bool encrypt = true)
             where T : IPersistenceData
         {
-            if (string.IsNullOrEmpty(fileName)) return;
+            if (string.IsNullOrEmpty(fileName)) return false;
             CheckDirectory(JsonDirectory);
             string json = JsonConvert.SerializeObject(data);
             var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
             if (encrypt)
             {
                 var jsonEn = Encrypt(json);
-                await File.WriteAllTextAsync(path, jsonEn);
+                File.WriteAllText(path, jsonEn);
             }
             else
             {
-                await File.WriteAllTextAsync(path, json);
+                File.WriteAllText(path, json);
             }
-#if UNITY_EDITOR
             LinkLog.Log($"Save a Json at {path}");
-#endif
+            return true;
         }
 
-        public static async Task SaveJson<T>(T data, bool encrypt = true)
+        public static bool SaveJson<T>(T data, bool encrypt = true)
             where T : IPersistenceData
         {
+            if (data == null) return false;
             var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            await SaveJson(fileName, data, encrypt);
+            return SaveJson(fileName, data, encrypt);
         }
-#endif
 
         public static Coroutine SaveJsonAsync<T>(string fileName, T data, Action action = null, bool encrypt = true)
             where T : IPersistenceData
@@ -251,9 +249,7 @@ namespace PowerCellStudio
                 yield return File.WriteAllTextAsync(path, json).AsCoroutine();
             }
             action?.Invoke();
-#if UNITY_EDITOR
             LinkLog.Log($"Save a Json at {path}");
-#endif
         }
 
         #endregion
@@ -267,12 +263,21 @@ namespace PowerCellStudio
             var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
             if (!File.Exists(path)) return default;
             var jsonEn = File.ReadAllText(path);
-            if (decrypt)
+            T result = default;
+            try
             {
-                var json = Decrypt(jsonEn);
-                return JsonConvert.DeserializeObject<T>(json);
+                if (decrypt)
+                {
+                    var json = Decrypt(jsonEn);
+                    result = JsonConvert.DeserializeObject<T>(json);
+                }
+                result = JsonConvert.DeserializeObject<T>(jsonEn);
             }
-            return JsonConvert.DeserializeObject<T>(jsonEn);
+            catch (Exception e)
+            {
+                LinkLog.LogError(e);
+            }
+            return result;
         }
 
         public static T ReadJson<T>(bool decrypt = true)
@@ -288,7 +293,7 @@ namespace PowerCellStudio
             if (string.IsNullOrEmpty(fileName)) return null;
             var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
             var loadHandler = new LoaderYieldInstruction<T>(path);
-            if (action != null) loadHandler.OnLoadSuccess((savedData, path) => {action.Invoke(savedData);});
+            if (action != null) loadHandler.OnLoadCompleted((savedData, path) => {action.Invoke(savedData);});
             ApplicationManager.instance.StartCoroutine(ReadJsonHandle(path, loadHandler, decrypt));
             return loadHandler;
         }
@@ -328,7 +333,7 @@ namespace PowerCellStudio
                 }
                 else
                 {
-                    Debug.LogError("Failed to read file: " + request.error);
+                    LinkLog.LogError("Failed to read file: " + request.error);
                 }
             }
             loadHandler.SetAsset(data);
@@ -374,10 +379,10 @@ namespace PowerCellStudio
 
         #region BinarySave
         
-        public static void SaveDataBinary<T>(string fileName, T data, bool encrypt = true)
+        public static bool SaveDataBinary<T>(string fileName, T data, bool encrypt = true)
             where T : IPersistenceData
         {
-            if (string.IsNullOrEmpty(fileName)) return;
+            if (string.IsNullOrEmpty(fileName)) return false;
             CheckDirectory(BinaryDirectory);
             var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
             using (MemoryStream memoryStream = new MemoryStream())
@@ -390,13 +395,15 @@ namespace PowerCellStudio
                 memoryStream.Close();
             }
             LinkLog.Log($"Save a Binary at {filePath}");
+            return true;
         }
 
-        public static void SaveDataBinary<T>(T data, bool encrypt = true)
+        public static bool SaveDataBinary<T>(T data, bool encrypt = true)
             where T : IPersistenceData
         {
+            if (data == null) return false;
             var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            SaveDataBinary(fileName, data, encrypt);
+            return SaveDataBinary(fileName, data, encrypt);
         }
 
 #if !UNITY_WEBGL
@@ -487,7 +494,7 @@ namespace PowerCellStudio
                 }
                 else
                 {
-                    Debug.LogError("Failed to read file: " + request.error);
+                    LinkLog.LogError("Failed to read file: " + request.error);
                 }
             }
             if (decryptedData == null)
@@ -514,7 +521,7 @@ namespace PowerCellStudio
             if(string.IsNullOrEmpty(fileName)) return null;
             var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
             var loadHandler = new LoaderYieldInstruction<T>(filePath);
-            if (callback != null) loadHandler.OnLoadSuccess((savedData, path) => {callback.Invoke(savedData);});
+            if (callback != null) loadHandler.OnLoadCompleted((savedData, path) => {callback.Invoke(savedData);});
             ApplicationManager.instance.StartCoroutine(ReadBinaryCoroutineHandle(filePath, loadHandler, decrypt));
             return loadHandler;
         }
@@ -671,7 +678,7 @@ namespace PowerCellStudio
             var path = Path.Combine(SavePath, CaptureDirectory, $"{fileName}.png");
             if (!File.Exists(path)) return null;
             var loadHandler = new LoaderYieldInstruction<Sprite>(path);
-            if (action != null) loadHandler.OnLoadSuccess((asset, path) => {action.Invoke(asset);});
+            if (action != null) loadHandler.OnLoadCompleted((asset, path) => {action.Invoke(asset);});
             ApplicationManager.instance.StartCoroutine(LoadCaptureHandle(path, loadHandler));
             return loadHandler;
         }
@@ -705,7 +712,7 @@ namespace PowerCellStudio
                 }
                 else
                 {
-                    Debug.LogError("加载图片失败: " + request.error);
+                    LinkLog.LogError("加载图片失败: " + request.error);
                 }
             }
             loadHandler.SetAsset(sprite);

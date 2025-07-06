@@ -5,6 +5,10 @@ using System.Runtime.Serialization.Formatters.Binary;
 using Newtonsoft.Json;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace PowerCellStudio
 {
     // 用于将加载函数抽离出ConfBaseCollections
@@ -39,6 +43,56 @@ namespace PowerCellStudio
 
         public abstract void Release();
     }
+
+#if UNITY_EDITOR
+
+    public class EditorConfigLoader : ConfAsyncLoadHandle
+    {
+        public override void LoadScriptableObject(string path)
+        {
+            ConfBaseData dataAsset = null;
+#if SCRIPTABLE_OBJECT_CONFIG
+            dataAsset = AssetDatabase.LoadAssetAtPath<ConfBaseData>(path);
+#endif
+            Completed?.Invoke(dataAsset);
+        }
+
+        public override void LoadJson<T>(string path)
+        {
+            var textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
+            if (!textAsset)
+            {
+                Completed?.Invoke(null);
+                return;
+            }
+            var jsonString = EncryptUtils.AESDecrypt(textAsset.text, ConstSetting.FileEncryptionKey); // 解密配置文件
+            var data = JsonConvert.DeserializeObject<T>(jsonString);
+            Completed?.Invoke(data);
+        }
+
+        public override void LoadBinary<T>(string path)
+        {
+            var textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
+            if (!textAsset)
+            {
+                Completed?.Invoke(null);
+                return;
+            }
+            var bytes = EncryptUtils.AESDecrypt(textAsset.bytes, ConstSetting.FileEncryptionKey); // 解密配置文件
+            using MemoryStream stream = new MemoryStream(bytes);
+            BinaryFormatter formatter = new BinaryFormatter();
+            T data = (T) formatter.Deserialize(stream);
+            stream.Close();
+            Completed?.Invoke(data);
+        }
+
+        public override void Release()
+        {
+
+        }
+    }
+
+#endif
 
     // 服务器使用
     public class NativeConfigLoader : ConfAsyncLoadHandle

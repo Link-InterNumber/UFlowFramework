@@ -21,6 +21,7 @@ public class TcpGameServer : TcpServer
     
     private byte[] _buffer;
 
+    private INetworkSerializer _serializer;
 
     public TcpGameServer(IPAddress address, int port) : base(address, port)
     {
@@ -34,7 +35,7 @@ public class TcpGameServer : TcpServer
         OnErrorEvent?.Invoke(error);
     }
     
-    public void Update()
+    public void Update(INetworkSerializer serializer)
     {
         foreach (var session in Sessions.Values)
         {
@@ -42,7 +43,7 @@ public class TcpGameServer : TcpServer
             if (!gameSession.HasEnqueuedPackages()) continue;
             var size = gameSession.GetNextPackage(ref _buffer);
             if (size <= 0) continue;
-            var message = NetworkSerializer.Deserialize(_buffer, size, out var messageType);
+            var message = serializer.Deserialize(_buffer, size, out var messageType);
             NetWorkLog.Log($"Received from {session.Id}: {message}");
             DealWithSR(messageType, gameSession);
         }

@@ -43,6 +43,9 @@ namespace PowerCellStudio
                     _assetManager.Init(coroutineRunner, callBack);
                     break;
                 case LoadMode.Resources:
+                    if(_assetManager != null) break;
+                    _assetManager = new ResourceManager();
+                    _assetManager.Init(coroutineRunner, callBack);
                     break;
                 default:
                     if(_assetManager != null) break;
@@ -88,6 +91,18 @@ namespace PowerCellStudio
         public static void PreloadAsset(string path)
         {
             _assetManager?.PreloadAsset(path);
+        }
+
+        public static PrepareHandler Prepare(string[] labels, Action onComplete, bool isConcurrent = false)
+        {
+            if(_assetManager == null) return null;
+            return _assetManager.Prepare(labels, onComplete, isConcurrent); 
+        }
+
+        public static void Unprepare(PrepareHandler handler)
+        {
+            if(_assetManager == null || handler == null) return;
+            _assetManager.Unprepare(handler); 
         }
     }
 }

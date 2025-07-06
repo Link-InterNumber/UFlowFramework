@@ -6,12 +6,12 @@ using ProtoBuf;
 
 namespace GameProtocol
 {
-    public class NetworkSerializer
+    public class NetworkSerializer : INetworkSerializer
     {
         private static readonly int msgIdSize = 4;
         
         // 序列化消息结构： [4字节ID][protobuf数据]
-        public static byte[] Serialize<T>(T message) where T : class
+        public byte[] Serialize<T>(T message) where T : class
         {
             int msgId = MessageIds.TypeToId(typeof(T));
             using var stream = new MemoryStream();
@@ -22,7 +22,7 @@ namespace GameProtocol
             return stream.ToArray();
         }
 
-        public static object Deserialize(byte[] data, int size, out Type messageType)
+        public object Deserialize(byte[] data, int size, out Type messageType)
         {
             // using var stream = new MemoryStream(data);
             // byte[] idBytes = new byte[msgIdSize];
@@ -45,6 +45,9 @@ namespace GameProtocol
             return Serializer.NonGeneric.Deserialize(messageType, memory);
         }
         
+        public void Dispose()
+        {
 
+        }
     }
 }

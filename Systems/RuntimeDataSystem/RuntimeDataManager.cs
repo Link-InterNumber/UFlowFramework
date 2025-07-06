@@ -217,7 +217,7 @@ namespace PowerCellStudio
         
         public void OnGameStart()
         {
-            ModuleLog<RuntimeDataManager>.Log("Module Init!");
+            ModuleLog.Log<RuntimeDataManager>("Module Init!");
         }
         
         public void OnInit()

@@ -78,7 +78,7 @@ namespace PowerCellStudio
 
         private void OnItemChange(RItem oldData, RItem newData)
         {
-            ModuleLog<BagUtils>.Log($"item id = {newData.id}, item number = {newData.num}.");
+            ModuleLog.Log<BagUtils>($"item id = {newData.id}, item number = {newData.num}.");
         }
     }
 }

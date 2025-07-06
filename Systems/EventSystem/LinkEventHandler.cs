@@ -41,7 +41,8 @@ namespace PowerCellStudio
     {
         private event BaseLinkAction events;
         private bool _toInvoke = false;
-        private bool toInvoke => _toInvoke;
+
+        public bool enable = true;
 
         public void AddListener(BaseLinkAction fun)
         {
@@ -53,7 +54,7 @@ namespace PowerCellStudio
                 {
                     var fun2 = eve as BaseLinkAction;
                     if (fun2 != fun) continue;
-                    ModuleLog<EventManager>.LogError("重复添加监听");
+                    ModuleLog.LogError<EventManager>("重复添加监听");
                     return;
                 }
             }
@@ -84,9 +85,9 @@ namespace PowerCellStudio
         
         public void Invoke()
         {
-            if (_toInvoke) return;
-            EventManager.instance.InvokeLaterEvent(this);
+            if (_toInvoke || !enable) return;
             _toInvoke = true;
+            EventManager.instance.InvokeLaterEvent(this);
         }
 
         public int GetEventListenerCount()
@@ -104,6 +105,7 @@ namespace PowerCellStudio
     public class LinkEvent : IInvolke
     {
         private event BaseLinkAction events;
+        public bool enable = true;
 
         public void AddListener(BaseLinkAction fun)
         {
@@ -115,7 +117,7 @@ namespace PowerCellStudio
                 {
                     var fun2 = eve as BaseLinkAction;
                     if (fun2 != fun) continue;
-                    ModuleLog<EventManager>.LogError("重复添加监听");
+                    ModuleLog.LogError<EventManager>("重复添加监听");
                     return;
                 }
             }
@@ -147,6 +149,7 @@ namespace PowerCellStudio
 
         public void Invoke()
         {
+            if (!enable) return;
             events?.Invoke();
         }
 
@@ -159,6 +162,7 @@ namespace PowerCellStudio
     public class LinkEvent<T, TK> :IInvolke<T, TK>
     {
         private event BaseLinkAction<T, TK> events;
+        public bool enable = true;
 
         public void AddListener(BaseLinkAction<T, TK> fun)
         {
@@ -170,7 +174,7 @@ namespace PowerCellStudio
                 {
                     var fun2 = eve as BaseLinkAction<T, TK>;
                     if (fun2 != fun) continue;
-                    ModuleLog<EventManager>.LogError("重复添加监听");
+                    ModuleLog.LogError<EventManager>("重复添加监听");
                     return;
                 }
             }
@@ -197,6 +201,7 @@ namespace PowerCellStudio
 
         public void Invoke(T data1, TK data2)
         {
+            if (!enable) return;
             events?.Invoke(data1, data2);
         }
 
@@ -214,6 +219,7 @@ namespace PowerCellStudio
     public class LinkEvent<T> : IInvolke<T>
     {
         private event BaseLinkAction<T> events;
+        public bool enable = true;
 
         public void AddListener(BaseLinkAction<T> fun)
         {
@@ -225,7 +231,7 @@ namespace PowerCellStudio
                 {
                     var fun2 = eve as BaseLinkAction<T>;
                     if (fun2 != fun) continue;
-                    ModuleLog<EventManager>.LogError("重复添加监听");
+                    ModuleLog.LogError<EventManager>("重复添加监听");
                     return;
                 }
             }
@@ -251,6 +257,7 @@ namespace PowerCellStudio
 
         public void Invoke(T data1)
         {
+            if (!enable) return;
             events?.Invoke(data1);
         }
 
@@ -268,6 +275,7 @@ namespace PowerCellStudio
     public class LinkEvent<T, TK, TL> : IInvolke<T, TK, TL>
     {
         private event BaseLinkAction<T, TK, TL> events;
+        public bool enable = true; 
 
         public void AddListener(BaseLinkAction<T, TK, TL> fun)
         {
@@ -279,7 +287,7 @@ namespace PowerCellStudio
                 {
                     var fun2 = eve as BaseLinkAction<T, TK, TL>;
                     if (fun2 != fun) continue;
-                    ModuleLog<EventManager>.LogError("重复添加监听");
+                    ModuleLog.LogError<EventManager>("重复添加监听");
                     return;
                 }
             }
@@ -305,6 +313,7 @@ namespace PowerCellStudio
 
         public void Invoke(T data1, TK data2, TL data3)
         {
+            if (!enable) return;
             events?.Invoke(data1, data2, data3);
         }
 

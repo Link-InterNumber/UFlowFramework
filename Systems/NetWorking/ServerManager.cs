@@ -12,9 +12,10 @@ using UnityEngine;
 public class ServerManager : MonoBehaviour
 {
     private TcpGameServer _server;
-
+    private INetworkSerializer _serializer;
     void Start()
     {
+        _serializer = new NetworkSerializer();
         // 在本地启动端口6000
         _server = new TcpGameServer(IPAddress.Any, 6000);
         _server.OnConnectedEvent += () => QueueLog(QueueLogLevel.Info, "Client connected");
@@ -64,13 +65,13 @@ public class ServerManager : MonoBehaviour
         {
             return;
         }
-        _server.Update();
+        _server.Update(_serializer);
     }
 
     [TestButton]
     public void TestConnect()
     {
-        NetClientManager.instance.Connect();
+        NetClientManager.instance.Connect<NetworkSerializer>();
     }
     
     // [TestButton]

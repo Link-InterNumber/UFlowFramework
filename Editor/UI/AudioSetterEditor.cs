@@ -10,7 +10,7 @@ namespace PowerCellStudio
     [CanEditMultipleObjects]
     public class AudioSetterEditor: Editor
     {
-        private SerializedProperty m_clipRef;
+        private SerializedProperty m_audioClip;
         private SerializedProperty m_audioType;
         private SerializedProperty m_musicGroup;
         private SerializedProperty m_playOnEnable;
@@ -27,7 +27,7 @@ namespace PowerCellStudio
 
         private void OnEnable()
         {
-            m_clipRef = serializedObject.FindProperty("clipRef");
+            m_audioClip = serializedObject.FindProperty("audioClip");
             m_audioType = serializedObject.FindProperty("audioType");
             m_musicGroup = serializedObject.FindProperty("musicGroup");
             m_playOnEnable = serializedObject.FindProperty("playOnEnable");
@@ -48,24 +48,7 @@ namespace PowerCellStudio
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-            if (!string.IsNullOrEmpty(m_clipRef.stringValue) && m_obj == null)
-            {
-                m_obj = AssetDatabase.LoadAssetAtPath<AudioClip>(m_clipRef.stringValue);
-            }
-            m_obj = (AudioClip)EditorGUILayout.ObjectField("AudioClip", m_obj, typeof(AudioClip), false);
-            if (m_obj)
-            {
-                if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(m_obj, out string guid, out long _))
-                {
-                    var path = AssetDatabase.GUIDToAssetPath(guid);
-                    m_clipRef.stringValue = path;                    
-                }
-            }
-            else
-            {
-                m_clipRef.stringValue = string.Empty;
-            }
-            EditorGUILayout.PropertyField(m_clipRef);
+            EditorGUILayout.PropertyField(m_audioClip);
             EditorGUILayout.PropertyField(m_audioType);
             var audioType = (AudioSourceType) m_audioType.enumValueIndex;
             // var musicGroup = (MusicGroup) m_musicGroup.enumValueIndex;

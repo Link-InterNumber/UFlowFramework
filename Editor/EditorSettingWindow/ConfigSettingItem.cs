@@ -80,6 +80,12 @@ namespace PowerCellStudio
             {
                 ConfigMenu.DeleteConfigAsset();
             }
+            
+            if (GUILayout.Button("Create Config Asset By Force"))
+            {
+                ConfigMenu.DeleteConfigAsset();
+                ConfigMenu.CreateConfigAssetByForce();
+            }
             GUILayout.Space(10);
             if (GUILayout.Button("Create Localization csv"))
             {

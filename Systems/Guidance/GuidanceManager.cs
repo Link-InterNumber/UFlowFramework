@@ -63,7 +63,7 @@ namespace PowerCellStudio
         /// </summary>
         public void OnGameStart()
         {
-            ModuleLog<GuidanceManager>.Log("Module Init!");
+            ModuleLog.Log<GuidanceManager>("Module Init!");
         }
 
         private void LoadExecutedIndex()
@@ -188,14 +188,14 @@ namespace PowerCellStudio
         {
             if(!tag)
             {
-                ModuleLog<GuidanceManager>.LogError($"Guidance tag was destroy");
+                ModuleLog.LogError<GuidanceManager>($"Guidance tag was destroy");
                 DeExecuteGuidance(0);
                 return;
             }
             var conf = ConfigManager.instance.guidanceConf.Get(tag.guidanceIndex);
             if (conf == null)
             {
-                ModuleLog<GuidanceManager>.LogError($"Guidance index is not exist, index = {tag.guidanceIndex}");
+                ModuleLog.LogError<GuidanceManager>($"Guidance index is not exist, index = {tag.guidanceIndex}");
                 DeExecuteGuidance(tag.guidanceIndex);
                 return;
             }

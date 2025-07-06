@@ -96,7 +96,7 @@ namespace GameProtocol
             {
                 return;
             }
-            var buffer = NetworkSerializer.Serialize(message);
+            var buffer = _networkSerializer.Serialize(message);
             SendAsync(buffer);
         }
         
@@ -108,7 +108,7 @@ namespace GameProtocol
             {
                 return null;
             }
-            var buffer = NetworkSerializer.Serialize(message);
+            var buffer = _networkSerializer.Serialize(message);
             var handler = new MessageReceiveHandler<T>(true);
             var messageType = typeof(T);
             _sendDataBuffers.Add(new SendDataBuffer(messageType, buffer, handler));
@@ -143,7 +143,7 @@ namespace GameProtocol
             {
                 var length = _client.GetNextPackage(ref _buffer);
                 if (length <= 0) continue;
-                var message = NetworkSerializer.Deserialize(_buffer, length, out var messageType);
+                var message = _networkSerializer.Deserialize(_buffer, length, out var messageType);
                 if (message == null) continue;
                 if (_listenerHandlers.TryGetValue(messageType, out var handler))
                 {

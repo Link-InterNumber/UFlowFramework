@@ -7,7 +7,7 @@ namespace PowerCellStudio
 {
     public class AudioSetter : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     {
-        public string clipRef;
+        public AssetPath<AudioClip> audioClip;
         public AudioSourceType audioType;
         public MusicGroup musicGroup;
         public bool playOnEnable = true;
@@ -31,8 +31,8 @@ namespace PowerCellStudio
         public void PlayAudio()
         {
             if (AudioManager.instance.IsMute(audioType)) return;
-            if (string.IsNullOrEmpty(clipRef)) return;
-            PlayClip(clipRef);
+            if (string.IsNullOrEmpty(audioClip.assetPath)) return;
+            PlayClip(audioClip.assetPath);
         }
 
         private void PlayClip(string audioClipRef)
