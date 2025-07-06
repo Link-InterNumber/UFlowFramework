@@ -25,6 +25,27 @@ namespace PowerCellStudio
                 BuildAssetBundleOptions.ChunkBasedCompression | BuildAssetBundleOptions.ForceRebuildAssetBundle, 
                 EditorUserBuildSettings.activeBuildTarget);
             AssetBundleConfigTool.CreateAssetBundleConfig();
+            GenerateRemoteManifestWindow.ShowWindowWithHandle(()=> Debug.Log("Build AsserBundle Successfully!"));
+        }
+
+        private static void BuildAsserBundle(bool resetRemoteManifest, Action onRemoteManifestGenerated)
+        {
+            ConfigMenu.CreateConfigAssetByForce();
+            var buildPath = Path.Combine(Application.streamingAssetsPath,
+                AssetsBundleBuildUtils.GetBuildFoldName(EditorUserBuildSettings.activeBuildTarget));
+            AssetDatabase.DeleteAsset(buildPath);
+            if (!Directory.Exists(buildPath))
+            {
+                Directory.CreateDirectory(buildPath);
+            }
+            BuildPipeline.BuildAssetBundles(buildPath, 
+                BuildAssetBundleOptions.ChunkBasedCompression | BuildAssetBundleOptions.ForceRebuildAssetBundle, 
+                EditorUserBuildSettings.activeBuildTarget);
+            AssetBundleConfigTool.CreateAssetBundleConfig();
+            if (resetRemoteManifest) 
+                GenerateRemoteManifestWindow.ShowWindowWithHandle(onRemoteManifestGenerated);
+            else 
+                onRemoteManifestGenerated?.Invoke();
         }
         
         [MenuItem("Build/AssetBundle/Build AsserBundle Incrementally", false, 2)]
@@ -42,13 +63,27 @@ namespace PowerCellStudio
                 BuildAssetBundleOptions.ChunkBasedCompression,
                 EditorUserBuildSettings.activeBuildTarget);
             AssetBundleConfigTool.CreateAssetBundleConfig();
+            GenerateRemoteManifestWindow.ShowWindowWithHandle(()=> Debug.Log("Build AsserBundle Successfully!"));
         }
 
         [MenuItem("Build/AssetBundle/Build Play", false, 4)]
         public static void BuildPlayApp()
         {
-            BuildAsserBundleOnly();
-            
+            ConfirmWindow.ShowWindow(() =>
+                {
+                    BuildAsserBundle(true, BuildPlayAppOnly);
+                },
+                () =>
+                {
+                    BuildAsserBundle(false, BuildPlayAppOnly);
+                },
+                "Build AsserBundle",
+                "需要重新设置远程分包配置吗？\nNeed to reset the [Remote Manifest]?");
+        }
+        
+        [MenuItem("Build/AssetBundle/Build Play Only", false, 5)]
+        public static void BuildPlayAppOnly()
+        {
             var options = new BuildPlayerOptions();
             // options.locationPathName = Environment.CurrentDirectory;
             BuildPlayerOptions playerSettings = BuildPlayerWindow.DefaultBuildMethods.GetBuildPlayerOptions(options);

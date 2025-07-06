@@ -11,14 +11,23 @@ namespace PowerCellStudio
     public class GenerateRemoteManifestWindow : EditorWindow
     {
         [MenuItem("Build/AssetBundle/Bundle Manifest配置")]
-        private static void ShowWindow()
+        public static void ShowWindow()
         {
             var window = GetWindow<GenerateRemoteManifestWindow>();
             window.titleContent = new GUIContent("Bundle Manifest配置");
             window.Show();
         }
 
+        public static void ShowWindowWithHandle(Action onCompleted)
+        {
+            var window = GetWindow<GenerateRemoteManifestWindow>();
+            window.titleContent = new GUIContent("Bundle Manifest配置");
+            window.onCompleted = onCompleted;
+            window.Show();
+        }
+
         private RemoteManifest _remoteManifest;
+        public Action onCompleted;
 
         private void OnEnable()
         {
@@ -67,6 +76,7 @@ namespace PowerCellStudio
         private void OnDisable()
         {
             _remoteManifest = null;
+            onCompleted = null;
         }
 
         private void OnGUI()
@@ -96,11 +106,15 @@ namespace PowerCellStudio
             if (GUILayout.Button("Generate"))
             {
                 string savePath = Path.Combine(Application.streamingAssetsPath, "remoteManifest.json");
-                string json = JsonConvert.SerializeObject(_remoteManifest);
+                string json = JsonConvert.SerializeObject(_remoteManifest, Formatting.Indented);
                 File.WriteAllText(savePath, json);
-
                 Debug.Log("Manifest生成完成: " + savePath);
                 AssetDatabase.Refresh();
+                if (onCompleted != null)
+                {
+                    onCompleted.Invoke();
+                    Close();
+                }
             }
         }
     }
