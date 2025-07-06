@@ -55,7 +55,7 @@ namespace PowerCellStudio
             return success;
         }
 
-        [MenuItem("Build/Addressables/Build Addressables only", false, 1000)]
+        [MenuItem("Build/Addressable/Build Addressable Bundle only", false, 1000)]
         public static bool BuildAddressables()
         {
             if(settings == null) GetSettingsObject(settings_asset);
