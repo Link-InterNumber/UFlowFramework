@@ -10,7 +10,6 @@ namespace PowerCellStudio
         private bool _isNew = false;
         private StringBuilder _stringBuilder;
         private float _timeout = 1f;
-        private int _curHour;
         
         protected void Awake()
         {
@@ -23,7 +22,6 @@ namespace PowerCellStudio
             saveLog = new DebugSave();
             Application.logMessageReceivedThreaded += OnLogReceived;
             var time = DateTime.Now;
-            _curHour = time.Hour;
         }
 
         protected void OnDestroy()
@@ -53,12 +51,8 @@ namespace PowerCellStudio
             _timeout -= Time.unscaledDeltaTime;
             if(_timeout > 0) return;
             var time = DateTime.Now;
-            PlayerDataUtils.SaveLinkLogLog($"{time.Year}{time.Month}{time.Day}{time.Hour}", saveLog);
-            if (_curHour != time.Hour)
-            {
-                saveLog.content = "";
-                _curHour = time.Hour;
-            }
+            PlayerDataUtils.SaveDebugLog($"{time.Year}{time.Month}{time.Day}{time.Hour}", saveLog);
+            saveLog.content = "";
             _isNew = false;
             _timeout = 1f;
         }

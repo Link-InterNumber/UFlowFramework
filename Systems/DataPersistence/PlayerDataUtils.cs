@@ -183,10 +183,32 @@ namespace PowerCellStudio
             return EncryptUtils.Base64Decrypt(data);
         }
         
-        public static Coroutine SaveLinkLogLog(string fileName, DebugSave data, Action action = null)
+        public static Coroutine SaveDebugLog(string fileName, DebugSave data)
         {
             if(string.IsNullOrEmpty(fileName)) return null;
-            return ApplicationManager.instance.StartCoroutine(SaveJsonHandle($"{fileName}_LinkLogLog", data, action, false));
+            return ApplicationManager.instance.StartCoroutine(SaveDebugLogHandle($"{fileName}_LinkLogLog", data));
+        }
+
+        private static IEnumerator SaveDebugLogHandle<T>(string fileName, T data)
+            where T : IPersistenceData
+        {
+            CheckDirectory(JsonDirectory);
+            yield return null;
+            string json = JsonConvert.SerializeObject(data);
+            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
+
+            // 检查文件是否存在
+            if (!File.Exists(path))
+            {
+                // 如果文件不存在，创建文件
+                using (FileStream fs = File.Create(path))
+                {
+                    byte[] info = new UTF8Encoding(true).GetBytes($"{fileName}\n");
+                    fs.Write(info, 0, info.Length);
+                }
+            }
+            // 异步添加文本到文件末尾
+            yield return File.AppendAllTextAsync(path, json).AsCoroutine();
         }
 
         public static bool SaveJson<T>(string fileName, T data, bool encrypt = true)
