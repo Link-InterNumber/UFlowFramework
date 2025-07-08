@@ -49,7 +49,7 @@ namespace PowerCellStudio
             }
             else
             {
-                AssetLog.LogError("下载JSON失败: " + request.error);
+                AssetLog.LogError("下载remoteManifest.json失败: " + request.error);
             }
             if (_remoteManifest == null) _remoteManifest = new Dictionary<string, BundleInfo>();
         }
@@ -75,7 +75,7 @@ namespace PowerCellStudio
         {
             var url = Path.Combine(_remotePath, bundleName);
             var webRequest = UnityWebRequestAssetBundle.GetAssetBundle(url);
-            yield return webRequest;
+            yield return webRequest.SendWebRequest();;
             var bundle = DownloadHandlerAssetBundle.GetContent(webRequest);
             if (!bundle) 
             {

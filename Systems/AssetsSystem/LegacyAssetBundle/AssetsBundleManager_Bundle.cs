@@ -45,7 +45,7 @@ namespace PowerCellStudio
                 Alive = true;
                 if (_unloadCoroutine != null)
                 {
-                    ApplicationManager.instance.StopCoroutine(_unloadCoroutine);
+                    _assetsBundleManager._coroutineRunner.StopCoroutine(_unloadCoroutine);
                     _unloadCoroutine = null;
                 }
                 if (RefCount <= AssetsBundleManager.disposeRefLine)
@@ -59,7 +59,7 @@ namespace PowerCellStudio
                 Alive = true;
                 if (_unloadCoroutine != null)
                 {
-                    ApplicationManager.instance.StopCoroutine(_unloadCoroutine);
+                    _assetsBundleManager._coroutineRunner.StopCoroutine(_unloadCoroutine);
                     _unloadCoroutine = null;
                 }
 
@@ -85,8 +85,8 @@ namespace PowerCellStudio
                 if (!Alive || _refCount > AssetsBundleManager.disposeRefLine || _unloadCoroutine != null)
                     return;
                 //  启动计时器
-                if (ApplicationManager.isExist && AssetsBundleManager.delayUnloadDuration > 0)
-                    _unloadCoroutine = ApplicationManager.instance.StartCoroutine(WaitToUnloadHandle());
+                if (_assetsBundleManager._coroutineRunner && AssetsBundleManager.delayUnloadDuration > 0)
+                    _unloadCoroutine = _assetsBundleManager._coroutineRunner.StartCoroutine(WaitToUnloadHandle());
                 else
                 {
                     Alive = false;
@@ -106,6 +106,9 @@ namespace PowerCellStudio
         {
             get
             {
+#if UNITY_EDITOR
+                return "Android";
+#endif
                 switch (Application.platform)
                 {
                     case RuntimePlatform.OSXEditor:
@@ -226,7 +229,7 @@ namespace PowerCellStudio
             if (handler == null) return;
             if (!handler.isDone)
             {
-                ApplicationManager.instance.StartCoroutine(WaitForPrepareDone(handler));
+                _coroutineRunner.StartCoroutine(WaitForPrepareDone(handler));
                 return;
             }
             foreach(var bundleName in handler.successLable)
@@ -251,7 +254,7 @@ namespace PowerCellStudio
             }
             var handler = new PrepareHandler();
             handler.OnComplete(onComplete);
-            ApplicationManager.instance.StartCoroutine(DownLoadPrepareBundle(labels, isConcurrent, handler));
+            _coroutineRunner.StartCoroutine(DownLoadPrepareBundle(labels, isConcurrent, handler));
             return handler;
         }
 
@@ -322,7 +325,7 @@ namespace PowerCellStudio
             // if(onLoadCompleted != null) newRequest.onLoadCompleted += onLoadCompleted;
             _waitForLoadList.Add(bundleName, newRequest);
             _loadedBundleDic.Remove(bundleName);
-            ApplicationManager.instance.StartCoroutine(AsyncLoadAssetsBundleHandler(bundleName, newRequest));
+            _coroutineRunner.StartCoroutine(AsyncLoadAssetsBundleHandler(bundleName, newRequest));
             return newRequest;
         }
 
