@@ -10,7 +10,7 @@ namespace PowerCellStudio
 {
     public class EditorBundleBuild
     {
-        [MenuItem("Build/AssetBundle/Build AsserBundle", false, 2)]
+        [MenuItem("Build/AssetBundle/Build AssetBundle", false, 2)]
         public static void BuildAsserBundleOnly()
         {
             ConfigMenu.CreateConfigAssetByForce();
@@ -48,7 +48,7 @@ namespace PowerCellStudio
                 onRemoteManifestGenerated?.Invoke();
         }
         
-        [MenuItem("Build/AssetBundle/Build AsserBundle Incrementally", false, 2)]
+        [MenuItem("Build/AssetBundle/Build AssetBundle Incrementally", false, 2)]
         public static void BuildAsserBundleIncrementally()
         {
             ConfigMenu.CreateConfigAssetByForce();

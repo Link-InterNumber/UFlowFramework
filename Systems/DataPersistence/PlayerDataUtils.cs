@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 #if !UNITY_WEBGL
 using System.Threading.Tasks;
 using Microsoft.Xbox.Services.Client;

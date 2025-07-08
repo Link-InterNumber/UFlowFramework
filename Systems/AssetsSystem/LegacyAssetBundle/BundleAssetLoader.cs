@@ -192,7 +192,8 @@ namespace PowerCellStudio
                 handler.Dispose();
                 _waitForLoaded.Remove(address);
             }
-            AssetLog.LogError($"Can not Find Asset, path:<{address}>");
+            var bundleName = GetBundleName(address);
+            AssetLog.LogError($"Can not Find Asset, path:[{address}], bundle name:[{bundleName}]");
             onFail?.Invoke();
         }
         

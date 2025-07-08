@@ -9,7 +9,7 @@ namespace PowerCellStudio
 {
     public partial class AssetsBundleManager : IAssetManager//<AssetAssetLoader>
     {
-        public static bool simulateAssetBundleInEditor = false;
+        public static bool simulateAssetBundleInEditor = true;
         /// <summary>
         /// 卸载bundle的引用计数下限
         /// </summary>
@@ -21,6 +21,8 @@ namespace PowerCellStudio
         
         public AssetInitState initState { get; private set; }
         public float initProcess { get; private set; }
+
+        private MonoBehaviour _coroutineRunner;
 
         public void Init(MonoBehaviour coroutineRunner, Action callBack)
         {
@@ -51,17 +53,18 @@ namespace PowerCellStudio
                 return;
             }
 #endif
-            coroutineRunner.StartCoroutine(InitHandler(callBack));
+            _coroutineRunner = coroutineRunner;
+            _coroutineRunner.StartCoroutine(InitHandler(callBack));
         }
 
         private IEnumerator InitHandler(Action callBack)
         {
             _bundleFoldName = MainBundleName;
             initState = AssetInitState.CheckForResourceUpdates;
+            yield return InitPathMap();
             yield return GetServerRemoteManifest();
             GetClentRemoteManifest();
             yield return CheckRemoteBundle();
-            yield return InitPathMap();
             if (_assetPathMap == null) yield break;
             initProcess = 0.3f;
             yield return GetBundleManifest();
@@ -86,8 +89,11 @@ namespace PowerCellStudio
         public string GetBundleNameByAsset(string path)
         {
             if (!_inited) throw new Exception("AssetsBundleManager do not inited!!!");
-            var lowerPath = path.ToLower();
-            if (!_assetPathMap.TryGetValue(lowerPath, out var matched)) return string.Empty;
+            if (!_assetPathMap.TryGetValue(path, out var matched))
+            {
+                AssetLog.LogError($"Can not find Bundle Name of [{path}]");
+                return string.Empty;
+            }
             return matched.assetBundle;
             // if (!CheckWithID) return matched.assetBundle;
             // var id = lowerPath.GenHashCode();
