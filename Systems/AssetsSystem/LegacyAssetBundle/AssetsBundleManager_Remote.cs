@@ -16,7 +16,7 @@ namespace PowerCellStudio
 
         private void GetClentRemoteManifest()
         {
-            var path = Path.Combine(Application.persistentDataPath, "RemoteBundle", "remoteManifest.json");
+            var path = Path.Combine(Application.persistentDataPath, "remoteManifest.json");
             if (!File.Exists(path)) return;
             var json = File.ReadAllText(path);
             Dictionary<string, BundleInfo> result = null;
@@ -38,7 +38,11 @@ namespace PowerCellStudio
         
         private IEnumerator GetServerRemoteManifest()
         {
+#if UNITY_EDITOR
+            var url = "file://" + Path.Combine(Application.persistentDataPath, "remoteManifest.json");
+#elif
             var url = Path.Combine(_remotePath, "remoteManifest.json");
+#endif
             UnityWebRequest request = UnityWebRequest.Get(url);
             yield return request.SendWebRequest();
             if (request.result == UnityWebRequest.Result.Success)
@@ -97,6 +101,9 @@ namespace PowerCellStudio
 
         private IEnumerator CheckRemoteBundle()
         {
+#if UNITY_EDITOR
+            yield break;
+#endif
             if (_remoteManifest == null || _clientManifest == null) yield break;
             var loadList = new List<string>();
             foreach (var keyValue in _remoteManifest)
