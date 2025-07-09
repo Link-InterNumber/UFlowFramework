@@ -11,13 +11,13 @@ namespace PowerCellStudio
 
         public void LoadAsync(IAssetLoader assetLoader, Action<T> onSuccess)
         {
-            if (assetLoader == null) return;
+            if (assetLoader == null || string.IsNullOrEmpty(assetPath)) return;
             assetLoader.LoadAsync<T>(assetPath, onSuccess);
         }
 
         public LoaderYieldInstruction<T> LoadAsYieldInstruction(IAssetLoader assetLoader)
         {
-            if (assetLoader == null) return null;
+            if (assetLoader == null || string.IsNullOrEmpty(assetPath)) return null;
             return assetLoader.LoadAsYieldInstruction<T>(assetPath);
         }
     }
