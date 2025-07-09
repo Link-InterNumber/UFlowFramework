@@ -1,5 +1,7 @@
 using System;
+using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 namespace PowerCellStudio
@@ -12,7 +14,7 @@ namespace PowerCellStudio
 
         private Image _image;
 
-        private Assetloader _assetLoader;
+        private IAssetLoader _assetLoader;
 
         private void Awake()
         {
@@ -22,7 +24,7 @@ namespace PowerCellStudio
         private void LoadSpriteInEditor()
         {
 #if UNITY_EDITOR
-            var sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(spritePath);
+            var sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(spritePath.assetPath);
             if (sprite != null)
             {
                 _image.sprite = sprite;

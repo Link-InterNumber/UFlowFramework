@@ -107,7 +107,9 @@ namespace PowerCellStudio
             get
             {
 #if UNITY_EDITOR
-                return AssetsBundleBuildUtils.GetBuildFoldName(UnityEditor.EditorUserBuildSettings.activeBuildTarget);
+                var folds = Directory.GetDirectories(Application.streamingAssetsPath);
+                if (folds == null || folds.Length == 0) return "StreamingAssets";
+                return Path.GetFileNameWithoutExtension(folds[0]);
 #endif
                 switch (Application.platform)
                 {
@@ -160,6 +162,8 @@ namespace PowerCellStudio
         private string _bundleFoldName;
         private string GetBundlePath(string bundleName)
         {
+            if (_clientManifest.ContainsKey(bundleName))
+                return Path.Combine(Application.persistentDataPath, _bundleFoldName, bundleName);
             return Path.Combine(Application.streamingAssetsPath, _bundleFoldName, bundleName);
         }
 
@@ -169,19 +173,30 @@ namespace PowerCellStudio
             var path = GetBundlePath(mainBundleName);
             _waitForLoadList.Add(mainBundleName, null);
             _loadedBundleDic.Remove(mainBundleName);
-            var loadedBundleRequest = AssetBundle.LoadFromFileAsync(path);
-            yield return loadedBundleRequest;
+            AssetBundle bundle = null;
+            if (Application.platform == RuntimePlatform.Android)
+            {
+                var webRequest = UnityWebRequestAssetBundle.GetAssetBundle(path);
+                yield return webRequest.SendWebRequest();
+                bundle = DownloadHandlerAssetBundle.GetContent(webRequest);
+                webRequest.Dispose();
+            }
+            else
+            {
+                var loadedBundleRequest = AssetBundle.LoadFromFileAsync(path);
+                yield return loadedBundleRequest;
+                bundle = loadedBundleRequest.assetBundle;
+            }
             _waitForLoadList.Remove(mainBundleName);
-            var loadedBundle = loadedBundleRequest.assetBundle;
-            var abf = new AssetsBundleRef(loadedBundle, this);
-            _loadedBundleDic.Add(mainBundleName, abf);
-            abf.AddRef();
-            if (!loadedBundle)
+            if (!bundle)
             {
                 AssetLog.LogError($"MainBundle Name Error: {mainBundleName}");
                 yield break;
             }
-            _bundleManifest = loadedBundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
+            var abf = new AssetsBundleRef(bundle, this);
+            _loadedBundleDic.Add(mainBundleName, abf);
+            abf.AddRef();
+            _bundleManifest = bundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
         }
 
         private string[] GetBundleDependencies(string bundleName)
@@ -217,7 +232,8 @@ namespace PowerCellStudio
             }
             if (!loadedBundle)
             {
-                AssetLog.LogError($"Bundle: {bundleName} Load Fail");
+                var path = GetBundlePath(bundleName);
+                AssetLog.LogError($"Bundle: {bundleName} Load Fail, path: {path}");
                 return;
             }
             var abf = new AssetsBundleRef(loadedBundle, this);
@@ -302,7 +318,7 @@ namespace PowerCellStudio
 
         private IEnumerator SaveBundleOnLocal(string bundleName, byte[] data)
         {
-            var path = Path.Combine(Application.streamingAssetsPath, bundleName);
+            var path = Path.Combine(Application.persistentDataPath, _bundleFoldName, bundleName);
             yield return File.WriteAllBytesAsync(path, data).AsCoroutine();
         }
 
@@ -337,44 +353,47 @@ namespace PowerCellStudio
             yield return LoadBundleDependenceAsync(bundleName);
             AssetBundle bundle = null;
             var path = GetBundlePath(bundleName);
-            Byte[] bundleByte = null;
-            if (File.Exists(path))
+            if (Application.platform == RuntimePlatform.Android)
             {
-                var abcr = AssetBundle.LoadFromFileAsync(path);
-                yield return abcr;
-                bundle = abcr.assetBundle;
-                if (!bundle)
+                if (!IsBundleNeedLoadFromRemote(bundleName))
                 {
-                    loaderYieldInstruction.SetAsset(null);
-                    OnBundleLoaded(bundleName, null);
+                    var webRequest = UnityWebRequestAssetBundle.GetAssetBundle(path);
+                    yield return webRequest.SendWebRequest();
+                    bundle = DownloadHandlerAssetBundle.GetContent(webRequest);
+                    webRequest.Dispose();
+                    if (!bundle) 
+                    {
+                        loaderYieldInstruction.SetAsset(null);
+                        OnBundleLoaded(bundleName, null);
+                        yield break;
+                    }
+                    loaderYieldInstruction.SetAsset(bundle);
+                    OnBundleLoaded(bundleName, bundle);
                     yield break;
                 }
-                loaderYieldInstruction.SetAsset(bundle);
-                OnBundleLoaded(bundleName, bundle);
             }
             else
             {
-                yield return LoadRemoteBundle(bundleName, loaderYieldInstruction);
-                bundle = loaderYieldInstruction.asset;
-                OnBundleLoaded(bundleName, bundle);
-                SaveRemoteManifest(_clientManifest);
-                // var url = Path.Combine(_remotePath, bundleName);
-                // using var webRequest = UnityWebRequestAssetBundle.GetAssetBundle(url);
-                // yield return webRequest;
-                // bundle = DownloadHandlerAssetBundle.GetContent(webRequest);
-                // bundleByte = webRequest.downloadHandler.data;
+                if (File.Exists(path))
+                {
+                    var abcr = AssetBundle.LoadFromFileAsync(path);
+                    yield return abcr;
+                    bundle = abcr.assetBundle;
+                    if (!bundle)
+                    {
+                        loaderYieldInstruction.SetAsset(null);
+                        OnBundleLoaded(bundleName, null);
+                        yield break;
+                    }
+                    loaderYieldInstruction.SetAsset(bundle);
+                    OnBundleLoaded(bundleName, bundle);
+                    yield break;
+                }
             }
-            // if (!bundle)
-            // {
-            //     loaderYieldInstruction.SetAsset(null);
-            //     OnBundleLoaded(bundleName, null);
-            //     yield break;
-            // }
-            // loaderYieldInstruction.SetAsset(bundle);
-            // OnBundleLoaded(bundleName, bundle);
-
-            // if (bundleByte == null || !bundle) yield break;
-            // yield return SaveBundleOnLocal(bundleName, bundleByte);
+            yield return LoadRemoteBundle(bundleName, loaderYieldInstruction);
+            bundle = loaderYieldInstruction.asset;
+            OnBundleLoaded(bundleName, bundle);
+            if (bundle) SaveRemoteManifest(_clientManifest);
         }
 
         private IEnumerator LoadBundleDependenceAsync(string bundleName)
@@ -528,11 +547,11 @@ namespace PowerCellStudio
             var removeBundle = new List<AssetsBundleRef>();
             foreach (var keyNValue in _loadedBundleDic)
             {
-                var ref = keyNValue.Value;
-                if (ref.RefCount <= AssetsBundleManager.disposeRefLine)
+                var bundleRef = keyNValue.Value;
+                if (bundleRef.RefCount <= AssetsBundleManager.disposeRefLine)
                 {
-                    ref.Restore();
-                    removeBundle.Add(ref);
+                    bundleRef.Restore();
+                    removeBundle.Add(bundleRef);
                 }
             }
             for (var i=0;i < removeBundle.Count;i++)

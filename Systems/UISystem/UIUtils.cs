@@ -88,6 +88,7 @@ namespace PowerCellStudio
                     canvasScale.matchWidthOrHeight = 0;
                 }
                 canvasScale.referenceResolution = ConstSetting.DefaultUISize;
+                uiChild.rectTransform.gameObject.TryAddComponent<GraphicRaycaster>().enabled = !ignoreRaycaster;
             }
             else
             {
@@ -96,7 +97,7 @@ namespace PowerCellStudio
                     var canvas = uiChild.rectTransform.gameObject.GetComponent<Canvas>();
                     if (!canvas) canvas = uiChild.rectTransform.gameObject.AddComponent<Canvas>();
                 }
-                uiChild.rectTransform.gameObject.TryAddComponent<GraphicRaycaster>().enabled = uiChild is IUIParent || !ignoreRaycaster;
+                // uiChild.rectTransform.gameObject.TryAddComponent<GraphicRaycaster>().enabled = uiChild is IUIParent || !ignoreRaycaster;
             }
         }
 

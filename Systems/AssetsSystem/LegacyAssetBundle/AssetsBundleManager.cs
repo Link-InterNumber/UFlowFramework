@@ -9,7 +9,7 @@ namespace PowerCellStudio
 {
     public partial class AssetsBundleManager : IAssetManager//<AssetAssetLoader>
     {
-        public static bool simulateAssetBundleInEditor = false;
+        public static bool simulateAssetBundleInEditor = true;
         /// <summary>
         /// 卸载bundle的引用计数下限
         /// </summary>
@@ -55,7 +55,7 @@ namespace PowerCellStudio
 #endif
             _coroutineRunner = coroutineRunner;
             _coroutineRunner.StartCoroutine(InitHandler(callBack));
-            EventManager.instance.onClearUnusedAsset.AddListener(ClearUnusedAsset)
+            EventManager.instance.onClearUnusedAsset.AddListener(ClearUnusedAsset);
         }
 
         private IEnumerator InitHandler(Action callBack)
@@ -64,7 +64,7 @@ namespace PowerCellStudio
             initState = AssetInitState.CheckForResourceUpdates;
             yield return InitPathMap();
             yield return GetServerRemoteManifest();
-            GetClentRemoteManifest();
+            GetClientRemoteManifest();
             yield return CheckRemoteBundle();
             if (_assetPathMap == null) yield break;
             initProcess = 0.3f;

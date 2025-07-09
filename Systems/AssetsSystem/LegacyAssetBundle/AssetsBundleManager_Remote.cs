@@ -14,11 +14,35 @@ namespace PowerCellStudio
         private Dictionary<string, BundleInfo> _clientManifest;
         private string _remotePath = "http://localhost:8000/StreamingAssets/";
 
-        private void GetClentRemoteManifest()
+        private bool IsBundleNeedLoadFromRemote(string bundleName)
         {
-            var path = Path.Combine(Application.persistentDataPath, "remoteManifest.json");
-            if (!File.Exists(path)) return;
+            if (_remoteManifest == null || _remoteManifest.Count == 0) return false;
+            if (_remoteManifest.TryGetValue(bundleName, out var remote))
+            {
+                if (!remote.isRemote) return false;
+                if (_clientManifest.TryGetValue(bundleName, out var local))
+                {
+                    return local.md5 != remote.md5;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private void GetClientRemoteManifest()
+        {
+            var path = Path.Combine(Application.persistentDataPath, _bundleFoldName, "remoteManifest.json");
+            if (!File.Exists(path))
+            {
+                _clientManifest = new Dictionary<string, BundleInfo>();
+                return;
+            }
             var json = File.ReadAllText(path);
+            if (string.IsNullOrEmpty(json))
+            {
+                _clientManifest = new Dictionary<string, BundleInfo>();
+                return;
+            }
             Dictionary<string, BundleInfo> result = null;
             try
             {
@@ -32,15 +56,25 @@ namespace PowerCellStudio
             finally
             {
                 if (result == null) result = new Dictionary<string, BundleInfo>();
+                _clientManifest = new Dictionary<string, BundleInfo>();
+                foreach (var keyValuePair in result)
+                {
+                    var bundleName = keyValuePair.Key;
+                    var bundlePath = Path.Combine(Application.persistentDataPath, _bundleFoldName, bundleName);
+                    if (File.Exists(bundlePath))
+                    {
+                        _clientManifest.Add(bundleName, keyValuePair.Value);
+                    }
+                }
+                result = null;
             }
-            _clientManifest = result;
         }
         
         private IEnumerator GetServerRemoteManifest()
         {
 #if UNITY_EDITOR
-            var url = "file://" + Path.Combine(Application.persistentDataPath, "remoteManifest.json");
-#elif
+            var url = "file://" + Path.Combine(Application.streamingAssetsPath, "remoteManifest.json");
+#else
             var url = Path.Combine(_remotePath, "remoteManifest.json");
 #endif
             UnityWebRequest request = UnityWebRequest.Get(url);
@@ -66,12 +100,14 @@ namespace PowerCellStudio
             {
                 manifest.bundles.Add(keyValue.Value);
             }
-            var folderName = "RemoteBundle";
-            var directory = Path.Combine(Application.persistentDataPath, folderName);
-            if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
+            // var folderName = "RemoteBundle";
+            // var directory = Path.Combine(Application.streamingAssetsPath, folderName);
+            // if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
             // PlayerDataUtils.ReadJson<RemoteManifest>(manifest);
             string json = JsonConvert.SerializeObject(manifest);
-            string savePath = Path.Combine(Application.persistentDataPath, folderName, "remoteManifest.json");
+            string savePath = Path.Combine(Application.persistentDataPath, _bundleFoldName, "remoteManifest.json");
+            var directory = Path.Combine(Application.persistentDataPath, _bundleFoldName);
+            if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
             File.WriteAllText(savePath, json);
         }
 
@@ -79,7 +115,7 @@ namespace PowerCellStudio
         {
             var url = Path.Combine(_remotePath, bundleName);
             var webRequest = UnityWebRequestAssetBundle.GetAssetBundle(url);
-            yield return webRequest.SendWebRequest();;
+            yield return webRequest.SendWebRequest();
             var bundle = DownloadHandlerAssetBundle.GetContent(webRequest);
             if (!bundle) 
             {
@@ -95,32 +131,33 @@ namespace PowerCellStudio
             {
                 _clientManifest[bundleName] = bundleInfo;
             }
-            if (handler == null) yield break;
+            if (handler == null)
+            {
+                yield return bundle.UnloadAsync(false);
+                yield break;
+            }
             handler.SetAsset(bundle);
         }
 
         private IEnumerator CheckRemoteBundle()
         {
-#if UNITY_EDITOR
-            yield break;
-#endif
             if (_remoteManifest == null || _clientManifest == null) yield break;
             var loadList = new List<string>();
             foreach (var keyValue in _remoteManifest)
             {
                 var bundle = keyValue.Value;
+                if (!bundle.isRemote) continue;
                 if (_clientManifest.TryGetValue(bundle.name, out var localBundle))
                 {
                     if (localBundle.md5 == bundle.md5 && localBundle.size == bundle.size)
                         continue;
                 }
                 loadList.Add(bundle.name);
-
             }
             if (loadList.Count == 0) yield break;
             initState = AssetInitState.DownloadTheUpdateFile;
             initProcess = 0f;
-
+            _clientManifest.Clear();
             for (var i = 0; i < loadList.Count; i++)
             {
                 var bundleName = loadList[i];

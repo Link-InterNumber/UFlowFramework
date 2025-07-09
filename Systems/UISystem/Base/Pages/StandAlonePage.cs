@@ -22,6 +22,7 @@ namespace PowerCellStudio
 #if UNITY_EDITOR || DEBUG || ENABLE_LOG
             var debugBtnGameObject = new GameObject("DebugBtn");
             var btnRect = debugBtnGameObject.AddComponent<RectTransform>();
+            debugBtnGameObject.AddComponent<GraphicRaycaster>();
             btnRect.SetParent(standAlonePage.transform);
             debugBtnGameObject.AddComponent<DebugBtn>();
 #endif
