@@ -107,7 +107,7 @@ namespace PowerCellStudio
             get
             {
 #if UNITY_EDITOR
-                return "Android";
+                return AssetsBundleBuildUtils.GetBuildFoldName(UnityEditor.EditorUserBuildSettings.activeBuildTarget);
 #endif
                 switch (Application.platform)
                 {
@@ -140,7 +140,7 @@ namespace PowerCellStudio
                     case RuntimePlatform.PS5:
                         return "PS5";
                     default:
-                        return "StreamingAssets";
+                        return "AssetBundles";
                 }
             }
         }
@@ -151,6 +151,7 @@ namespace PowerCellStudio
 
         private Dictionary<string, AssetsBundleRef> _loadedBundleDic;
         private Dictionary<string, LoaderYieldInstruction<AssetBundle>> _waitForLoadList;
+        private List<PrepareHandler> _prepareHandlers = new List<PrepareHandler>();
         
         #region BundleDependence
         
@@ -236,6 +237,7 @@ namespace PowerCellStudio
             {
                 ReleaseBundle((string)bundleName);
             }
+            _prepareHandlers.Remove(handler);
             handler.Dispose();
         }
 
@@ -255,6 +257,7 @@ namespace PowerCellStudio
             var handler = new PrepareHandler();
             handler.OnComplete(onComplete);
             _coroutineRunner.StartCoroutine(DownLoadPrepareBundle(labels, isConcurrent, handler));
+            _prepareHandlers.Add(handler);
             return handler;
         }
 
@@ -490,8 +493,8 @@ namespace PowerCellStudio
                     _preloadHandles.Remove(path);
                 }
             }
-            bundleRef.Bundle.Unload(false);
             _loadedBundleDic.Remove(bundleRef.Bundle.name);
+            bundleRef.Bundle.Unload(false);
             Resources.UnloadUnusedAssets();
             GC.Collect();
             return true;
@@ -503,6 +506,41 @@ namespace PowerCellStudio
             _loadedBundleDic.Clear();
             _waitForLoadList.Clear();
             _bundleManifest = null;
+            Resources.UnloadUnusedAssets();
+            GC.Collect();
+        }
+
+        public void ClearUnusedAsset()
+        {
+            var preload = _preloadHandles.Values.ToList();
+            foreach (var handler in preload)
+            {
+                handler.Dispose();
+            }
+            _preloadHandles.Clear();
+
+            var prepareHandles = new List<PrepareHandler>(_prepareHandlers);
+            for (var i=0; i < prepareHandles.Count; i++)
+            {
+                Unprepare(prepareHandles[i]);
+            }
+
+            var removeBundle = new List<AssetsBundleRef>();
+            foreach (var keyNValue in _loadedBundleDic)
+            {
+                var ref = keyNValue.Value;
+                if (ref.RefCount <= AssetsBundleManager.disposeRefLine)
+                {
+                    ref.Restore();
+                    removeBundle.Add(ref);
+                }
+            }
+            for (var i=0;i < removeBundle.Count;i++)
+            {
+                var bundleRef = removeBundle[i];
+                _loadedBundleDic.Remove(bundleRef.Bundle.name);
+                bundleRef.Bundle.Unload(false);
+            }
             Resources.UnloadUnusedAssets();
             GC.Collect();
         }

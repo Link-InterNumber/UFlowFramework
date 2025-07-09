@@ -36,7 +36,7 @@ namespace PowerCellStudio
                 case BuildTarget.GameCoreXboxSeries:
                     return "XboxSeries";
                 default:
-                    return "StreamingAssets";
+                    return "AssetBundles";
             }
         }
 

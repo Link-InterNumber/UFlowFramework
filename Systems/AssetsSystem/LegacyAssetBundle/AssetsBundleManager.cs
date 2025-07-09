@@ -9,7 +9,7 @@ namespace PowerCellStudio
 {
     public partial class AssetsBundleManager : IAssetManager//<AssetAssetLoader>
     {
-        public static bool simulateAssetBundleInEditor = true;
+        public static bool simulateAssetBundleInEditor = false;
         /// <summary>
         /// 卸载bundle的引用计数下限
         /// </summary>
@@ -55,6 +55,7 @@ namespace PowerCellStudio
 #endif
             _coroutineRunner = coroutineRunner;
             _coroutineRunner.StartCoroutine(InitHandler(callBack));
+            EventManager.instance.onClearUnusedAsset.AddListener(ClearUnusedAsset)
         }
 
         private IEnumerator InitHandler(Action callBack)
@@ -77,6 +78,7 @@ namespace PowerCellStudio
             {
                 AssetLog.LogError("default bundle did not exit!");
             }
+            AddRef("default");
             _inited = true;
             AssetLog.Log("AssetsBundleManager inited successfully");
             initProcess = 1f;
