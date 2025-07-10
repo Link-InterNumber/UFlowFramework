@@ -66,10 +66,11 @@ namespace PowerCellStudio
             uiChild.rectTransform.localScale = Vector3.one;
             uiChild.rectTransform.Adapt2Parent();
 
-            if (uiChild is IUIParent)
+            if (uiChild is IUIParent uiparent)
             {
                 var canvas = uiChild.rectTransform.gameObject.GetComponent<Canvas>();
                 if (!canvas) canvas = uiChild.rectTransform.gameObject.AddComponent<Canvas>();
+                uiparent.canvasCom = canvas;
                 canvas.renderMode = canvasRenderMode;
                 canvas.planeDistance = 10;
                 if (canvasRenderMode != RenderMode.ScreenSpaceOverlay) canvas.worldCamera = UICamera.instance.cameraCom;
@@ -97,7 +98,7 @@ namespace PowerCellStudio
                     var canvas = uiChild.rectTransform.gameObject.GetComponent<Canvas>();
                     if (!canvas) canvas = uiChild.rectTransform.gameObject.AddComponent<Canvas>();
                 }
-                // uiChild.rectTransform.gameObject.TryAddComponent<GraphicRaycaster>().enabled = uiChild is IUIParent || !ignoreRaycaster;
+                if (ignoreRaycaster) uiChild.rectTransform.gameObject.TryAddComponent<CanvasGroup>().blocksRaycasts = false;
             }
         }
 
@@ -109,7 +110,7 @@ namespace PowerCellStudio
             var newPage = new GameObject(typeof(T).Name).AddComponent<T>();
             newPage.transform.SetParent(parent);
             newPage.gameObject.AddComponent<RectTransform>();
-            InitUI(newPage, true, true, canvasRenderMode);
+            InitUI(newPage, false, true, canvasRenderMode);
             return newPage;
         }
         

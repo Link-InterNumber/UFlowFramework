@@ -13,6 +13,8 @@ namespace PowerCellStudio
 
     public interface IUIParent : IUIComponent
     {
+        public Canvas canvasCom { get; set; }
+
         internal HashStack<IUIChild> openedUIs { get; }
         
         internal Dictionary<Type, IUIChild> children { get; }
