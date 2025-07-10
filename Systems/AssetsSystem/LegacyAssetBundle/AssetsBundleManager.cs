@@ -73,7 +73,8 @@ namespace PowerCellStudio
             var loadDefault = GetAssetsBundleAsync("default");
             yield return loadDefault;
             initProcess = 0.9f;
-            var loaded = loadDefault.asset;
+            _loadedBundleDic.TryGetValue("default", out var bundleRef);
+            var loaded = bundleRef?.Bundle;
             if (!loaded)
             {
                 AssetLog.LogError("default bundle did not exit!");

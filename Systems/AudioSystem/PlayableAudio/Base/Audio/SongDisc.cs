@@ -47,6 +47,7 @@ namespace PowerCellStudio
                 var request = _assetLoader.LoadAsYieldInstruction<AudioClip>(clipRefs[i]);
                 yield return request;
                 _clips[i] = request.asset;
+                request.Dispose();
             }
             onClipLoaded?.Invoke(this);
         }

@@ -227,8 +227,8 @@ namespace PowerCellStudio
         {
             if(_waitForLoadList.TryGetValue(bundleName, out var request))
             {
-                request?.Dispose();
                 _waitForLoadList.Remove(bundleName);
+                request?.Dispose();
             }
             if (!loadedBundle)
             {

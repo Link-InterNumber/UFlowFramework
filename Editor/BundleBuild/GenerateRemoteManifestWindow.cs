@@ -28,6 +28,7 @@ namespace PowerCellStudio
 
         private RemoteManifest _remoteManifest;
         public Action onCompleted;
+        private Vector2 _scrollPosition;
 
         private void OnEnable()
         {
@@ -82,8 +83,9 @@ namespace PowerCellStudio
         private void OnGUI()
         {
             if (_remoteManifest == null) return;
+            _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
             GUILayout.BeginVertical();
-
+            var needClose = false;
             // 设定区域的高度，可以容纳三行LabelFields
             float lineHeight = EditorGUIUtility.singleLineHeight; // 每行的高度
             float padding = 4; // 行间距
@@ -113,9 +115,12 @@ namespace PowerCellStudio
                 if (onCompleted != null)
                 {
                     onCompleted.Invoke();
-                    Close();
+                    needClose = true;
                 }
             }
+            
+            GUILayout.EndScrollView();
+            if (needClose) Close();
         }
     }
 }

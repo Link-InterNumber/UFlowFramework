@@ -112,7 +112,7 @@ namespace PowerCellStudio
         {
             foreach (var page in _pageStack)
             {
-                page.canvas.sortingOrder = (page.rectTransform.GetSiblingIndex() + 1) * 100;
+                page.canvasCom.sortingOrder = (page.rectTransform.GetSiblingIndex() + 1) * 100;
             }
         }
 

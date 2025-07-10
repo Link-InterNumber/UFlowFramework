@@ -145,6 +145,9 @@ namespace PowerCellStudio
 
         public void LoadAsync<T>(string address, Action<T> onSuccess, Action onFail = null) where T : Object
         {
+#if UNITY_EDITOR
+            address = AssetUtils.EditorCheckPath(address);
+#endif
             if(TryGetFromCache<T>(address, out var cached))
             {
                 onSuccess?.Invoke(cached);
@@ -206,13 +209,15 @@ namespace PowerCellStudio
             AddRef(bundleName);
             if (_waitForLoaded.TryGetValue(address, out var handler))
             {
-                handler.Dispose();
                 _waitForLoaded.Remove(address);
             }
         }
 
         public Task<T> LoadTask<T>(string address) where T : Object
         {
+#if UNITY_EDITOR
+            address = AssetUtils.EditorCheckPath(address);
+#endif
             if(TryGetFromCache<T>(address, out var cached))
                 return Task.FromResult(cached);
 #if UNITY_EDITOR
@@ -236,6 +241,9 @@ namespace PowerCellStudio
         
         public LoaderYieldInstruction<T> LoadAsYieldInstruction<T>(string address) where T : Object
         {
+#if UNITY_EDITOR
+            address = AssetUtils.EditorCheckPath(address);
+#endif
             if(TryGetFromCache<T>(address, out var cached))
             {
                 var instruction = new LoaderYieldInstruction<T>(address);
@@ -277,6 +285,9 @@ namespace PowerCellStudio
 
         public void AsyncLoadNInstantiate(string address, Action<GameObject> onSuccess, Action onFail = null)
         {
+#if UNITY_EDITOR
+            address = AssetUtils.EditorCheckPath(address);
+#endif
             LoadAsync<GameObject>(address, (loaded) =>
             {
                 var go = GameObject.Instantiate(loaded);
@@ -288,6 +299,9 @@ namespace PowerCellStudio
 
         public void AsyncLoadNInstantiate(string address, Transform parent, Action<GameObject> onSuccess, Action onFail = null)
         {
+#if UNITY_EDITOR
+            address = AssetUtils.EditorCheckPath(address);
+#endif
             LoadAsync<GameObject>(address, (loaded) =>
             {
                 var go = GameObject.Instantiate(loaded);
@@ -302,6 +316,9 @@ namespace PowerCellStudio
 #if !UNITY_WEBGL
         public T LoadImmediately<T>(string address) where T : Object
         {
+#if UNITY_EDITOR
+            address = AssetUtils.EditorCheckPath(address);
+#endif
             if(TryGetFromCache<T>(address, out var cached))
                 return cached;
 #if UNITY_EDITOR

@@ -99,7 +99,8 @@ namespace PowerCellStudio
             var loadBundleRequest = GetAssetsBundleAsync(bundleName);
             if (loadBundleRequest.isDone)
             {
-                var bundle = _loadedBundleDic[bundleName].Bundle;
+                _loadedBundleDic.TryGetValue(bundleName, out var bundleRef);
+                var bundle = bundleRef?.Bundle;
                 GetAssetFromBundleAsync(bundle, assetPath, loadAssetRequest);
                 return;
             }
