@@ -35,6 +35,7 @@ namespace PowerCellStudio
             if (_stringBuilder == null) _stringBuilder = new StringBuilder();
             if (saveLog == null) saveLog = new DebugSave();
             _stringBuilder.Append(saveLog.content);
+            _stringBuilder.Append($"error time: {DateTime.Now:HH:mm:ss zz}\n");
             _stringBuilder.Append(condition);
             _stringBuilder.Append("\n");
             _stringBuilder.Append(stacktrace);
@@ -51,7 +52,8 @@ namespace PowerCellStudio
             _timeout -= Time.unscaledDeltaTime;
             if(_timeout > 0) return;
             var time = DateTime.Now;
-            PlayerDataUtils.SaveDebugLog($"{time.Year}{time.Month}{time.Day}{time.Hour}", saveLog);
+            var content = string.Copy(saveLog.content);
+            PlayerDataUtils.SaveDebugLog(this, $"{time.Year}{time.Month}{time.Day}{time.Hour}", content);
             saveLog.content = "";
             _isNew = false;
             _timeout = 1f;

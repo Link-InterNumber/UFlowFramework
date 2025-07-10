@@ -131,6 +131,9 @@ namespace PowerCellStudio
         
         public void AsyncLoadNInstantiate(string address, Action<GameObject> onSuccess, Action onFail = null)
         {
+#if UNITY_EDITOR
+            address = AssetUtils.EditorCheckPath(address);
+#endif
             var handle = GetInstantiateHandle(address, Vector3.zero, null, Quaternion.identity);
             handle.Completed += operationHandle =>
             {
@@ -150,6 +153,9 @@ namespace PowerCellStudio
 
         public void AsyncLoadNInstantiate(string address, Transform parent, Action<GameObject> onSuccess, Action onFail = null)
         {
+#if UNITY_EDITOR
+            address = AssetUtils.EditorCheckPath(address);
+#endif
             var handle = GetInstantiateHandle(address, Vector3.zero, parent, Quaternion.identity);
             handle.Completed += operationHandle =>
             {
@@ -255,6 +261,9 @@ namespace PowerCellStudio
         /// <param name="onFail">资源加载失败时调用的回调</param>
         public void LoadAsync<T>(string address, Action<T> onSuccess, Action onFail = null) where T : Object
         {
+#if UNITY_EDITOR
+            address = AssetUtils.EditorCheckPath(address);
+#endif
             var handle = GetLoadHandle<T>(address);
             if (handle.IsDone)
             {
@@ -287,6 +296,9 @@ namespace PowerCellStudio
         /// <returns>表示异步加载操作的任务</returns>
         public Task<T> LoadTask<T>(string address) where T : Object
         {
+#if UNITY_EDITOR
+            address = AssetUtils.EditorCheckPath(address);
+#endif
             var handle = GetLoadHandle<T>(address);
             return handle.Task;
         }
@@ -299,6 +311,9 @@ namespace PowerCellStudio
         /// <returns>协程支持对象</returns>
         public LoaderYieldInstruction<T> LoadAsYieldInstruction<T>(string address) where T : Object
         {
+#if UNITY_EDITOR
+            address = AssetUtils.EditorCheckPath(address);
+#endif
             var handle = GetLoadHandle<T>(address);
             var instruction = new LoaderYieldInstruction<T>(address);
             if (handle.IsDone)

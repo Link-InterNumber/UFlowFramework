@@ -38,24 +38,26 @@ namespace PowerCellStudio
             GUILayout.Space(10);
             GUILayout.Label(_inputContent, EditorStyles.boldLabel);
             GUILayout.Space(15);
-            
+            var needClose = false;
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
             
             if (GUILayout.Button("Confirm", GUILayout.Width(100)))
             {
                 _onConfirm?.Invoke();
-                Close();
+                needClose = true;
             }
             
             if (GUILayout.Button("Cancel", GUILayout.Width(100)))
             {
                 _onCancel?.Invoke();
-                Close();
+                needClose = true;
             }
             
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
+            
+            if (needClose) Close();
         }
     }
 }

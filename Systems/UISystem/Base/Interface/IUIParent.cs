@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace PowerCellStudio
@@ -13,6 +14,8 @@ namespace PowerCellStudio
 
     public interface IUIParent : IUIComponent
     {
+        public Canvas canvasCom { get; set; }
+
         internal HashStack<IUIChild> openedUIs { get; }
         
         internal Dictionary<Type, IUIChild> children { get; }

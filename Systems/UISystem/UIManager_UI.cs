@@ -108,6 +108,14 @@ namespace PowerCellStudio
             return false;
         }
 
+        private void SortingPage()
+        {
+            foreach (var page in _pageStack)
+            {
+                page.canvasCom.sortingOrder = (page.rectTransform.GetSiblingIndex() + 1) * 100;
+            }
+        }
+
         /// <summary>
         /// 在page堆顶层推入页面。
         /// Push a page onto the top of the stack.
@@ -128,6 +136,7 @@ namespace PowerCellStudio
             if (currentPage != null && currentPage.GetHashCode() == page.GetHashCode())
             {
                 UIUtils.OpenUI(currentPage, data);
+                SortingPage();
                 return currentPage as T;
             }
             if (pushMode == PagePushMode.Replace && _pageStack.Count > 1)
@@ -137,6 +146,7 @@ namespace PowerCellStudio
             }
             _pageStack.Push(page);
             UIUtils.OpenUI(page, data);
+            SortingPage();
             return page;
         }
 
@@ -219,6 +229,7 @@ namespace PowerCellStudio
                 }
                 _pageStack.Remove(page);
                 UIUtils.ClosePage(page, destroy, callback, _poolPage);
+                SortingPage();
             }
         }
 

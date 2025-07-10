@@ -36,19 +36,23 @@ namespace PowerCellStudio
         
         public static readonly string FileEncryptionKey = "Catcatlittlecat";
 
-        public static readonly string LocalizationStringTable = "ThiefHero";
+        public static readonly string LocalizationStringTable = "ThiefHero.asset";
         
-        public static readonly string LocalizationAssetTable = "ThiefHeroAsset";
-        
-        /// <summary>
-        /// 本地化资源配置文件夹
-        /// </summary>
-        public static readonly string LocalizationAssetConfigFolder = "AssetLocalizationData";
+        public static readonly string LocalizationAssetTable = "ThiefHeroAsset.asset";
 
-        /// <summary>
-        /// 本地化资源配置文件名
-        /// </summary>
-        public static readonly string LocalizationAssetConfigName = "AssetLocalizationData.asset";
+        public static readonly string LocalizationSettingName = "LocalizationSettings.asset";
+
+        public static readonly string LocalizationSettingDirectory = "Assets/Settings";
+        
+        // /// <summary>
+        // /// 本地化资源配置文件夹
+        // /// </summary>
+        // public static readonly string LocalizationAssetConfigFolder = "AssetLocalizationData";
+
+        // /// <summary>
+        // /// 本地化资源配置文件名
+        // /// </summary>
+        // public static readonly string LocalizationAssetConfigName = "AssetLocalizationData.asset";
 
         public static readonly int MillionInt = 10000;
         

@@ -3,6 +3,8 @@
 ![Unity Version](https://img.shields.io/badge/Unity-2022.3.53f1%20LTS-blue?logo=unity)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
 
+# main 分支存在未验证功能，使用 release 分支！
+
 ## 🚨 环境要求
  
  ### 强制依赖包

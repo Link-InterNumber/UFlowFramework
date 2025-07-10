@@ -184,32 +184,35 @@ namespace PowerCellStudio
             return EncryptUtils.Base64Decrypt(data);
         }
         
-        public static Coroutine SaveDebugLog(string fileName, DebugSave data)
+        public static Coroutine SaveDebugLog(DebugLogSaver coroutineRunner, string fileName, string data)
         {
             if(string.IsNullOrEmpty(fileName)) return null;
-            return ApplicationManager.instance.StartCoroutine(SaveDebugLogHandle($"{fileName}_LinkLogLog", data));
+            return coroutineRunner.StartCoroutine(SaveDebugLogHandle($"{fileName}_LinkLogLog", data));
         }
 
-        private static IEnumerator SaveDebugLogHandle<T>(string fileName, T data)
-            where T : IPersistenceData
+        private static IEnumerator SaveDebugLogHandle(string fileName, string data)
         {
-            CheckDirectory(JsonDirectory);
+            CheckDirectory("Debug");
             yield return null;
-            string json = JsonConvert.SerializeObject(data);
-            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
+            // string json = JsonConvert.SerializeObject(data);
+            var path = Path.Combine(SavePath, "Debug", $"{fileName}.txt");
 
             // 检查文件是否存在
             if (!File.Exists(path))
             {
                 // 如果文件不存在，创建文件
-                using (FileStream fs = File.Create(path))
-                {
-                    byte[] info = new UTF8Encoding(true).GetBytes($"{fileName}\n");
-                    fs.Write(info, 0, info.Length);
-                }
+                yield return File.WriteAllTextAsync(path, data).AsCoroutine();
+#if UNITY_EDITOR
+                Debug.LogWarning("Save Debug txt At: "+ path);
+#endif
+                yield break;
             }
+            
             // 异步添加文本到文件末尾
-            yield return File.AppendAllTextAsync(path, json).AsCoroutine();
+            yield return File.AppendAllTextAsync(path, data).AsCoroutine();
+#if UNITY_EDITOR
+            Debug.LogWarning("Save Debug txt At: "+ path);
+#endif
         }
 
         public static bool SaveJson<T>(string fileName, T data, bool encrypt = true)

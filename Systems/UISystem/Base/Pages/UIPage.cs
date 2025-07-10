@@ -8,6 +8,9 @@ namespace PowerCellStudio
 {
     public abstract class UIPage : UIBehaviour, IUIParent
     {
+        protected Canvas _canvasCom;
+        public Canvas canvasCom {get => _canvasCom; set => _canvasCom = value;}
+
         protected PagePushMode _pushMode;
         public PagePushMode pushMode {get => _pushMode; set => _pushMode = value;}
 

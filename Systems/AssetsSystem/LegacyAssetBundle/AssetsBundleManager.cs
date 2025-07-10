@@ -55,6 +55,7 @@ namespace PowerCellStudio
 #endif
             _coroutineRunner = coroutineRunner;
             _coroutineRunner.StartCoroutine(InitHandler(callBack));
+            EventManager.instance.onClearUnusedAsset.AddListener(ClearUnusedAsset);
         }
 
         private IEnumerator InitHandler(Action callBack)
@@ -63,7 +64,7 @@ namespace PowerCellStudio
             initState = AssetInitState.CheckForResourceUpdates;
             yield return InitPathMap();
             yield return GetServerRemoteManifest();
-            GetClentRemoteManifest();
+            GetClientRemoteManifest();
             yield return CheckRemoteBundle();
             if (_assetPathMap == null) yield break;
             initProcess = 0.3f;
@@ -72,11 +73,13 @@ namespace PowerCellStudio
             var loadDefault = GetAssetsBundleAsync("default");
             yield return loadDefault;
             initProcess = 0.9f;
-            var loaded = loadDefault.asset;
+            _loadedBundleDic.TryGetValue("default", out var bundleRef);
+            var loaded = bundleRef?.Bundle;
             if (!loaded)
             {
                 AssetLog.LogError("default bundle did not exit!");
             }
+            AddRef("default");
             _inited = true;
             AssetLog.Log("AssetsBundleManager inited successfully");
             initProcess = 1f;

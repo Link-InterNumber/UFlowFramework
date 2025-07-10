@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -103,6 +104,67 @@ namespace PowerCellStudio
         {
             if(_assetManager == null || handler == null) return;
             _assetManager.Unprepare(handler); 
+        }
+
+        public static string EditorCheckPath(string paths)
+        {
+            if (paths.Contains('\\'))
+            {
+                AssetLog.LogError("\\ exists in the asset path, replace Path.Commit() with AssetUtils.CombinePaths()");
+                var result = paths.Replace('\\', '/');
+                return result;
+            }
+            return paths;
+        }
+        
+        public static string CombinePaths(params string[] paths)
+        {
+            if (paths == null || paths.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            // Creating a buffer on the stack, ensure it's large enough or dynamically handle large paths
+            Span<char> pathBuffer = stackalloc char[256];
+            int position = 0;
+
+            for (int i = 0; i < paths.Length; i++)
+            {
+                string pathSegment = paths[i];
+                if (!string.IsNullOrEmpty(pathSegment))
+                {
+                    var segmentSpan = pathSegment.AsSpan();
+
+                    // Trim leading slashes
+                    int start = 0;
+                    while (start < segmentSpan.Length && (segmentSpan[start] == '/' || segmentSpan[start] == '\\'))
+                    {
+                        start++;
+                    }
+
+                    // Trim trailing slashes
+                    int end = segmentSpan.Length - 1;
+                    while (end >= start && (segmentSpan[end] == '/' || segmentSpan[end] == '\\'))
+                    {
+                        end--;
+                    }
+
+                    // Copy characters into the buffer, replacing '\\' with '/'
+                    for (int j = start; j <= end; j++)
+                    {
+                        char c = segmentSpan[j] == '\\' ? '/' : segmentSpan[j];
+                        pathBuffer[position++] = c;
+                    }
+
+                    // Add a separator unless it's the last segment
+                    if (i < paths.Length - 1)
+                    {
+                        pathBuffer[position++] = '/';
+                    }
+                }
+            }
+
+            return new string(pathBuffer.Slice(0, position));
         }
     }
 }
