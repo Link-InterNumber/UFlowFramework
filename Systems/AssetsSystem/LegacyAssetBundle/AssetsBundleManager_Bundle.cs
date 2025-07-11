@@ -7,6 +7,7 @@ using UnityEngine;
 using Microsoft.Xbox.Services.Client;
 using Newtonsoft.Json;
 using UnityEngine.Networking;
+using UnityEngine.Pool;
 
 namespace PowerCellStudio
 {
@@ -99,6 +100,63 @@ namespace PowerCellStudio
                 yield return new WaitForSecondsRealtime(AssetsBundleManager.delayUnloadDuration);
                 Alive = false;
                 _assetsBundleManager?.UnloadAssetsBundle(this);
+            }
+        }
+
+        private class BundleDependenceStack : IDisposable
+        {
+            private HashSet<string> _bundleSet;
+
+            private List<List<string>> _stack;
+
+            public int layerCount => _stack.Count;
+
+            public BundleDependenceStack()
+            {
+                _bundleSet = HashSetPool<string>.Get();
+                _stack = new List<List<string>>();
+                _layerCount = 0;
+            }
+
+            public bool Contains(string bundleName)
+            {
+                return _bundleSet.Contains(bundleName);
+            }
+
+            public void Push(int layerIndex, string bundleName)
+            {
+                // if (_bundleSet.Contains(bundleName)) return;
+                while (_stack.Count < layerIndex + 1)
+                {
+                    _stack.Add(ListPool<string>.Get());
+                }
+                _stack[layerIndex].Add(bundleName);
+                _bundleSet.Add(bundleName);
+            }
+
+            // public void Pop()
+            // {
+            //     var list = _stack[layerCount -  1];
+            //     _stack.RemoveAt(layerCount -  1);
+            //     return list;
+            // }
+
+            public List<string> GetBundleNamesByLayer(int layerIndex)
+            {
+                if (layerIndex< 0 || layerIndex >= _stack.Count) return new List<string>();
+                return _stack[layerIndex];
+            }
+
+            public void Dispose()
+            {
+                HashSetPool<string>.Release(_bundleSet);
+                _bundleSet = null;
+                foreach (var list in _stack)
+                {
+                    ListPool<string>.Release(list);
+                }
+                _stack.Clear();
+                _stack = null;
             }
         }
         
@@ -199,10 +257,38 @@ namespace PowerCellStudio
             _bundleManifest = bundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
         }
 
-        private string[] GetBundleDependencies(string bundleName)
+        private void GetBundleDependencies(string bundleName, ref HashSet<string> dependencies)
         {
-            var dependencies = _bundleManifest.GetAllDependencies(bundleName);
-            return dependencies ?? Array.Empty<string>();
+            var bundles = _bundleManifest.GetAllDependencies(bundleName);
+            if (bundles == null || bundles.Length == 0)
+            {
+                return;
+            }
+            for (var i = 0; i < bundles.Length; i++)
+            {
+                var dependencyName = bundles[i];
+                if (dependencies.Contains(dependencyName)) continue;
+                if (dependencyName == bundleName) continue;
+                dependencies.Push(layerIndex, dependencyName);
+                GetBundleDependencies(dependencyName, ref dependencies);
+            }
+        }
+
+        private void GetBundleDependencies(string bundleName, int layerIndex, ref BundleDependenceStack dependencies)
+        {
+            var bundles = _bundleManifest.GetAllDependencies(bundleName);
+            if (bundles == null || bundles.Length == 0)
+            {
+                return;
+            }
+            for (var i = 0; i < bundles.Length; i++)
+            {
+                var dependencyName = bundles[i];
+                if (dependencies.Contains(dependencyName)) continue;
+                if (dependencyName == bundleName) continue;
+                dependencies.Push(layerIndex, dependencyName);
+                GetBundleDependencies(dependencyName, layerIndex + 1, ref dependencies);
+            }
         }
         
         #endregion
@@ -211,11 +297,15 @@ namespace PowerCellStudio
         {
             if (!_loadedBundleDic.TryGetValue(bundleName, out var loaded)) return;
             loaded.AddRef();
-            var dependencies = GetBundleDependencies(bundleName);
-            foreach (var name in dependencies)
+            var dependencies = HashSetPool<string>.Get();
+            GetBundleDependencies(bundleName, ref dependencies);
+
+            foreach (var dependencyBundle in dependencies)
             {
-                AddRef(name);
+                if (!_loadedBundleDic.TryGetValue(dependencyBundle, out var bundleRef)) continue;
+                bundleRef.AddRef();
             }
+            HashSetPool<string>.Release(dependencies);
         }
 
         public bool IsAssetsBundleLoaded(string bundleName)
@@ -279,27 +369,31 @@ namespace PowerCellStudio
 
         private IEnumerator DownLoadPrepareBundle(string[] labels, bool isConcurrent, PrepareHandler handler)
         {
-            var waitList = new LoaderYieldInstruction<AssetBundle>[labels.Length];
+            var waitList = new List<LoaderYieldInstruction<AssetBundle>>();
             for (var i = 0; i < labels.Length; i++)
             {
                 var bundleName = labels[i];
                 if (isConcurrent)
                 {
-                    waitList[i] = GetAssetsBundleAsync(bundleName);
+                    GetAssetsBundleAsync(bundleName, null);
+                    if(_waitForLoadList.TryGetValue(bundleName, out var handler))
+                        waitList.Add(handler);
                 }
                 else
                 {
                     handler.SetProcessValue(i * 1f / labels.Length);
-                    yield return GetAssetsBundleAsync(bundleName);
+                    GetAssetsBundleAsync(bundleName, null);
+                    if(_waitForLoadList.TryGetValue(bundleName, out var handler))
+                        yield return handler;
                 }
             }
             if (isConcurrent)
             {
                 var doneCount = 0;
-                while (doneCount < labels.Length)
+                while (doneCount < waitList.Count)
                 {
                     doneCount = waitList.Count(o=>o.isDone);
-                    handler.SetProcessValue(doneCount * 1f / labels.Length);
+                    handler.SetProcessValue(doneCount * 1f / waitList.Count);
                     yield return null;
                 }
             }
@@ -325,23 +419,21 @@ namespace PowerCellStudio
         #region Async
 
         // 异步加载方案
-        private LoaderYieldInstruction<AssetBundle> GetAssetsBundleAsync(string bundleName)
+        private void GetAssetsBundleAsync(string bundleName, OnLoadCompleted<AssetBundle> onGetBundle)
         {
             if (_loadedBundleDic.TryGetValue(bundleName, out var loaded) && loaded.Alive)
             {
                 loaded.Restore();
-                var yieldInstruction = new LoaderYieldInstruction<AssetBundle>(bundleName);
-                yieldInstruction.SetAsset(loaded.Bundle);
-                // onLoadCompleted?.Invoke(loaded.Bundle);
-                return yieldInstruction;
+                onGetBundle?.Invoke(loaded.Bundle, bundleName);
+                return;
             }
             if (_waitForLoadList.TryGetValue(bundleName, out var current))
             {
-                // if(onLoadCompleted != null) current.onLoadCompleted += onLoadCompleted;
+                if(onGetBundle != null) current.OnLoadCompleted(onGetBundle);
                 return current;
             }
             var newRequest = new LoaderYieldInstruction<AssetBundle>(bundleName);
-            // if(onLoadCompleted != null) newRequest.onLoadCompleted += onLoadCompleted;
+            if(onGetBundle != null) newRequest.OnLoadCompleted(onGetBundle);
             _waitForLoadList.Add(bundleName, newRequest);
             _loadedBundleDic.Remove(bundleName);
             _coroutineRunner.StartCoroutine(AsyncLoadAssetsBundleHandler(bundleName, newRequest));
@@ -350,7 +442,48 @@ namespace PowerCellStudio
 
         private IEnumerator AsyncLoadAssetsBundleHandler(string bundleName, LoaderYieldInstruction<AssetBundle> loaderYieldInstruction)
         {
-            yield return LoadBundleDependenceAsync(bundleName);
+            var dependencies = new BundleDependenceStack();
+            GetBundleDependencies(bundleName, 0, ref dependencies);
+            for (var i = dependencies.Count - 1; i > -1; i--)
+            {
+                var bundleNames = dependencies.GetBundleNamesByLayer(i);
+                yield return AsyncLoadMultipleAssetsBundle(bundleNames);
+            }
+            dependencies.Dispose();
+            yield return AsyncLoadSingleAssetsBundle(bundleName, loaderYieldInstruction);
+        }
+
+        private IEnumerator AsyncLoadMultipleAssetsBundle(IEnumerable<string> bundleNames)
+        {
+            var waitList = new List<LoaderYieldInstruction<AssetBundle>>();
+            foreach (var bundleName in bundleNames)
+            {
+                if (IsAssetsBundleLoaded(bundleName)) continue;
+                if (_waitForLoadList.TryGetValue(bundleName, out var current))
+                {
+                    waitList.Add(current);
+                }
+                else
+                {
+                    var newRequest = new LoaderYieldInstruction<AssetBundle>(bundleName);
+                    _waitForLoadList.Add(bundleName, newRequest);
+                    _loadedBundleDic.Remove(bundleName);
+                    _coroutineRunner.StartCoroutine(AsyncLoadSingleAssetsBundle(bundleName, newRequest));
+                    waitList.Add(newRequest);
+                } 
+            }
+            var wait = waitList.Count > 0 && waitList.Any(o=>!o.isDone);
+            while (wait)
+            {
+                yield return null;
+                wait = waitList.Any(o=>!o.isDone);
+            }
+            waitList.Clear();
+            waitList = null;
+        }
+
+        private IEnumerator AsyncLoadSingleAssetsBundle(string bundleName, LoaderYieldInstruction<AssetBundle> loaderYieldInstruction)
+        {
             AssetBundle bundle = null;
             var path = GetBundlePath(bundleName);
             if (Application.platform == RuntimePlatform.Android)
@@ -361,56 +494,24 @@ namespace PowerCellStudio
                     yield return webRequest.SendWebRequest();
                     bundle = DownloadHandlerAssetBundle.GetContent(webRequest);
                     webRequest.Dispose();
-                    if (!bundle) 
-                    {
-                        loaderYieldInstruction.SetAsset(null);
-                        OnBundleLoaded(bundleName, null);
-                        yield break;
-                    }
                     loaderYieldInstruction.SetAsset(bundle);
                     OnBundleLoaded(bundleName, bundle);
                     yield break;
                 }
             }
-            else
+            else if (File.Exists(path))
             {
-                if (File.Exists(path))
-                {
-                    var abcr = AssetBundle.LoadFromFileAsync(path);
-                    yield return abcr;
-                    bundle = abcr.assetBundle;
-                    if (!bundle)
-                    {
-                        loaderYieldInstruction.SetAsset(null);
-                        OnBundleLoaded(bundleName, null);
-                        yield break;
-                    }
-                    loaderYieldInstruction.SetAsset(bundle);
-                    OnBundleLoaded(bundleName, bundle);
-                    yield break;
-                }
+                var abcr = AssetBundle.LoadFromFileAsync(path);
+                yield return abcr;
+                bundle = abcr.assetBundle;
+                loaderYieldInstruction.SetAsset(bundle);
+                OnBundleLoaded(bundleName, bundle);
+                yield break;
             }
             yield return LoadRemoteBundle(bundleName, loaderYieldInstruction);
             bundle = loaderYieldInstruction.asset;
             OnBundleLoaded(bundleName, bundle);
             if (bundle) SaveRemoteManifest(_clientManifest);
-        }
-
-        private IEnumerator LoadBundleDependenceAsync(string bundleName)
-        {
-            var dependencies = GetBundleDependencies(bundleName);
-            var waitList = new List<LoaderYieldInstruction<AssetBundle>>();
-            foreach (var name in dependencies)
-            {
-                if (name.Equals(bundleName)) continue;
-                waitList.Add(GetAssetsBundleAsync(name));
-            }
-            var wait = waitList.Count > 0 && waitList.Any(o=>!o.isDone);
-            while (wait)
-            {
-                yield return null;
-                wait = waitList.Any(o=>!o.isDone);
-            }
         }
 
         #endregion
@@ -419,12 +520,18 @@ namespace PowerCellStudio
 
         private void LoadBundleDependence(string bundleName)
         {
-            var dependencies = GetBundleDependencies(bundleName);
-            foreach (var name in dependencies)
+            var dependencies = new BundleDependenceStack();
+            GetBundleDependencies(bundleName, 0, ref dependencies);
+            for (var i = dependencies.Count - 1; i > -1; i--)
             {
-                if (name.Equals(bundleName)) continue;
-                GetAssetBundle(name, out _);
+                var bundleNames = dependencies.GetBundleNamesByLayer(i);
+                foreach (var dependencyBundle in bundleNames)
+                {
+                    if (IsAssetsBundleLoaded(dependencyBundle)) continue;
+                    LoadAssetBundle(dependencyBundle);
+                }
             }
+            dependencies.Dispose();
         }
 
         // 同步加载方案
@@ -437,6 +544,7 @@ namespace PowerCellStudio
             }
             else
             {
+                LoadBundleDependence(bundleName);
                 loadedBundle = LoadAssetBundle(bundleName);
             }
             return loadedBundle;
@@ -446,22 +554,35 @@ namespace PowerCellStudio
         {
             if (_waitForLoadList.ContainsKey(bundleName))
             {
-                AssetLog.LogWarning($"Bundle: {bundleName} is loading, please wait");
+                AssetLog.LogWarning($"Bundle [{bundleName}] is loading, please wait");
                 return null;
             }
             _waitForLoadList.Add(bundleName, null);
             _loadedBundleDic.Remove(bundleName);
-            LoadBundleDependence(bundleName);
             var path = GetBundlePath(bundleName);
             AssetBundle loadedBundle = null;
             try
             {
-                loadedBundle = AssetBundle.LoadFromFile(path);
+                if (Application.platform == RuntimePlatform.Android)
+                {
+                    if (_clientManifest.ContainsKey(bundleName))
+                    {
+                        loadedBundle = AssetBundle.LoadFromFile(path);
+                    }
+                    else
+                    {
+                        AssetLog.Error($"Bundle [{bundleName}] does not exit in Application.persistentDataPath!\nUse GetAssetsBundleAsync() to load it.");
+                    }
+                }
+                else
+                {
+                    loadedBundle = AssetBundle.LoadFromFile(path);
+                }
             }
             catch (Exception e)
             {
                 loadedBundle = null;
-                AssetLog.LogError($"bundleName={bundleName} do not exist on local");
+                AssetLog.LogError($"Bundle [{bundleName}] do not exist on local");
                 Debug.LogError(e);
             }
             finally
@@ -487,11 +608,14 @@ namespace PowerCellStudio
             if (!_loadedBundleDic.TryGetValue(bundleName, out var loaded)) return;
             loaded.DeRef();
             // 依赖bundle.DeRef()
-            var dependencies = GetBundleDependencies(bundleName);
-            foreach (var name in dependencies)
+            var dependencies = HashSetPool<string>.Get();
+            GetBundleDependencies(bundleName, ref dependencies);
+            foreach (var dependencyBundle in dependencies)
             {
-                ReleaseBundle(name);
+                if (!_loadedBundleDic.TryGetValue(dependencyBundle, out var bundleRef)) continue;
+                bundleRef.DeRef();
             }
+            HashSetPool<string>.Release(dependencies);
         }
 
         /// <summary>
