@@ -3,6 +3,30 @@ using System.Collections.Generic;
 
 namespace PowerCellStudio
 {
+    public class HashStackPool<T>
+    {
+        private static LinkPool<HashStack<T>> _poop;
+
+        private static HashStack<T> CreateFun()
+        {
+            return new HashStack<T>();
+        }
+
+        public static HashStack<T> Get()
+        {
+            if (_poop == null) _poop = new LinkPool<HashStack<T>>(CreateFun, 15, 15);
+            return _poop.Get();
+        }
+
+        public static bool Release(HashStack<T> instance)
+        {
+            if (instance == null) return false;
+            var result = _poop?.Release(instance) ?? false;
+            if (result) instance.Clear();
+            return result;
+        }
+    }
+
     public class HashStack<T> : IEnumerable<T>
     {
         private HashSet<T> _hash = new HashSet<T>();

@@ -82,10 +82,21 @@ namespace PowerCellStudio
             }
             _refBundle.Clear();
             _spawned = false;
+            foreach (var request in _waitForLoaded)
+            {
+                request.Value.Dispose();
+            }
+            _waitForLoaded.Clear();
         }
 
         public bool Release(string address)
         {
+            if (_waitForLoaded.TryGetValue(address, out var request))
+            {
+                request.Dispose();
+                _waitForLoaded.Remove(address);
+                return true;
+            }
             _cache.Remove(address);
             var bundleName = GetBundleName(address);
             if (_refBundle.TryGetValue(bundleName, out var current))

@@ -96,15 +96,7 @@ namespace PowerCellStudio
                 return;
             }
 
-            var loadBundleRequest = GetAssetsBundleAsync(bundleName);
-            if (loadBundleRequest.isDone)
-            {
-                _loadedBundleDic.TryGetValue(bundleName, out var bundleRef);
-                var bundle = bundleRef?.Bundle;
-                GetAssetFromBundleAsync(bundle, assetPath, loadAssetRequest);
-                return;
-            }
-            loadBundleRequest.OnLoadCompleted((bundle, bundleName) =>
+            GetAssetsBundleAsync(bundleName, (bundle, bundleName) =>
             {
                 GetAssetFromBundleAsync(bundle, assetPath, loadAssetRequest);
             });
