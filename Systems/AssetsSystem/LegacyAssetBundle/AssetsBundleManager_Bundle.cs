@@ -115,7 +115,6 @@ namespace PowerCellStudio
             {
                 _bundleSet = HashSetPool<string>.Get();
                 _stack = new List<List<string>>();
-                _layerCount = 0;
             }
 
             public bool Contains(string bundleName)
@@ -269,7 +268,7 @@ namespace PowerCellStudio
                 var dependencyName = bundles[i];
                 if (dependencies.Contains(dependencyName)) continue;
                 if (dependencyName == bundleName) continue;
-                dependencies.Push(layerIndex, dependencyName);
+                dependencies.Add(dependencyName);
                 GetBundleDependencies(dependencyName, ref dependencies);
             }
         }
@@ -376,15 +375,15 @@ namespace PowerCellStudio
                 if (isConcurrent)
                 {
                     GetAssetsBundleAsync(bundleName, null);
-                    if(_waitForLoadList.TryGetValue(bundleName, out var handler))
-                        waitList.Add(handler);
+                    if(_waitForLoadList.TryGetValue(bundleName, out var bundleLoadHandler))
+                        waitList.Add(bundleLoadHandler);
                 }
                 else
                 {
                     handler.SetProcessValue(i * 1f / labels.Length);
                     GetAssetsBundleAsync(bundleName, null);
-                    if(_waitForLoadList.TryGetValue(bundleName, out var handler))
-                        yield return handler;
+                    if(_waitForLoadList.TryGetValue(bundleName, out var bundleLoadHandler))
+                        yield return bundleLoadHandler;
                 }
             }
             if (isConcurrent)
@@ -430,21 +429,20 @@ namespace PowerCellStudio
             if (_waitForLoadList.TryGetValue(bundleName, out var current))
             {
                 if(onGetBundle != null) current.OnLoadCompleted(onGetBundle);
-                return current;
+                return;
             }
             var newRequest = new LoaderYieldInstruction<AssetBundle>(bundleName);
             if(onGetBundle != null) newRequest.OnLoadCompleted(onGetBundle);
             _waitForLoadList.Add(bundleName, newRequest);
             _loadedBundleDic.Remove(bundleName);
             _coroutineRunner.StartCoroutine(AsyncLoadAssetsBundleHandler(bundleName, newRequest));
-            return newRequest;
         }
 
         private IEnumerator AsyncLoadAssetsBundleHandler(string bundleName, LoaderYieldInstruction<AssetBundle> loaderYieldInstruction)
         {
             var dependencies = new BundleDependenceStack();
             GetBundleDependencies(bundleName, 0, ref dependencies);
-            for (var i = dependencies.Count - 1; i > -1; i--)
+            for (var i = dependencies.layerCount - 1; i > -1; i--)
             {
                 var bundleNames = dependencies.GetBundleNamesByLayer(i);
                 yield return AsyncLoadMultipleAssetsBundle(bundleNames);
@@ -522,7 +520,7 @@ namespace PowerCellStudio
         {
             var dependencies = new BundleDependenceStack();
             GetBundleDependencies(bundleName, 0, ref dependencies);
-            for (var i = dependencies.Count - 1; i > -1; i--)
+            for (var i = dependencies.layerCount - 1; i > -1; i--)
             {
                 var bundleNames = dependencies.GetBundleNamesByLayer(i);
                 foreach (var dependencyBundle in bundleNames)
@@ -571,7 +569,7 @@ namespace PowerCellStudio
                     }
                     else
                     {
-                        AssetLog.Error($"Bundle [{bundleName}] does not exit in Application.persistentDataPath!\nUse GetAssetsBundleAsync() to load it.");
+                        AssetLog.LogError($"Bundle [{bundleName}] does not exit in Application.persistentDataPath!\nUse GetAssetsBundleAsync() to load it.");
                     }
                 }
                 else

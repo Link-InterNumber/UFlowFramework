@@ -70,7 +70,8 @@ namespace PowerCellStudio
             initProcess = 0.3f;
             yield return GetBundleManifest();
             initProcess = 0.6f;
-            var loadDefault = GetAssetsBundleAsync("default");
+            GetAssetsBundleAsync("default", null);
+            var loadDefault = _waitForLoadList["default"];
             yield return loadDefault;
             initProcess = 0.9f;
             _loadedBundleDic.TryGetValue("default", out var bundleRef);

@@ -84,7 +84,7 @@ namespace PowerCellStudio
             _spawned = false;
             foreach (var request in _waitForLoaded)
             {
-                request.Dispose();
+                request.Value.Dispose();
             }
             _waitForLoaded.Clear();
         }
@@ -95,7 +95,7 @@ namespace PowerCellStudio
             {
                 request.Dispose();
                 _waitForLoaded.Remove(address);
-                retrun true;
+                return true;
             }
             _cache.Remove(address);
             var bundleName = GetBundleName(address);

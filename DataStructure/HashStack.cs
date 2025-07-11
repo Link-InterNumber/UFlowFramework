@@ -12,7 +12,7 @@ namespace PowerCellStudio
             return new HashStack<T>();
         }
 
-        public static T Get()
+        public static HashStack<T> Get()
         {
             if (_poop == null) _poop = new LinkPool<HashStack<T>>(CreateFun, 15, 15);
             return _poop.Get();
