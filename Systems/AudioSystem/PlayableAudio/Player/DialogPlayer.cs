@@ -59,7 +59,7 @@ namespace PowerCellStudio
         private void OnLoadedAudioClip(AudioClip obj)
         {
             _targetClip = obj;
-            _seq = ApplicationManager.instance.StartCoroutine(PlayBase(_callback));
+            _seq = ApplicationManager.RunCoroutine(PlayBase(_callback));
         }
 
         private void StopPlay()
@@ -149,7 +149,7 @@ namespace PowerCellStudio
                 _audioSource.volume = _realVolume;
                 return;
             }
-            ApplicationManager.instance.StartCoroutine(SetVolumeHandler(_realVolume, transferTime, onComplete));
+            ApplicationManager.RunCoroutine(SetVolumeHandler(_realVolume, transferTime, onComplete));
         }
 
         public void SetMaxVolume(float maxVolume)

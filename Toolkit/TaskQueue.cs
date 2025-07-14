@@ -33,7 +33,7 @@ namespace PowerCellStudio
             else
             {
                 if(_coroutine != null) return;
-                _coroutine = ApplicationManager.instance.StartCoroutine(InvokeQueueYieldInstructions());
+                _coroutine = ApplicationManager.RunCoroutine(InvokeQueueYieldInstructions());
             }
         }
 
@@ -77,7 +77,7 @@ namespace PowerCellStudio
             if (!_runInCoroutine) InvokeQueue();
             else
             {
-                _coroutine = ApplicationManager.instance.StartCoroutine(InvokeQueueYieldInstructions());
+                _coroutine = ApplicationManager.RunCoroutine(InvokeQueueYieldInstructions());
             }
         }
 

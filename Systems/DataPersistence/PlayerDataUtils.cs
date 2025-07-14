@@ -247,7 +247,7 @@ namespace PowerCellStudio
             where T : IPersistenceData
         {
             if (string.IsNullOrEmpty(fileName)) return null;
-            return ApplicationManager.instance.StartCoroutine(SaveJsonHandle(fileName, data, action, encrypt));
+            return ApplicationManager.RunCoroutine(SaveJsonHandle(fileName, data, action, encrypt));
         }
         
         public static Coroutine SaveJsonAsync<T>(T data, Action action = null, bool encrypt = true)
@@ -255,7 +255,7 @@ namespace PowerCellStudio
         {
             var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
             if (string.IsNullOrEmpty(fileName)) return null;
-            return ApplicationManager.instance.StartCoroutine(SaveJsonHandle(fileName, data, action, encrypt));
+            return ApplicationManager.RunCoroutine(SaveJsonHandle(fileName, data, action, encrypt));
         }
         
         private static IEnumerator SaveJsonHandle<T>(string fileName, T data, Action action, bool encrypt = true)
@@ -320,7 +320,7 @@ namespace PowerCellStudio
             var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
             var loadHandler = new LoaderYieldInstruction<T>(path);
             if (action != null) loadHandler.OnLoadCompleted((savedData, path) => {action.Invoke(savedData);});
-            ApplicationManager.instance.StartCoroutine(ReadJsonHandle(path, loadHandler, decrypt));
+            ApplicationManager.RunCoroutine(ReadJsonHandle(path, loadHandler, decrypt));
             return loadHandler;
         }
         
@@ -333,7 +333,7 @@ namespace PowerCellStudio
             // var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
             // var loaderYieldInstruction = new LoaderYieldInstruction<T>(path)
             // if (action != null) loaderYieldInstruction.onLoadSuccess += (savedData, path) => {action.Invoke(savedData)};
-            // ApplicationManager.instance.StartCoroutine(ReadJsonHandle(fileName, actiloaderYieldInstructionon, decrypt));
+            // ApplicationManager.RunCoroutine(ReadJsonHandle(fileName, actiloaderYieldInstructionon, decrypt));
             return ReadJsonAsync<T>(fileName, action, decrypt);
         }
         
@@ -463,7 +463,7 @@ namespace PowerCellStudio
             where T : IPersistenceData
         {
             if(string.IsNullOrEmpty(fileName)) return null;
-            return ApplicationManager.instance.StartCoroutine(SaveDataBinaryHandler(fileName, data, action, encrypt));
+            return ApplicationManager.RunCoroutine(SaveDataBinaryHandler(fileName, data, action, encrypt));
         }
 
         public static Coroutine SaveDataBinaryAsync<T>(T data, Action action, bool encrypt = true)
@@ -548,7 +548,7 @@ namespace PowerCellStudio
             var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
             var loadHandler = new LoaderYieldInstruction<T>(filePath);
             if (callback != null) loadHandler.OnLoadCompleted((savedData, path) => {callback.Invoke(savedData);});
-            ApplicationManager.instance.StartCoroutine(ReadBinaryCoroutineHandle(filePath, loadHandler, decrypt));
+            ApplicationManager.RunCoroutine(ReadBinaryCoroutineHandle(filePath, loadHandler, decrypt));
             return loadHandler;
         }
         
@@ -640,8 +640,8 @@ namespace PowerCellStudio
             if (captureTakeing) return null;
             captureTakeing = true;
             if (camera == null)
-                return ApplicationManager.instance.StartCoroutine(ScreenCapture(fileName, rect));
-            return ApplicationManager.instance.StartCoroutine(CameraCapture(camera, fileName, rect));
+                return ApplicationManager.RunCoroutine(ScreenCapture(fileName, rect));
+            return ApplicationManager.RunCoroutine(CameraCapture(camera, fileName, rect));
         }
 
         private static IEnumerator CameraCapture(Camera camera, string fileName, Rect rect)
@@ -705,7 +705,7 @@ namespace PowerCellStudio
             if (!File.Exists(path)) return null;
             var loadHandler = new LoaderYieldInstruction<Sprite>(path);
             if (action != null) loadHandler.OnLoadCompleted((asset, path) => {action.Invoke(asset);});
-            ApplicationManager.instance.StartCoroutine(LoadCaptureHandle(path, loadHandler));
+            ApplicationManager.RunCoroutine(LoadCaptureHandle(path, loadHandler));
             return loadHandler;
         }
         

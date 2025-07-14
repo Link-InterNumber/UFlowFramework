@@ -61,14 +61,14 @@ namespace PowerCellStudio
         private void DoAppearBar(float val, float time, Action call)
         {
             if(_coroutineAppearBar != null) ApplicationManager.instance.StopCoroutine(_coroutineAppearBar);
-            _coroutineAppearBar = ApplicationManager.instance.StartCoroutine(DoValue(AppearBar, val, time, call));
+            _coroutineAppearBar = ApplicationManager.RunCoroutine(DoValue(AppearBar, val, time, call));
         }
         
         private Coroutine _coroutineTrackBar;
         private void DoTrackBar(float val, float time)
         {
             if(_coroutineTrackBar != null) ApplicationManager.instance.StopCoroutine(_coroutineTrackBar);
-            _coroutineTrackBar = ApplicationManager.instance.StartCoroutine(DoValue(TrackBar, val, time));
+            _coroutineTrackBar = ApplicationManager.RunCoroutine(DoValue(TrackBar, val, time));
         }
 
         private IEnumerator DoValue(Slider slider, float val, float time, Action call = null)

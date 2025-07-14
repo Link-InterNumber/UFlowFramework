@@ -75,7 +75,7 @@ namespace GameProtocol
             {
                 return;
             }
-            ApplicationManager.instance.StartCoroutine(DisconnectHandler());
+            ApplicationManager.RunCoroutine(DisconnectHandler());
         }
         
         private IEnumerator DisconnectHandler()
@@ -120,7 +120,7 @@ namespace GameProtocol
         
         private void ReconnectDelayedAsync()
         {
-            ApplicationManager.instance.StartCoroutine(ReconnectDelayedAsyncHandler());
+            ApplicationManager.RunCoroutine(ReconnectDelayedAsyncHandler());
         }
         
         private IEnumerator ReconnectDelayedAsyncHandler()

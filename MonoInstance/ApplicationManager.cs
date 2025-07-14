@@ -158,9 +158,34 @@ namespace PowerCellStudio
             EventManager.instance.onResetGame.Invoke();
         }
 
+        public static Coroutine RunCoroutine(IEnumerator handler)
+        {
+#if UNITY_EDITOR
+            return instance.StartCoroutine(LogableCoroutine(handler));
+#else
+            return instance.StartCoroutine(handler);
+#endif
+        }
+
+        private static IEnumerator LogableCoroutine(IEnumerator handler)
+        [
+#if UNITY_EDITOR
+            try
+            {
+#endif
+                yield return handler;
+#if UNITY_EDITOR
+            }
+            catch (Exception e)
+            {
+                ModuleLog.LogError(e);
+            }
+#endif
+        ]
+
         public Coroutine DelayedNextFrame(Action call)
         {
-            return StartCoroutine(DelayedNextFrameHandler(call));
+            return RunCoroutine(DelayedNextFrameHandler(call));
         }
         
         private static IEnumerator DelayedNextFrameHandler(Action call)
@@ -171,7 +196,7 @@ namespace PowerCellStudio
 
         public Coroutine DelayedCall(float timeInSecond, Action call, bool ignoreTimeScale = true)
         {
-            return StartCoroutine(DelayedCallHandler(timeInSecond, call, ignoreTimeScale));
+            return RunCoroutine(DelayedCallHandler(timeInSecond, call, ignoreTimeScale));
         }
 
         private static IEnumerator DelayedCallHandler(float timeInSecond, Action call, bool ignoreTimeScale)

@@ -18,7 +18,7 @@ namespace PowerCellStudio
         {
             var request = new ShakeRequest(shakeType, target, duration, frequency, magnitude, curve, isUnscaleTime);
             var handle = new ShakeHandle(request);
-            ApplicationManager.instance.StartCoroutine(ProcessedHandle(handle));
+            ApplicationManager.RunCoroutine(ProcessedHandle(handle));
             return handle;
         }
 

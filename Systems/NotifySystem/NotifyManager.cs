@@ -312,7 +312,25 @@ namespace PowerCellStudio
             if (node.parent == -1) return NotifyType.Root;
             return (NotifyType) node.parent;            
         }
-        
+
+        public static void AddNotifer(RectTransform uiNode, NotifyType notifyType)
+        {
+            if (uiNode == null) return;
+            var notifer = uiNode.GetComponentInChildren<Notifier>(true);
+            if (notifer)
+            {
+                if (notifer.notifyType == notifyType)
+                    return;
+
+                notifer.Init(notifyType);
+            }
+            else
+            {
+                assetsLoader.AsyncLoadNInstantiate("", OnLoadSuccess, OnLoadFailed);
+
+                uiNode.
+            }
+        }        
     }
 
 }

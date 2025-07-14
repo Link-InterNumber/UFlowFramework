@@ -230,7 +230,7 @@ namespace PowerCellStudio
             if (handler == null) return;
             if (!handler.isDone)
             {
-                ApplicationManager.instance.StartCoroutine(WaitForPrepareDone(handler));
+                ApplicationManager.RunCoroutine(WaitForPrepareDone(handler));
                 return;
             }
             foreach(var bundleName in handler.successLable)
@@ -255,7 +255,7 @@ namespace PowerCellStudio
             }
             var handler = new PrepareHandler();
             handler.OnComplete(onComplete);
-            ApplicationManager.instance.StartCoroutine(DownLoadPrepareAssets(labels, isConcurrent, handler));
+            ApplicationManager.RunCoroutine(DownLoadPrepareAssets(labels, isConcurrent, handler));
             return handler;
         }
 

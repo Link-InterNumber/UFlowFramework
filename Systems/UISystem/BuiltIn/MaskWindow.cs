@@ -47,7 +47,7 @@ namespace PowerCellStudio
             }
             if (maskWindowData.yieldInstruction != null)
             {
-                ApplicationManager.instance.StartCoroutine(Wait(maskWindowData.yieldInstruction));
+                ApplicationManager.RunCoroutine(Wait(maskWindowData.yieldInstruction));
             }
         }
         

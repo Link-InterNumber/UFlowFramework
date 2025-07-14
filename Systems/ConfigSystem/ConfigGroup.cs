@@ -57,7 +57,7 @@ namespace PowerCellStudio
                 confBaseCollections.LoadConfAsync(handle);
             }
 
-            return ApplicationManager.instance.StartCoroutine(MonitoringLoadStatus());
+            return ApplicationManager.RunCoroutine(MonitoringLoadStatus());
         }
 
         public bool ReleaseAll()

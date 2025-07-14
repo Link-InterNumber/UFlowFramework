@@ -93,7 +93,7 @@ namespace PowerCellStudio
             }
             else
             {
-                if (standaloneCanvas) 
+                if (standaloneCanvas)
                 {
                     var canvas = uiChild.rectTransform.gameObject.GetComponent<Canvas>();
                     if (!canvas) canvas = uiChild.rectTransform.gameObject.AddComponent<Canvas>();

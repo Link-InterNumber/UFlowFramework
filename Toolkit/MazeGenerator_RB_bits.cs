@@ -52,7 +52,7 @@ public class MazeGenerator_RB_bits : MonoBehaviour
         var data = PlayerDataUtils.ReadJson<PlayerSave>("save.txt");
         
         if (_isBuilding || _builded) return;
-        ApplicationManager.instance.StartCoroutine(FullMaze());
+        ApplicationManager.RunCoroutine(FullMaze());
     }
 
     private bool _isBuilding = false;
@@ -147,7 +147,7 @@ public class MazeGenerator_RB_bits : MonoBehaviour
     public void DestroyMaze()
     {
         if (!_clearTile || _isBuilding) return;
-        ApplicationManager.instance.StartCoroutine(DestroyMazeHandle());
+        ApplicationManager.RunCoroutine(DestroyMazeHandle());
     }
 
     private bool _clearTile = true;

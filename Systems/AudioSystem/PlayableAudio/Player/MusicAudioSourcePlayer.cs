@@ -57,7 +57,7 @@ namespace PowerCellStudio
             var clip = info.GetNextClip();
             if (clip)
             {
-                _seq = ApplicationManager.instance.StartCoroutine(PlayBase(clip, 0f, info.fadeoutTime, info.intervalTime, info.fadeinTime));
+                _seq = ApplicationManager.RunCoroutine(PlayBase(clip, 0f, info.fadeoutTime, info.intervalTime, info.fadeinTime));
             }
         }
 
@@ -127,7 +127,7 @@ namespace PowerCellStudio
                 {
                     startTime = Mathf.Max(0, playTime + Time.unscaledTime - _lastPlayTime) % clip.length;
                 }
-                _seq = ApplicationManager.instance.StartCoroutine(PlayBase(clip, startTime, info.fadeoutTime,
+                _seq = ApplicationManager.RunCoroutine(PlayBase(clip, startTime, info.fadeoutTime,
                     info.intervalTime, info.fadeinTime));
             }
             return true;
@@ -292,7 +292,7 @@ namespace PowerCellStudio
                 return;
             }
             if(_volumeHandler != null) ApplicationManager.instance.StopCoroutine(_volumeHandler);
-            _volumeHandler = ApplicationManager.instance.StartCoroutine(SetVolumeHandler(_realVolume, transferTime, onComplete));
+            _volumeHandler = ApplicationManager.RunCoroutine(SetVolumeHandler(_realVolume, transferTime, onComplete));
         }
         
         public void SetMaxVolume(float maxVolume)

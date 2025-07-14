@@ -43,7 +43,7 @@ namespace PowerCellStudio
             NotifyManager.instance.UnRegister(notifyType, OnNotifyChanged);
             notifyType = type;
             NotifyManager.instance.Register(notifyType, OnNotifyChanged);
-            if (!redPoint.activeSelf) return;
+
             NotifyManager.instance.GetNotifyInfo(notifyType, out bool isOn, out int notifyNum, out int notifyValue);
             OnNotifyChanged(isOn, notifyNum, notifyValue);
         }
