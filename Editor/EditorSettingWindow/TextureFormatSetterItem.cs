@@ -62,22 +62,22 @@ namespace PowerCellStudio
         {
             if (Selection.assetGUIDs.Length <= 0)
             {
-                GUILayout.Label("请先选择一个文件夹!!! ");
+                GUILayout.Label("Please Select A Folder!!! ");
             }
             else
             {
                 var folder = AssetDatabase.GUIDToAssetPath(Selection.assetGUIDs[0]);
                 if (!Directory.Exists(folder))
                 {
-                    GUILayout.Label("请先选择一个文件夹!!! ");
+                    GUILayout.Label("Please Select A Folder!!! ");
                     return;
                 }
-                GUILayout.Label($"当前选中的文件夹：{folder}");
+                GUILayout.Label($"Current Folder Name：{folder}");
             }
 
             GUILayout.Space(10);
 
-            GUILayout.Label("设置平台： ");
+            GUILayout.Label("Target Platform： ");
             setPl = (EPlatform) EditorGUILayout.EnumPopup(curPl); //, guiStyle);
             if (setPl != curPl)
             {
@@ -85,7 +85,7 @@ namespace PowerCellStudio
             }
             GUILayout.Space(10);
 
-            GUILayout.Label("设置格式： ");
+            GUILayout.Label("Target Format： ");
             string[] canSetFormats = null;
             if (!_textureFormatMapping.TryGetValue(setPl.ToString(), out canSetFormats))
             {
@@ -96,16 +96,16 @@ namespace PowerCellStudio
             // isConvertRGBA = EditorGUILayout.ToggleLeft("是否将RGB强制转成RGBA", isConvertRGBA);
             GUILayout.Space(10);
             
-            GUILayout.Label("设置最大尺寸： ");
+            GUILayout.Label("Max Size： ");
             setSize = (TextureFormatSetterSize) EditorGUILayout.EnumPopup(curSize); //, guiStyle);
             // isConvertRGBA = EditorGUILayout.ToggleLeft("是否将RGB强制转成RGBA", isConvertRGBA);
             GUILayout.Space(10);
-            autoOptimize = EditorGUILayout.ToggleLeft("自动优化", autoOptimize);
-            autoSize = EditorGUILayout.ToggleLeft("自动尺寸", autoSize);
+            autoOptimize = EditorGUILayout.ToggleLeft("Auto Optimize", autoOptimize);
+            autoSize = EditorGUILayout.ToggleLeft("Auto Size", autoSize);
 
             PrintSetting();
 
-            if (GUILayout.Button("开始设置"))
+            if (GUILayout.Button("Run"))
             {
                 _printResult = null;
                 if (!CheckSelection())
@@ -113,11 +113,11 @@ namespace PowerCellStudio
 
                 ParseTexture2DFormat(true);
                 AssetDatabase.SaveAssets();
-                Debug.Log("完成");
+                Debug.Log("Done");
             }
 
             GUILayout.Space(20);
-            if (GUILayout.Button("获取当前文件夹下所有文件当前平台的压缩格式"))
+            if (GUILayout.Button("Obtain the compressed format of folder"))
             {
                 if (!CheckSelection())
                     return;
@@ -129,7 +129,7 @@ namespace PowerCellStudio
                 StringBuilder sb = new StringBuilder();
                 foreach (var dic in _allSettings)
                 {
-                    sb.Append($"类型<color=#FF722F>{dic.Key}</color>累计{dic.Value.Count}个:\n");
+                    sb.Append($"Format <color=#FF722F>[{dic.Key}]</color> Count: {dic.Value.Count}\n");
                     foreach (var path in dic.Value)
                     {
                         sb.Append($"\t{path}\n");

@@ -326,9 +326,14 @@ namespace PowerCellStudio
             }
             else
             {
-                assetsLoader.AsyncLoadNInstantiate("", OnLoadSuccess, OnLoadFailed);
-
-                uiNode.
+                PoolManager.instance.GetGameObjectAsync("Assets/Res/UI/Common/RedPoint.prefab", o =>
+                {
+                    var notifier = o.GetComponent<Notifier>();
+                    if (notifier)
+                    {
+                        notifier.notifyType = notifyType;
+                    }
+                }, PoolManager.PoolGroupName.UI);
             }
         }        
     }

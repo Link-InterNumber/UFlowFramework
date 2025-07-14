@@ -106,6 +106,7 @@ namespace PowerCellStudio
             OnInit();
             DontDestroyOnLoad(gameObject);
             _applicationState = ApplicationState.Loading;
+            _curResolutionLv = ConstSetting.DefaultResolutionLv;
             SetResolution(true);
             Application.lowMemory += ClearUnusedAsset;
             Application.targetFrameRate = 60;
@@ -158,30 +159,61 @@ namespace PowerCellStudio
             EventManager.instance.onResetGame.Invoke();
         }
 
-        public static Coroutine RunCoroutine(IEnumerator handler)
+        private class CoroutineWrapper: IEnumerator
+        {
+            private IEnumerator _routine;
+            private bool _hasError;
+
+            public CoroutineWrapper(IEnumerator routine)
+            {
+                _routine = routine;
+                _hasError = false;
+            }
+            
+            public bool MoveNext()
+            {
+                if (_hasError)
+                    return false;
+
+                try
+                {
+                    return _routine.MoveNext();
+                }
+                catch (Exception ex)
+                {
+                    _hasError = true;
+                    Debug.LogError($"Coroutine error: {ex.Message}");
+                    // 可以在这里添加更多的错误处理逻辑
+                    return false;
+                }
+            }
+
+            public void Reset()
+            {
+                _hasError = false;
+                _routine.Reset();
+            }
+
+            public object Current => _routine.Current;
+        }
+
+        public static Coroutine RunCoroutine(IEnumerator routine)
         {
 #if UNITY_EDITOR
-            return instance.StartCoroutine(LogableCoroutine(handler));
+            return instance.StartCoroutine(LogableCoroutine(routine));
 #else
             return instance.StartCoroutine(handler);
 #endif
         }
 
-        private static IEnumerator LogableCoroutine(IEnumerator handler)
-        [
-#if UNITY_EDITOR
-            try
+        private static IEnumerator LogableCoroutine(IEnumerator routine)
+        {
+            var wrapper = new CoroutineWrapper(routine);
+            while (wrapper.MoveNext())
             {
-#endif
-                yield return handler;
-#if UNITY_EDITOR
+                yield return wrapper.Current;
             }
-            catch (Exception e)
-            {
-                ModuleLog.LogError(e);
-            }
-#endif
-        ]
+        }
 
         public Coroutine DelayedNextFrame(Action call)
         {

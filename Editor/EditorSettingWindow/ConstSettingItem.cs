@@ -1,7 +1,9 @@
+using System;
 using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text;
 
 namespace PowerCellStudio
@@ -12,15 +14,13 @@ namespace PowerCellStudio
 
         // 可编辑字段
         private List<int> resolution = new List<int>();
-        private Vector2Int defaultResolution;
+        private ResolutionLv defaultResolutionLv;
         private Vector2Int defaultUISize;
         private string fileEncryptionKey;
         private Language defaultLanguage;
         private string localizationStringTable;
         private string localizationAssetTable;
         private Dictionary<Language, string> languageFont = new Dictionary<Language, string>();
-        private int millionInt;
-        private long millionLong;
         private ConstSetting.ConfigSaveMode configSaveMode;
 
         public void InitSave()
@@ -52,9 +52,9 @@ namespace PowerCellStudio
             }
 
             // DefaultResolution
-            var defResField = type.GetField("DefaultResolution", BindingFlags.Static | BindingFlags.Public);
+            var defResField = type.GetField("DefaultResolutionLv", BindingFlags.Static | BindingFlags.Public);
             if (defResField != null)
-                defaultResolution = (Vector2Int)defResField.GetValue(null);
+                defaultResolutionLv = (ResolutionLv)defResField.GetValue(null);
 
             // DefaultUISize
             var defUISizeField = type.GetField("DefaultUISize", BindingFlags.Static | BindingFlags.Public);
@@ -89,16 +89,6 @@ namespace PowerCellStudio
                 languageFont = dict != null ? new Dictionary<Language, string>(dict) : new Dictionary<Language, string>();
             }
 
-            // MillionInt
-            var millionIntField = type.GetField("MillionInt", BindingFlags.Static | BindingFlags.Public);
-            if (millionIntField != null)
-                millionInt = (int)millionIntField.GetValue(null);
-
-            // MillionLong
-            var millionLongField = type.GetField("MillionLong", BindingFlags.Static | BindingFlags.Public);
-            if (millionLongField != null)
-                millionLong = (long)millionLongField.GetValue(null);
-
             // ConfigConfigSaveMode
             var configSaveModeField = type.GetField("ConfigConfigSaveMode", BindingFlags.Static | BindingFlags.Public);
             if (configSaveModeField != null)
@@ -107,27 +97,35 @@ namespace PowerCellStudio
 
         public void OnGUI(EditorWindow window)
         {
-            if (GUILayout.Button("刷新当前配置"))
+            if (GUILayout.Button("Refresh Settings"))
             {
                 ReadCurrentConfig();
             }
 
-            GUILayout.Label("分辨率列表", EditorStyles.boldLabel);
+            GUILayout.Label("Resolution List", EditorStyles.boldLabel);
+            var resolutionLvCount = Enum.GetValues(typeof(ResolutionLv)).Length;
             for (int i = 0; i < resolution.Count; i++)
             {
-                resolution[i] = EditorGUILayout.IntField($"分辨率 {i}", resolution[i]);
+                if (i < resolutionLvCount)
+                {
+                    resolution[i] = EditorGUILayout.IntField($"resolution {(ResolutionLv)i}", resolution[i]);
+                }
+                else
+                {
+                    resolution[i] = EditorGUILayout.IntField($"resolution {i}", resolution[i]);
+                }
             }
-            if (GUILayout.Button("添加分辨率")) resolution.Add(0);
-            if (resolution.Count > 0 && GUILayout.Button("移除最后一个分辨率")) resolution.RemoveAt(resolution.Count - 1);
+            if (GUILayout.Button("Add Resolution")) resolution.Add(0);
+            if (resolution.Count > 0 && GUILayout.Button("Remove Last")) resolution.RemoveAt(resolution.Count - 1);
 
-            defaultResolution = EditorGUILayout.Vector2IntField("默认分辨率", defaultResolution);
-            defaultUISize = EditorGUILayout.Vector2IntField("UI画布尺寸", defaultUISize);
-            fileEncryptionKey = EditorGUILayout.TextField("加密Key", fileEncryptionKey);
-            defaultLanguage = (Language)EditorGUILayout.EnumPopup("默认语言", defaultLanguage);
-            localizationStringTable = EditorGUILayout.TextField("本地化字符串表", localizationStringTable);
-            localizationAssetTable = EditorGUILayout.TextField("本地化资源表", localizationAssetTable);
+            defaultResolutionLv = (ResolutionLv)EditorGUILayout.EnumPopup("Default Resolution Lv", defaultResolutionLv);
+            defaultUISize = EditorGUILayout.Vector2IntField("UI Canvas Size", defaultUISize);
+            fileEncryptionKey = EditorGUILayout.TextField("file Encryption Key", fileEncryptionKey);
+            defaultLanguage = (Language)EditorGUILayout.EnumPopup("default Language", defaultLanguage);
+            localizationStringTable = EditorGUILayout.TextField("Localization String Table", localizationStringTable);
+            localizationAssetTable = EditorGUILayout.TextField("Localization Asset Table", localizationAssetTable);
 
-            GUILayout.Label("语言字体映射", EditorStyles.boldLabel);
+            GUILayout.Label("Language Fonts Table", EditorStyles.boldLabel);
             foreach (var lang in System.Enum.GetValues(typeof(Language)))
             {
                 string font = languageFont.ContainsKey((Language)lang) ? languageFont[(Language)lang] : "";
@@ -135,12 +133,10 @@ namespace PowerCellStudio
                 languageFont[(Language)lang] = font;
             }
 
-            millionInt = EditorGUILayout.IntField("万分比整数基数", millionInt);
-            millionLong = EditorGUILayout.LongField("万分比长整数基数", millionLong);
-            configSaveMode = (ConstSetting.ConfigSaveMode)EditorGUILayout.EnumPopup("配置保存方式", configSaveMode);
+            configSaveMode = (ConstSetting.ConfigSaveMode)EditorGUILayout.EnumPopup("Config Save Mode", configSaveMode);
 
             GUILayout.Space(20);
-            if (GUILayout.Button("生成配置脚本"))
+            if (GUILayout.Button("Save Settings"))
             {
                 GenerateConfigScript();
             }
@@ -148,8 +144,8 @@ namespace PowerCellStudio
 
         private void GenerateConfigScript()
         {
-            string path = EditorUtility.SaveFilePanel("保存配置脚本", Application.dataPath, "ConstSetting.cs", "cs");
-            if (string.IsNullOrEmpty(path)) return;
+            string path = "Assets/UFlowFramework/Define/ConstSetting.cs";
+            // if (string.IsNullOrEmpty(path)) return;
 
             var writer = new PowerCellStudio.CsWriter();
 
@@ -188,7 +184,7 @@ namespace PowerCellStudio
             writer.WriteLine("/// <summary>");
             writer.WriteLine("/// 默认分辨率");
             writer.WriteLine("/// </summary>");
-            writer.WriteLine($"public static readonly Vector2Int DefaultResolution = new Vector2Int({defaultResolution.x}, {defaultResolution.y});");
+            writer.WriteLine($"public static readonly ResolutionLv DefaultResolutionLv = ResolutionLv.{defaultResolutionLv};");
 
             writer.WriteLine("/// <summary>");
             writer.WriteLine("/// 设计UI画布尺寸");
@@ -222,16 +218,7 @@ namespace PowerCellStudio
                 writer.WriteLine($"{{ Language.{kv.Key}, \"{kv.Value}\" }},");
             }
             writer.EndWriteBody();
-
-            writer.WriteLine("/// <summary>");
-            writer.WriteLine("/// 万分比整数基数");
-            writer.WriteLine("/// </summary>");
-            writer.WriteLine($"public static readonly int MillionInt = {millionInt};");
-
-            writer.WriteLine("/// <summary>");
-            writer.WriteLine("/// 万分比长整数基数");
-            writer.WriteLine("/// </summary>");
-            writer.WriteLine($"public static readonly long MillionLong = {millionLong};");
+            writer.WriteLine(";");
 
             writer.WriteLine("public enum ConfigSaveMode { ScriptableObject, Json, Binary }");
             writer.WriteLine($"public static readonly ConfigSaveMode ConfigConfigSaveMode = ConfigSaveMode.{configSaveMode};");
