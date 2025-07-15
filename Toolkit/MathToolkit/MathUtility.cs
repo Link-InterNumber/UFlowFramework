@@ -4,12 +4,10 @@ namespace PowerCellStudio
 {
     public static class MathUtility
     {
-        
         /// <summary>
         /// 万分比整数基数
         /// </summary>
         public static readonly int MillionInt = 10000;
-        
         
         /// <summary>
         /// 万分比长整数基数
