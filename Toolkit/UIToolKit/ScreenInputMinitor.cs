@@ -1,197 +1,177 @@
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.EnhancedTouch;
-
-using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
+using System;
 
 namespace PowerCellStudio
 {
    public class ScreenInputMinitor : MonoBehaviour
    {
-      public float pinchThreshold = 0.01f;
-      private float lastPinchDistance = 0f;
-      private bool isDragging = false;
-      private Vector2 lastDragPosition;
+      private Dictionary<Type, IScreenInputHandle> _inputHandles;
 
-      private bool _isMouseLeftDown = false;
-      private bool _isMouseDragging;
-      private bool _isMouseMiddleDown = false;
-      private float _mouseDownTime;
+      private List<Type> _removeBuffer;
 
-      public delegate void OnDrag(Vector2 delta);
-      public delegate void OnPinch(float pinchDelta);
-      public delegate void OnTap(Vector2 position);
-      public delegate void OnTwoFingerDrag(Vector2 delta);
-
-      public event OnDrag onDrag;
-      public event OnPinch onPinch;
-      public event OnTap onTap;
-      public event OnTwoFingerDrag onTwoFingerDrag;
-
-      void OnEnable()
+      private void Awake()
       {
-         EnhancedTouchSupport.Enable();
-         Touch.onFingerDown += OnFingerDown;
-         Touch.onFingerUp += OnFingerUp;
-         Touch.onFingerMove += OnFingerMove;
+         _inputHandles = new Dictionary<Type, IScreenInputHandle>();
+         _removeBuffer = new List<Type>();
+         var tapHandle = new ScreenTapHandle();
+         var dragHandle = new ScreenDragHandle();
+         var pinchHandle = new ScreenPinchHandle();
+         var twoFingerDragHandle = new ScreenTwoFingerDragHandle();
+         // 注册输入处理器
+         RegisterInputHandle(tapHandle);
+         RegisterInputHandle(dragHandle);
+         RegisterInputHandle(pinchHandle);
+         RegisterInputHandle(twoFingerDragHandle);
+
+         #region Test
+         tapHandle.RegisterInput(OnTapEvent);
+         dragHandle.RegisterInput(OnDragEvent);
+         pinchHandle.RegisterInput(OnPinchEvent);
+         twoFingerDragHandle.RegisterInput(OnTwoFingerDragEvent);
+         #endregion
       }
 
-      void OnDisable()
+      private void OnDestroy()
       {
-         EnhancedTouchSupport.Disable();
-         Touch.onFingerDown -= OnFingerDown;
-         Touch.onFingerUp -= OnFingerUp;
-         Touch.onFingerMove -= OnFingerMove;
-      }
-
-      private void OnFingerDown(Finger finger)
-      {
-         if (Touch.activeTouches.Count == 1)
+         // 注销所有输入处理器
+         foreach (var handle in _inputHandles.Values)
          {
-            lastDragPosition = finger.screenPosition;
-            isDragging = true;
+            handle.Dispose();
+         }
+         _inputHandles.Clear();
+      }
+
+      public void RegisterInputHandle<T>() where T : IScreenInputHandle, new()
+      {
+         var handle = new T();
+         RegisterInputHandle(handle);
+      }
+
+      public void RegisterInputHandle<T>(T handle) where T : IScreenInputHandle
+      {
+         if (handle == null) return;
+         var type = typeof(T);
+         if (_inputHandles.ContainsKey(type))
+         {
+            _inputHandles[type].Dispose();
+            _removeBuffer.Add(type);
+         }
+         _inputHandles[typeof(T)] = handle;
+      }
+
+      public void UnregisterInputHandle<T>() where T : IScreenInputHandle
+      {
+         var type = typeof(T);
+         if (_inputHandles.ContainsKey(type))
+         {
+            _inputHandles[type].Dispose();
+            _removeBuffer.Add(type);
          }
       }
 
-      private void OnFingerUp(Finger finger)
+      public bool IsInputHandleRegistered<T>() where T : IScreenInputHandle
       {
-         if (Touch.activeTouches.Count == 0)
-         {
-            isDragging = false;
-         }
+         return _inputHandles.ContainsKey(typeof(T));
       }
 
-      private void OnFingerMove(Finger finger)
+      public bool TryGetInputHandle<T>(out T handle) where T : IScreenInputHandle
       {
-         // Pinch
-         if (Touch.activeTouches.Count == 2)
+         if (_inputHandles.TryGetValue(typeof(T), out var exitedHandle))
          {
-            var touch0 = Touch.activeTouches[0];
-            var touch1 = Touch.activeTouches[1];
-            float currentDistance = Vector2.Distance(touch0.screenPosition, touch1.screenPosition);
-
-            if (lastPinchDistance != 0f)
-            {
-               float pinchDelta = currentDistance - lastPinchDistance;
-               if (Mathf.Abs(pinchDelta) > pinchThreshold)
-               {
-                  OnPinchHandle(pinchDelta);
-               }
-            }
-            lastPinchDistance = currentDistance;
-
-            // 判断两指移动方向是否接近一致
-            Vector2 delta0 = touch0.delta;
-            Vector2 delta1 = touch1.delta;
-            if (Vector2.Dot(delta0.normalized, delta1.normalized) > 0.9f)
-            {
-               Vector2 avgDelta = (delta0 + delta1) / 2f;
-               OnTwoFingerDragHandle(avgDelta);
-            }
+            handle = (T)exitedHandle;
+            return true;
          }
-         // Drag
-         else if (Touch.activeTouches.Count == 1)
+         handle = default;
+         return false;
+      }
+
+      public void RegisterInput<T>(ScreenInputEventHandler action) where T : IScreenInputHandle
+      {
+         if (_inputHandles.TryGetValue(typeof(T), out var handle))
          {
-            OnDragHandle(Touch.activeTouches[0].delta);
-            lastPinchDistance = 0f;
+            handle.RegisterInput(action);
          }
          else
          {
-            lastPinchDistance = 0f;
+            Debug.LogWarning($"Input handle of type {typeof(T)} is not registered.");
+         }
+      }
+
+      public void UnregisterInput<T>(ScreenInputEventHandler action) where T : IScreenInputHandle
+      {
+         if (_inputHandles.TryGetValue(typeof(T), out var handle))
+         {
+            handle.UnregisterInput(action);
+         }
+         else
+         {
+            Debug.LogWarning($"Input handle of type {typeof(T)} is not registered.");
+         }
+      }
+
+      private void OnEnable()
+      {
+#if ENABLE_INPUT_SYSTEM
+         UnityEngine.InputSystem.EnhancedTouch.EnhancedTouchSupport.Enable();
+#endif
+         // 启用所有输入处理器
+         foreach (var handle in _inputHandles.Values)
+         {
+            handle.OnEnable();
+         }
+      }
+
+      private void OnDisable()
+      {
+#if ENABLE_INPUT_SYSTEM
+         UnityEngine.InputSystem.EnhancedTouch.EnhancedTouchSupport.Disable();
+#endif
+         // 禁用所有输入处理器
+         foreach (var handle in _inputHandles.Values)
+         {
+            handle.OnDisable();
          }
       }
 
       private void Update()
       {
-         if (Application.platform == RuntimePlatform.WindowsPlayer
-#if UNITY_EDITOR
-            || Application.platform == RuntimePlatform.WindowsEditor
-            || Application.platform == RuntimePlatform.OSXEditor
-#endif
-            || Application.platform == RuntimePlatform.OSXPlayer)
+         // 更新所有输入处理器
+         foreach (var handle in _inputHandles.Values)
          {
-            var mouse = Mouse.current;
-            if (mouse == null) return;
-
-            // 鼠标左键点击
-            if (mouse.leftButton.wasPressedThisFrame)
-            {
-               _isMouseLeftDown = true;
-               _mouseDownTime = Time.time;
-            }
-            if (mouse.leftButton.wasReleasedThisFrame)
-            {
-               if (!_isMouseDragging && Time.time - _mouseDownTime < 0.2f)
-                  OnTapHandle(mouse.position.ReadValue());
-               _isMouseLeftDown = false;
-               _isMouseDragging = false;
-            }
-            // 鼠标左键拖动
-            if (_isMouseLeftDown && mouse.delta.ReadValue().magnitude > 0.01f)
-            {
-               _isMouseDragging = true;
-               OnDragHandle(mouse.delta.ReadValue());
-            }
-
-            // 鼠标滚轮缩放
-            float scroll = mouse.scroll.ReadValue().y;
-            if (Mathf.Abs(scroll) > 0.01f)
-            {
-               OnPinchHandle(scroll * 10f);
-            }
-
-            // 鼠标中键拖动
-            if (mouse.middleButton.wasPressedThisFrame)
-            {
-               _isMouseMiddleDown = true;
-            }
-            if (mouse.middleButton.wasReleasedThisFrame)
-            {
-               _isMouseMiddleDown = false;
-            }
-            if (_isMouseMiddleDown && mouse.delta.ReadValue().magnitude > 0.01f)
-            {
-               OnTwoFingerDragHandle(mouse.delta.ReadValue());
-            }
-            return;
+            handle.OnUpdate();
          }
-
-         // Tap detection
-         foreach (var touch in Touch.activeTouches)
+         // 清理已标记为删除的处理器
+         if (_removeBuffer.Count == 0) return;
+         foreach (var type in _removeBuffer)
          {
-            // 只有未处于拖动状态时才触发Tap
-            if (!isDragging
-                && touch.phase == UnityEngine.InputSystem.TouchPhase.Ended
-                && (touch.time - touch.startTime) < 0.2f
-                && Vector2.Distance(touch.screenPosition, touch.startScreenPosition) < 5f) // 用距离阈值判断
+            if (_inputHandles.TryGetValue(type, out var handle))
             {
-               OnTapHandle(touch.screenPosition);
+               handle.Dispose();
+               _inputHandles.Remove(type);
             }
          }
+         _removeBuffer.Clear();
       }
 
-      private void OnDragHandle(Vector2 delta)
+      #region Test
+      // 事件分发
+      private void OnTapEvent(ScreenInputEvent e)
       {
-         onDrag?.Invoke(delta);
-         Debug.LogError($"Drag Detected: {delta}");
+         Debug.LogError($"Tap Detected: {e.position}, Tap Count: {e.tapCount}");
       }
-
-      private void OnPinchHandle(float pinchDelta)
+      private void OnDragEvent(ScreenInputEvent e)
       {
-         onPinch?.Invoke(pinchDelta);
-         Debug.LogError($"Pinch Detected: {pinchDelta}");
+         Debug.LogError($"Drag Detected: {e.delta}, State: {e.state}");
       }
-
-      private void OnTapHandle(Vector2 position)
+      private void OnPinchEvent(ScreenInputEvent e)
       {
-         onTap?.Invoke(position);
-         Debug.LogError($"Tap Detected: {position}");
+         Debug.LogError($"Pinch Detected: {e.pinchDelta}, State: {e.state}");
       }
-
-      private void OnTwoFingerDragHandle(Vector2 delta)
+      private void OnTwoFingerDragEvent(ScreenInputEvent e)
       {
-         onTwoFingerDrag?.Invoke(delta);
-         Debug.LogError($"Two-Finger Drag Detected: {delta}");
+         Debug.LogError($"Two-Finger Drag Detected: {e.delta}, State: {e.state}");
       }
+      #endregion
    }
 }
