@@ -15,7 +15,9 @@ namespace PowerCellStudio
             {
                 var screenHeight = ConstSetting.DefaultUISize.y;
                 var screenWidth = ConstSetting.DefaultUISize.x;
-                if (screenHeight < screenWidth)
+                var designRatio = screenHeight / screenWidth;
+                var currentRatio = Screen.height * 1f / Screen.width;
+                if (currentRatio < designRatio)
                 {
                     var baseHeight = ConstSetting.DefaultUISize.y;
                     var rate = (float)baseHeight / Screen.height;

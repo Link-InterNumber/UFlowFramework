@@ -50,10 +50,14 @@ namespace PowerCellStudio
             if (!adaptiveRoot) return;
             var safeArea = Screen.safeArea;
             var scale = UIManager.PixelScale;
+            var offsetMin = new Vector2(Mathf.Max(0, safeArea.min.x * scale), Mathf.Max(0, safeArea.min.y * scale));
+            var offsetMax = safeArea.max * scale - UIManager.ScreenSize;
+            offsetMax.x = Mathf.Min(0, offsetMax.x);
+            offsetMax.y = Mathf.Min(0, offsetMax.y);
             adaptiveRoot.anchorMin = Vector2.zero;
             adaptiveRoot.anchorMax = Vector2.one;
-            adaptiveRoot.offsetMin = safeArea.min * scale;
-            adaptiveRoot.offsetMax = safeArea.max * scale - UIManager.ScreenSize;
+            adaptiveRoot.offsetMin = offsetMin;
+            adaptiveRoot.offsetMax = offsetMax;
         }
         
         /// <summary>

@@ -97,7 +97,7 @@ namespace PowerCellStudio
         public static PrepareHandler Prepare(string[] labels, Action onComplete, bool isConcurrent = false)
         {
             if(_assetManager == null) return null;
-            return _assetManager.Prepare(labels, onComplete, isConcurrent); 
+            return _assetManager.Prepare(labels, onComplete, isConcurrent);
         }
 
         public static void Unprepare(PrepareHandler handler)
@@ -110,7 +110,7 @@ namespace PowerCellStudio
         {
             if (paths.Contains('\\'))
             {
-                AssetLog.LogError("\\ exists in the asset path, replace Path.Commit() with AssetUtils.CombinePaths()");
+                AssetLog.LogError("\\ exists in the asset path, replace Path.Combine() with AssetUtils.CombinePaths()");
                 var result = paths.Replace('\\', '/');
                 return result;
             }
@@ -131,36 +131,34 @@ namespace PowerCellStudio
             for (int i = 0; i < paths.Length; i++)
             {
                 string pathSegment = paths[i];
-                if (!string.IsNullOrEmpty(pathSegment))
+                if (string.IsNullOrEmpty(pathSegment)) continue;
+                var segmentSpan = pathSegment.AsSpan();
+
+                // Trim leading slashes
+                int start = 0;
+                while (start < segmentSpan.Length && (segmentSpan[start] == '/' || segmentSpan[start] == '\\'))
                 {
-                    var segmentSpan = pathSegment.AsSpan();
+                    start++;
+                }
 
-                    // Trim leading slashes
-                    int start = 0;
-                    while (start < segmentSpan.Length && (segmentSpan[start] == '/' || segmentSpan[start] == '\\'))
-                    {
-                        start++;
-                    }
+                // Trim trailing slashes
+                int end = segmentSpan.Length - 1;
+                while (end >= start && (segmentSpan[end] == '/' || segmentSpan[end] == '\\'))
+                {
+                    end--;
+                }
 
-                    // Trim trailing slashes
-                    int end = segmentSpan.Length - 1;
-                    while (end >= start && (segmentSpan[end] == '/' || segmentSpan[end] == '\\'))
-                    {
-                        end--;
-                    }
+                // Copy characters into the buffer, replacing '\\' with '/'
+                for (int j = start; j <= end; j++)
+                {
+                    char c = segmentSpan[j] == '\\' ? '/' : segmentSpan[j];
+                    pathBuffer[position++] = c;
+                }
 
-                    // Copy characters into the buffer, replacing '\\' with '/'
-                    for (int j = start; j <= end; j++)
-                    {
-                        char c = segmentSpan[j] == '\\' ? '/' : segmentSpan[j];
-                        pathBuffer[position++] = c;
-                    }
-
-                    // Add a separator unless it's the last segment
-                    if (i < paths.Length - 1)
-                    {
-                        pathBuffer[position++] = '/';
-                    }
+                // Add a separator unless it's the last segment
+                if (i < paths.Length - 1)
+                {
+                    pathBuffer[position++] = '/';
                 }
             }
 

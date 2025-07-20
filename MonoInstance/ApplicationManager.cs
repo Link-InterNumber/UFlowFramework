@@ -83,11 +83,11 @@ namespace PowerCellStudio
             enableLog = true;
             enableWarning = true;
             enableError = true;
-            // var debugLogSaver = new GameObject("DebugLogSaver").AddComponent<DebugLogSaver>();
 #elif DEBUG
             enableLog = false;
             enableWarning = false;
             enableError = true;
+            // var debugLogSaver = new GameObject("DebugLogSaver").AddComponent<DebugLogSaver>();
 #elif ENABLE_LOG
             enableLog = true;
             enableWarning = true;
@@ -106,6 +106,7 @@ namespace PowerCellStudio
             OnInit();
             DontDestroyOnLoad(gameObject);
             _applicationState = ApplicationState.Loading;
+            _curResolutionLv = ConstSetting.DefaultResolutionLv;
             SetResolution(true);
             Application.lowMemory += ClearUnusedAsset;
             Application.targetFrameRate = 60;
@@ -158,9 +159,65 @@ namespace PowerCellStudio
             EventManager.instance.onResetGame.Invoke();
         }
 
+        private class CoroutineWrapper: IEnumerator
+        {
+            private IEnumerator _routine;
+            private bool _hasError;
+
+            public CoroutineWrapper(IEnumerator routine)
+            {
+                _routine = routine;
+                _hasError = false;
+            }
+            
+            public bool MoveNext()
+            {
+                if (_hasError)
+                    return false;
+
+                try
+                {
+                    return _routine.MoveNext();
+                }
+                catch (Exception ex)
+                {
+                    _hasError = true;
+                    Debug.LogError($"Coroutine error: {ex.Message}");
+                    // 可以在这里添加更多的错误处理逻辑
+                    return false;
+                }
+            }
+
+            public void Reset()
+            {
+                _hasError = false;
+                _routine.Reset();
+            }
+
+            public object Current => _routine.Current;
+        }
+
+        public static Coroutine RunCoroutine(IEnumerator routine)
+        {
+#if UNITY_EDITOR
+            return instance.StartCoroutine(LogableCoroutine(routine));
+#else
+            return instance.StartCoroutine(handler);
+#endif
+        }
+
+        private static IEnumerator LogableCoroutine(IEnumerator routine)
+        {
+            var wrapper = new CoroutineWrapper(routine);
+            while (wrapper.MoveNext())
+            {
+                yield return wrapper.Current;
+            }
+        }
+
         public Coroutine DelayedNextFrame(Action call)
         {
-            return StartCoroutine(DelayedNextFrameHandler(call));
+            return RunCoroutine(DelayedNextFrameHandler(call));
         }
         
         private static IEnumerator DelayedNextFrameHandler(Action call)
@@ -171,7 +228,7 @@ namespace PowerCellStudio
 
         public Coroutine DelayedCall(float timeInSecond, Action call, bool ignoreTimeScale = true)
         {
-            return StartCoroutine(DelayedCallHandler(timeInSecond, call, ignoreTimeScale));
+            return RunCoroutine(DelayedCallHandler(timeInSecond, call, ignoreTimeScale));
         }
 
         private static IEnumerator DelayedCallHandler(float timeInSecond, Action call, bool ignoreTimeScale)

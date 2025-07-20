@@ -312,7 +312,30 @@ namespace PowerCellStudio
             if (node.parent == -1) return NotifyType.Root;
             return (NotifyType) node.parent;            
         }
-        
+
+        public static void AddNotifer(RectTransform uiNode, NotifyType notifyType)
+        {
+            if (uiNode == null) return;
+            var notifer = uiNode.GetComponentInChildren<Notifier>(true);
+            if (notifer)
+            {
+                if (notifer.notifyType == notifyType)
+                    return;
+
+                notifer.Init(notifyType);
+            }
+            else
+            {
+                PoolManager.instance.GetGameObjectAsync("Assets/Res/UI/Common/RedPoint.prefab", o =>
+                {
+                    var notifier = o.GetComponent<Notifier>();
+                    if (notifier)
+                    {
+                        notifier.notifyType = notifyType;
+                    }
+                }, PoolManager.PoolGroupName.UI);
+            }
+        }        
     }
 
 }

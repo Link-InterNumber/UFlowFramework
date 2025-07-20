@@ -59,5 +59,81 @@ namespace PowerCellStudio
             
             return rt.GetWorldBounds().Intersects(other.GetWorldBounds());
         }
+
+        public enum AnchorPosition
+        {
+            TopLeft,
+            Top,
+            TopRight,
+            Left,
+            Center,
+            Right,
+            BottomLeft,
+            Bottom,
+            BottomRight
+        }
+
+        /// <summary>
+        /// 将UI节点移动到父节点的指定锚点位置
+        /// </summary>
+        /// <param name="rectTransform">要移动的UI节点</param>
+        /// <param name="position">目标锚点位置</param>
+        /// <param name="offset">偏移量（可选）</param>
+        public static void MoveTo(this RectTransform rectTransform, AnchorPosition position, Vector2 offset = default)
+        {
+            if (rectTransform == null || rectTransform.parent == null)
+                return;
+
+            Vector2 anchor; //, pivot;
+
+            switch (position)
+            {
+                case AnchorPosition.TopLeft:
+                    anchor = new Vector2(0, 1);
+                    // pivot = new Vector2(0, 1);
+                    break;
+                case AnchorPosition.Top:
+                    anchor = new Vector2(0.5f, 1);
+                    // pivot = new Vector2(0.5f, 1);
+                    break;
+                case AnchorPosition.TopRight:
+                    anchor = new Vector2(1, 1);
+                    // pivot = new Vector2(1, 1);
+                    break;
+                case AnchorPosition.Left:
+                    anchor = new Vector2(0, 0.5f);
+                    // pivot = new Vector2(0, 0.5f);
+                    break;
+                case AnchorPosition.Center:
+                    anchor = new Vector2(0.5f, 0.5f);
+                    // pivot = new Vector2(0.5f, 0.5f);
+                    break;
+                case AnchorPosition.Right:
+                    anchor = new Vector2(1, 0.5f);
+                    // pivot = new Vector2(1, 0.5f);
+                    break;
+                case AnchorPosition.BottomLeft:
+                    anchor = new Vector2(0, 0);
+                    // pivot = new Vector2(0, 0);
+                    break;
+                case AnchorPosition.Bottom:
+                    anchor = new Vector2(0.5f, 0);
+                    // pivot = new Vector2(0.5f, 0);
+                    break;
+                case AnchorPosition.BottomRight:
+                    anchor = new Vector2(1, 0);
+                    // pivot = new Vector2(1, 0);
+                    break;
+                default:
+                    anchor = new Vector2(0.5f, 0.5f);
+                    // pivot = new Vector2(0.5f, 0.5f);
+                    break;
+            }
+
+            rectTransform.anchorMin = anchor;
+            rectTransform.anchorMax = anchor;
+            // rectTransform.pivot = pivot;
+            rectTransform.anchoredPosition = offset;
+        }
     }
 }

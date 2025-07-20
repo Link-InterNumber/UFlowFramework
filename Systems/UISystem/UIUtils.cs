@@ -79,8 +79,10 @@ namespace PowerCellStudio
                 canvasScale.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
                 var screenHeight = ConstSetting.DefaultUISize.y;
                 var screenWidth = ConstSetting.DefaultUISize.x;
+                var designRatio = screenHeight / screenWidth;
+                var currentRatio = Screen.height * 1f / Screen.width;
                 // var newRes = Vector2Int.zero;
-                if (screenHeight < screenWidth)
+                if (currentRatio < designRatio)
                 {
                     canvasScale.matchWidthOrHeight = 1;
                 }
@@ -93,7 +95,7 @@ namespace PowerCellStudio
             }
             else
             {
-                if (standaloneCanvas) 
+                if (standaloneCanvas)
                 {
                     var canvas = uiChild.rectTransform.gameObject.GetComponent<Canvas>();
                     if (!canvas) canvas = uiChild.rectTransform.gameObject.AddComponent<Canvas>();

@@ -110,7 +110,7 @@ namespace PowerCellStudio
             if (_curLanguage == language) return null;
             _curLanguage = language;
             LocalizationSettings.SelectedLocale = LocalizationSettings.AvailableLocales.Locales[(int)language];
-            return ApplicationManager.instance.StartCoroutine(ChangeLanguageHandle(callBack));
+            return ApplicationManager.RunCoroutine(ChangeLanguageHandle(callBack));
         }
 
         private IEnumerator ChangeLanguageHandle(Action callBack)

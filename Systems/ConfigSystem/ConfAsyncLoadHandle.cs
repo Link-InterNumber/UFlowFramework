@@ -291,7 +291,7 @@ namespace PowerCellStudio
             recoursePath = Path.GetFileNameWithoutExtension(recoursePath);
 #if SCRIPTABLE_OBJECT_CONFIG
             _handle = Resources.LoadAsync<ConfBaseData>(recoursePath);
-            ApplicationManager.instance.StartCoroutine(OnLoadCompleted(_handle));
+            ApplicationManager.RunCoroutine(OnLoadCompleted(_handle));
 #endif
         }
     
@@ -300,7 +300,7 @@ namespace PowerCellStudio
             var recoursePath = path.Split("/Resources/")[1];
             recoursePath = Path.GetFileNameWithoutExtension(recoursePath);
             _handle = Resources.LoadAsync<TextAsset>(recoursePath);
-            ApplicationManager.instance.StartCoroutine(OnLoadJsonCompleted<T>(_handle));
+            ApplicationManager.RunCoroutine(OnLoadJsonCompleted<T>(_handle));
         }
     
         private IEnumerator OnLoadJsonCompleted<T>(ResourceRequest handle) where T:ConfBaseData
@@ -327,7 +327,7 @@ namespace PowerCellStudio
             var recoursePath = path.Split("/Resources/")[1];
             recoursePath = Path.GetFileNameWithoutExtension(recoursePath);
             _handle = Resources.LoadAsync<TextAsset>(recoursePath);
-            ApplicationManager.instance.StartCoroutine(OnLoadBinaryCompleted<T>(_handle));
+            ApplicationManager.RunCoroutine(OnLoadBinaryCompleted<T>(_handle));
         }
     
         private IEnumerator OnLoadBinaryCompleted<T>(ResourceRequest handle) where T : ConfBaseData
