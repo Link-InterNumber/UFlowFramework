@@ -1,13 +1,15 @@
+#if !UNITY_WEBGL
 using System.Collections.Concurrent;
 using System.Threading;
+#endif
 using UnityEngine;
 
 namespace PowerCellStudio
 {
     [DonotInitModuleIAutoly]
-    public class ThreadedTasksHandler : MonoSingleton<ThreadedTasksHandler>
+    public class ThreadedTasksRunner : MonoSingleton<ThreadedTasksRunner>
     {
-        private static ThreadedTasksHandler _instance;
+#if !UNITY_WEBG
         private ConcurrentQueue<System.Action> _mainThreadActions = new ConcurrentQueue<System.Action>();
 
         void Update()
@@ -18,6 +20,7 @@ namespace PowerCellStudio
                 action?.Invoke();
             }
         }
+#endif
 
         /// <summary>
         /// 将任务提交到线程池执行
@@ -26,6 +29,10 @@ namespace PowerCellStudio
         /// <param name="mainThreadCallback">主线程回调（可选）</param>
         public void RunTaskAsync(System.Action backgroundTask, System.Action mainThreadCallback = null)
         {
+#if !UNITY_WEBGL
+            backgroundTask?.Invoke();
+            mainThreadCallback?.Invoke();
+#else
             ThreadPool.QueueUserWorkItem(_ => 
             {
                 try
@@ -44,11 +51,16 @@ namespace PowerCellStudio
                     Debug.LogError($"Task failed: {ex}");
                 }
             });
+#endif
         }
 
         // 添加带参数的版本
         public void RunTaskAsync<T>(System.Action<T> backgroundTask, T parameter, System.Action mainThreadCallback = null)
         {
+#if !UNITY_WEBGL
+            backgroundTask?.Invoke(parameter);
+            mainThreadCallback?.Invoke();
+#else
             ThreadPool.QueueUserWorkItem(_ => 
             {
                 try
@@ -64,6 +76,7 @@ namespace PowerCellStudio
                     Debug.LogError($"Task failed: {ex}");
                 }
             });
+#endif
         }
 
     }
