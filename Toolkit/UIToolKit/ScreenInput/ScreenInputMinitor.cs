@@ -14,6 +14,7 @@ namespace PowerCellStudio
       {
          _inputHandles = new Dictionary<Type, IScreenInputHandle>();
          _removeBuffer = new List<Type>();
+         #region Test
          var tapHandle = new ScreenTapHandle();
          var dragHandle = new ScreenDragHandle();
          var pinchHandle = new ScreenPinchHandle();
@@ -26,7 +27,6 @@ namespace PowerCellStudio
          RegisterInputHandle(twoFingerDragHandle);
          RegisterInputHandle(longPressHandle);
 
-         #region Test
          tapHandle.RegisterInput(OnTapEvent);
          dragHandle.RegisterInput(OnDragEvent);
          pinchHandle.RegisterInput(OnPinchEvent);
@@ -61,7 +61,8 @@ namespace PowerCellStudio
             _inputHandles[type].Dispose();
             _removeBuffer.Add(type);
          }
-         _inputHandles[typeof(T)] = handle;
+         _inputHandles[type] = handle;
+         handle.OnEnable();
       }
 
       public void UnregisterInputHandle<T>() where T : IScreenInputHandle
@@ -90,7 +91,7 @@ namespace PowerCellStudio
          return false;
       }
 
-      public void RegisterInput<T>(ScreenInputEventHandler action) where T : IScreenInputHandle
+      public void AddListener<T>(ScreenInputEventHandler action) where T : IScreenInputHandle
       {
          if (_inputHandles.TryGetValue(typeof(T), out var handle))
          {
@@ -102,7 +103,7 @@ namespace PowerCellStudio
          }
       }
 
-      public void UnregisterInput<T>(ScreenInputEventHandler action) where T : IScreenInputHandle
+      public void RemoveListener<T>(ScreenInputEventHandler action) where T : IScreenInputHandle
       {
          if (_inputHandles.TryGetValue(typeof(T), out var handle))
          {
@@ -111,6 +112,22 @@ namespace PowerCellStudio
          else
          {
             Debug.LogWarning($"Input handle of type {typeof(T)} is not registered.");
+         }
+      }
+
+      public void EnableInput<T>()
+      {
+         if (TryGetInputHandle<T>(out var handler))
+         {
+            handler.OnEnable();
+         }
+      }
+
+      public void DisableInput<T>()
+      {
+         if (TryGetInputHandle<T>(out var handler))
+         {
+            handler.OnDisable();
          }
       }
 
@@ -151,7 +168,6 @@ namespace PowerCellStudio
          {
             if (_inputHandles.TryGetValue(type, out var handle))
             {
-               handle.Dispose();
                _inputHandles.Remove(type);
             }
          }

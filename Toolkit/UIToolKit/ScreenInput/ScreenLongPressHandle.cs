@@ -5,6 +5,8 @@ namespace PowerCellStudio
 {
     public class ScreenLongPressHandle : IScreenInputHandle
     {
+        private bool _enable = false;
+        public bool enable {get => _enable; set => _enable = value;}
         private event ScreenInputEventHandler _onLongPress;
 
         private Dictionary<int, float> _idToStartTime = new Dictionary<int, float>();
@@ -39,12 +41,12 @@ namespace PowerCellStudio
 
         public void OnEnable()
         {
-
+            _enable = true;
         }
 
         public void OnDisable()
         {
-
+            _enable = false;
         }
 
         private bool CheckCanInvoke(int id)
@@ -63,6 +65,7 @@ namespace PowerCellStudio
 
         public void OnUpdate()
         {
+            if (!_enable) return;
             if (Application.isMobilePlatform)
             {
 #if ENABLE_INPUT_SYSTEM
@@ -294,6 +297,7 @@ namespace PowerCellStudio
 
         public void Dispose()
         {
+            _enable = false;
             _onLongPress = null;
             _idToStartTime.Clear();
             _idToStartTime = null;

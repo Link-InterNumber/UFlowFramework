@@ -3,6 +3,8 @@ namespace PowerCellStudio
 {
    public class ScreenPinchHandle : IScreenInputHandle
    {
+      private bool _enable = false;
+      public bool enable {get => _enable; set => _enable = value;}
       private event ScreenInputEventHandler _onPinch;
       private float _lastDistance = 0f;
       private Vector2 _lastPinchPos;
@@ -29,6 +31,8 @@ namespace PowerCellStudio
 
       public void OnEnable()
       {
+         if (_enable) return;
+         _enable = true;
          _lastDistance = 0f;
 #if ENABLE_INPUT_SYSTEM
          UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerDown += OnFingerDown;
@@ -38,6 +42,7 @@ namespace PowerCellStudio
       }
       public void OnDisable()
       {
+         _enable = false;
          _lastDistance = 0f;
 #if ENABLE_INPUT_SYSTEM
          UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerDown -= OnFingerDown;
@@ -101,10 +106,12 @@ namespace PowerCellStudio
       public void Dispose()
       {
          _onPinch = null;
-         _lastDistance = 0f;
+         OnDisable();
       }
+
       public void OnUpdate()
       {
+         if (!_enable) return;
          if (Application.isMobilePlatform)
          {
 #if !ENABLE_INPUT_SYSTEM

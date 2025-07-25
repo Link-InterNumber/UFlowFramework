@@ -3,6 +3,8 @@ namespace PowerCellStudio
 {
    public class ScreenTapHandle : IScreenInputHandle
    {
+      private bool _enable = false;
+      public bool enable {get => _enable; set => _enable = value;}
       private event ScreenInputEventHandler _onTap;
       private bool _isDragging = false;
       private float _startTime;
@@ -28,6 +30,8 @@ namespace PowerCellStudio
       public void UnregisterInput(ScreenInputEventHandler action) => _onTap -= action;
       public void OnEnable()
       {
+         if (_enable) return;
+         _enable = true;
 #if ENABLE_INPUT_SYSTEM
          // UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerDown += OnFingerDown;
          UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerUp += OnFingerUp;
@@ -36,6 +40,7 @@ namespace PowerCellStudio
       }
       public void OnDisable()
       {
+         _enable = false;
 #if ENABLE_INPUT_SYSTEM
          // UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerDown -= OnFingerDown;
          UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerUp -= OnFingerUp;
@@ -90,15 +95,15 @@ namespace PowerCellStudio
 
       public void Dispose()
       {
-#if ENABLE_INPUT_SYSTEM
-         UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerUp -= OnFingerUp;
-#endif
+         OnDisable();
          _onTap = null;
          _isDragging = false;
          _startTime = 0f;
       }
+
       public void OnUpdate()
       {
+         if (!_enable) return;
          if (Application.isMobilePlatform)
          {
 #if !ENABLE_INPUT_SYSTEM

@@ -33,6 +33,7 @@ namespace PowerCellStudio
 
    public interface IScreenInputHandle : IDisposable
    {
+      bool enable {get; set;}
       void RegisterInput(ScreenInputEventHandler action);
       void UnregisterInput(ScreenInputEventHandler action);
       void OnEnable();

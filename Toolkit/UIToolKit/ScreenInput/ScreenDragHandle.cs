@@ -3,6 +3,9 @@ namespace PowerCellStudio
 {
    public class ScreenDragHandle : IScreenInputHandle
    {
+      private bool _enable = false;
+      public bool enable {get => _enable; set => _enable = value;}
+
       private event ScreenInputEventHandler _onDrag;
       private Vector2 _lastPos;
       private bool _isDragging = false;
@@ -27,6 +30,8 @@ namespace PowerCellStudio
       public void UnregisterInput(ScreenInputEventHandler action) => _onDrag -= action;
       public void OnEnable()
       {
+         if (_enable) return;
+         _enable = true;
 #if ENABLE_INPUT_SYSTEM
          UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerDown += OnFingerDown;
          UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerUp += OnFingerUp;
@@ -35,6 +40,7 @@ namespace PowerCellStudio
       }
       public void OnDisable()
       {
+         _enable = false;
 #if ENABLE_INPUT_SYSTEM
          UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerDown -= OnFingerDown;
          UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerUp -= OnFingerUp;
@@ -89,11 +95,7 @@ namespace PowerCellStudio
 
       public void Dispose()
       {
-#if ENABLE_INPUT_SYSTEM
-         UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerDown -= OnFingerDown;
-         UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerUp -= OnFingerUp;
-         UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerMove -= OnFingerMove;
-#endif
+         OnDisable();
          _onDrag = null;
          _isDragging = false;
          _lastPos = Vector2.zero;
@@ -101,6 +103,7 @@ namespace PowerCellStudio
 
       public void OnUpdate()
       {
+         if (!_enable) return;
          if (Application.isMobilePlatform)
          {
 #if !ENABLE_INPUT_SYSTEM
