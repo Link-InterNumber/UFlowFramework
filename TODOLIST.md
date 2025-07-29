@@ -2,3 +2,9 @@
 - [x] TextureFormatSetterSize、TexturePostprocessor工具优化。
 - [x] 优化多语言本地化资源（Image或prefab等）自动切换功能。
 - [x] LinkStateMachine将字典改为数组。
+- [x] UI脚本生成工具。
+- [x] 可配置Logger工具，运行时保存log。
+- [x] 震动工具类。
+- [x] 线程池工具。
+- [x] job分发工具。
+- [x] 可插拔组合的屏幕交互工具类。
