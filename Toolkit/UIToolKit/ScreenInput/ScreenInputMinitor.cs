@@ -115,7 +115,7 @@ namespace PowerCellStudio
          }
       }
 
-      public void EnableInput<T>()
+      public void EnableInput<T>()where T : IScreenInputHandle
       {
          if (TryGetInputHandle<T>(out var handler))
          {
@@ -123,7 +123,7 @@ namespace PowerCellStudio
          }
       }
 
-      public void DisableInput<T>()
+      public void DisableInput<T>()where T : IScreenInputHandle
       {
          if (TryGetInputHandle<T>(out var handler))
          {

@@ -39,7 +39,7 @@ namespace PowerCellStudio
             return handle;
         }
 
-        public static ShakeHandle ShakePreset(Transform target, ShakePreset preset, float scale = 1f, ShakeType shakeType = ShakeType.Position | ShakeType.Rotation, float duration = 0.5f, bool isUnscaleTime = true, AnimationCurve curve = null)
+        public static ShakeHandle ShakeByPreset(Transform target, ShakePreset preset, float scale = 1f, ShakeType shakeType = ShakeType.Position | ShakeType.Rotation, float duration = 0.5f, bool isUnscaleTime = true, AnimationCurve curve = null)
         {
             Vector3 magnitude;
             float frequency;
@@ -72,7 +72,7 @@ namespace PowerCellStudio
             return Shake(shakeType, camera.transform, duration, frequency, (Vector3)magnitude, isUnscaleTime, curve);
         }
 
-        public static ShakeHandle ShakeCameraPreset(Camera camera, ShakePreset preset, float scale = 1f, ShakeType shakeType = ShakeType.Position | ShakeType.Rotation, float duration = 0.5f, bool isUnscaleTime = true, AnimationCurve curve = null)
+        public static ShakeHandle ShakeCameraByPreset(Camera camera, ShakePreset preset, float scale = 1f, ShakeType shakeType = ShakeType.Position | ShakeType.Rotation, float duration = 0.5f, bool isUnscaleTime = true, AnimationCurve curve = null)
         {
             Vector3 magnitude;
             float frequency;
