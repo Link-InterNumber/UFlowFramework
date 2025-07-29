@@ -3,6 +3,8 @@ namespace PowerCellStudio
 {
    public class ScreenTwoFingerDragHandle : IScreenInputHandle
    {
+      private bool _enable = false;
+      public bool enable {get => _enable; set => _enable = value;}
       private event ScreenInputEventHandler _onTwoFingerDrag;
       private Vector2 _lastMousePosition;
       private bool _isMouseDragging = false;
@@ -28,6 +30,8 @@ namespace PowerCellStudio
 
       public void OnEnable()
       {
+         if (_enable) return;
+         _enable = true;
          _isMouseDragging = false; _lastMousePosition = Vector2.zero;
 #if ENABLE_INPUT_SYSTEM
          UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerDown += OnFingerDown;
@@ -37,6 +41,7 @@ namespace PowerCellStudio
       }
       public void OnDisable()
       {
+         _enable = false;
          _isMouseDragging = false; _lastMousePosition = Vector2.zero;
 #if ENABLE_INPUT_SYSTEM
          UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerDown -= OnFingerDown;
@@ -102,12 +107,13 @@ namespace PowerCellStudio
 
       public void Dispose()
       {
+         OnDisable();
          _onTwoFingerDrag = null;
-         _isMouseDragging = false;
-         _lastMousePosition = Vector2.zero;
       }
+      
       public void OnUpdate()
       {
+         if (!_enable) return;
          if (Application.isMobilePlatform)
          {
 #if !ENABLE_INPUT_SYSTEM

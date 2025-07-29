@@ -6,6 +6,8 @@ namespace PowerCellStudio
     {
         private ShakeRequest _data;
 
+        public int hashCode;
+
         private float time;
 
         public bool isDone => time >= _data.duration;
@@ -17,6 +19,7 @@ namespace PowerCellStudio
         public ShakeHandle(ShakeRequest data)
         {
             _data = data;
+            hashCode = _data.target.GetHashCode();
             time = 0;
         }
 
