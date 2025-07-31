@@ -38,24 +38,17 @@ namespace PowerCellStudio
             if (graphics) graphics.raycastTarget = true;
             var guidanceInfo = (Info) data;
             _guidanceTag = guidanceInfo.tag;
-            screenButton.gameObject.SetActive(guidanceInfo.conf.touchScreenToSkip ||
-                                              guidanceInfo.conf.blockInteraction ||
-                                              !_guidanceTag.GetComponent<RectTransform>());
+            _canSkip = guidanceInfo.conf.touchScreenToSkip || !_guidanceTag.GetComponent<RectTransform>();
+            screenButton.gameObject.SetActive(_canSkip || guidanceInfo.conf.blockInteraction);
             screenButton.GetComponent<Canvas>().sortingOrder = guidanceInfo.conf.blockInteraction ? 6000 : 4000;
             if (_uiPrefab)
             {
                 GameObject.Destroy(_uiPrefab);
                 _uiPrefab = null;
             }
-
             if (!guidanceInfo.conf.uiPrefab.isNull)
             {
-                _canSkip = false;
                 assetsLoader.AsyncLoadNInstantiate(guidanceInfo.conf.uiPrefab.assetName, OnLoadUiPrefab);
-            }
-            else
-            {
-                _canSkip = true;
             }
         }
 
@@ -84,11 +77,18 @@ namespace PowerCellStudio
 
         public override void OnClose()
         {
-            if (_uiPrefab)
-            {
-                GameObject.Destroy(_uiPrefab);
-                _uiPrefab = null;
-            }
+            if (!_uiPrefab) return;
+            GameObject.Destroy(_uiPrefab);
+            _uiPrefab = null;
         }
+
+        // bool IUIComponent.Close()
+        // {
+        //     ApplicationManager.DelayedCall(0.5f, OnClose)
+        //     return true;
+        // }
+
+        // private w
+        
     }
 }

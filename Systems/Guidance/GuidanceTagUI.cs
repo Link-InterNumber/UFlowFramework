@@ -9,10 +9,23 @@ namespace PowerCellStudio
     {
         private Canvas _tempCanvas;
         private Graphic _graphic;
+
+        private RectTransform _rectTransform;
+        protected RectTransform rectTransform
+        {
+            get
+            {
+                if (!_rectTransform) _rectTransform = transform as RectTransform;
+                return _rectTransform;
+            }
+        }
         
+        private float _outSpaceTime;
+
         public override void OnExecute()
         {
             if(_inExecute) return;
+            _outSpaceTime = 0f;
             _inExecute = true;
             var canvas = GetComponent<Canvas>();
             if (!canvas)
@@ -45,6 +58,7 @@ namespace PowerCellStudio
                     _graphic.raycastTarget = true;
                 }
             }
+            selsctable.Select();
         }
 
         public override void OnDeExecute()
@@ -54,12 +68,14 @@ namespace PowerCellStudio
             if (_graphic)
             {
                 Destroy(_graphic);
+                _graphic = null;
             }
             if(_tempCanvas)
             {
                 var GR = gameObject.GetComponent<GraphicRaycaster>();
                 if(GR) Destroy(GR);
                 Destroy(_tempCanvas);
+                _tempCanvas = null;
             }
         }
 
@@ -70,8 +86,7 @@ namespace PowerCellStudio
 
         public void OnPointerUp(PointerEventData eventData)
         {
-            if(!_inExecute) return;
-            GuidanceManager.instance.DeExecuteGuidance(guidanceIndex);
+            
         }
 
         public void OnSubmit(BaseEventData eventData)
@@ -83,6 +98,33 @@ namespace PowerCellStudio
         public void OnPointerDown(PointerEventData eventData)
         {
             if(!_inExecute) return;
+            GuidanceManager.instance.DeExecuteGuidance(guidanceIndex);
+        }
+
+        private void Update()
+        {
+            if (!_inExecute) return;
+            if (rectTransform == null) return;
+
+            Vector3[] worldCorners = new Vector3[4];
+            rectTransform.GetWorldCorners(worldCorners);
+
+            for (int i = 0; i < 4; i++)
+            {
+                Vector3 screenPoint = uiCamera.WorldToScreenPoint(worldCorners[i]);
+                if (screenPoint.x < 0 || screenPoint.x > Screen.width ||
+                    screenPoint.y < 0 || screenPoint.y > Screen.height)
+                {
+                    _outSpaceTime += Time.unscaledDeltaTime;
+                    if (_outSpaceTime > 10f)
+                    {
+                        GuidanceManager.instance.DeExecuteGuidance(guidanceIndex);
+                        OnDeExecute();
+                    }
+                    return false; // 有一个角在屏幕外
+                }
+            }
+            return true; // 所有角都在屏幕内
         }
     }
 }
