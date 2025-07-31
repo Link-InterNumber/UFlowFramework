@@ -101,30 +101,17 @@ namespace PowerCellStudio
             GuidanceManager.instance.DeExecuteGuidance(guidanceIndex);
         }
 
-        private void Update()
+        public void Update()
         {
             if (!_inExecute) return;
             if (rectTransform == null) return;
 
-            Vector3[] worldCorners = new Vector3[4];
-            rectTransform.GetWorldCorners(worldCorners);
-
-            for (int i = 0; i < 4; i++)
-            {
-                Vector3 screenPoint = uiCamera.WorldToScreenPoint(worldCorners[i]);
-                if (screenPoint.x < 0 || screenPoint.x > Screen.width ||
-                    screenPoint.y < 0 || screenPoint.y > Screen.height)
-                {
-                    _outSpaceTime += Time.unscaledDeltaTime;
-                    if (_outSpaceTime > 10f)
-                    {
-                        GuidanceManager.instance.DeExecuteGuidance(guidanceIndex);
-                        OnDeExecute();
-                    }
-                    return false; // 有一个角在屏幕外
-                }
-            }
-            return true; // 所有角都在屏幕内
+            var isMaxOut = UIManager.IsRectOutOfScreen(rectTransform);
+            if (!isMaxOut) return;
+            _outSpaceTime += Time.unscaledDeltaTime;
+            if (!(_outSpaceTime > 10f)) return;
+            GuidanceManager.instance.DeExecuteGuidance(guidanceIndex);
+            OnDeExecute();
         }
     }
 }

@@ -50,6 +50,58 @@ namespace PowerCellStudio
             }
         }
 
+        public static Vector2 GetUIPosition(RectTransform transform)
+        {
+            var screenPos = GetScreenPosition(transform);
+            return ScreenPosToUIPos(screenPos);
+        }
+
+        public static bool IsRectOutOfScreen(RectTransform transform)
+        {
+            var corners = new Vector3[4];
+            transform.GetWorldCorners(corners);
+            for (int i = 0; i < corners.Length; i++)
+            {
+                var uiWorldPos = corners[i];
+                if (!IsUIPosOutOfScreen(uiWorldPos)) return false;
+            }
+            return true;
+        }
+        
+        public static bool IsUIPosOutOfScreen(Vector3 uiWorldPos)
+        {
+            switch (instance.canvasRenderMode)
+            {
+                case RenderMode.ScreenSpaceOverlay:
+                    var screenPos = ScreenSize;
+                    return uiWorldPos.x < 0f || uiWorldPos.x > screenPos.x || uiWorldPos.y < 0f || uiWorldPos.y > screenPos.y;
+                case RenderMode.ScreenSpaceCamera:
+                case RenderMode.WorldSpace:
+                    var viewPos = UICamera.instance.cameraCom.WorldToViewportPoint(uiWorldPos);
+                    return viewPos.x < 0f || viewPos.x > 1f || viewPos.y < 0f || viewPos.y > 1f;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public static bool IsPointOutOfScreen(RectTransform transform, Vector2 localPoint)
+        {
+            switch (instance.canvasRenderMode)
+            {
+                case RenderMode.ScreenSpaceOverlay:
+                    var screenPos = ScreenSize;
+                    var worldPos = (Vector2)transform.position + localPoint;
+                    return worldPos.x < 0f || worldPos.x > screenPos.x || worldPos.y < 0f || worldPos.y > screenPos.y;
+                case RenderMode.ScreenSpaceCamera:
+                case RenderMode.WorldSpace:
+                    var uiPosition = transform.TransformPoint(localPoint);
+                    var viewPos = UICamera.instance.cameraCom.WorldToViewportPoint(uiPosition);
+                    return viewPos.x < 0f || viewPos.x > 1f || viewPos.y < 0f || viewPos.y > 1f;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
         /// <summary>
         /// 将屏幕坐标转换为UI坐标。
         /// Convert screen position to UI position.

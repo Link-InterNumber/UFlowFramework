@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using UnityEngine.InputSystem.EnhancedTouch;
 
 namespace PowerCellStudio
 {
@@ -12,6 +13,9 @@ namespace PowerCellStudio
 
       private void Awake()
       {
+#if ENABLE_INPUT_SYSTEM
+         EnhancedTouchSupport.Enable();
+#endif
          _inputHandles = new Dictionary<Type, IScreenInputHandle>();
          _removeBuffer = new List<Type>();
          #region Test
