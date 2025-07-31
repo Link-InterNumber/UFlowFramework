@@ -5,15 +5,16 @@ using System.Collections.Generic;
 using System.IO;
 using System;
 using UnityEngine.Serialization;
+using UnityEditor.AddressableAssets;
 
 namespace PowerCellStudio
 {
-    public class FolderBundleEditorWindow : EditorWindow
+    public class FolderAddressableGroupEditorWindow : EditorWindow
     {
-        [MenuItem("Build/AssetBundle/Folder AssetBundle Settings")]
+        [MenuItem("Build/Addressable/Folder Addressable Settings")]
         public static void ShowWindow()
         {
-            GetWindow<FolderBundleEditorWindow>("Folder AssetBundle Settings");
+            GetWindow<FolderAddressableGroupEditorWindow>("Folder Addressable Settings");
         }
 
         private FolderTreeView treeView;
@@ -53,7 +54,7 @@ namespace PowerCellStudio
                 },
                 new MultiColumnHeaderState.Column
                 {
-                    headerContent = new GUIContent("Has Bundle"),
+                    headerContent = new GUIContent("Has Group"),
                     width = 60,
                     minWidth = 60,
                     autoResize = true,
@@ -63,7 +64,7 @@ namespace PowerCellStudio
                 },
                 new MultiColumnHeaderState.Column
                 {
-                    headerContent = new GUIContent("Bundle Name"),
+                    headerContent = new GUIContent("Group Name"),
                     width = 100,
                     minWidth = 100,
                     autoResize = true,
@@ -73,7 +74,7 @@ namespace PowerCellStudio
                 },
                 new MultiColumnHeaderState.Column
                 {
-                    headerContent = new GUIContent("Inherited Bundle"),
+                    headerContent = new GUIContent("Inherited Group"),
                     width = 100,
                     minWidth = 100,
                     autoResize = true,
@@ -89,7 +90,7 @@ namespace PowerCellStudio
 
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("Set Folder's Bundle", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Set Folder's Addressable Group", EditorStyles.boldLabel);
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
             Rect rect = GUILayoutUtility.GetRect(0, 100000, 0, position.height - 60);
             treeView.OnGUI(rect);
@@ -97,33 +98,27 @@ namespace PowerCellStudio
 
             EditorGUILayout.Space();
             EditorGUILayout.BeginHorizontal();
-            
+
             // 红色的Clear Setting按钮
             GUI.backgroundColor = Color.red;
-            if ( GUILayout.Button("Clear Setting"))
+            if (GUILayout.Button("Clear Setting"))
             {
                 // 弹出对话框确认
-                ConfirmWindow.ShowWindow(() =>
-                    {
-                        treeView.ClearBundles();
-                        AssetDatabase.RemoveUnusedAssetBundleNames();
-                        AssetDatabase.SaveAssets();
-                        treeView.Reload();
-                    },
-                    null,
-                    "Clear All Bundle Settings",
-                    "Are you sure you want to clear all bundle settings?\n This action cannot be undone.");
+                treeView.ClearGroup();
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                treeView.Reload();
             }
-            
+
             GUI.backgroundColor = Color.white;
             if (GUILayout.Button("Apply Setting"))
             {
-                treeView.ApplyBundles();
-                AssetDatabase.RemoveUnusedAssetBundleNames();
+                treeView.ApplyGroup();
                 AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
                 treeView.Reload();
             }
-            
+
             EditorGUILayout.EndHorizontal();
 
         }
@@ -134,19 +129,22 @@ namespace PowerCellStudio
             class FolderTreeItem : TreeViewItem
             {
                 public string path;
-                public string bundle;
+                public string group;
 
-                public string inheritedBundle;
+                public string inheritedGroup;
 
-                public int hasBundle;
+                public int hasGroup;
                 // public bool isEditing;
             }
 
             private float kRowHeights = 20f;
             private float kToggleWidth = 20f;
-            private string[] _allBundleName;
+            private string[] _allGroupName;
+            private Dictionary<string, int> _groupNameToIndex = new Dictionary<string, int>();
 
-            Dictionary<int, string> editBuffer = new Dictionary<int, string>();
+            private UnityEditor.AddressableAssets.Settings.AddressableAssetSettings _settings;
+
+            Dictionary<int, string> _editBuffer = new Dictionary<int, string>();
 
             // public FolderTreeView(TreeViewState state) : base(state)
             // {
@@ -164,64 +162,86 @@ namespace PowerCellStudio
                 customFoldoutYOffset = (kRowHeights - EditorGUIUtility.singleLineHeight) * 0.5f;
                 // extraSpaceBeforeIconAndLabel = kToggleWidth;
                 // multicolumnHeader.sortingChanged += OnSortingChanged;
-                _allBundleName = AssetDatabase.GetAllAssetBundleNames();
+                _settings = AddressableAssetSettingsDefaultObject.GetSettings(true);
+                if (_settings != null)
+                {
+                    var tempList = new List<string>();
+                    tempList.Add(string.Empty);
+                    for (int i = 0; i < _settings.groups.Count; i++)
+                    {
+                        UnityEditor.AddressableAssets.Settings.AddressableAssetGroup group = _settings.groups[i];
+                        if (group != null && !string.IsNullOrEmpty(group.Name) && !group.Name.Equals("Built In Data"))
+                            tempList.Add(group.Name);
+                    }
+                    _allGroupName = tempList.ToArray();
+                    Array.Sort(_allGroupName);
+                    _groupNameToIndex.Clear();
+                    // _groupNameToIndex[string.Empty] = -1;
+                    for (int i = 0; i < _allGroupName.Length; i++)
+                    {
+                        _groupNameToIndex[_allGroupName[i]] = i;
+                    }
+                }
                 Reload();
             }
 
             protected override TreeViewItem BuildRoot()
             {
                 var root = new FolderTreeItem
-                    { id = 0, depth = -1, displayName = "Root", path = "Assets", bundle = "", inheritedBundle = "" };
+                { id = 0, depth = -1, displayName = "Root", path = "Assets", group = "", inheritedGroup = "" };
                 AddChildren(root, "Assets", null);
                 SetupDepthsFromParentsAndChildren(root);
                 return root;
             }
 
-            void AddChildren(FolderTreeItem parent, string path, string parentBundle)
+            void AddChildren(FolderTreeItem parent, string path, string parentGroup)
             {
                 var dirs = Directory.GetDirectories(path);
                 parent.children = new List<TreeViewItem>();
                 foreach (var dir in dirs)
                 {
+                    var guid = AssetDatabase.AssetPathToGUID(dir);
                     var name = Path.GetFileName(dir);
-                    var setBundle = GetFolderBundle(dir);
-                    var hasBundle = !string.IsNullOrEmpty(setBundle);
+                    var setGroup = GetFolderGroup(guid);
+                    var hasGroup = !string.IsNullOrEmpty(setGroup);
                     var child = new FolderTreeItem
                     {
                         id = dir.GetHashCode(),
                         displayName = name,
                         path = dir,
-                        bundle = setBundle,
-                        inheritedBundle = hasBundle
-                            ? setBundle
-                            : parentBundle,
-                        hasBundle = hasBundle ? 1 : 0
+                        group = setGroup,
+                        inheritedGroup = hasGroup
+                            ? setGroup
+                            : parentGroup,
+                        hasGroup = hasGroup ? 1 : 0
                         // isEditing = false
                     };
-                    if (hasBundle) 
+                    if (hasGroup)
                     {
-                        editBuffer[child.id] = child.bundle;
+                        _editBuffer[child.id] = child.group;
                     }
                     parent.AddChild(child);
-                    AddChildren(child, dir, child.inheritedBundle);
-                    if (hasBundle) AddParentBundleCount(parent, 1);
+                    AddChildren(child, dir, child.inheritedGroup);
+                    if (hasGroup) AddParentGroupCount(parent, 1);
                 }
             }
 
-            private void AddParentBundleCount(FolderTreeItem item, int addNumber)
+            private void AddParentGroupCount(FolderTreeItem item, int addNumber)
             {
-                item.hasBundle += addNumber;
+                item.hasGroup += addNumber;
                 var parent = item.parent as FolderTreeItem;
                 if (parent != null)
                 {
-                    AddParentBundleCount(parent, addNumber);
+                    AddParentGroupCount(parent, addNumber);
                 }
             }
 
-            string GetFolderBundle(string folderPath)
+            string GetFolderGroup(string guid)
             {
-                var importer = AssetImporter.GetAtPath(folderPath);
-                return importer != null ? importer.assetBundleName : "";
+                if (_settings == null) return string.Empty;
+                var entry = _settings.FindAssetEntry(guid);
+                if (entry == null)  return string.Empty;
+                return entry.parentGroup.name;
             }
 
             protected override void RowGUI(RowGUIArgs args)
@@ -242,75 +262,70 @@ namespace PowerCellStudio
                 switch (column)
                 {
                     case 0:
-                    {
-                        // 在标签文本的左侧创建一个开关按钮
-                        Rect toggleRect = cellRect;
-                        toggleRect.x += GetContentIndent(item);
-                        toggleRect.width = kToggleWidth;
-                        // if (toggleRect.xMax < cellRect.xMax)
-                        //     item.data.enabled = EditorGUI.Toggle(toggleRect, item.data.enabled);
-                        // 默认图标和标签
-                        args.rowRect = cellRect;
-                        base.RowGUI(args);
-                        break;
-                    }
-                    case 1:
-                    {
-                        // Bundle是否设置
-                        EditorGUI.LabelField(cellRect, item.hasBundle > 0 ? "*" : string.Empty);
-                        break;
-                    }
-                    case 2:
-                    {
-                        // var style = new GUIStyle(EditorStyles.textField);
-                        // Bundle名编辑
-                        // string displayBundle = item.bundle;
-                        string editValue = item.bundle;
-                        // 下拉按钮可选择_allBundleName中的值
-                        editValue = EditorGUI.TextField(cellRect, editValue);
-                        if (editValue != item.bundle)
                         {
-                            var parent = item.parent as FolderTreeItem;
-                            if (parent != null && parent.inheritedBundle == editValue) break;
-                            if (string.IsNullOrEmpty(editValue))
-                            {
-                                item.inheritedBundle = parent?.inheritedBundle ?? "";
-                                AddParentBundleCount(item, -1);
-                            }
-                            else
-                            {
-                                item.inheritedBundle = editValue;
-                                AddParentBundleCount(item, 1);
-                            }
-
-                            item.bundle = editValue;
-                            ChangeInheritedBundleOfChildren(item, item.inheritedBundle);
-                            // editBuffer[item.id] = editValue;
+                            // 在标签文本的左侧创建一个开关按钮
+                            Rect toggleRect = cellRect;
+                            toggleRect.x += GetContentIndent(item);
+                            toggleRect.width = kToggleWidth;
+                            // if (toggleRect.xMax < cellRect.xMax)
+                            //     item.data.enabled = EditorGUI.Toggle(toggleRect, item.data.enabled);
+                            // 默认图标和标签
+                            args.rowRect = cellRect;
+                            base.RowGUI(args);
+                            break;
                         }
+                    case 1:
+                        {
+                            EditorGUI.LabelField(cellRect, item.hasGroup > 0 ? "*" : string.Empty);
+                            break;
+                        }
+                    case 2:
+                        {
+                            int selected = _groupNameToIndex.TryGetValue(item.group, out var index) ? index : 0;
+                            int newSelected = EditorGUI.Popup(cellRect, selected, _allGroupName);
+                            var editValue = newSelected > -1 ? _allGroupName[newSelected] : string.Empty;
+                            if (editValue != item.group)
+                            {
+                                var parent = item.parent as FolderTreeItem;
+                                if (parent != null && parent.inheritedGroup == editValue) break;
+                                if (string.IsNullOrEmpty(editValue))
+                                {
+                                    item.inheritedGroup = parent?.inheritedGroup ?? "";
+                                    AddParentGroupCount(item, -1);
+                                }
+                                else
+                                {
+                                    item.inheritedGroup = editValue;
+                                    AddParentGroupCount(item, 1);
+                                }
 
-                        break;
-                    }
+                                item.group = editValue;
+                                ChangeInheritedGroupOfChildren(item, item.inheritedGroup);
+                                // editBuffer[item.id] = editValue;
+                            }
+
+                            break;
+                        }
                     case 3:
-                    {
-                        // var style = new GUIStyle(EditorStyles.textField);
-                        // Bundle名编辑
-                        EditorGUI.LabelField(cellRect, item.inheritedBundle);
-                        break;
-                    }
+                        {
+                            // var style = new GUIStyle(EditorStyles.textField);
+                            EditorGUI.LabelField(cellRect, item.inheritedGroup);
+                            break;
+                        }
                     default:
                         break;
                 }
             }
 
-            private void ChangeInheritedBundleOfChildren(FolderTreeItem item, string newBundle)
+            private void ChangeInheritedGroupOfChildren(FolderTreeItem item, string newGroup)
             {
                 if (item.hasChildren)
                 {
                     foreach (FolderTreeItem child in item.children)
                     {
-                        if (!string.IsNullOrEmpty(child.bundle)) continue;
-                        child.inheritedBundle = newBundle;
-                        ChangeInheritedBundleOfChildren(child, newBundle);
+                        if (!string.IsNullOrEmpty(child.group)) continue;
+                        child.inheritedGroup = newGroup;
+                        ChangeInheritedGroupOfChildren(child, newGroup);
                     }
                 }
             }
@@ -320,54 +335,69 @@ namespace PowerCellStudio
             //     base.OnGUI(rect);
             // }
 
-            public void ApplyBundles()
+            public void ApplyGroup()
             {
-                ApplyBundlesRecursive(rootItem as FolderTreeItem);
+                ApplyGroupRecursive(rootItem as FolderTreeItem);
             }
 
-            void ApplyBundlesRecursive(FolderTreeItem item)
+            void ApplyGroupRecursive(FolderTreeItem item)
             {
                 if (item.hasChildren)
                 {
                     foreach (FolderTreeItem child in item.children)
                     {
-                        ApplyBundlesRecursive(child);
+                        ApplyGroupRecursive(child);
                     }
                 }
-
                 var needApply = false;
-                if (editBuffer.TryGetValue(item.id, out var value))
+                if (_editBuffer.TryGetValue(item.id, out var value))
                 {
-                    needApply = !value.Equals(item.bundle);
+                    needApply = !value.Equals(item.group);
                 }
-                else if (!string.IsNullOrEmpty(item.bundle))
+                else if (!string.IsNullOrEmpty(item.group))
                 {
                     needApply = true;
                 }
 
                 if (!needApply) return;
-
-                var importer = AssetImporter.GetAtPath(item.path);
-                if (importer != null)
+                var groupName = item.group;
+                if (groupName == null || groupName.Equals(string.Empty))
                 {
-                    importer.assetBundleName = item.bundle;
-                    EditorUtility.SetDirty(importer);
+                    var entry = _settings.FindAssetEntry(AssetDatabase.AssetPathToGUID(item.path));
+                    if (entry != null)
+                    {
+                        _settings.RemoveAssetEntry(entry.guid);
+                    }
+                }
+                else
+                {
+                    var group = _settings.FindGroup(groupName);
+                    if (group == null)
+                    {
+                        return;
+                        // group = _settings.CreateGroup(groupName, false, false, false, null, null, null);
+                    }
+                    var entry = _settings.CreateOrMoveEntry(AssetDatabase.AssetPathToGUID(item.path), group);
+                    entry.address = item.path;
                 }
             }
 
-            public void ClearBundles()
+            public void ClearGroup()
             {
+                if (_settings == null) return;
                 ClearBundlesRecursive(rootItem as FolderTreeItem);
-                editBuffer.Clear();
+                _editBuffer.Clear();
             }
-
+            
             void ClearBundlesRecursive(FolderTreeItem item)
             {
-                var importer = AssetImporter.GetAtPath(item.path);
-                if (importer != null)
+                if (_editBuffer.TryGetValue(item.id, out var groupName))
                 {
-                    importer.assetBundleName = "";
-                    EditorUtility.SetDirty(importer);
+                    var entry = _settings.FindAssetEntry(AssetDatabase.AssetPathToGUID(item.path));
+                    if (entry != null)
+                    {
+                        _settings.RemoveAssetEntry(entry.guid);
+                    }
                 }
 
                 if (item.hasChildren)
@@ -378,6 +408,7 @@ namespace PowerCellStudio
                     }
                 }
             }
+
         }
     }
 }
