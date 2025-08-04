@@ -8,6 +8,7 @@ namespace PowerCellStudio
     {
         public Graphic graphics;
         public Button screenButton;
+
         private GameObject _uiPrefab;
         private GuidanceTag _guidanceTag;
         private bool _canSkip;
@@ -17,6 +18,15 @@ namespace PowerCellStudio
             public GuidanceTag tag;
             public GuidanceConf conf;
         }
+
+        private enum State
+        {
+            Opened,
+            WaitToClose,
+            CanClose,
+            Closed,
+        }
+        private State _state;
 
         public override void OnFocus()
         {
@@ -35,6 +45,7 @@ namespace PowerCellStudio
 
         public override void OnOpen(object data)
         {
+            _state = State.Opened;
             if (graphics) graphics.raycastTarget = true;
             var guidanceInfo = (Info) data;
             _guidanceTag = guidanceInfo.tag;
@@ -77,18 +88,43 @@ namespace PowerCellStudio
 
         public override void OnClose()
         {
+            _state = State.Closed;
             if (!_uiPrefab) return;
             GameObject.Destroy(_uiPrefab);
             _uiPrefab = null;
         }
 
-        // bool IUIComponent.Close()
-        // {
-        //     ApplicationManager.DelayedCall(0.5f, OnClose)
-        //     return true;
-        // }
+        bool IUIComponent.Close()
+        {
+            switch (_state)
+            {
+                case State.Opened:
+                    _state = State.WaitToClose;
+                    ApplicationManager.RunCoroutine(WaitToClose(0.5f));
+                    return false;
+                case State.WaitToClose:
+                    return false;
+                case State.CanClose:
+                    return true;
+                case State.Closed:
+                    return false;
+                default:
+                    return true;
+            }
+            return true;
+        }
 
-        // private w
+        private IEnumerator WaitToClose(float waitTime)
+        {
+            var time = 0f;
+            while (time < waitTime)
+            {
+                if (_state == State.Opened) yield break;
+                time += Time.unscaledDeltaTime;
+            }
+            _state = State.CanClose;
+            CloseUI(null);
+        }
         
     }
 }
