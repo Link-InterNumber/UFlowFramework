@@ -81,6 +81,7 @@ namespace PowerCellStudio
         {
             var window = GetUI<T>();
             if (window == null) return false;
+            if (!window.isOpened) return true;
             var isPeek = GetTopUI().Equals(window);
             if (!UIUtils.CloseUI<T>(window, onClosed)) return false;
             if (isPeek)

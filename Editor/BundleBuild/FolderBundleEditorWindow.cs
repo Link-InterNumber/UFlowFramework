@@ -103,7 +103,7 @@ namespace PowerCellStudio
             if ( GUILayout.Button("Clear Setting"))
             {
                 // 弹出对话框确认
-                ConfirmWindow.ShowWindow(() =>
+                ConfirmEditorWindow.ShowWindow(() =>
                     {
                         treeView.ClearBundles();
                         AssetDatabase.RemoveUnusedAssetBundleNames();

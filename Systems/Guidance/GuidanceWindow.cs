@@ -1,17 +1,21 @@
+using System.Collections;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace PowerCellStudio
 {
-    [WindowInfo("Assets/Test/GuidanceTest/GuidanceWindow.prefab")]
-    public class GuidanceWindow : UIWindow, IUIStandAlone
+    [WindowInfo("Assets/Res/UI/Common/GuidanceWindow.prefab")]
+    public class GuidanceWindow : UIWindow, IUIStandAlone, IUIComponent
     {
         public Graphic graphics;
         public Button screenButton;
 
         private GameObject _uiPrefab;
         private GuidanceTag _guidanceTag;
+        private GuidanceConf _conf;
         private bool _canSkip;
+        private string _currentPrefab;
         
         public struct Info
         {
@@ -35,23 +39,36 @@ namespace PowerCellStudio
 
         public override void RegisterEvent()
         {
+            base.RegisterEvent();
             screenButton.onClick.AddListener(SkipGuidance);
         }
 
         public override void DeregisterEvent()
         {
+            base.DeregisterEvent();
             screenButton.onClick.RemoveListener(SkipGuidance);
         }
-
+        
         public override void OnOpen(object data)
         {
             _state = State.Opened;
             if (graphics) graphics.raycastTarget = true;
             var guidanceInfo = (Info) data;
             _guidanceTag = guidanceInfo.tag;
-            _canSkip = guidanceInfo.conf.touchScreenToSkip || !_guidanceTag.GetComponent<RectTransform>();
+            _conf = guidanceInfo.conf;
+            _canSkip = guidanceInfo.conf.touchScreenToSkip ||guidanceInfo.conf.blockInteraction || !_guidanceTag.GetComponent<RectTransform>();
             screenButton.gameObject.SetActive(_canSkip || guidanceInfo.conf.blockInteraction);
             screenButton.GetComponent<Canvas>().sortingOrder = guidanceInfo.conf.blockInteraction ? 6000 : 4000;
+            if (!string.IsNullOrEmpty(_currentPrefab) && _currentPrefab.Equals(guidanceInfo.conf.uiPrefab.assetName))
+            {
+                var hand = _uiPrefab.GetComponent<GuidanceHand>();
+                if (!hand) return;
+                var currentConfig =
+                    ConfigManager.instance.guidanceConf.Get(GuidanceManager.instance.currentIndex.Last());
+                hand.Init(_guidanceTag, currentConfig?.decs.Get());
+                return;
+            }
+            
             if (_uiPrefab)
             {
                 GameObject.Destroy(_uiPrefab);
@@ -59,7 +76,7 @@ namespace PowerCellStudio
             }
             if (!guidanceInfo.conf.uiPrefab.isNull)
             {
-                assetsLoader.AsyncLoadNInstantiate(guidanceInfo.conf.uiPrefab.assetName, OnLoadUiPrefab);
+                assetsLoader.LoadAsync<GameObject>(guidanceInfo.conf.uiPrefab.assetName, OnLoadUiPrefab);
             }
         }
 
@@ -76,11 +93,12 @@ namespace PowerCellStudio
             {
                 GameObject.Destroy(_uiPrefab);
             }
-            _uiPrefab = obj;
-            var hand = obj.GetComponent<GuidanceHand>();
+            _uiPrefab = GameObject.Instantiate(obj);
+            var hand = _uiPrefab.GetComponent<GuidanceHand>();
             if (hand)
             {
-                hand.Init(_guidanceTag);
+                hand.Init(_guidanceTag, _conf?.decs.Get());
+                hand.transform.position = _guidanceTag.GetUIPosition();
             }
             _uiPrefab.transform.SetParent(transform);
             _uiPrefab.transform.localScale = Vector3.one;

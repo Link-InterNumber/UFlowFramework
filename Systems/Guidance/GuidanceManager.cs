@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 
 namespace PowerCellStudio
 {
@@ -19,6 +20,8 @@ namespace PowerCellStudio
         /// Current index of the guidance.
         /// </summary>
         public List<int> currentIndex => _currentIndex;
+
+        private int _nextIndex;
 
         /// <summary>
         /// 是否处于引导状态。
@@ -122,7 +125,7 @@ namespace PowerCellStudio
         {
             if(!guidanceObject) return;
             _guidanceTags[guidanceObject.guidanceIndex] = guidanceObject;
-            if (_onIndex.Contains(guidanceObject.guidanceIndex)) ActiveGuidanceWhichOn(false);
+            if (_onIndex.Contains(guidanceObject.guidanceIndex)) ActiveGuidanceWhichOn(_nextIndex == guidanceObject.guidanceIndex);
         }
 
         /// <summary>
@@ -185,8 +188,8 @@ namespace PowerCellStudio
                 ExecuteGuidance(guidanceTag);
                 break;
             }
-            SetGuidanceOff(executeIndex);
-            _currentIndex.Add(executeIndex);
+            _onIndex.Remove(executeIndex);
+            if (executeIndex > 0 ) _currentIndex.Add(executeIndex);
             return executeIndex > 0;
         }
         
@@ -195,7 +198,7 @@ namespace PowerCellStudio
         /// Execute the specified guidance.
         /// </summary>
         /// <param name="tag">引导标签 / Guidance tag</param>
-        public void ExecuteGuidance(GuidanceTag tag)
+        private void ExecuteGuidance(GuidanceTag tag)
         {
             if(!tag)
             {
@@ -231,12 +234,15 @@ namespace PowerCellStudio
             var conf = ConfigManager.instance.guidanceConf.Get(guidanceIndex);
             if (conf.nextGuidance > 0)
             {
+                _nextIndex = conf.nextGuidance;
                 var hasNewGuidance = ReactiveGuidance(conf.nextGuidance);
                 if (!hasNewGuidance) 
                     UIManager.instance.CloseWindow<GuidanceWindow>();
                 return; 
             }
-            _executedIndex.Add(_currentIndex[0]);
+
+            _nextIndex = 0;
+            _executedIndex.AddRange(_currentIndex);
             _currentIndex.Clear();
             UIManager.instance.CloseWindow<GuidanceWindow>();
             SaveExecutedIndex();

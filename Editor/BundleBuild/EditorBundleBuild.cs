@@ -69,7 +69,7 @@ namespace PowerCellStudio
         [MenuItem("Build/AssetBundle/Build Play", false, 4)]
         public static void BuildPlayApp()
         {
-            ConfirmWindow.ShowWindow(() =>
+            ConfirmEditorWindow.ShowWindow(() =>
                 {
                     BuildAsserBundle(true, BuildPlayAppOnly);
                 },

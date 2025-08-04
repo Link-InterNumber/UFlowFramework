@@ -11,7 +11,7 @@ namespace PowerCellStudio
 {
     public class FolderAddressableGroupEditorWindow : EditorWindow
     {
-        [MenuItem("Build/Addressable/Folder Addressable Settings")]
+        [MenuItem("Build/Addressable/Folder Addressable Settings", false, 800)]
         public static void ShowWindow()
         {
             GetWindow<FolderAddressableGroupEditorWindow>("Folder Addressable Settings");
@@ -200,15 +200,16 @@ namespace PowerCellStudio
                 parent.children = new List<TreeViewItem>();
                 foreach (var dir in dirs)
                 {
+                    var adaptPath = AssetUtils.EditorCheckPath(dir);
                     var guid = AssetDatabase.AssetPathToGUID(dir);
                     var name = Path.GetFileName(dir);
                     var setGroup = GetFolderGroup(guid);
                     var hasGroup = !string.IsNullOrEmpty(setGroup);
                     var child = new FolderTreeItem
                     {
-                        id = dir.GetHashCode(),
+                        id = adaptPath.GetHashCode(),
                         displayName = name,
-                        path = dir,
+                        path = adaptPath,
                         group = setGroup,
                         inheritedGroup = hasGroup
                             ? setGroup

@@ -430,11 +430,12 @@ namespace PowerCellStudio
                 }
                 Csv.Export(sw, LocalizationEditorSettings.GetStringTableCollection(ConstSetting.LocalizationStringTable), columnMappings);
                 sw.Close();
-                System.Diagnostics.Process.Start(csvPath);
+                var fullPath = Path.GetFullPath(csvPath);
+                System.Diagnostics.Process.Start(fullPath);
             }
             catch (Exception e)
             {
-                ConfigLog.LogError(e.ToString());
+                ConfigLog.LogError($"{e}\n{e.StackTrace}");
             }
             finally
             {

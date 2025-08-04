@@ -1,14 +1,17 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 
 namespace PowerCellStudio
 {
     public class GuidanceHand : MonoBehaviour
     {
+        public Text content;
         private GuidanceTag _guidanceTag;
 
-        public void Init(GuidanceTag tag)
+        public void Init(GuidanceTag guidanceTag, string guidanceDecs)
         {
-            _guidanceTag = tag;
+            _guidanceTag = guidanceTag;
+            if (content) content.text = guidanceDecs;
         }
 
         private void Start()
@@ -18,12 +21,9 @@ namespace PowerCellStudio
             {
                 canvas = gameObject.AddComponent<Canvas>();
             }
-            canvas.renderMode = UIManager.instance.canvasRenderMode;
             canvas.overrideSorting = true;
             canvas.sortingLayerName = "UI";
             canvas.sortingOrder = 6000;
-            if (UIManager.instance.canvasRenderMode != RenderMode.ScreenSpaceOverlay)
-                canvas.worldCamera = UICamera.instance.cameraCom;
         }
 
         private void Update()

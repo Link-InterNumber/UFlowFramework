@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace PowerCellStudio
 {
@@ -31,5 +30,12 @@ namespace PowerCellStudio
         }
 
         public abstract Vector2 GetUIPosition();
+
+        [TestButton]
+        public void TestGuidance()
+        {
+            if (GuidanceManager.instance == null) return;
+            GuidanceManager.instance.ReactiveGuidance(guidanceIndex);
+        }
     }
 }

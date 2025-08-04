@@ -84,7 +84,7 @@ namespace PowerCellStudio
             ResolveDuplicateNames();
             
             // 显示命名空间输入窗口
-            ContentInputWindow.ShowWindow(GenerateScript, "Define Namespace", "");
+            ContentInputEditorWindow.ShowWindow(GenerateScript, "Define Namespace", "");
         }
 
         private static void FindAllTargetComps(Type[] targets, Transform parent, string currentPath, List<CompInfo> compInfos)

@@ -4,7 +4,6 @@ using UnityEngine.UI;
 
 namespace PowerCellStudio
 {
-    [RequireComponent(typeof(CanvasRenderer))]
     public class GuidanceTagUI : GuidanceTag, IPointerDownHandler, IPointerUpHandler, ISubmitHandler
     {
         private Canvas _tempCanvas;
@@ -31,12 +30,9 @@ namespace PowerCellStudio
             if (!canvas)
             {
                 _tempCanvas = gameObject.AddComponent<Canvas>();
-                _tempCanvas.renderMode = UIManager.instance.canvasRenderMode;
                 _tempCanvas.overrideSorting = true;
                 _tempCanvas.sortingLayerName = "UI";
                 _tempCanvas.sortingOrder = 5000;
-                if (UIManager.instance.canvasRenderMode != RenderMode.ScreenSpaceOverlay)
-                    _tempCanvas.worldCamera = UICamera.instance.cameraCom;
                 gameObject.AddComponent<GraphicRaycaster>();
             }
 
@@ -44,6 +40,7 @@ namespace PowerCellStudio
             if (selsctable)
             {
                 selsctable.interactable = true;
+                selsctable.Select();
             }
             else
             {
@@ -58,7 +55,6 @@ namespace PowerCellStudio
                     _graphic.raycastTarget = true;
                 }
             }
-            selsctable.Select();
         }
 
         public override void OnDeExecute()

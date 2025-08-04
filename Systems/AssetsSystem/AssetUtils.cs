@@ -14,7 +14,7 @@ namespace PowerCellStudio
             Resources,
         }
         
-        private static LoadMode _loadMode = LoadMode.AssetBundle;
+        private static LoadMode _loadMode = LoadMode.Addressable;
         public static LoadMode loadMode => _loadMode;
         private static IAssetManager _assetManager;
         // private static AssetsBundleManager _assetsBundleManager;
