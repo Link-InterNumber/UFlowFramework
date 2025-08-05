@@ -171,6 +171,11 @@ namespace PowerCellStudio
                 child.parent.openedUIs.Push(child);
                 child.Open(data);
                 child.OnFocus();
+                var widgets = ui.transform.gameObject.GetComponentsInChildren<IUIWidget>(true);
+                foreach (var w in widgets)
+                {
+                    w.OnWidgetEnable();
+                }
                 EventManager.instance.onUIOpen.Invoke(child);
             }
             else if(ui is IUIParent parent)
@@ -200,6 +205,11 @@ namespace PowerCellStudio
             if(ui is IUIChild child)
             {
                 child.parent.openedUIs.Remove(child);
+                var widgets = ui.transform.gameObject.GetComponentsInChildren<IUIWidget>(true);
+                foreach (var w in widgets)
+                {
+                    w.OnWidgetDisable();
+                }
                 EventManager.instance.onUIClose.Invoke(child);
             }
             ui.OnClose();

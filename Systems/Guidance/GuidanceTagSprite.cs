@@ -7,6 +7,16 @@ namespace PowerCellStudio
     {
         private string _oldLayerName;
 
+        public virtual void OnEnable()
+        {
+            OnWidgetEnable();
+        }
+
+        public virtual void OnDisable()
+        {
+            OnWidgetDisable();
+        }
+
         public override void OnExecute()
         {
             TimeManager.instance.PauseTime();

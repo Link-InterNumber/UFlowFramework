@@ -160,14 +160,14 @@ namespace PowerCellStudio
         private void OnLoadSuccess(GameObject go)
         {
             _assetLoadStatus = AssetLoadStatus.Loaded;
-            go.SetActive(false);
+            // go.SetActive(false);
             var ui = go.GetComponent(_windowType) as IUIChild;
             if (ui == null)
             {
                 UILog.LogError($"预制体上没有找到{_windowType.Name}组件");
                 ApplicationManager.instance.DelayedNextFrame(() =>
                 {
-                    GameObject.Destroy(go); 
+                    GameObject.Destroy(go);
                 });
                 _onLoaded?.Invoke();
                 _onLoaded = null;
