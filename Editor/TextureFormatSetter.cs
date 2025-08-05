@@ -97,7 +97,7 @@ namespace PowerCellStudio
                 GUILayout.Label($"当前选中的文件夹：{folder}");
             }
 
-            GUILayout.Space();
+            GUILayout.FlexibleSpace();
 
             GUILayout.Label("设置平台： ");
             setPl = (EPlatform) EditorGUILayout.EnumPopup(curPl, guiStyle);
@@ -105,7 +105,7 @@ namespace PowerCellStudio
             {
                 curTFIndex = 0;
             }
-            GUILayout.Space();
+            GUILayout.FlexibleSpace();
 
             GUILayout.Label("设置格式： ");
             string[] canSetFormats = null;
@@ -116,12 +116,12 @@ namespace PowerCellStudio
             setTFIndex = EditorGUILayout.Popup(curTFIndex, canSetFormats, guiStyle);
 
             // isConvertRGBA = EditorGUILayout.ToggleLeft("是否将RGB强制转成RGBA", isConvertRGBA);
-            GUILayout.Space();
+            GUILayout.FlexibleSpace();
             
             GUILayout.Label("设置最大尺寸： ");
             setSize = (TextureFormatSetterSize) EditorGUILayout.EnumPopup(curSize, guiStyle);
             // isConvertRGBA = EditorGUILayout.ToggleLeft("是否将RGB强制转成RGBA", isConvertRGBA);
-            GUILayout.Space();
+            GUILayout.FlexibleSpace();
             autoOptimize = EditorGUILayout.ToggleLeft("自动优化", autoOptimize);
             autoSize = EditorGUILayout.ToggleLeft("自动尺寸", autoSize);
 
@@ -138,7 +138,7 @@ namespace PowerCellStudio
                 Debug.Log("完成");
             }
 
-            GUILayout.Space();
+            GUILayout.FlexibleSpace();
             if (GUILayout.Button("获取当前文件夹下所有文件当前平台的压缩格式"))
             {
                 if (!CheckSelection())
