@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Unity.VisualScripting;
 
 namespace PowerCellStudio
 {
@@ -11,24 +13,27 @@ namespace PowerCellStudio
         private Dictionary<int, GuidanceTag> _guidanceTags;
         private HashSet<int> _onIndex;
         private HashSet<int> _executedIndex;
-        private int _currentIndex;
+        private List<int> _currentIndex;
 
         /// <summary>
         /// 当前引导索引。
         /// Current index of the guidance.
         /// </summary>
-        public int currentIndex => _currentIndex;
+        public List<int> currentIndex => _currentIndex;
+
+        private int _nextIndex;
 
         /// <summary>
         /// 是否处于引导状态。
         /// Indicates whether currently in guidance.
         /// </summary>
-        public bool inGuidance => _currentIndex > 0;
+        public bool inGuidance => _currentIndex.Count > 0;
 
         /// <summary>
         /// 用于持久化存储已执行引导索引。
         /// Persistent data for storing executed guidance indices.
         /// </summary>
+        [Serializable]
         public class GuidanceSave : IPersistenceData
         {
             public List<int> executedIndex = new List<int>();
@@ -40,6 +45,7 @@ namespace PowerCellStudio
         /// </summary>
         public void OnInit()
         {
+            _currentIndex = new List<int>();
             _guidanceTags = new Dictionary<int, GuidanceTag>();
             _onIndex = new HashSet<int>();
             _executedIndex = new HashSet<int>();
@@ -55,6 +61,7 @@ namespace PowerCellStudio
             _guidanceTags.Clear();
             _onIndex.Clear();
             _executedIndex.Clear();
+            _currentIndex.Clear();
         }
 
         /// <summary>
@@ -116,9 +123,9 @@ namespace PowerCellStudio
         /// <param name="guidanceObject">引导对象 / Guidance object</param>
         public void RegisterGuidance(GuidanceTag guidanceObject)
         {
-            if(!guidanceObject || IsGuidancePlayed(guidanceObject.guidanceIndex)) return;
+            if(!guidanceObject) return;
             _guidanceTags[guidanceObject.guidanceIndex] = guidanceObject;
-            if (_onIndex.Contains(guidanceObject.guidanceIndex)) ActiveGuidanceWhichOn();
+            if (_onIndex.Contains(guidanceObject.guidanceIndex)) ActiveGuidanceWhichOn(_nextIndex == guidanceObject.guidanceIndex);
         }
 
         /// <summary>
@@ -128,6 +135,7 @@ namespace PowerCellStudio
         /// <param name="index">引导索引 / Guidance index</param>
         public void DeregisterGuidance(int index)
         {
+            if (_currentIndex.Contains(index)) DeExecuteGuidance(index);
             _guidanceTags?.Remove(index);
         }
 
@@ -136,10 +144,12 @@ namespace PowerCellStudio
         /// Set guidance at the specified index to active.
         /// </summary>
         /// <param name="index">引导索引 / Guidance index</param>
-        public void SetGuidanceOn(int index)
+        /// <returns>是否正在打开引导界面 / Whether the guidance window is going to open</returns>
+        public bool SetGuidanceOn(int index)
         {
+            if (IsGuidancePlayed(index)) return false;
             _onIndex.Add(index);
-            ActiveGuidanceWhichOn();
+            return ActiveGuidanceWhichOn(true);
         }
         
         /// <summary>
@@ -149,6 +159,7 @@ namespace PowerCellStudio
         /// <param name="index">引导索引 / Guidance index</param>
         public void SetGuidanceOff(int index)
         {
+            if (_currentIndex.Contains(index)) DeExecuteGuidance(index);
             _onIndex.Remove(index);
         }
 
@@ -157,26 +168,29 @@ namespace PowerCellStudio
         /// Reactivate guidance at the specified index.
         /// </summary>
         /// <param name="index">引导索引 / Guidance index</param>
-        public void ReactiveGuidance(int index)
+        /// <returns>是否正在打开引导界面 / Whether the guidance window is going to open</returns>
+        public bool ReactiveGuidance(int index)
         {
             _executedIndex.Remove(index);
-            _onIndex.Add(index);
+            return SetGuidanceOn(index);
         }
 
-        private void ActiveGuidanceWhichOn()
+        private bool ActiveGuidanceWhichOn(bool force)
         {
+            if (!force && inGuidance) return false;
+            if (_onIndex.Count == 0) return false;
             var executeIndex = 0;
             foreach (var i in _onIndex)
             {
-                if (!_guidanceTags.TryGetValue(i, out var guidanceTag)) return;
+                if (!_guidanceTags.TryGetValue(i, out var guidanceTag)) continue;
                 executeIndex = i;
-                _currentIndex = i;
                 guidanceTag.OnExecute();
                 ExecuteGuidance(guidanceTag);
                 break;
             }
             _onIndex.Remove(executeIndex);
-            _currentIndex = executeIndex;
+            if (executeIndex > 0 ) _currentIndex.Add(executeIndex);
+            return executeIndex > 0;
         }
         
         /// <summary>
@@ -184,7 +198,7 @@ namespace PowerCellStudio
         /// Execute the specified guidance.
         /// </summary>
         /// <param name="tag">引导标签 / Guidance tag</param>
-        public void ExecuteGuidance(GuidanceTag tag)
+        private void ExecuteGuidance(GuidanceTag tag)
         {
             if(!tag)
             {
@@ -213,20 +227,24 @@ namespace PowerCellStudio
         /// <param name="guidanceIndex">引导索引 / Guidance index</param>
         public void DeExecuteGuidance(int guidanceIndex)
         {
-            _executedIndex.Add(guidanceIndex);
             if (_guidanceTags.TryGetValue(guidanceIndex, out var guidanceTag))
             {
-                guidanceTag.OnDeExecute();
+                guidanceTag?.OnDeExecute();
             }
             var conf = ConfigManager.instance.guidanceConf.Get(guidanceIndex);
-            if(conf.nextGuidance > 0)
+            if (conf.nextGuidance > 0)
             {
-                SetGuidanceOn(conf.nextGuidance);
-                ActiveGuidanceWhichOn();
-                return;
+                _nextIndex = conf.nextGuidance;
+                var hasNewGuidance = ReactiveGuidance(conf.nextGuidance);
+                if (!hasNewGuidance) 
+                    UIManager.instance.CloseWindow<GuidanceWindow>();
+                return; 
             }
+
+            _nextIndex = 0;
+            _executedIndex.AddRange(_currentIndex);
+            _currentIndex.Clear();
             UIManager.instance.CloseWindow<GuidanceWindow>();
-            _currentIndex = 0;
             SaveExecutedIndex();
         }
     }

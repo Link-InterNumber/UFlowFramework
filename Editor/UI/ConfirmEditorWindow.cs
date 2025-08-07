@@ -4,7 +4,7 @@ using UnityEditor;
 
 namespace PowerCellStudio
 {
-    public class ConfirmWindow : EditorWindow
+    public class ConfirmEditorWindow : EditorWindow
     {
         private string _inputContent = "";
 
@@ -24,13 +24,13 @@ namespace PowerCellStudio
 
         public static void ShowWindow(Action confirm, Action cancel, string title, string showContent)
         {
-            ConfirmWindow window = GetWindow<ConfirmWindow>(true, title, true);
-            window.onConfirm = confirm;
-            window.onCancel = cancel;
-            window.inputContent = showContent;
-            window.minSize = new Vector2(300, 100);
-            window.maxSize = new Vector2(600, 100);
-            window.ShowModalUtility();
+            ConfirmEditorWindow editorWindow = GetWindow<ConfirmEditorWindow>(true, title, true);
+            editorWindow.onConfirm = confirm;
+            editorWindow.onCancel = cancel;
+            editorWindow.inputContent = showContent;
+            editorWindow.minSize = new Vector2(300, 100);
+            editorWindow.maxSize = new Vector2(600, 100);
+            editorWindow.ShowModalUtility();
         }
 
         void OnGUI()

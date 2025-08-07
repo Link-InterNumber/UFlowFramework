@@ -133,6 +133,33 @@ namespace PowerCellStudio
                     TextureImporterFormat.BC6H,
                     TextureImporterFormat.RGBA32
                 }
+            },
+            {
+                "Switch", new TextureImporterFormat[]
+                {
+                    TextureImporterFormat.ASTC_4x4,
+                    TextureImporterFormat.ASTC_5x5,
+                    TextureImporterFormat.ASTC_6x6,
+                    TextureImporterFormat.ASTC_8x8,
+                    TextureImporterFormat.ASTC_10x10,
+                    TextureImporterFormat.ASTC_12x12,
+                    // Switch 也支持 ETC2
+                    TextureImporterFormat.ETC2_RGB4,
+                    TextureImporterFormat.ETC2_RGBA8
+                }
+            },
+            {
+                "PS5", new TextureImporterFormat[]
+                {
+                    TextureImporterFormat.BC7,
+                    TextureImporterFormat.BC6H,
+                    TextureImporterFormat.ASTC_4x4,
+                    TextureImporterFormat.ASTC_5x5,
+                    TextureImporterFormat.ASTC_6x6,
+                    TextureImporterFormat.ASTC_8x8,
+                    TextureImporterFormat.ASTC_10x10,
+                    TextureImporterFormat.ASTC_12x12
+                }
             }
         };
     }

@@ -182,7 +182,7 @@ namespace PowerCellStudio
                 catch (Exception ex)
                 {
                     _hasError = true;
-                    Debug.LogError($"Coroutine error: {ex.Message}");
+                    Debug.LogError($"Coroutine error: {ex.Message}\n{ex.StackTrace}");
                     // 可以在这里添加更多的错误处理逻辑
                     return false;
                 }
@@ -202,7 +202,7 @@ namespace PowerCellStudio
 #if UNITY_EDITOR
             return instance.StartCoroutine(LogableCoroutine(routine));
 #else
-            return instance.StartCoroutine(handler);
+            return instance.StartCoroutine(routine);
 #endif
         }
 

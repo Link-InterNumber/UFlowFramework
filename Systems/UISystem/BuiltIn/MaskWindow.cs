@@ -104,7 +104,6 @@ namespace PowerCellStudio
             {
                 return false;
             }
-            OnClose();
             return true;
         }
 

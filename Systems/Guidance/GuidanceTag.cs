@@ -1,9 +1,8 @@
-﻿using System;
 using UnityEngine;
 
 namespace PowerCellStudio
 {
-    public abstract class GuidanceTag : MonoBehaviour
+    public abstract class GuidanceTag : MonoBehaviour, IUIWidget
     {
         public int guidanceIndex;
 
@@ -19,17 +18,24 @@ namespace PowerCellStudio
         /// </summary>
         public abstract void OnDeExecute();
 
-        protected virtual void OnEnable()
+        public virtual void OnWidgetEnable()
         {
             if(guidanceIndex == 0) return;
             GuidanceManager.instance.RegisterGuidance(this);
         }
 
-        protected virtual void OnDisable()
+        public virtual void OnWidgetDisable()
         {
             GuidanceManager.instance.DeregisterGuidance(guidanceIndex);
         }
 
         public abstract Vector2 GetUIPosition();
+
+        [TestButton]
+        public void TestGuidance()
+        {
+            if (GuidanceManager.instance == null) return;
+            GuidanceManager.instance.ReactiveGuidance(guidanceIndex);
+        }
     }
 }
