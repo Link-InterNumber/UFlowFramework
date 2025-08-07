@@ -85,13 +85,24 @@ namespace PowerCellStudio
         public static string FormatNumberCn(this long num, int size = 2, bool isTraditional = false)
         {
             var result = new StringBuilder();
-            if (num >= 100000000)
+            if (num < 0)
+            {
+                result.Append("负");
+                num = -num;
+            }
+            if (num >= 1000000000000L)
+            {
+                result.Append((num * 0.000000000001f).ToString($"N{Math.Max(0, size)}"));
+                result.Append(GetNumberUnitCn(num, isTraditional));
+                return result.ToString();
+            }
+            if (num >= 100000000L)
             {
                 result.Append((num * 0.00000001f).ToString($"N{Math.Max(0, size)}"));
                 result.Append(GetNumberUnitCn(num, isTraditional));
                 return result.ToString();
             }
-            if (num >= 10000)
+            if (num >= 10000L)
             {
                 result.Append((num * 0.0001f).ToString($"N{Math.Max(0, size)}"));
                 result.Append(GetNumberUnitCn(num, isTraditional));
@@ -99,26 +110,6 @@ namespace PowerCellStudio
             }
             result.Append(num.ToString("N0"));
             return result.ToString();
-        }
-
-        /// <summary>
-        /// 获取数字的中文单位。
-        /// Gets the Chinese unit of a number.
-        /// </summary>
-        /// <param name="number">要获取单位的数字。</param>
-        /// <param name="isTraditional">是否使用繁体中文。</param>
-        /// <returns>数字的单位字符串。</returns>
-        public static string GetNumberUnitCn(this long number, bool isTraditional)
-        {
-            if (number >= 100000000)
-            {
-                return "亿";
-            }
-            if (number >= 10000)
-            {
-                return "万";
-            }
-            return string.Empty;
         }
 
         /// <summary>
@@ -136,34 +127,89 @@ namespace PowerCellStudio
         }
         
         /// <summary>
+        /// 获取数字的中文单位。
+        /// Gets the Chinese unit of a number.
+        /// </summary>
+        /// <param name="number">要获取单位的数字。</param>
+        /// <param name="isTraditional">是否使用繁体中文。</param>
+        /// <returns>数字的单位字符串。</returns>
+        public static string GetNumberUnitCn(this long number, bool isTraditional)
+        {
+            if (number >= 1000000000000L)
+                return "兆";
+            if (number >= 100000000L)
+                return "亿";
+            if (number >= 10000L)
+                return isTraditional ? "萬" : "万";
+            if (number >= 1000L)
+                return isTraditional ? "仟" : "千";
+            if (number >= 100L)
+                return isTraditional ? "佰" : "百";
+            if (number >= 10)
+                return isTraditional ? "拾" : "十";
+            return string.Empty;
+        }
+        
+        /// <summary>
         /// 将索引格式化为中文。
         /// Formats the index as a Chinese string.
         /// </summary>
         /// <param name="index">要格式化的索引。</param>
         /// <param name="isTraditional">是否使用繁体中文。</param>
         /// <returns>格式化后的索引字符串。</returns>
-        public static string FormatIndexCn(this long index, bool isTraditional = false)
+        public static string FormatIndexCn(this long index, bool isTraditional = false, int unitCount = 2)
         {
             StringBuilder result = new StringBuilder();
-            if (index >= 100000000)
+            if (index < 0)
             {
-                result.Append(IntToChineseHandler(Mathf.FloorToInt(index * 0.00000001f), isTraditional));
-                result.Append(GetNumberUnitCn(index, isTraditional));
-                index %= 100000000;
+                result.Append("负");
+                index = -index;
             }
-            if (index >= 10000)
+            if (index <= 100000L)
             {
-                result.Append(IntToChineseHandler(Mathf.FloorToInt(index * 0.0001f), isTraditional));
-                result.Append(GetNumberUnitCn(index, isTraditional));
-                index %= 10000;
+                ParseIndexIn10000Cn(index, isTraditional, unitCount, result);
+                return result.ToString();
             }
-            if (index > 0)
+            var compareBase = 1000000000000L;
+            var unitBase = 10000L;
+            var unitCountTemp = unitCount;
+            while (compareBase > 0L)
             {
-                string remaining = IntToChineseHandler(index, isTraditional);
-                if (!string.IsNullOrEmpty(remaining))
-                    result.Append(remaining);
+                if (index >= compareBase)
+                {
+                    var head = index / compareBase;
+                    var displayCount = ParseIndexIn10000Cn(head, isTraditional, unitCountTemp, result);
+                    result.Append(GetNumberUnitCn(index, isTraditional));
+                    unitCountTemp -= displayCount;
+                    if (unitCountTemp < 1) 
+                        break;
+                }
+                index = index % compareBase;
+                compareBase /= unitBase;
             }
+
             return result.ToString();
+        }
+
+        private static int ParseIndexIn10000Cn(long index, bool isTraditional, int unitCount, StringBuilder sb)
+        {
+            var baseValue = 10000L;
+            var count = 0;
+            while (baseValue > 0L)
+            {
+                if (index >= baseValue)
+                {
+                    var headNumber = Mathf.FloorToInt(index * 1f / baseValue);
+                    sb.Append(IntToChineseHandler(headNumber, isTraditional));
+                    sb.Append(GetNumberUnitCn(index, isTraditional));
+                    count++;
+                    if (count >= unitCount)
+                        break;
+                }
+                index = index % baseValue;
+                baseValue = baseValue / 10L;
+            }
+            return count;
         }
 
         /// <summary>

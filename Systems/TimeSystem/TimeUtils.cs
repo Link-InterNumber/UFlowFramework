@@ -207,13 +207,17 @@ namespace PowerCellStudio
             {
                 return $"初{NumberDisplay.IntToChineseHandler(num, isTraditional)}";
             }
-            if (num <= 20)
+            if (num < 20)
             {
-                return NumberDisplay.FormatIndexCn(num, isTraditional);
+                return $"十{NumberDisplay.IntToChineseHandler(num - 10, isTraditional)}";
+            }
+            if (num == 20)
+            {
+                return "廿十";
             }
             if (num < 30)
             {
-                return $"廿{NumberDisplay.IntToChineseHandler(num % 10, isTraditional)}";
+                return $"廿{NumberDisplay.IntToChineseHandler(num - 20, isTraditional)}";
             }
             return NumberDisplay.FormatIndexCn(num, isTraditional);
         }
