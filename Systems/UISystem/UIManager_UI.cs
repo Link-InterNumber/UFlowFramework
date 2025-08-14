@@ -330,24 +330,41 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 关闭并销毁未打开的UI。
+        /// 销毁关闭的UI。
         /// Close and destroy any unused UI.
         /// </summary>
         public void Clear()
         {
+            ClearClosedWindow(currentPage);
             var pages = _pageStack.Where(o => o != currentPage).ToArray();
             foreach (var uiParent in pages)
             {
-                if (uiParent.isOpened || currentPage == uiParent) continue;
+                if (uiParent.isOpened) 
+                {
+                    ClearClosedWindow(uiParent);
+                    continue;
+                }
                 _pageStack.Remove(uiParent);
                 UIUtils.ClosePage(uiParent, true, null, _poolPage);
             }
+            ClearClosedWindow(_poolPage);
+            ClearClosedWindow(_standAlonePage);
+        }
 
-            var poolParent = (_poolPage as IUIParent);
-            foreach (var uiChild in poolParent.children)
+        /// <summary>
+        /// 销毁关闭的UI。
+        /// Close and destroy any unused UI.
+        /// </summary>
+        /// <param name="page">页面对象 / Page instance</param>
+        public void ClearClosedWindow(IUIParent page)
+        {
+            if (page == null) return;
+            var windows = poolParent.children.Values.ToArray();
+            foreach (var uiChild in windows)
             {
-                UIUtils.RemoveChild(uiChild.Value);
-                UIUtils.DestroyUI(uiChild.Value, null);
+                if (uiChild.isOpened) continue;
+                UIUtils.RemoveChild(uiChild);
+                UIUtils.DestroyUI(uiChild, null);
             }
         }
     }
