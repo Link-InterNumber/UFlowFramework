@@ -335,8 +335,7 @@ namespace PowerCellStudio
         /// </summary>
         public void Clear()
         {
-            ClearClosedWindow(currentPage);
-            var pages = _pageStack.Where(o => o != currentPage).ToArray();
+            var pages = _pageStack.ToArray();
             foreach (var uiParent in pages)
             {
                 if (uiParent.isOpened) 
