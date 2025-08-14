@@ -333,6 +333,7 @@ namespace PowerCellStudio
         public void Unprepare(PrepareHandler handler)
         {
             if (handler == null) return;
+            handler.cancled = true;
             if (!handler.isDone)
             {
                 _coroutineRunner.StartCoroutine(WaitForPrepareDone(handler));
@@ -369,21 +370,29 @@ namespace PowerCellStudio
         private IEnumerator DownLoadPrepareBundle(string[] labels, bool isConcurrent, PrepareHandler handler)
         {
             var waitList = new List<LoaderYieldInstruction<AssetBundle>>();
+            var bundlesName = new List<string>();
             for (var i = 0; i < labels.Length; i++)
             {
-                var bundleName = labels[i];
+                if (handler.cancled) break;
+                var loadedBundlesNames = labels[i];
                 if (isConcurrent)
                 {
                     GetAssetsBundleAsync(bundleName, null);
                     if(_waitForLoadList.TryGetValue(bundleName, out var bundleLoadHandler))
+                    {
                         waitList.Add(bundleLoadHandler);
+                        loadedBundlesNames.Add(bundleName);
+                    }
                 }
                 else
                 {
                     handler.SetProcessValue(i * 1f / labels.Length);
                     GetAssetsBundleAsync(bundleName, null);
                     if(_waitForLoadList.TryGetValue(bundleName, out var bundleLoadHandler))
+                    {
                         yield return bundleLoadHandler;
+                        loadedBundlesNames.Add(bundleName);
+                    }
                 }
             }
             if (isConcurrent)
@@ -396,9 +405,9 @@ namespace PowerCellStudio
                     yield return null;
                 }
             }
-            for (var i = 0; i < labels.Length; i++)
+            for (var i = 0; i < loadedBundlesNames.Length; i++)
             {
-                var bundleName = labels[i];
+                var bundleName = loadedBundlesNames[i];
                 if (IsAssetsBundleLoaded(bundleName))
                 {
                     handler.Append(bundleName);
@@ -406,6 +415,7 @@ namespace PowerCellStudio
                 }
             }
             handler.SetProcessValue(1f);
+            if (handler.cancled) yield break;
             handler.SetComplete();
         }
 
@@ -682,8 +692,6 @@ namespace PowerCellStudio
                 _loadedBundleDic.Remove(bundleRef.Bundle.name);
                 bundleRef.Bundle.Unload(false);
             }
-            Resources.UnloadUnusedAssets();
-            GC.Collect();
         }
 
         #endregion

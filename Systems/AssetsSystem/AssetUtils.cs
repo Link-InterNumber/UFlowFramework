@@ -164,5 +164,11 @@ namespace PowerCellStudio
 
             return new string(pathBuffer.Slice(0, position));
         }
+
+        public static void ClearUnusedAsset()
+        {
+            _assetManager?.ClearUnusedAsset();
+            Resources.UnloadUnusedAssets();
+        }
     }
 }

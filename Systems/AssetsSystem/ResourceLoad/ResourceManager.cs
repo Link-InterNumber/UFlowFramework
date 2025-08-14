@@ -191,5 +191,10 @@ namespace PowerCellStudio
             yield return handler;
             Unprepare(handler);
         }
+
+        public void ClearUnusedAsset()
+        {
+            
+        }
     }
 }

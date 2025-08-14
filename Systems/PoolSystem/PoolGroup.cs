@@ -346,7 +346,14 @@ namespace PowerCellStudio
         /// </summary>
         public void ForceClear()
         {
-            ClearAll();
+            foreach (var (_, pool) in _gameObjectPools)
+            {
+                pool.ClearStack();
+            }
+            foreach (var (_, pool) in _pools)
+            {
+                pool.Clear();
+            }
             ReplaceNewRoot();
         }
 
@@ -359,9 +366,9 @@ namespace PowerCellStudio
             var rootParent = _root.parent;
             var rootName = _root.name;
             GameObject.Destroy(_root.gameObject);
+            _root = new GameObject(rootName).transform;
             _root.SetParent(rootParent);
             _root.localScale = Vector3.one;
-            _root = new GameObject(rootName).transform;
         }
 
         /// <summary>

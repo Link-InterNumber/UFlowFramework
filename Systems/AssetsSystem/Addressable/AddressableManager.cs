@@ -225,9 +225,12 @@ namespace PowerCellStudio
             _preloadHandles.Add(path, handle);
         }
 
+        private List<PrepareHandler> _prepareHandlers = new List<PrepareHandler>();
+
         public void Unprepare(PrepareHandler handler)
         {
             if (handler == null) return;
+            handler.cancled = true;
             if (!handler.isDone)
             {
                 ApplicationManager.RunCoroutine(WaitForPrepareDone(handler));
@@ -235,9 +238,10 @@ namespace PowerCellStudio
             }
             foreach(var bundleName in handler.successLable)
             {
-                Addressables.Release((AsyncOperationHandle)bundleName);
+                Release((AsyncOperationHandle)bundleName);
             }
             handler.Dispose();
+            _prepareHandlers.Remove(handler);
         }
 
         private IEnumerator WaitForPrepareDone(PrepareHandler handler)
@@ -256,6 +260,7 @@ namespace PowerCellStudio
             var handler = new PrepareHandler();
             handler.OnComplete(onComplete);
             ApplicationManager.RunCoroutine(DownLoadPrepareAssets(labels, isConcurrent, handler));
+            _prepareHandlers.Add(handler);
             return handler;
         }
 
@@ -264,6 +269,7 @@ namespace PowerCellStudio
             var waitList = new AsyncOperationHandle[labels.Length];
             for (var i = 0; i < labels.Length; i++)
             {
+                if (handler.cancled) break;
                 var remoteLabel = labels[i];
                 if (isConcurrent)
                 {
@@ -282,14 +288,15 @@ namespace PowerCellStudio
             if (isConcurrent)
             {
                 var doneCount = 0;
-                while (doneCount < labels.Length)
+                while (doneCount < waitList.Length)
                 {
                     doneCount = waitList.Count(o=>o.IsDone);
-                    handler.SetProcessValue(doneCount * 1f / labels.Length);
+                    handler.SetProcessValue(doneCount * 1f / waitList.Length);
                     yield return null;
                 }
             }
             handler.SetProcessValue(1f);
+            if (handler.cancled) yield break;
             handler.SetComplete();
         }
 
@@ -366,6 +373,22 @@ namespace PowerCellStudio
         private void UnloadScene(AsyncOperationHandle<SceneInstance> handle)
         {
             Addressables.UnloadSceneAsync(handle);
+        }
+
+        public void ClearUnusedAsset()
+        {
+            var preload = _preloadHandles.Values.ToList();
+            foreach (var handler in preload)
+            {
+                Release(handler);
+            }
+            _preloadHandles.Clear();
+
+            var prepareHandles = new List<PrepareHandler>(_prepareHandlers);
+            for (var i=0; i < prepareHandles.Count; i++)
+            {
+                Unprepare(prepareHandles[i]);
+            }
         }
         
         // #region GameObject Pool

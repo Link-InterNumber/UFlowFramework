@@ -17,10 +17,13 @@ namespace PowerCellStudio
 
         public override bool keepWaiting => !isDone;
 
+        public bool cancled = false;
+
         public PrepareHandler()
         {
             _successLable = new List<object>();
             _isDone = false;
+            cancled = false;
         }
 
         public void Append(object lable)
@@ -48,6 +51,7 @@ namespace PowerCellStudio
         public void Dispose()
         {
             _isDone = true;
+            cancled = true;
             _successLable = null;
             _onComplete = null;
             _processValue = 0;

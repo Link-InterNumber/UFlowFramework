@@ -96,5 +96,11 @@ namespace PowerCellStudio
         /// </summary>
         /// <param name="handler">准备处理句柄。<para>Prepare handler.</para></param>
         void Unprepare(PrepareHandler handler);
+
+        /// <summary>
+        /// 清除未引用的资源。
+        /// <para>Clear unused asset.</para>
+        /// </summary>
+        void ClearUnusedAsset();
     }
 }

@@ -20,6 +20,7 @@ namespace PowerCellStudio
         private void RegisterEvents()
         {
             EventManager.instance.onUIOpen.AddListener(OnUIWindowOpened);
+            EventManager.instance.onClearUnusedAsset.AddListener(Clear);
         }
 
         private void OnDisable()
@@ -30,6 +31,7 @@ namespace PowerCellStudio
         private void UnRegisterEvents()
         {
             EventManager.instance.onUIOpen.RemoveListener(OnUIWindowOpened);
+            EventManager.instance.onClearUnusedAsset.RemoveListener(Clear);
         }
     }
 }
