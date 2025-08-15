@@ -229,7 +229,7 @@ namespace PowerCellStudio
 
         public void Unprepare(PrepareHandler handler)
         {
-            if (handler == null || handler.cancled) return;
+            if (handler == null || handler.successLable == null) return;
             handler.cancled = true;
             if (!handler.isDone)
             {
