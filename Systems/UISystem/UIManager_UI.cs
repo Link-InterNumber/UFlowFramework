@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -11,6 +12,7 @@ namespace PowerCellStudio
         private HashStack<IUIParent> _pageStack = new HashStack<IUIParent>();
         private PoolWindowPage _poolPage;
         private IUIParent _standAlonePage;
+        private Dictionary<Type, IUIComponent> _cachedUIs = new Dictionary<Type, IUIComponent>();
 
         /// <summary>
         /// 获取当前页面。
@@ -71,6 +73,12 @@ namespace PowerCellStudio
             foreach (var page in _pageStack)
             {
                 if (page is T casedPage) return casedPage;
+            }
+
+            if (_cachedUIs.TryGetValue(typeof(T), out var cachedPage))
+            {
+                _cachedUIs.Remove(typeof(T));
+                return cachedPage as T;
             }
             return null;
         }
@@ -142,7 +150,7 @@ namespace PowerCellStudio
             if (pushMode == PagePushMode.Replace && _pageStack.Count > 1)
             {
                 var pageToClose = _pageStack.Pop();
-                UIUtils.ClosePage(pageToClose, true, null, _poolPage);
+                TryCachePage(page, true, null);
             }
             _pageStack.Push(page);
             UIUtils.OpenUI(page, data);
@@ -198,7 +206,7 @@ namespace PowerCellStudio
                     parentOpenedUI.OnFocus();
                 }
             }
-            UIUtils.ClosePage(page, true, callback, _poolPage);
+            TryCachePage(page, true, callback);
         }
 
         /// <summary>
@@ -208,7 +216,8 @@ namespace PowerCellStudio
         /// <typeparam name="T">页面类型 / Type of page</typeparam>
         /// <param name="destroy">是否销毁 / Whether to destroy</param>
         /// <param name="callback">回调函数 / Callback function</param>
-        public void ClosePage<T>(bool destroy = true, Action callback = null) where T : UIBehaviour, IUIParent
+        public void ClosePage<T>(bool destroy = true, Action callback = null) 
+            where T : UIBehaviour, IUIParent
         {
             if (_pageStack.Count < 2)
             {
@@ -228,9 +237,37 @@ namespace PowerCellStudio
                     return;
                 }
                 _pageStack.Remove(page);
-                UIUtils.ClosePage(page, destroy, callback, _poolPage);
+                TryCachePage(page, destroy, callback);
                 SortingPage();
             }
+        }
+
+        private void TryCachePage<T>(T page, bool destroy, Action callback) 
+            where T :  IUIParent
+        {
+            if (destroy && page is ICacheablePage cacheable)
+            {
+                UIUtils.ClosePageInstance(page, false, callback, _poolPage);
+                var pageType = typeof(T);
+                _cachedUIs.Add(pageType, page);
+                var retainTime = cacheable.retainTime;
+                if (retainTime > 0)
+                {
+                    ApplicationManager.RunCoroutine(WaitForRemoveCacheUI(pageType, retainTime));
+                }
+            }
+            else
+            {
+                UIUtils.ClosePageInstance(page, destroy, callback, _poolPage);
+            }
+        }
+        
+        private IEnumerator WaitForRemoveCacheUI(Type uiType, float time)
+        {
+            yield return new WaitForSecondsRealtime(time);
+            if (!_cachedUIs.TryGetValue(uiType, out var cachedPage)) yield break;
+            _cachedUIs.Remove(uiType);
+            UIUtils.ClosePageInstance(cachedPage as IUIParent, true, null, _poolPage);
         }
 
         /// <summary>
@@ -293,7 +330,8 @@ namespace PowerCellStudio
         /// <param name="destroy">是否关闭后销毁 / Whether to destroy after closing</param>
         public void CloseWindow<T>(Action onClosed = null, bool destroy = false) where T : UIBehaviour, IUIChild
         {
-            if (typeof(IUIStandAlone).IsAssignableFrom(typeof(T)))
+            var windowType = typeof(T);
+            if (typeof(IUIStandAlone).IsAssignableFrom(windowType))
             {
                 if (_standAlonePage.CloseUI<T>(onClosed) && destroy)
                 {
@@ -302,11 +340,22 @@ namespace PowerCellStudio
                     UIUtils.DestroyUI(window, null);
                 }
             }
-            else if (currentPage.CloseUI<T>(onClosed) && destroy)
+            else if (currentPage.CloseUI<T>(onClosed))
             {
-                var window = currentPage.GetUI<T>();
-                UIUtils.RemoveChild(window);
-                UIUtils.DestroyUI(window, null);
+                if (destroy)
+                {
+                    var window = currentPage.GetUI<T>();
+                    UIUtils.RemoveChild(window);
+                    UIUtils.DestroyUI(window, null);
+                }
+                else if (typeof(IUIPoolable).IsAssignableFrom(windowType)
+                         && !_poolPage.GetUI<T>() 
+                         && !_poolPage.IsUIGoingToOpen<T>(out _))
+                {
+                    var window = currentPage.GetUI<T>();
+                    UIUtils.RemoveChild(window);
+                    UIUtils.SetUIChildToParent(window, _poolPage);
+                }
             }
         }
 
@@ -323,7 +372,7 @@ namespace PowerCellStudio
             {
                 if (index > 0 && uiParent.isOpened && !IsAnyWindowOpening(uiParent))
                 {
-                    UIUtils.ClosePage(uiParent, false, null, _poolPage);
+                    UIUtils.ClosePageInstance(uiParent, false, null, _poolPage);
                 }
                 index++;
             }
@@ -338,13 +387,15 @@ namespace PowerCellStudio
             var pages = _pageStack.ToArray();
             foreach (var uiParent in pages)
             {
-                if (uiParent.isOpened) 
-                {
-                    ClearClosedWindow(uiParent);
-                    continue;
-                }
-                _pageStack.Remove(uiParent);
-                UIUtils.ClosePage(uiParent, true, null, _poolPage);
+                ClearClosedWindow(uiParent);
+
+                // if (uiParent.isOpened) 
+                // {
+                //     ClearClosedWindow(uiParent);
+                //     continue;
+                // }
+                // _pageStack.Remove(uiParent);
+                // UIUtils.ClosePage(uiParent, true, null, _poolPage);
             }
             ClearClosedWindow(_poolPage);
             ClearClosedWindow(_standAlonePage);
@@ -358,7 +409,7 @@ namespace PowerCellStudio
         public void ClearClosedWindow(IUIParent page)
         {
             if (page == null) return;
-            var windows = poolParent.children.Values.ToArray();
+            var windows = page.children.Values.ToArray();
             foreach (var uiChild in windows)
             {
                 if (uiChild.isOpened) continue;

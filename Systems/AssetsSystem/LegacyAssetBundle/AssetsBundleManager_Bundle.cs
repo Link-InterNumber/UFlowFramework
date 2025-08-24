@@ -374,14 +374,14 @@ namespace PowerCellStudio
             for (var i = 0; i < labels.Length; i++)
             {
                 if (handler.cancled) break;
-                var loadedBundlesNames = labels[i];
+                var bundleName = labels[i];
                 if (isConcurrent)
                 {
                     GetAssetsBundleAsync(bundleName, null);
                     if(_waitForLoadList.TryGetValue(bundleName, out var bundleLoadHandler))
                     {
                         waitList.Add(bundleLoadHandler);
-                        loadedBundlesNames.Add(bundleName);
+                        bundlesName.Add(bundleName);
                     }
                 }
                 else
@@ -391,7 +391,7 @@ namespace PowerCellStudio
                     if(_waitForLoadList.TryGetValue(bundleName, out var bundleLoadHandler))
                     {
                         yield return bundleLoadHandler;
-                        loadedBundlesNames.Add(bundleName);
+                        bundlesName.Add(bundleName);
                     }
                 }
             }
@@ -405,9 +405,9 @@ namespace PowerCellStudio
                     yield return null;
                 }
             }
-            for (var i = 0; i < loadedBundlesNames.Length; i++)
+            for (var i = 0; i < bundlesName.Count; i++)
             {
-                var bundleName = loadedBundlesNames[i];
+                var bundleName = bundlesName[i];
                 if (IsAssetsBundleLoaded(bundleName))
                 {
                     handler.Append(bundleName);
