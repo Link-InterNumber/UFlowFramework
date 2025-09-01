@@ -29,7 +29,7 @@ namespace PowerCellStudio
         #region Methods used in AddressableManager
 
         /// <summary>
-        /// Don't use this method
+        /// Don't call this method
         /// </summary>
         public void Init()
         {
@@ -51,7 +51,7 @@ namespace PowerCellStudio
         }
         
         /// <summary>
-        /// Don't use this method
+        /// Don't call this method
         /// </summary>
         public void Deinit()
         {
@@ -59,6 +59,8 @@ namespace PowerCellStudio
             _handles = null;
             _spawned = false;
         }
+
+        #endregion
 
         public bool Release(string address)
         {
@@ -83,8 +85,6 @@ namespace PowerCellStudio
             }
             return false;
         }
-
-        #endregion
 
         #region GameObject
 
