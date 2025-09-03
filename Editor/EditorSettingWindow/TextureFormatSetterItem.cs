@@ -72,12 +72,12 @@ namespace PowerCellStudio
                     GUILayout.Label("Please Select A Folder!!! ");
                     return;
                 }
-                GUILayout.Label($"Current Folder Name：{folder}");
+                GUILayout.Label($"Current Folder Name: {folder}");
             }
 
             GUILayout.Space(10);
 
-            GUILayout.Label("Target Platform： ");
+            GUILayout.Label("Target Platform: ");
             setPl = (EPlatform) EditorGUILayout.EnumPopup(curPl); //, guiStyle);
             if (setPl != curPl)
             {
@@ -85,7 +85,7 @@ namespace PowerCellStudio
             }
             GUILayout.Space(10);
 
-            GUILayout.Label("Target Format： ");
+            GUILayout.Label("Target Format: ");
             string[] canSetFormats = null;
             if (!_textureFormatMapping.TryGetValue(setPl.ToString(), out canSetFormats))
             {
@@ -96,7 +96,7 @@ namespace PowerCellStudio
             // isConvertRGBA = EditorGUILayout.ToggleLeft("是否将RGB强制转成RGBA", isConvertRGBA);
             GUILayout.Space(10);
             
-            GUILayout.Label("Max Size： ");
+            GUILayout.Label("Max Size: ");
             setSize = (TextureFormatSetterSize) EditorGUILayout.EnumPopup(curSize); //, guiStyle);
             // isConvertRGBA = EditorGUILayout.ToggleLeft("是否将RGB强制转成RGBA", isConvertRGBA);
             GUILayout.Space(10);
@@ -153,7 +153,7 @@ namespace PowerCellStudio
 
         public void SaveData(){}
 
-        //@isFix: 是否修改（false ： 只打印信息）
+        //@isFix: 是否修改（false :  只打印信息）
         public void ParseTexture2DFormat(bool isFix)
         {
             var folder = AssetDatabase.GUIDToAssetPath(Selection.assetGUIDs[0]);
@@ -194,7 +194,7 @@ namespace PowerCellStudio
             if(importer == null || !importer) return;
             var setting = importer.GetPlatformTextureSettings(curPl.ToString());
             string formatName = setting.format.ToString();
-            // Debug.LogFormat("path: {0}, format：{1}", path, formatName);
+            // Debug.LogFormat("path: {0}, format: {1}", path, formatName);
 
             if (_allSettings.ContainsKey(formatName))
                 _allSettings[formatName].Add(path);
@@ -209,13 +209,13 @@ namespace PowerCellStudio
         {
             if (Selection.assetGUIDs.Length <= 0)
             {
-                Debug.LogError("请先选择一个文件夹!!! ");
+                Debug.LogError("Please select a folder!!! ");
                 return false;
             }
             var folder = AssetDatabase.GUIDToAssetPath(Selection.assetGUIDs[0]);
             if (!Directory.Exists(folder))
             {
-                Debug.LogError("请先选择一个文件夹!!! ");
+                Debug.LogError("Please select a folder!!! ");
                 return false;
             }
 
@@ -227,19 +227,19 @@ namespace PowerCellStudio
             if (setPl != curPl)
             {
                 curPl = setPl;
-                Debug.LogError("当前平台：" + curPl);
+                Debug.LogError("Target Platform: " + curPl);
             }
 
             if (setTFIndex != curTFIndex)
             {
                 curTFIndex = setTFIndex;
-                Debug.LogError("当前格式" + curTFIndex);
+                Debug.LogError("Target Format Index: " + curTFIndex);
             }
             
             if (setSize != curSize)
             {
                 curSize = setSize;
-                Debug.LogError("当前最大尺寸" + curSize);
+                Debug.LogError("Max Size Setting: " + curSize);
             }
         }
     }
