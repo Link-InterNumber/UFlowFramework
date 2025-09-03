@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using Random = System.Random;
-using UnityRandom = UnityEngine.Random;
 
 namespace PowerCellStudio
 {
@@ -17,12 +15,12 @@ namespace PowerCellStudio
         
         /// <summary>
         /// 设置随机种子。
-        /// Set random seed for Unity's random number generator.
+        /// Set random seed for the random number generator.
         /// </summary>
         /// <param name="seed">种子值 / Seed value</param>
         public static void SetSeed(int seed)
         {
-            UnityRandom.InitState(seed);
+            _random = new Random(seed);
         }
 
         /// <summary>
@@ -32,7 +30,7 @@ namespace PowerCellStudio
         /// <returns>随机值 / Random value</returns>
         public static float Value01()
         {
-            return UnityRandom.value;
+            return (float)_random.NextDouble();
         }
 
         /// <summary>
@@ -44,7 +42,14 @@ namespace PowerCellStudio
         /// <returns>随机浮点数 / Random float</returns>
         public static float Range(float min, float max)
         {
-            return UnityRandom.Range(min, max);
+            if (min == max) return min;
+            if (min > max)
+            {
+                var tmp = min;
+                min = max;
+                max = tmp;
+            }
+            return min + (float)_random.NextDouble() * (max - min);
         }
         
         /// <summary>
@@ -56,7 +61,7 @@ namespace PowerCellStudio
         /// <returns>随机整数 / Random integer</returns>
         public static int Range(int min, int max)
         {
-            return UnityRandom.Range(min, max);
+            return _random.Next(min, max);
         }
         
         /// <summary>
@@ -71,17 +76,17 @@ namespace PowerCellStudio
             if (min == max) return min;
             if (min > max)
             {
-                var temp = min;
+                long tmp = min;
                 min = max;
-                max = min;
+                max = tmp;
             }
 
             byte[] buffer = new byte[8];
             _random.NextBytes(buffer);
             double randomDouble = (double)BitConverter.ToUInt64(buffer, 0) / ulong.MaxValue;
 
-            long range = max - min;
-            return (long)(randomDouble * range) + min;
+            ulong range = (ulong)(max - min);
+            return min + (long)(randomDouble * range);
         }
         
         /// <summary>
@@ -99,6 +104,20 @@ namespace PowerCellStudio
         }
 
         /// <summary>
+        /// 生成一个随机整数。
+        /// Generate a random integer.
+        /// </summary>
+        /// <returns>随机整数 / Random int</returns>
+        public static long RandomInt()
+        {
+            byte[] buffer = new byte[4];
+            _random.NextBytes(buffer);
+        
+            int randomInt = BitConverter.ToInt32(buffer, 0);
+            return randomInt;
+        }
+
+        /// <summary>
         /// 在[0f, 1f]范围内进行判断。
         /// Check whether a value meets a random condition within [0f, 1f].
         /// </summary>
@@ -106,7 +125,7 @@ namespace PowerCellStudio
         /// <returns>结果，是否符合 / Result, whether it meets the condition</returns>
         public static bool True(float val)
         {
-            return val >= UnityRandom.value;
+            return val >= Value01();
         }
         
         /// <summary>
@@ -119,7 +138,7 @@ namespace PowerCellStudio
         public static bool True(float weight, float total)
         {
             if (total <= weight) return true;
-            return weight >= UnityRandom.Range(0f, total);
+            return weight >= Range(0f, total);
         }
         
         /// <summary>
@@ -132,7 +151,7 @@ namespace PowerCellStudio
         public static bool True(int weight, int total)
         {
             if (total <= weight) return true;
-            return weight >= UnityRandom.Range(0, total);
+            return weight >= Range(0, total);
         }
 
         /// <summary>
@@ -146,7 +165,7 @@ namespace PowerCellStudio
         {
             if (elements == null || elements.Length == 0) return default;
             if (elements.Length == 1) return elements[0];
-            int randomIndex = UnityRandom.Range(0, elements.Length);
+            int randomIndex = _random.Next(0, elements.Length);
             return elements[randomIndex];
         }
         
@@ -161,7 +180,7 @@ namespace PowerCellStudio
         {
             if (elements == null || elements.Count == 0) return default;
             if (elements.Count == 1) return elements[0];
-            int randomIndex = UnityRandom.Range(0, elements.Count);
+            int randomIndex = _random.Next(0, elements.Count);
             return elements[randomIndex];
         }
 
@@ -180,16 +199,17 @@ namespace PowerCellStudio
             if (elements.Length == 1) return elements[0];
 
             int totalWeight = weights.Sum();
-            int randomNumber = UnityRandom.Range(0, totalWeight);
+            if (totalWeight <= 0) return default;
+            int randomNumber = _random.Next(0, totalWeight);
             int cumulativeWeight = 0;
             for (int i = 0; i < elements.Length; i++)
             {
                 var w = 0;
-                if(weights.Length > i) 
+                if (weights.Length > i) 
                     w = weights[i];
                 cumulativeWeight += w;
-                if (randomNumber > cumulativeWeight) continue;
-                return elements[i];
+                if (randomNumber < cumulativeWeight)
+                    return elements[i];
             }
             return default(T);
         }
@@ -209,16 +229,17 @@ namespace PowerCellStudio
             if (elements.Count == 1) return elements[0];
 
             int totalWeight = weights.Sum();
-            int randomNumber = UnityRandom.Range(0, totalWeight);
+            if (totalWeight <= 0) return default;
+            int randomNumber = _random.Next(0, totalWeight);
             int cumulativeWeight = 0;
             for (int i = 0; i < elements.Count; i++)
             {
                 var w = 0;
-                if(weights.Count > i) 
+                if (weights.Count > i) 
                     w = weights[i];
                 cumulativeWeight += w;
-                if (randomNumber > cumulativeWeight) continue;
-                return elements[i];
+                if (randomNumber < cumulativeWeight)
+                    return elements[i];
             }
             return default(T);
         }
@@ -235,13 +256,14 @@ namespace PowerCellStudio
             if (itemWeightPair == null || itemWeightPair.Count == 0) return default;
 
             int totalWeight = itemWeightPair.Values.Sum();
-            int randomNumber = UnityRandom.Range(0, totalWeight);
+            if (totalWeight <= 0) return default;
+            int randomNumber = _random.Next(0, totalWeight);
             int cumulativeWeight = 0;
             foreach (var keyValuePair in itemWeightPair)
             {
                 cumulativeWeight += keyValuePair.Value;
-                if (randomNumber > cumulativeWeight) continue;
-                return keyValuePair.Key;
+                if (randomNumber < cumulativeWeight)
+                    return keyValuePair.Key;
             }
             return default(T);
         }
@@ -262,15 +284,15 @@ namespace PowerCellStudio
             List<T> result = new List<T>();
             if (count > elements.Count)
             {
-                Debug.LogWarning("Count exceeds the number of elements!");
+                result.AddRange(elements);
                 return result;
             }
 
             List<T> remainingElements = elements.ToList();
             for (int i = 0; i < count; i++)
             {
-                if(remainingElements.Count == 0) break;
-                int randomIndex = UnityRandom.Range(0, remainingElements.Count);
+                if (remainingElements.Count == 0) break;
+                int randomIndex = _random.Next(0, remainingElements.Count);
                 result.Add(remainingElements[randomIndex]);
                 remainingElements.RemoveAt(randomIndex);
             }
@@ -290,15 +312,15 @@ namespace PowerCellStudio
             List<T> result = new List<T>();
             if (count > elements.Length)
             {
-                Debug.LogWarning("Count exceeds the number of elements!");
+                result.AddRange(elements);
                 return result;
             }
 
             List<T> remainingElements = elements.ToList();
             for (int i = 0; i < count; i++)
             {
-                if(remainingElements.Count == 0) break;
-                int randomIndex = UnityRandom.Range(0, remainingElements.Count);
+                if (remainingElements.Count == 0) break;
+                int randomIndex = _random.Next(0, remainingElements.Count);
                 result.Add(remainingElements[randomIndex]);
                 remainingElements.RemoveAt(randomIndex);
             }
@@ -331,20 +353,53 @@ namespace PowerCellStudio
         /// <param name="ItemWeightsPair">元素与权重的字典 / Dictionary of elements and weights</param>
         /// <param name="count">要选取的数量 / Number of elements to select</param>
         /// <returns>选中的元素集合 / List of selected elements</returns>
+        public static List<T> WeightedRandomSelectionWithoutDuplicates<T>(IList<T> items, IList<int> weights, int count)
+        {
+            if (items == null || items.Count <= 0 || weights == null || weights.Count <= 0 || count <= 0) return new List<T>();
+            while (items.Count > weights.Count)
+            {
+                weights.Add(0);
+            }
+            List<WeightedElement<T>> weightedElements = new List<WeightedElement<T>>();
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                var w = 0;
+                if (weights.Count > i)
+                    w = weights[i];
+                weightedElements.Add(new WeightedElement<T>(items[i], w));
+            }
+            return WeightedRandomSelectionWithoutDuplicatesHandler<T>(weightedElements, count);
+        }
+
+        /// <summary>
+        /// 带权重随机选择多个元素，不重复。
+        /// Randomly select multiple weighted elements without duplication.
+        /// </summary>
+        /// <typeparam name="T">元素类型 / Type of element</typeparam>
+        /// <param name="ItemWeightsPair">元素与权重的字典 / Dictionary of elements and weights</param>
+        /// <param name="count">要选取的数量 / Number of elements to select</param>
+        /// <returns>选中的元素集合 / List of selected elements</returns>
         public static List<T> WeightedRandomSelectionWithoutDuplicates<T>(Dictionary<T, int> ItemWeightsPair, int count)
         {
             if (ItemWeightsPair == null || ItemWeightsPair.Count <= 0 || count <= 0) return new List<T>();
             if (count > ItemWeightsPair.Count) return ItemWeightsPair.Keys.ToList();
 
-            List<T> result = new List<T>();
             List<WeightedElement<T>> weightedElements = ItemWeightsPair.Select(item => new WeightedElement<T>(item.Key, item.Value)).ToList();
-            weightedElements.Sort((a, b) => b.Weight.CompareTo(a.Weight));
+            return WeightedRandomSelectionWithoutDuplicatesHandler<T>(weightedElements, count);
+        }
 
+        private static List<T> WeightedRandomSelectionWithoutDuplicatesHandler<T>(List<WeightedElement<T>> weightedElements, int count)
+        {
+            List<T> result = new List<T>();
+            weightedElements.Sort((a, b) => b.Weight.CompareTo(a.Weight));
             for (int i = 0; i < count; i++)
             {
                 WeightedElement<T> selected = weightedElements[0];
                 float totalWeight = weightedElements.Aggregate<WeightedElement<T>, float>(0, (current, element) => current + element.Weight);
-                float randomValue = UnityRandom.Range(0, totalWeight);
+                if (totalWeight <= 0f) break;
+                double rnd = _random.NextDouble();
+                int randomValue = (int)(rnd * totalWeight);
 
                 foreach (WeightedElement<T> element in weightedElements)
                 {

@@ -11,7 +11,7 @@ namespace PowerCellStudio
         string sourceFolder = "";
         string targetFolder = "Assets/ResizedImages";
         float scalePercent = 50f;
-        int minSize = 64;
+        int textureMinSize = 64;
 
         [MenuItem("Tools/Batch Resize and Save Images")]
         public static void ShowWindow()
@@ -19,13 +19,56 @@ namespace PowerCellStudio
             GetWindow(typeof(TextureBatchResizer), false, "Batch Resize and Save Images");
         }
 
+        // 打开窗口时加载上次的设置
+        void OnEnable()
+        {
+            sourceFolder = EditorPrefs.GetString("TextureBatchResizer_SourceFolder", "");
+            targetFolder = EditorPrefs.GetString("TextureBatchResizer_TargetFolder", "Assets/ResizedImages");
+        }
+
+        // 关闭窗口时保存当前设置
+        void OnDisable()
+        {
+            EditorPrefs.SetString("TextureBatchResizer_SourceFolder", sourceFolder);
+            EditorPrefs.SetString("TextureBatchResizer_TargetFolder", targetFolder);
+        }
+
         void OnGUI()
         {
             GUILayout.Label("Batch Resize and Save Images", EditorStyles.boldLabel);
+            EditorGUILayout.BeginHorizontal();
             sourceFolder = EditorGUILayout.TextField("Source Folder (absolute path)", sourceFolder);
+            if (GUILayout.Button("Browse", GUILayout.MaxWidth(80)))
+            {
+                string selectedPath = EditorUtility.OpenFolderPanel("Select Source Folder", "", "");
+                if (!string.IsNullOrEmpty(selectedPath))
+                {
+                    sourceFolder = selectedPath;
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+            
+            EditorGUILayout.BeginHorizontal();
             targetFolder = EditorGUILayout.TextField("Target Folder (Assets path)", targetFolder);
+            if (GUILayout.Button("Browse", GUILayout.MaxWidth(80)))
+            {
+                string selectedPath = EditorUtility.OpenFolderPanel("Select Target Folder", Application.dataPath, "");
+                if (!string.IsNullOrEmpty(selectedPath))
+                {
+                    if (selectedPath.StartsWith(Application.dataPath))
+                    {
+                        targetFolder = "Assets" + selectedPath.Substring(Application.dataPath.Length);
+                    }
+                    else
+                    {
+                        Debug.LogError("Target folder must be inside the Assets folder!");
+                    }
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
             scalePercent = EditorGUILayout.Slider("Scale Percent", scalePercent, 1, 100);
-            minSize = EditorGUILayout.IntField("Minimum Size (pixels)", minSize);
+            textureMinSize = EditorGUILayout.IntField("Minimum Size (pixels)", textureMinSize);
 
             if (GUILayout.Button("Start Processing"))
             {
@@ -55,7 +98,7 @@ namespace PowerCellStudio
                     string relativePath = file.Substring(sourceFolder.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
                     string saveDir = Path.Combine(targetFolder, Path.GetDirectoryName(relativePath));
                     string fileName = Path.GetFileNameWithoutExtension(file) + "_scaled" + Path.GetExtension(file);
-                    string savePath = Path.Combine(saveDir, Path.GetFileName(file));
+                    string savePath = Path.Combine(saveDir, fileName);
 
                     if (File.Exists(savePath))
                         continue;
@@ -69,11 +112,10 @@ namespace PowerCellStudio
 
                     int newWidth = Mathf.RoundToInt(tex.width * scalePercent / 100f);
                     int newHeight = Mathf.RoundToInt(tex.height * scalePercent / 100f);
-
-                    if (newWidth < minSize || newHeight < minSize)
+                    if (newWidth < textureMinSize || newHeight < textureMinSize)
                     {
                         // Copy original image directly
-                        File.Copy(file, savePath, true);
+                        File.Copy(file, Path.Combine(saveDir, Path.GetFileName(file)), true);
                     }
                     else
                     {
@@ -107,7 +149,7 @@ namespace PowerCellStudio
 
         void SetPixelPerUnit()
         {
-            float ppu = 100f / scalePercent;
+            float ppu = scalePercent;
             string[] files = Directory.GetFiles(targetFolder, "*.*", SearchOption.AllDirectories);
             foreach (string file in files)
             {
