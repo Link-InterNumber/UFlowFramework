@@ -108,7 +108,7 @@ namespace PowerCellStudio
         /// Generate a random integer.
         /// </summary>
         /// <returns>随机整数 / Random int</returns>
-        public static long RandomInt()
+        public static int RandomInt()
         {
             byte[] buffer = new byte[4];
             _random.NextBytes(buffer);
@@ -198,7 +198,13 @@ namespace PowerCellStudio
             if (weights.Length == 0) return RandomSelection(elements);
             if (elements.Length == 1) return elements[0];
 
-            int totalWeight = weights.Sum();
+            int totalWeight = 0;
+            int n = elements.Length;
+            for (int i = 0; i < n; i++)
+            {
+                int w = i < weights.Length ? weights[i] : 0;
+                if (w > 0) totalWeight += w;
+            }
             if (totalWeight <= 0) return default;
             int randomNumber = _random.Next(0, totalWeight);
             int cumulativeWeight = 0;
@@ -228,7 +234,13 @@ namespace PowerCellStudio
             if (weights.Count == 0) return RandomSelection(elements);
             if (elements.Count == 1) return elements[0];
 
-            int totalWeight = weights.Sum();
+            int totalWeight = 0;
+            int n = elements.Count;
+            for (int i = 0; i < n; i++)
+            {
+                int w = i < weights.Count ? weights[i] : 0;
+                if (w > 0) totalWeight += w;
+            }
             if (totalWeight <= 0) return default;
             int randomNumber = _random.Next(0, totalWeight);
             int cumulativeWeight = 0;
@@ -279,23 +291,26 @@ namespace PowerCellStudio
         public static List<T> RandomSelectionWithoutDuplicates<T>(IList<T> elements, int count)
         {
             if (elements == null || elements.Count == 0) return default;
-            if (elements.Count == 1) return new List<T>(elements);
+            if (count <= 0) return new List<T>();
+            int n = elements.Count;
+            if (count >= n) return new List<T>(elements);
 
-            List<T> result = new List<T>();
-            if (count > elements.Count)
-            {
-                result.AddRange(elements);
-                return result;
-            }
+            // Fisher-Yates 部分洗牌：只进行前 count 次交换
+            T[] buffer = new T[n];
+            for (int i = 0; i < n; i++) buffer[i] = elements[i];
 
-            List<T> remainingElements = elements.ToList();
             for (int i = 0; i < count; i++)
             {
-                if (remainingElements.Count == 0) break;
-                int randomIndex = _random.Next(0, remainingElements.Count);
-                result.Add(remainingElements[randomIndex]);
-                remainingElements.RemoveAt(randomIndex);
+                int j = _random.Next(i, n); // 随机选一个索引 j∈[i,n)
+                // swap buffer[i] and buffer[j]
+                T tmp = buffer[i];
+                buffer[i] = buffer[j];
+                buffer[j] = tmp;
             }
+
+            List<T> result = new List<T>(count);
+            for (int i = 0; i < count; i++)
+                result.Add(buffer[i]);
             return result;
         }
         
@@ -309,21 +324,24 @@ namespace PowerCellStudio
         /// <returns>选中的元素集合 / List of selected elements</returns>
         public static List<T> RandomSelectionWithoutDuplicates<T>(T[] elements, int count)
         {
-            List<T> result = new List<T>();
-            if (count > elements.Length)
-            {
-                result.AddRange(elements);
-                return result;
-            }
+            if (elements == null || elements.Length == 0) return new List<T>();
+            int n = elements.Length;
+            if (count <= 0) return new List<T>();
+            if (count >= n) return new List<T>(elements);
 
-            List<T> remainingElements = elements.ToList();
+            // 部分 Fisher-Yates
+            T[] buffer = new T[n];
+            Array.Copy(elements, buffer, n);
             for (int i = 0; i < count; i++)
             {
-                if (remainingElements.Count == 0) break;
-                int randomIndex = _random.Next(0, remainingElements.Count);
-                result.Add(remainingElements[randomIndex]);
-                remainingElements.RemoveAt(randomIndex);
+                int j = _random.Next(i, n);
+                T tmp = buffer[i];
+                buffer[i] = buffer[j];
+                buffer[j] = tmp;
             }
+
+            List<T> result = new List<T>(count);
+            for (int i = 0; i < count; i++) result.Add(buffer[i]);
             return result;
         }
         
@@ -365,7 +383,7 @@ namespace PowerCellStudio
             for (int i = 0; i < items.Count; i++)
             {
                 var w = 0;
-                if (weights.Count > i)
+                if (weights.Count > i && weights[i] > 0)
                     w = weights[i];
                 weightedElements.Add(new WeightedElement<T>(items[i], w));
             }
@@ -385,7 +403,7 @@ namespace PowerCellStudio
             if (ItemWeightsPair == null || ItemWeightsPair.Count <= 0 || count <= 0) return new List<T>();
             if (count > ItemWeightsPair.Count) return ItemWeightsPair.Keys.ToList();
 
-            List<WeightedElement<T>> weightedElements = ItemWeightsPair.Select(item => new WeightedElement<T>(item.Key, item.Value)).ToList();
+            List<WeightedElement<T>> weightedElements = ItemWeightsPair.Select(item => new WeightedElement<T>(item.Key, Math.Max(0, item.Value))).ToList();
             return WeightedRandomSelectionWithoutDuplicatesHandler<T>(weightedElements, count);
         }
 
@@ -393,14 +411,17 @@ namespace PowerCellStudio
         {
             List<T> result = new List<T>();
             weightedElements.Sort((a, b) => b.Weight.CompareTo(a.Weight));
-            for (int i = 0; i < count; i++)
+            for (int pick = 0; pick < count; pick++)
             {
-                WeightedElement<T> selected = weightedElements[0];
-                float totalWeight = weightedElements.Aggregate<WeightedElement<T>, float>(0, (current, element) => current + element.Weight);
-                if (totalWeight <= 0f) break;
+                int totalWeight = 0;
+                for (int i = 0; i < weightedElements.Count; i++)
+                    totalWeight += weightedElements[i].Weight;
+                if (totalWeight <= 0) break;
+
                 double rnd = _random.NextDouble();
                 int randomValue = (int)(rnd * totalWeight);
 
+                WeightedElement<T> selected = weightedElements[0];
                 foreach (WeightedElement<T> element in weightedElements)
                 {
                     randomValue -= element.Weight;
