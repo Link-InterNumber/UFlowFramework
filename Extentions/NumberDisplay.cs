@@ -6,19 +6,6 @@ namespace PowerCellStudio
 {
     public static class NumberDisplay
     {
-        /// <summary>
-        /// 将整数格式化为带符号的英文缩写形式。
-        /// Formats the integer as an English shorthand representation with a sign.
-        /// </summary>
-        /// <param name="num">要格式化的数字。</param>
-        /// <param name="size">小数位数。</param>
-        /// <returns>带符号的格式化字符串。</returns>
-        public static string FormatNumberEnSign(this int num, int size = 2)
-        {
-            return num < 0 
-                ? "-" + FormatNumberEn(Mathf.Abs(num), size) 
-                : FormatNumberEn(Mathf.Abs(num), size);
-        }
         
         /// <summary>
         /// 将百万数字转化为百分比率。
@@ -41,6 +28,11 @@ namespace PowerCellStudio
         public static string FormatNumberEn(this long num, int size = 2)
         {
             var result = new StringBuilder();
+            if (num < 0)
+            {
+                result.Append("-");
+                num = -num;
+            } 
             if (num >= 1000000000L)
             {
                 result.Append((num * 0.000000001f).ToString($"N{size}") + "B");
@@ -58,22 +50,7 @@ namespace PowerCellStudio
             }
             return result.Append(num.ToString("N0")).ToString();
         }
-        
-        /// <summary>
-        /// 将整数格式化为带符号的中文缩写形式。
-        /// Formats the integer as a Chinese shorthand representation with a sign.
-        /// </summary>
-        /// <param name="num">要格式化的数字。</param>
-        /// <param name="size">小数位数。</param>
-        /// <param name="isTraditional">是否使用繁体中文。</param>
-        /// <returns>带符号的格式化字符串。</returns>
-        public static string FormatNumberCnSign(this int num, int size = 2, bool isTraditional = false)
-        {
-            return num < 0
-                ? "-" + FormatNumberCn(Mathf.Abs(num), size, isTraditional)
-                : FormatNumberCn(Mathf.Abs(num), size, isTraditional);
-        }
-        
+                
         /// <summary>
         /// 将数字格式化为中文缩写表示。
         /// Formats the number as Chinese shorthand representation.
@@ -125,6 +102,20 @@ namespace PowerCellStudio
         {
             return isChinese ? FormatNumberCn(num, size, isTraditional) : FormatNumberEn(num, size);
         }
+
+        /// <summary>
+        /// 格式化数字为中英文表示。
+        /// Formats the number as Chinese or English shorthand representation.
+        /// </summary>
+        /// <param name="num">要格式化的数字。</param>
+        /// <param name="isChinese">是否使用中文。</param>
+        /// <param name="isTraditional">是否使用繁体中文。</param>
+        /// <param name="size">小数位数。</param>
+        /// <returns>格式化后的字符串。</returns>
+        public static string FormatIndex(this long num, bool isChinese, bool isTraditional = false, int size = 2)
+        {
+            return isChinese ? FormatIndexCn(num, isTraditional, size) : num.ToString("N0");
+        }
         
         /// <summary>
         /// 获取数字的中文单位。
@@ -138,7 +129,7 @@ namespace PowerCellStudio
             if (number >= 1000000000000L)
                 return "兆";
             if (number >= 100000000L)
-                return "亿";
+                return isTraditional ? "億" : "亿";
             if (number >= 10000L)
                 return isTraditional ? "萬" : "万";
             if (number >= 1000L)
@@ -160,9 +151,15 @@ namespace PowerCellStudio
         public static string FormatIndexCn(this long index, bool isTraditional = false, int unitCount = 2)
         {
             StringBuilder result = new StringBuilder();
+            if (index == 0)
+            {
+                return isTraditional ? "〇" : "零";
+            };
             if (index < 0)
             {
                 result.Append("负");
+                if (index == long.MinValue) // 处理 long.MinValue 的特殊情况
+                    return result.Append("九百二十二万三千三百七十二兆零三百六十八亿五千四百七十七万五千八百零七").ToString();
                 index = -index;
             }
             if (index <= 100000L)
@@ -170,18 +167,34 @@ namespace PowerCellStudio
                 ParseIndexIn10000Cn(index, isTraditional, unitCount, result);
                 return result.ToString();
             }
+
             var compareBase = 1000000000000L;
             var unitBase = 10000L;
-            var unitCountTemp = unitCount;
+            var unitCountTemp = unitCount < 0 ? int.MaxValue : unitCount;
+
+            if (index / compareBase >= unitBase)
+            {
+                var head = index / compareBase / unitBase;
+                var displayCount = ParseIndexIn10000Cn(head, isTraditional, unitCountTemp, result);
+                result.Append(GetNumberUnitCn(unitBase, isTraditional));
+                unitCountTemp -= displayCount;
+                if (unitCountTemp < 1)
+                {
+                    result.Append("兆");
+                    return result.ToString();
+                }
+                index = index % (compareBase * unitBase);
+            }
+
             while (compareBase > 0L)
             {
                 if (index >= compareBase)
                 {
                     var head = index / compareBase;
                     var displayCount = ParseIndexIn10000Cn(head, isTraditional, unitCountTemp, result);
-                    result.Append(GetNumberUnitCn(index, isTraditional));
+                    if (index >= 10000) result.Append(GetNumberUnitCn(index, isTraditional));
                     unitCountTemp -= displayCount;
-                    if (unitCountTemp < 1) 
+                    if (unitCountTemp < 1)
                         break;
                 }
                 index = index % compareBase;
@@ -195,6 +208,10 @@ namespace PowerCellStudio
         {
             var baseValue = 10000L;
             var count = 0;
+            // if (sb.Length > 1 && index < 1000L)
+            // {
+            //     sb.Append(IntToChineseHandler(0, isTraditional)); // 补零
+            // }
             while (baseValue > 0L)
             {
                 if (index >= baseValue)
@@ -203,11 +220,20 @@ namespace PowerCellStudio
                     sb.Append(IntToChineseHandler(headNumber, isTraditional));
                     sb.Append(GetNumberUnitCn(index, isTraditional));
                     count++;
-                    if (count >= unitCount)
+                    if (unitCount > 0 && count >= unitCount)
                         break;
                 }
                 index = index % baseValue;
                 baseValue = baseValue / 10L;
+                if (index == 0) break;
+                if (baseValue >= 10L && index < baseValue && sb.Length > 1)
+                {
+                    sb.Append(IntToChineseHandler(0, isTraditional)); // 补零
+                    while (baseValue >= 10L && index < baseValue)
+                    {
+                        baseValue = baseValue / 10L;
+                    }
+                }
             }
             return count;
         }

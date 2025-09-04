@@ -271,6 +271,21 @@ namespace PowerCellStudio
         }
 
         /// <summary>
+        /// 在给定整数权重和总计范围内进行判断。
+        /// Check whether a condition is met based on integer weight and total range.
+        /// </summary>
+        /// <param name="weight">权重值 / Weight value</param>
+        /// <param name="total">总计范围 / Total range</param>
+        /// <returns>结果，是否符合 / Result, whether it meets the condition</returns>
+        public static bool True(long weight, long total)
+        {
+            if (total <= weight) return true;
+            if (weight <= 0) return false;
+            if (total <= 0) return false;
+            return weight >= Range(0L, total);
+        }
+
+        /// <summary>
         /// 从数组中随机选择一个元素。
         /// Randomly select an element from an array.
         /// </summary>
