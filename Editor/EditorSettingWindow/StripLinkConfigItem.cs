@@ -91,6 +91,7 @@ namespace PowerCellStudio
             doc.Save(LinkFilePath);
 
             Debug.Log($"link.xml has been saved at {LinkFilePath}");
+            EditorUtility.RevealInFinder(LinkFilePath);
         }
     }
 }

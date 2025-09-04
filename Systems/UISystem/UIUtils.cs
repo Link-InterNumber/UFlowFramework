@@ -116,7 +116,7 @@ namespace PowerCellStudio
             return newPage;
         }
         
-        public static void ClosePage<T>(T page, bool destroy, Action callback, IUIParent poolParent) where T : IUIParent
+        public static void ClosePageInstance<T>(T page, bool destroy, Action callback, IUIParent poolParent) where T : IUIParent
         {
             CloseUI(page, null);
             if (destroy)
@@ -125,7 +125,7 @@ namespace PowerCellStudio
                 {
                     var child = keyValuePair.Value;
                     CloseUI(child, null, true);
-                    if (child is IUIPoolable 
+                    if (child is IUIPoolable && poolParent != null
                         && !poolParent.children.ContainsKey(child.GetType()) 
                         && !poolParent.windowRequests.IsUIGoingToOpen(keyValuePair.Key, out _))
                     {

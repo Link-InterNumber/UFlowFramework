@@ -133,7 +133,7 @@ namespace PowerCellStudio
 
         public void Load()
         {
-            if (_assetLoadStatus != AssetLoadStatus.Unload) return;
+            if (_assetLoadStatus != AssetLoadStatus.Unload ||!_parent.transform) return;
             _windowPath = null;
             
             _ignoreRaycaster = false;

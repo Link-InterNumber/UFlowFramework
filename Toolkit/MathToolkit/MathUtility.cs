@@ -13,6 +13,16 @@ namespace PowerCellStudio
         /// 万分比长整数基数
         /// </summary>
         public static readonly long MillionLong = 10000;
+
+        public static bool TrueMillion(int v)
+        {
+            return Randomizer.True(v, MillionInt);
+        }
+
+        public static bool TrueMillion(long v)
+        {
+            return Randomizer.True(v, MillionLong);
+        }
         
         public static float Remap(float val, float start, float end, float toStart, float toEnd)
         {

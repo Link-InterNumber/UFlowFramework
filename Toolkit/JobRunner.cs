@@ -32,8 +32,8 @@ namespace PowerCellStudio
            where T : struct
         {
 #if UNITY_WEBGL
-         // WebGL不支持JobSystem，直接返回原始结果
-         job.Execute();
+            // WebGL不支持JobSystem，直接返回原始结果
+            job.Execute();
 #else
             JobHandle handle = job.Schedule();
             handle.Complete();
@@ -54,8 +54,8 @@ namespace PowerCellStudio
            where T : struct
         {
 #if UNITY_WEBGL
-         job.Execute();
-         onComplete?.Invoke(resultArray);
+            job.Execute();
+            onComplete?.Invoke(resultArray);
 #else
             JobHandle handle = job.Schedule();
             _asyncJobs.Add(new JobInfo
@@ -83,12 +83,12 @@ namespace PowerCellStudio
            where TJob : struct, IJobFor
         {
 #if UNITY_WEBGL
-         // WebGL不支持JobSystem，直接返回
-         for (int i = 0; i < length; i++)
-         {
-            job.Execute(i);
-         }
-         return;
+            // WebGL不支持JobSystem，直接返回
+            for (int i = 0; i < length; i++)
+            {
+                job.Execute(i);
+            }
+            return;
 #else
             JobHandle handle = job.ScheduleParallel(length, batchCount, default);
             handle.Complete();
@@ -111,8 +111,8 @@ namespace PowerCellStudio
            where T : struct
         {
 #if UNITY_WEBGL
-         // WebGL不支持JobSystem，直接回调
-         ApplicationManager.RunCoroutine(AsyncRunParallelJobCorount(job, resultArray, length, onComplete, batchCount));
+            // WebGL不支持JobSystem，直接回调
+            ApplicationManager.RunCoroutine(AsyncRunParallelJobCorount(job, resultArray, length, onComplete, batchCount));
 #else
             JobHandle handle = job.ScheduleParallel(length, batchCount, default);
             _asyncJobs.Add(new JobInfo
@@ -153,12 +153,10 @@ namespace PowerCellStudio
             onComplete?.Invoke(resultArray);
         }
 
+#if !UNITY_WEBGL
         private void Update()
         {
-#if UNITY_WEBGL
             // WebGL不支持JobSystem，无需处理异步Job
-            return;
-#else
             // 检查异步Job是否完成
             for (int i = 0; i < _asyncJobs.Count; i++)
             {
@@ -178,12 +176,10 @@ namespace PowerCellStudio
                 _asyncJobs.RemoveAt(index);
             }
             _removeBuffer.Clear();
-#endif
         }
 
         void OnDestroy()
         {
-#if !UNITY_WEBGL
             // 清理所有异步Job
             foreach (var jobInfo in _asyncJobs)
             {
@@ -195,7 +191,7 @@ namespace PowerCellStudio
             }
             _asyncJobs.Clear();
             _removeBuffer.Clear();
-#endif
         }
+#endif
     }
 }

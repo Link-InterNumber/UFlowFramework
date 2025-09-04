@@ -247,6 +247,7 @@ namespace PowerCellStudio
             File.WriteAllText(path, writer.ToString(), System.Text.Encoding.UTF8);
             AssetDatabase.Refresh();
             EditorUtility.DisplayDialog("生成成功", "配置脚本已生成！", "OK");
+            EditorUtility.RevealInFinder(path);
         }
     }
 }

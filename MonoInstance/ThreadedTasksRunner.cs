@@ -23,10 +23,13 @@ namespace PowerCellStudio
 #endif
 
         /// <summary>
-        /// 将任务提交到线程池执行
+        /// Submits a task to the thread pool for execution.
+        /// 将任务提交到线程池执行。
         /// </summary>
-        /// <param name="backgroundTask">后台任务逻辑</param>
-        /// <param name="mainThreadCallback">主线程回调（可选）</param>
+        /// <param name="backgroundTask">Background task logic.
+        /// 后台任务逻辑。</param>
+        /// <param name="mainThreadCallback">Main thread callback (optional).
+        /// 主线程回调（可选）。</param>
         public void RunTaskAsync(System.Action backgroundTask, System.Action mainThreadCallback = null)
         {
 #if !UNITY_WEBGL
@@ -54,7 +57,16 @@ namespace PowerCellStudio
 #endif
         }
 
-        // 添加带参数的版本
+        /// <summary>
+        /// Submits a task to the thread pool for execution.
+        /// 将任务提交到线程池执行。
+        /// </summary>
+        /// <param name="backgroundTask">Background task logic.
+        /// 后台任务逻辑。</param>
+        /// <param name="parameter"> The input of background task
+        /// 后台任务需要的输入参数。</param>
+        /// <param name="mainThreadCallback">Main thread callback (optional).
+        /// 主线程回调（可选）。</param>
         public void RunTaskAsync<T>(System.Action<T> backgroundTask, T parameter, System.Action mainThreadCallback = null)
         {
 #if !UNITY_WEBGL

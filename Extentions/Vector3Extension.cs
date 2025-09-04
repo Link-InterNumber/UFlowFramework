@@ -23,9 +23,21 @@ namespace PowerCellStudio
         /// <param name="v3">要旋转的向量。</param>
         /// <param name="angle">旋转角度（度）。</param>
         /// <returns>旋转后的向量。</returns>
-        public static Vector3 RotationAngle2D(this Vector3 v3, float angle)
+        public static Vector3 RotationAngleByZAxis(this Vector3 v3, float angle)
         {
             return Quaternion.AngleAxis(angle, Vector3.forward) * v3;
+        }
+
+        /// <summary>
+        /// 将向量绕二维平面的Y轴旋转指定角度。
+        /// Rotates the vector around the Y-axis by a specified angle in 2D.
+        /// </summary>
+        /// <param name="v3">要旋转的向量。</param>
+        /// <param name="angle">旋转角度（度）。</param>
+        /// <returns>旋转后的向量。</returns>
+        public static Vector3 RotationAngleByYAxis(this Vector3 v3, float angle)
+        {
+            return Quaternion.AngleAxis(angle, Vector3.up) * v3;
         }
         
         /// <summary>
@@ -41,34 +53,48 @@ namespace PowerCellStudio
         }
         
         /// <summary>
-        /// 检查当前向量是否在目标向量的指定范围内。
-        /// Checks if the current vector is within a specified range from the target vector.
+        /// 检查当前位置是否在目标位置的指定范围内。
+        /// Checks if the current position is within a specified range from the target position.
         /// </summary>
-        /// <param name="v3">当前向量。</param>
-        /// <param name="target">目标向量。</param>
+        /// <param name="v3">当前位置。</param>
+        /// <param name="target">目标位置。</param>
         /// <param name="range">范围的半径。</param>
         /// <returns>如果在范围内则为真，否则为假。</returns>
         public static bool IsInRange(this Vector3 v3, Vector3 target, float range)
         {
-            var distance = Vector3.SqrMagnitude(target - v3);
+            if (range < 0f) return false;
+            float dx = Mathf.Abs(v3.x - target.x);
+            if (dx > range) return false;
+            float dy = Mathf.Abs(v3.y - target.y);
+            if (dy > range) return false;
+            float dz = Mathf.Abs(v3.z - target.z);
+            if (dz > range) return false;
+
+            if (dx + dy + dz <= range) return true;
+
+            var distance = dx * dx + dy * dy + dz * dz;
             return distance <= (range * range);
         }
         
         /// <summary>
-        /// 检查当前向量是否在目标向量的指定二维范围内。
-        /// Checks if the current vector is within a specified 2D range from the target vector.
+        /// 检查当前位置是否在目标位置的指定二维范围内。
+        /// Checks if the current position is within a specified 2D range from the target position.
         /// </summary>
-        /// <param name="v3">当前向量。</param>
-        /// <param name="target">目标向量。</param>
+        /// <param name="v3">当前位置。</param>
+        /// <param name="target">目标位置。</param>
         /// <param name="range">范围的半径。</param>
         /// <returns>如果在范围内则为真，否则为假。</returns>
         public static bool IsInRange2D(this Vector3 v3, Vector3 target, float range)
         {
-            var v2 = new Vector2(v3.x, v3.y);
-            var target2D = new Vector2(target.x, target.y);
-            var manhattanDistance = v2.ManhattanDistance(target2D);
-            if (manhattanDistance > range) return false;
-            var distance = Vector2.SqrMagnitude(target2D - v2);
+            if (range < 0f) return false;
+            float dx = Mathf.Abs(v3.x - target.x);
+            if (dx > range) return false;
+            float dy = Mathf.Abs(v3.y - target.y);
+            if (dy > range) return false;
+
+            if (dx + dy <= range) return true;
+
+            var distance = dx * dx + dy * dy;
             return distance <= (range * range);
         }
     }
@@ -100,11 +126,11 @@ namespace PowerCellStudio
         }
         
         /// <summary>
-        /// 计算两个二维向量之间的曼哈顿距离。
-        /// Computes the Manhattan distance between two 2D vectors.
+        /// 计算两个二维位置之间的曼哈顿距离。
+        /// Computes the Manhattan distance between two 2D position.
         /// </summary>
-        /// <param name="v2">原始向量。</param>
-        /// <param name="target">目标向量。</param>
+        /// <param name="v2">原始位置。</param>
+        /// <param name="target">目标位置。</param>
         /// <returns>曼哈顿距离。</returns>
         public static float ManhattanDistance(this Vector2 v2, Vector2 target)
         {
@@ -112,18 +138,25 @@ namespace PowerCellStudio
         }
         
         /// <summary>
-        /// 检查当前向量是否在目标向量的指定范围内。
-        /// Checks if the current vector is within a specified range from the target vector.
+        /// 检查当前位置是否在目标位置的指定范围内。
+        /// Checks if the current vector is within a specified range from the target position.
         /// </summary>
-        /// <param name="v2">当前向量。</param>
-        /// <param name="target">目标向量。</param>
+        /// <param name="v2">当前位置。</param>
+        /// <param name="target">目标位置。</param>
         /// <param name="range">范围的半径。</param>
         /// <returns>如果在范围内则为真，否则为假。</returns>
         public static bool IsInRange(this Vector2 v2, Vector2 target, float range)
         {
-            var manhattanDistance = v2.ManhattanDistance(target);
-            if (manhattanDistance > range) return false;
-            var distance = Vector2.SqrMagnitude(target - v2);
+            if (range < 0f) return false;
+
+            float dx = Mathf.Abs(v2.x - target.x);
+            if (dx > range) return false;
+            float dy = Mathf.Abs(v2.y - target.y);
+            if (dy > range) return false;
+
+            if (dx + dy <= range) return true;
+
+            var distance = dx * dx + dy * dy;
             return distance <= (range * range);
         }
     }

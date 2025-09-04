@@ -145,6 +145,11 @@ namespace PowerCellStudio
             base.Clear();
         }
 
+        public void ClearStack()
+        {
+            base.Clear();
+        }
+
         public override void Dispose()
         {
             base.Dispose();

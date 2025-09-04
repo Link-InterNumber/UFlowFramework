@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-using UnityEngine.InputSystem.EnhancedTouch;
 
 namespace PowerCellStudio
 {
@@ -13,31 +12,8 @@ namespace PowerCellStudio
 
       private void Awake()
       {
-#if ENABLE_INPUT_SYSTEM
-         EnhancedTouchSupport.Enable();
-#endif
          _inputHandles = new Dictionary<Type, IScreenInputHandle>();
          _removeBuffer = new List<Type>();
-         #region Test
-         var tapHandle = new ScreenTapHandle();
-         var dragHandle = new ScreenDragHandle();
-         var pinchHandle = new ScreenPinchHandle();
-         var twoFingerDragHandle = new ScreenTwoFingerDragHandle();
-         var longPressHandle = new ScreenLongPressHandle();
-         // 注册输入处理器
-         RegisterInputHandle(tapHandle);
-         RegisterInputHandle(dragHandle);
-         RegisterInputHandle(pinchHandle);
-         RegisterInputHandle(twoFingerDragHandle);
-         RegisterInputHandle(longPressHandle);
-
-         tapHandle.RegisterInput(OnTapEvent);
-         dragHandle.RegisterInput(OnDragEvent);
-         pinchHandle.RegisterInput(OnPinchEvent);
-         twoFingerDragHandle.RegisterInput(OnTwoFingerDragEvent);
-         longPressHandle.RegisterInput(OnLongPress);
-
-         #endregion
       }
       
       private void OnDestroy()
@@ -201,6 +177,45 @@ namespace PowerCellStudio
          Debug.LogError($"Long Press Detected: {inputEvent.screenPos}, Time: {inputEvent.pressTime}, State: {inputEvent.state}");
       }
 
+      [TestButton]
+      public void TestTap()
+      {
+         var tapHandle = new ScreenTapHandle();
+         RegisterInputHandle(tapHandle);
+         tapHandle.RegisterInput(OnTapEvent);
+      }
+
+      [TestButton]
+      public void TestDrag()
+      {
+         var dragHandle = new ScreenDragHandle();
+         RegisterInputHandle(dragHandle);
+         dragHandle.RegisterInput(OnDragEvent);
+      }
+
+      [TestButton]
+      public void TestPinch()
+      {
+         var pinchHandle = new ScreenPinchHandle();
+         RegisterInputHandle(pinchHandle);
+         pinchHandle.RegisterInput(OnPinchEvent);
+      }
+
+      [TestButton]
+      public void TestTwoFingerDrag()
+      {
+         var twoFingerDragHandle = new ScreenTwoFingerDragHandle();
+         RegisterInputHandle(twoFingerDragHandle);
+         twoFingerDragHandle.RegisterInput(OnTwoFingerDragEvent);
+      }
+
+      [TestButton]
+      public void TestLongPress()
+      {
+         var longPressHandle = new ScreenLongPressHandle();
+         RegisterInputHandle(longPressHandle);
+         longPressHandle.RegisterInput(OnLongPress);
+      }
       #endregion
    }
 }
