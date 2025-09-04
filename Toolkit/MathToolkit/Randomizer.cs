@@ -24,8 +24,8 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 获取一个介于0和1之间的随机值。
-        /// Get a random value between 0 and 1.
+        /// 获取一个介于[0, 1)之间的随机值。
+        /// Get a random float value between [0, 1).
         /// </summary>
         /// <returns>随机值 / Random value</returns>
         public static float Value01()
@@ -34,8 +34,18 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 获取一个介于min和max之间的随机浮点数。
-        /// Get a random float between <paramref name="min"/> and <paramref name="max"/>.
+        /// 获取一个介于[0, 1)之间的随机值。
+        /// Get a random double value between [0, 1).
+        /// </summary>
+        /// <returns>随机值 / Random value</returns>
+        public static double ValueDouble01()
+        {
+            return _random.NextDouble();
+        }
+
+        /// <summary>
+        /// 获取一个介于[min, max)之间的随机浮点数。
+        /// Get a random float between [<paramref name="min"/> and <paramref name="max"/>).
         /// </summary>
         /// <param name="min">最小值 / Minimum value</param>
         /// <param name="max">最大值 / Maximum value</param>
@@ -51,22 +61,73 @@ namespace PowerCellStudio
             }
             return min + (float)_random.NextDouble() * (max - min);
         }
+
+        /// <summary>
+        /// 获取一个介于[min, max)之间的随机双精度浮点数。
+        /// Get a random double between [<paramref name="min"/> and <paramref name="max"/>).
+        /// </summary>
+        /// <param name="min">最小值 / Minimum value</param>
+        /// <param name="max">最大值 / Maximum value</param>
+        /// <returns>随机浮点数 / Random float</returns>
+        public static double RangeDouble(double min, double max)
+        {
+            if (min == max) return min;
+            if (min > max)
+            {
+                var tmp = min;
+                min = max;
+                max = tmp;
+            }
+            return min + _random.NextDouble() * (max - min);
+        }
         
         /// <summary>
-        /// 获取一个介于min和max之间的随机整数。
-        /// Get a random integer between <paramref name="min"/> and <paramref name="max"/>.
+        /// 获取一个介于[min, max]之间的随机整数。
+        /// Get a random integer between [<paramref name="min"/> and <paramref name="max"/>].
         /// </summary>
         /// <param name="min">最小值 / Minimum value</param>
         /// <param name="max">最大值 / Maximum value</param>
         /// <returns>随机整数 / Random integer</returns>
         public static int Range(int min, int max)
         {
-            return _random.Next(min, max);
+            if (min == max) return min;
+            if (min > max)
+            {
+                var tmp = min;
+                min = max;
+                max = tmp;
+            }
+            return _random.Next(min, max + 1);
         }
         
         /// <summary>
-        /// 获取一个介于min和max之间的随机长整型数。
-        /// Get a random long between <paramref name="min"/> and <paramref name="max"/>.
+        /// 获取一个介于[min, max]之间的随机无符号整数。
+        /// Get a random unsigned integer between [<paramref name="min"/> and <paramref name="max"/>].
+        /// </summary>
+        /// <param name="min">最小值 / Minimum value</param>
+        /// <param name="max">最大值 / Maximum value</param>
+        /// <returns>随机整数 / Random integer</returns>
+        public static uint RangeUint(uint min, uint max)
+        {
+            if (min == max) return min;
+            if (min > max)
+            {
+                var tmp = min;
+                min = max;
+                max = tmp;
+            }
+            double randomDouble = _random.NextDouble();
+
+            ulong range = (ulong)(max - min);
+            if (max < uint.MaxValue)
+                range++;
+
+            return min + (uint)(randomDouble * range);
+        }
+        
+        /// <summary>
+        /// 获取一个介于[min, max]之间的随机长整型数。
+        /// Get a random long between [<paramref name="min"/> and <paramref name="max"/>].
         /// </summary>
         /// <param name="min">最小值 / Minimum value</param>
         /// <param name="max">最大值 / Maximum value</param>
@@ -76,17 +137,42 @@ namespace PowerCellStudio
             if (min == max) return min;
             if (min > max)
             {
-                long tmp = min;
+                var tmp = min;
                 min = max;
                 max = tmp;
             }
-
-            byte[] buffer = new byte[8];
-            _random.NextBytes(buffer);
-            double randomDouble = (double)BitConverter.ToUInt64(buffer, 0) / ulong.MaxValue;
+            double randomDouble = _random.NextDouble();
 
             ulong range = (ulong)(max - min);
+            if (max < long.MaxValue)
+                range++;
+
             return min + (long)(randomDouble * range);
+        }
+        
+        /// <summary>
+        /// 获取一个介于[min, max]之间的随机无符号长整型数。
+        /// Get a random unsigned long between [<paramref name="min"/> and <paramref name="max"/>].
+        /// </summary>
+        /// <param name="min">最小值 / Minimum value</param>
+        /// <param name="max">最大值 / Maximum value</param>
+        /// <returns>随机长整型数 / Random long</returns>
+        public static ulong RangeUlong(ulong min, ulong max)
+        {
+            if (min == max) return min;
+            if (min > max)
+            {
+                var tmp = min;
+                min = max;
+                max = tmp;
+            }
+            double randomDouble = _random.NextDouble();
+
+            ulong range = (ulong)(max - min);
+            if (max < ulong.MaxValue)
+                range++;
+
+            return min + (ulong)(randomDouble * range);
         }
         
         /// <summary>
@@ -98,9 +184,20 @@ namespace PowerCellStudio
         {
             byte[] buffer = new byte[8];
             _random.NextBytes(buffer);
+
+            return BitConverter.ToInt64(buffer, 0);
+        }
         
-            long randomLong = BitConverter.ToInt64(buffer, 0);
-            return randomLong;
+        /// <summary>
+        /// 生成一个随机无符号长整数。
+        /// Generate a random ulong integer.
+        /// </summary>
+        /// <returns>随机无符号长整数 / Random ulong</returns>
+        public static ulong RandomULong()
+        {
+            byte[] buffer = new byte[8];
+            _random.NextBytes(buffer);
+            return BitConverter.ToUInt64(buffer, 0);
         }
 
         /// <summary>
@@ -112,9 +209,22 @@ namespace PowerCellStudio
         {
             byte[] buffer = new byte[4];
             _random.NextBytes(buffer);
-        
+
             int randomInt = BitConverter.ToInt32(buffer, 0);
             return randomInt;
+        }
+
+        /// <summary>
+        /// 生成一个随机无符号整数。
+        /// Generate a random unsigned integer.
+        /// </summary>
+        /// <returns>随无符号机整数 / Random int</returns>
+        public static uint RandomUInt()
+        {
+            byte[] buffer = new byte[4];
+            _random.NextBytes(buffer);
+
+            return BitConverter.ToUInt32(buffer, 0);
         }
 
         /// <summary>
@@ -125,6 +235,8 @@ namespace PowerCellStudio
         /// <returns>结果，是否符合 / Result, whether it meets the condition</returns>
         public static bool True(float val)
         {
+            if (val >= 1f) return true;
+            if (val <= 0f) return false;
             return val >= Value01();
         }
         
@@ -138,6 +250,8 @@ namespace PowerCellStudio
         public static bool True(float weight, float total)
         {
             if (total <= weight) return true;
+            if (weight <= 0f) return false;
+            if (total <= 0f) return false;
             return weight >= Range(0f, total);
         }
         
@@ -151,6 +265,8 @@ namespace PowerCellStudio
         public static bool True(int weight, int total)
         {
             if (total <= weight) return true;
+            if (weight <= 0) return false;
+            if (total <= 0) return false;
             return weight >= Range(0, total);
         }
 
@@ -418,8 +534,7 @@ namespace PowerCellStudio
                     totalWeight += weightedElements[i].Weight;
                 if (totalWeight <= 0) break;
 
-                double rnd = _random.NextDouble();
-                int randomValue = (int)(rnd * totalWeight);
+                int randomValue = _random.Next(0, totalWeight);
 
                 WeightedElement<T> selected = weightedElements[0];
                 foreach (WeightedElement<T> element in weightedElements)
