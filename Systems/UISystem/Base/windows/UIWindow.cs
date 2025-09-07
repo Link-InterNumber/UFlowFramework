@@ -19,7 +19,15 @@ namespace PowerCellStudio
         private IUIParent _parent;
         // private Canvas _canvas;
 
-        public IAssetLoader assetsLoader => _assetsLoader;
+        public IAssetLoader assetsLoader 
+        {
+            get
+            {
+                if(_assetsLoader == null || !_assetsLoader.spawned)
+                    _assetsLoader = AssetUtils.SpawnLoader(this.GetType().Name);
+                return _assetsLoader;
+            }
+        }
 
         public bool isOpened => gameObject.activeSelf;
         public virtual void OnUIDestroy()
@@ -59,15 +67,6 @@ namespace PowerCellStudio
             adaptiveRoot.offsetMin = offsetMin;
             adaptiveRoot.offsetMax = offsetMax;
         }
-        
-        /// <summary>
-        /// UI加载后优先执行、
-        /// </summary>
-        protected virtual void OnWindowInit()
-        {
-            if(_assetsLoader == null || !_assetsLoader.spawned)
-                _assetsLoader = AssetUtils.SpawnLoader(this.GetType().Name);
-        }
 
         public RectTransform rectTransform => transform as RectTransform;
         
@@ -89,7 +88,6 @@ namespace PowerCellStudio
 
         public virtual void RegisterEvent()
         {
-            OnWindowInit();
             if (closeBtn == null) return;
             foreach (var button in closeBtn)
             {
@@ -118,7 +116,7 @@ namespace PowerCellStudio
             CloseUI(null);
         }
 
-        protected void CloseUI(Action afterClosed)
+        protected virtual void CloseUI(Action afterClosed)
         {
             _parent.CloseUI(this, afterClosed);
         }
