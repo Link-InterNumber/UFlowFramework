@@ -9,11 +9,17 @@ namespace GameProtocol
     public class NetworkSerializer : INetworkSerializer
     {
         private static readonly int msgIdSize = 4;
+        private IMessageIdMap _messageIdMap;
+
+        public NetworkSerializer(IMessageIdMap messageIdMap)
+        {
+            _messageIdMap = messageIdMap;
+        }
         
         // 序列化消息结构： [4字节ID][protobuf数据]
         public byte[] Serialize<T>(T message) where T : class
         {
-            int msgId = MessageIds.TypeToId(typeof(T));
+            int msgId = _messageIdMap.TypeToId(typeof(T));
             using var stream = new MemoryStream();
             Span<byte> idSpan = stackalloc byte[msgIdSize];
             BitConverter.TryWriteBytes(idSpan, msgId);
@@ -35,7 +41,7 @@ namespace GameProtocol
                 return null;
             }
             int msgId = BitConverter.ToInt32(data, 0);
-            messageType = MessageIds.IdToType(msgId);
+            messageType = _messageIdMap.IdToType(msgId);
             if (messageType == null) {
                 NetWorkLog.LogError($"未知消息ID: {msgId}");
                 return null;
