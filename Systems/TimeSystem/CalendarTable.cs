@@ -1,6 +1,4 @@
-using System.Collections;
 using System.Linq;
-using Opoop;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UI;

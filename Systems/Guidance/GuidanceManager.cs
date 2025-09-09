@@ -4,6 +4,8 @@ using Unity.VisualScripting;
 
 namespace PowerCellStudio
 {
+    // public delegate IGuidanceConfig GuidanceConfProvider(int id);
+    
     /// <summary>
     /// 引导管理器，用于管理游戏中的引导流程。
     /// Guidance manager for managing guidance processes within the game.
@@ -14,6 +16,7 @@ namespace PowerCellStudio
         private HashSet<int> _onIndex;
         private HashSet<int> _executedIndex;
         private List<int> _currentIndex;
+        private Func<int, IGuidanceConfig> _confProvider;
 
         /// <summary>
         /// 当前引导索引。
@@ -91,6 +94,11 @@ namespace PowerCellStudio
                 save.executedIndex.Add(i);
             }
             PlayerDataUtils.SavePlayerPrefs(save);
+        }
+
+        public void SetConfigProvider(Func<int, IGuidanceConfig> fun)
+        {
+            _confProvider = fun;
         }
 
         /// <summary>
@@ -206,7 +214,7 @@ namespace PowerCellStudio
                 DeExecuteGuidance(0);
                 return;
             }
-            var conf = ConfigManager.instance.guidanceConf.Get(tag.guidanceIndex);
+            var conf = _confProvider?.Invoke(tag.guidanceIndex);
             if (conf == null)
             {
                 ModuleLog.LogError<GuidanceManager>($"Guidance index is not exist, index = {tag.guidanceIndex}");
@@ -231,8 +239,8 @@ namespace PowerCellStudio
             {
                 guidanceTag?.OnDeExecute();
             }
-            var conf = ConfigManager.instance.guidanceConf.Get(guidanceIndex);
-            if (conf.nextGuidance > 0)
+            var conf = _confProvider?.Invoke(guidanceIndex);
+            if (conf != null && conf.nextGuidance > 0)
             {
                 _nextIndex = conf.nextGuidance;
                 var hasNewGuidance = ReactiveGuidance(conf.nextGuidance);

@@ -70,7 +70,7 @@ namespace PowerCellStudio
             StartCoroutine(OnAddressableInited());
 
         }
-
+        
         private IEnumerator OnAddressableInited()
         {
             yield return ConfigManager.instance.Init(null);
