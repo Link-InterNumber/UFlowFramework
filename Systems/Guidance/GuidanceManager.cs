@@ -101,6 +101,8 @@ namespace PowerCellStudio
             _confProvider = fun;
         }
 
+        public IGuidanceConfig GetConf(int id) => _confProvider?.Invoke(id);
+
         /// <summary>
         /// 判断指定索引的引导是否已执行。
         /// Check if guidance at the specified index has been executed.

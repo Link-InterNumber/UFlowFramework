@@ -63,8 +63,7 @@ namespace PowerCellStudio
             {
                 var hand = _uiPrefab.GetComponent<GuidanceHand>();
                 if (!hand) return;
-                var currentConfig =
-                    ConfigManager.instance.guidanceConf.Get(GuidanceManager.instance.currentIndex.Last());
+                var currentConfig = GuidanceManager.instance.GetConf(GuidanceManager.instance.currentIndex.Last());
                 hand.Init(_guidanceTag, currentConfig?.decs.Get());
                 return;
             }
