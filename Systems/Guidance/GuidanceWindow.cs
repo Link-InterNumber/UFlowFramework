@@ -13,14 +13,14 @@ namespace PowerCellStudio
 
         private GameObject _uiPrefab;
         private GuidanceTag _guidanceTag;
-        private GuidanceConf _conf;
+        private IGuidanceConfig _conf;
         private bool _canSkip;
         private string _currentPrefab;
         
         public struct Info
         {
             public GuidanceTag tag;
-            public GuidanceConf conf;
+            public IGuidanceConfig conf;
         }
 
         private enum State
