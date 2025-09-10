@@ -13,7 +13,7 @@ The following official plugin packages must be installed via **Package Manager**
 | Package Name | Purpose | Installation Verification |
 |--------------|---------|---------------------------|
 | [Addressables](https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/index.html) | Dynamic resource loading system | Check if the `Window > Asset Management > Addressables` menu exists |
-| [Localization](https://docs.unity3d.com/Packages/com.unity.localization@1.4/manual/index.html) | Multilingual localization system | Confirm the `Project Settings > Localization` configuration panel |
+| [Localization](https://docs.unity3d.com/Packages/com.unity.localization@1.4/manual/index.html) | Multilingual localization system | Confirm the `Window > Asset Management > Localization Tables` configuration panel |
 | [TextMeshPro](https://docs.unity3d.com/Packages/com.unity.textmeshpro@3.0/manual/index.html) | Advanced text rendering solution | Import `TMP Essential Resources` |
 
 ### Installation Verification Steps
