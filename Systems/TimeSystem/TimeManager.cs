@@ -487,6 +487,8 @@ namespace PowerCellStudio
             _paused--;
             if (_paused) return;
             Pop();
+            UpdateTarget(0);
+            Time.timeScale = _target;
             EventManager.instance.onTimeScalePause?.Invoke(false);
         }
 
