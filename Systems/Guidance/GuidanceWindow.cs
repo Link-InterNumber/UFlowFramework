@@ -13,14 +13,14 @@ namespace PowerCellStudio
 
         private GameObject _uiPrefab;
         private GuidanceTag _guidanceTag;
-        private GuidanceConf _conf;
+        private IGuidanceConfig _conf;
         private bool _canSkip;
         private string _currentPrefab;
         
         public struct Info
         {
             public GuidanceTag tag;
-            public GuidanceConf conf;
+            public IGuidanceConfig conf;
         }
 
         private enum State
@@ -63,8 +63,7 @@ namespace PowerCellStudio
             {
                 var hand = _uiPrefab.GetComponent<GuidanceHand>();
                 if (!hand) return;
-                var currentConfig =
-                    ConfigManager.instance.guidanceConf.Get(GuidanceManager.instance.currentIndex.Last());
+                var currentConfig = GuidanceManager.instance.GetConf(GuidanceManager.instance.currentIndex.Last());
                 hand.Init(_guidanceTag, currentConfig?.decs.Get());
                 return;
             }

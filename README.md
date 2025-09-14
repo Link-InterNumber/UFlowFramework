@@ -13,7 +13,7 @@
  | 包名称 | 用途 | 安装验证方式 |
  |--------|------|--------------|
  | [Addressables](https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/index.html) | 资源动态加载系统 | 检查 `Window > Asset Management > Addressables` 菜单是否存在 |
- | [Localization](https://docs.unity3d.com/Packages/com.unity.localization@1.4/manual/index.html) | 多语言本地化系统 | 确认 `Project Settings > Localization` 配置面板 |
+ | [Localization](https://docs.unity3d.com/Packages/com.unity.localization@1.4/manual/index.html) | 多语言本地化系统 | 确认 `Window > Asset Management > Localization Tables` 配置面板 |
  | [TextMeshPro](https://docs.unity3d.com/Packages/com.unity.textmeshpro@3.0/manual/index.html) | 高级文本渲染方案 | 需导入 `TMP Essential Resources` |
  
  ### 安装验证步骤

@@ -1,7 +1,5 @@
 using UnityEngine;
-using UnityEngine.Animations;
 using UnityEngine.Playables;
-using UnityEngine.UI.Extensions;
 
 namespace PowerCellStudio
 {

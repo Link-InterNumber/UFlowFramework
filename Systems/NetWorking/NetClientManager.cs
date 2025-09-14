@@ -43,14 +43,15 @@ namespace GameProtocol
             _networkSerializer = null;
         }
         
-        public void Connect<T>() where T: INetworkSerializer, new()
+        public void Connect<T>(T networkSerializer) where T: INetworkSerializer
         {
             if (_client != null && (_client.IsConnected || _client.IsConnecting))
             {
                 Disconnect();
                 _client = null;
             }
-            _networkSerializer = new T();
+
+            _networkSerializer = networkSerializer;
             _client = new UnityTcpClient(_address, _port);
             _buffer = new byte[_client.OptionReceiveBufferSize];
             

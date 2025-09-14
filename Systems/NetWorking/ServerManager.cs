@@ -15,7 +15,8 @@ public class ServerManager : MonoBehaviour
     private INetworkSerializer _serializer;
     void Start()
     {
-        _serializer = new NetworkSerializer();
+        // TODO 添加消息id列表
+        _serializer = new NetworkSerializer(null);
         // 在本地启动端口6000
         _server = new TcpGameServer(IPAddress.Any, 6000);
         _server.OnConnectedEvent += () => QueueLog(QueueLogLevel.Info, "Client connected");
@@ -71,7 +72,7 @@ public class ServerManager : MonoBehaviour
     [TestButton]
     public void TestConnect()
     {
-        NetClientManager.instance.Connect<NetworkSerializer>();
+        NetClientManager.instance.Connect(_serializer);
     }
     
     // [TestButton]
