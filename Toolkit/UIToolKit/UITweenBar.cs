@@ -26,7 +26,7 @@ namespace PowerCellStudio
             x.SetDelta(y);
             return x.BarValue;
         }
-        
+
         public static float operator -(UITweenBar x, float y)
         {
             x.SetDelta(-y);
@@ -58,7 +58,7 @@ namespace PowerCellStudio
         {
             gameObject.SetActive(false);
         }
-        
+
         public void ShowBar()
         {
             gameObject.SetActive(true);
@@ -106,7 +106,7 @@ namespace PowerCellStudio
             _barTweenUpdater.appearBarStartValue = AppearBar.value;
             _barTweenUpdater.appearBarEndValue = val;
         }
-        
+
         private void DoTrackBar(float val, float time)
         {
             if (_trackBarTweenUpdater == null)
@@ -126,6 +126,7 @@ namespace PowerCellStudio
                 if (_barTweenUpdater.isDone)
                 {
                     SetTrackBarValue(AppearBar.value);
+                    if (TrackBar) TrackBar.value = AppearBar.value;
                     _barTweenUpdater = null;
                 }
             }
@@ -163,7 +164,7 @@ namespace PowerCellStudio
         public void SetValue(float inputValue, bool playAni = true)
         {
             inputValue = Mathf.Clamp01(inputValue);
-            if(Mathf.Approximately(inputValue,_currentValue))
+            if (Mathf.Approximately(inputValue, _currentValue))
                 return;
             if (!playAni)
             {
@@ -194,7 +195,7 @@ namespace PowerCellStudio
             // m_trackBar.value = m_previousValue;
             SetAppearBarValue(value);
             // await Task.Delay(1000);
-            if(TrackBar)
+            if (TrackBar)
                 DoTrackBar(value, TweenDuration);
         }
 
