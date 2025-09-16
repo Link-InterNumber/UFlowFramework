@@ -9,18 +9,17 @@ namespace PowerCellStudio
     [Serializable]
     public partial class PlayerSave: IPersistenceData
     {
-        public long Id;
-        public string Name;
-        // public List<RWeapon> allWeapons;
-        // public List<RWeapon> currentWeapons;
-        public List<RItem> Items;
+        public long slotIndex;
+        public string playerName;
+        public long createTime;
+        public List<RItem> items;
 
         public override string ToString()
         {
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.Append("PlayerSave: {\n");
-            stringBuilder.Append($"\t\"Id\": {Id},\n");
-            stringBuilder.Append($"\t\"Name\": {Name},\n");
+            stringBuilder.Append($"\t\"slotIndex\": {slotIndex},\n");
+            stringBuilder.Append($"\t\"playerName\": {playerName},\n");
             // stringBuilder.Append($"\t\"Weapons\": [\n");
             // foreach (var weapon in allWeapons)
             // {
@@ -33,8 +32,8 @@ namespace PowerCellStudio
             //     stringBuilder.Append($"\t\t{weapon},\n");
             // }
             // stringBuilder.Append($"\t],\n");
-            stringBuilder.Append($"\t\"Items\": [\n");
-            foreach (var item in Items)
+            stringBuilder.Append($"\t\"items\": [\n");
+            foreach (var item in items)
             {
                 stringBuilder.Append($"\t\t{item},\n");
             }
