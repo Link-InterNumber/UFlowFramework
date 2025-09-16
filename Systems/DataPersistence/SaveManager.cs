@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using PowerCellStudio;
 using UnityEngine;
-
-public interface IPersistenceData { }
 
 namespace PowerCellStudio
 {
@@ -27,7 +24,7 @@ namespace PowerCellStudio
 
       private PlayerSave _currentPlayer;
 
-      public int currentId => _currentPlayer.slotIndex;
+      public long currentId => _currentPlayer.slotIndex;
 
       public PlayerSave LoadSave(SaveSlot slot)
       {

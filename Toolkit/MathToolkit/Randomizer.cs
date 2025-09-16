@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using Random = System.Random;
 
 namespace PowerCellStudio
@@ -148,6 +149,32 @@ namespace PowerCellStudio
                 range++;
 
             return min + (long)(randomDouble * range);
+        }
+        
+        /// <summary>
+        /// 获取一个单位球内的随机点。
+        /// Get a random point inside a unit sphere.
+        /// </summary>
+        /// <returns> 随机三维方向 / Random 3d direction</returns
+        public static Vector3 RandomInsideUnitSphere()
+        {
+            var angle1 = Range(0f, 360f);
+            var angle2 = Range(0f, 360f);
+            var x = (float)(Math.Cos(angle1 * Math.PI / 180f) * Math.Sin(angle2 * Math.PI / 180f));
+            var y = (float)(Math.Sin(angle1 * Math.PI / 180f) * Math.Sin(angle2 * Math.PI / 180f));
+            var z = (float)(Math.Cos(angle2 * Math.PI / 180f));
+            return new Vector3(x, y, z);
+        }
+
+        /// <summary>
+        /// 获取一个单位圆内的随机点。
+        /// Get a random point inside a unit circle.
+        /// </summary>
+        /// <returns> 随机二维方向 / Random 2d direction</returns>
+        public static Vector2 RandomInsideUnitCircle()
+        {
+            var angle = Range(0f, 360f);
+            return new Vector2((float)Math.Cos(angle * Math.PI / 180f), (float)Math.Sin(angle * Math.PI / 180f) );
         }
         
         /// <summary>
