@@ -1,11 +1,35 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace PowerCellStudio
 {
     public static class Bezier
     {
+        
+        /// <summary>
+        /// 操作transform进行贝塞尔曲线移动
+        /// Move a transform along a Bezier curve.
+        /// </summary>
+        /// <param name="transform">控制节点 - The transform to be moved.</param>
+        /// <param name="duration">动画时长 - Duration of the movement.</param>
+        /// <param name="endPos">曲线的终点 - The end of Bezier curve</param>
+        /// <param name="armLengthScale">控制点和起点距离 = 起点到终点的距离 * armLengthScale -  Control point and starting point distance = Distance from starting point to endpoint * arm length scale</param>
+        /// <param name="onComplete">完成的回调 - call on transform tween to end pos</param>
+        /// <returns></returns>
+        public static Coroutine BezierMove(Transform transform, float duration, Vector2 endPos, float armLengthScale = 0.5f, Action<Transform> onComplete = null)
+        {
+            if (!transform) return null;
+            duration = Mathf.Max(0f, duration);
+            var distance = Vector3.Distance(endPos, transform.position);
+            var armLength = armLengthScale * distance;
+            var ctrlPos = transform.position + new Vector3(Random.Range(-armLength, armLength), Random.Range(-armLength, armLength), 0);
+            var points = new List<Vector3> { transform.position, ctrlPos, endPos };
+            return ApplicationManager.RunCoroutine(BezierMoveHandler(transform, duration, points, true, false, onComplete));
+        }
+        
         /// <summary>
         /// 操作transform进行贝塞尔曲线移动
         /// Move a transform along a Bezier curve.
@@ -15,15 +39,16 @@ namespace PowerCellStudio
         /// <param name="points">起/终点和控制点，第一个为起点，最后一个为终点 - Start/end points and control points, first is start, last is end.</param>
         /// <param name="unscaleTime">不受时间缩放影响，默认false - Whether time scaling affects the animation.</param>
         /// <param name="isLocalPos">使用本地位置，默认false - Whether to use local position.</param>
+        /// <param name="onComplete">完成的回调 - call on transform tween to end pos</param>
         /// <returns>协程，由ApplicationManager启动 - Coroutine launched by ApplicationManager.</returns>
-        public static Coroutine BezierMove(Transform transform, float duration, IList<Vector3> points, bool unscaleTime = false, bool isLocalPos = false)
+        public static Coroutine BezierMove(Transform transform, float duration, IList<Vector3> points, bool unscaleTime = false, bool isLocalPos = false, Action<Transform> onComplete = null)
         {
             if (!transform || points == null || points.Count < 2) return null;
             duration = Mathf.Max(0f, duration);
-            return ApplicationManager.instance.StartCoroutine(BezierMoveHandler(transform, duration, points, unscaleTime, isLocalPos));
+            return ApplicationManager.RunCoroutine(BezierMoveHandler(transform, duration, points, unscaleTime, isLocalPos, onComplete));
         }
 
-        private static IEnumerator BezierMoveHandler(Transform transform, float duration, IList<Vector3> points, bool unscaleTime = false, bool isLocalPos = false)
+        private static IEnumerator BezierMoveHandler(Transform transform, float duration, IList<Vector3> points, bool unscaleTime = false, bool isLocalPos = false, Action<Transform> onComplete = null)
         {
             var time = 0f;
             while (time < duration)
@@ -50,6 +75,7 @@ namespace PowerCellStudio
             {
                 transform.position = lastPos;
             }
+            onComplete?.Invoke(transform);
         }
 
         /// <summary>

@@ -62,6 +62,16 @@ namespace PowerCellStudio
 #endif
         }
         
+        public static void SetTagRecursively(this GameObject obj, string tagName)
+        {
+            if(!obj) return;
+            obj.tag = tagName;
+            foreach (Transform child in obj.transform)
+            {
+                SetTagRecursively(child.gameObject, tagName);
+            }
+        }
+        
         public static void SetLayerRecursively(this GameObject obj, string layerName)
         {
             if(!obj) return;

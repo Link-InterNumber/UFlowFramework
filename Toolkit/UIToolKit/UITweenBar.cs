@@ -26,24 +26,39 @@ namespace PowerCellStudio
             x.SetDelta(y);
             return x.BarValue;
         }
-        
+
         public static float operator -(UITweenBar x, float y)
         {
             x.SetDelta(-y);
             return x.BarValue;
         }
 
+        private void Start()
+        {
+            if (AppearBar)
+            {
+                AppearBar.minValue = 0f;
+                AppearBar.maxValue = 1f;
+                AppearBar.wholeNumbers = false;
+            }
+            if (TrackBar)
+            {
+                TrackBar.minValue = 0f;
+                TrackBar.maxValue = 1f;
+                TrackBar.wholeNumbers = false;
+            }
+        }
+
         private void OnEnable()
         {
-            AppearBar.value = _currentValue;
-            if(TrackBar) TrackBar.value = _currentValue;
+            ResetBar(_currentValue);
         }
 
         public void HideBar()
         {
             gameObject.SetActive(false);
         }
-        
+
         public void ShowBar()
         {
             gameObject.SetActive(true);
@@ -53,39 +68,77 @@ namespace PowerCellStudio
         {
             value = Mathf.Clamp01(value);
             SetTrackBarValue(value);
-            AppearBar.value = value;
+            SetAppearBarValue(value);
             _currentValue = value;
         }
 
-        private Coroutine _coroutineAppearBar;
-        private void DoAppearBar(float val, float time, Action call)
+        private class BarTweenUpdater
         {
-            if(_coroutineAppearBar != null) ApplicationManager.instance.StopCoroutine(_coroutineAppearBar);
-            _coroutineAppearBar = ApplicationManager.RunCoroutine(DoValue(AppearBar, val, time, call));
-        }
-        
-        private Coroutine _coroutineTrackBar;
-        private void DoTrackBar(float val, float time)
-        {
-            if(_coroutineTrackBar != null) ApplicationManager.instance.StopCoroutine(_coroutineTrackBar);
-            _coroutineTrackBar = ApplicationManager.RunCoroutine(DoValue(TrackBar, val, time));
+            public Slider sliderBar;
+            public float appearBarTweenTime;
+            public float appearBarTweenTimePass;
+            public float appearBarStartValue;
+            public float appearBarEndValue;
+
+            public bool isDone => !sliderBar || appearBarTweenTimePass >= appearBarTweenTime;
+
+            public void Update(float deltaTime)
+            {
+                if (!sliderBar) return;
+                var normalized = Ease.GetEase(EaseType.OutSine, Mathf.Clamp01(appearBarTweenTimePass / appearBarTweenTime));
+                sliderBar.value = Mathf.Lerp(appearBarStartValue, appearBarEndValue, normalized);
+                appearBarTweenTimePass += deltaTime;
+                if (appearBarTweenTimePass < appearBarTweenTime) return;
+                sliderBar.value = appearBarEndValue;
+            }
         }
 
-        private IEnumerator DoValue(Slider slider, float val, float time, Action call = null)
+        private BarTweenUpdater _barTweenUpdater;
+        private BarTweenUpdater _trackBarTweenUpdater;
+
+        private void DoAppearBar(float val, float time)
         {
-            if(!slider) yield break;
-            var startValue = slider.value;
-            var timePass = 0f;
-            while (timePass < time)
+            if (_barTweenUpdater == null)
+                _barTweenUpdater = new BarTweenUpdater();
+            _barTweenUpdater.sliderBar = AppearBar;
+            _barTweenUpdater.appearBarTweenTime = time;
+            _barTweenUpdater.appearBarTweenTimePass = 0;
+            _barTweenUpdater.appearBarStartValue = AppearBar.value;
+            _barTweenUpdater.appearBarEndValue = val;
+        }
+
+        private void DoTrackBar(float val, float time)
+        {
+            if (_trackBarTweenUpdater == null)
+                _trackBarTweenUpdater = new BarTweenUpdater();
+            _trackBarTweenUpdater.sliderBar = TrackBar;
+            _trackBarTweenUpdater.appearBarTweenTime = time;
+            _trackBarTweenUpdater.appearBarTweenTimePass = 0;
+            _trackBarTweenUpdater.appearBarStartValue = TrackBar.value;
+            _trackBarTweenUpdater.appearBarEndValue = val;
+        }
+
+        private void Update()
+        {
+            if (_barTweenUpdater != null)
             {
-                var normalized = Ease.GetEase(EaseType.OutSine, Mathf.Clamp01(timePass / time));
-                slider.value = Mathf.Lerp(startValue, val, normalized);
-                timePass += Time.unscaledTime;
-                if(!slider) yield break;
-                yield return null;
+                _barTweenUpdater.Update(Time.deltaTime);
+                if (_barTweenUpdater.isDone)
+                {
+                    SetTrackBarValue(AppearBar.value);
+                    if (TrackBar) TrackBar.value = AppearBar.value;
+                    _barTweenUpdater = null;
+                }
             }
-            if (slider) slider.value = val;
-            call?.Invoke();
+
+            if (_trackBarTweenUpdater != null)
+            {
+                _trackBarTweenUpdater.Update(Time.deltaTime);
+                if (_trackBarTweenUpdater.isDone)
+                {
+                    _trackBarTweenUpdater = null;
+                }
+            }
         }
 
         public void ShowUp()
@@ -93,8 +146,7 @@ namespace PowerCellStudio
             _currentValue = 1;
             SetTrackBarValue(0);
             AppearBar.value = 0;
-            DoAppearBar(1f, 2f, () => SetTrackBarValue(1));
-            SetTrackBarValue(1);
+            DoAppearBar(1f, 2f);
         }
 
         public void SetDelta(float deltaValue)
@@ -112,12 +164,12 @@ namespace PowerCellStudio
         public void SetValue(float inputValue, bool playAni = true)
         {
             inputValue = Mathf.Clamp01(inputValue);
-            if(Mathf.Approximately(inputValue,_currentValue))
+            if (Mathf.Approximately(inputValue, _currentValue))
                 return;
             if (!playAni)
             {
                 _currentValue = inputValue;
-                AppearBar.value = inputValue;
+                SetAppearBarValue(inputValue);
                 SetTrackBarValue(inputValue);
                 return;
             }
@@ -134,22 +186,29 @@ namespace PowerCellStudio
 
         private void AddValue(float value)
         {
-            DoAppearBar(value, TweenDuration, () => SetTrackBarValue(value));
+            DoAppearBar(value, TweenDuration);
         }
 
         private void SubValue(float value)
         {
             gameObject.SetActive(true);
             // m_trackBar.value = m_previousValue;
-            AppearBar.value = value;
+            SetAppearBarValue(value);
             // await Task.Delay(1000);
-            if(TrackBar)
+            if (TrackBar)
                 DoTrackBar(value, TweenDuration);
+        }
+
+        private void SetAppearBarValue(float value)
+        {
+            _barTweenUpdater = null;
+            AppearBar.value = value;
         }
 
         private void SetTrackBarValue(float value)
         {
-            if(TrackBar)
+            _trackBarTweenUpdater = null;
+            if (TrackBar)
                 TrackBar.value = value;
         }
     }

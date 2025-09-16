@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace PowerCellStudio
 {
-    [WindowInfo("Assets/Res/UI/Common/DebugWindow.prefab")]
+    [WindowInfo("Assets/UFlowFramework/BuiltIn/UI/DebugWindow.prefab")]
     public class DebugWindow : UIWindow, IUIStandAlone, IUIComponent
     {
         public Text txtDeltaTime;

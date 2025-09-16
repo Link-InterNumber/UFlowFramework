@@ -14,7 +14,9 @@ namespace PowerCellStudio
             standAlonePage.transform.localScale = Vector3.one;
             standAlonePage.transform.localPosition = Vector2.zero;
             UIUtils.InitCanvas(standAlonePage, false, true, canvasRenderMode);
-            standAlonePage.transform.GetComponent<Canvas>().sortingLayerID = SortingLayer.NameToID("UI");
+            var canvas = standAlonePage.transform.GetComponent<Canvas>();
+            canvas.sortingLayerID = SortingLayer.layers[SortingLayer.layers.Length - 1].id; // 设置为最顶层
+            canvas.sortingOrder = 5000;
             standAlonePage.RegisterEvent();
             standAlonePage.OnOpen(null);
             standAlonePage.OnFocus();

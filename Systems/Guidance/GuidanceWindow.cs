@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace PowerCellStudio
 {
-    [WindowInfo("Assets/Res/UI/Common/GuidanceWindow.prefab")]
+    [WindowInfo("Assets/UFlowFramework/BuiltIn/UI/GuidanceWindow.prefab")]
     public class GuidanceWindow : UIWindow, IUIStandAlone, IUIComponent
     {
         public Graphic graphics;
