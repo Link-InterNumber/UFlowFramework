@@ -122,7 +122,7 @@ namespace PowerCellStudio
         {
             if (_barTweenUpdater != null)
             {
-                _barTweenUpdater.Update(Time.unscaledDeltaTime);
+                _barTweenUpdater.Update(Time.deltaTime);
                 if (_barTweenUpdater.isDone)
                 {
                     SetTrackBarValue(AppearBar.value);
@@ -132,7 +132,7 @@ namespace PowerCellStudio
 
             if (_trackBarTweenUpdater != null)
             {
-                _trackBarTweenUpdater.Update(Time.unscaledDeltaTime);
+                _trackBarTweenUpdater.Update(Time.deltaTime);
                 if (_trackBarTweenUpdater.isDone)
                 {
                     _trackBarTweenUpdater = null;
