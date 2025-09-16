@@ -51,8 +51,7 @@ namespace PowerCellStudio
 
         private void OnEnable()
         {
-            AppearBar.value = _currentValue;
-            if (TrackBar) TrackBar.value = _currentValue;
+            ResetBar(_currentValue);
         }
 
         public void HideBar()
@@ -69,7 +68,7 @@ namespace PowerCellStudio
         {
             value = Mathf.Clamp01(value);
             SetTrackBarValue(value);
-            AppearBar.value = value;
+            SetAppearBarValue(value);
             _currentValue = value;
         }
 
@@ -147,7 +146,6 @@ namespace PowerCellStudio
             SetTrackBarValue(0);
             AppearBar.value = 0;
             DoAppearBar(1f, 2f);
-            SetTrackBarValue(1);
         }
 
         public void SetDelta(float deltaValue)
@@ -170,7 +168,7 @@ namespace PowerCellStudio
             if (!playAni)
             {
                 _currentValue = inputValue;
-                AppearBar.value = inputValue;
+                SetAppearBarValue(inputValue);
                 SetTrackBarValue(inputValue);
                 return;
             }
@@ -194,11 +192,16 @@ namespace PowerCellStudio
         {
             gameObject.SetActive(true);
             // m_trackBar.value = m_previousValue;
-            _barTweenUpdater = null;
-            AppearBar.value = value;
+            SetAppearBarValue(value);
             // await Task.Delay(1000);
             if(TrackBar)
                 DoTrackBar(value, TweenDuration);
+        }
+
+        private void SetAppearBarValue(float value)
+        {
+            _barTweenUpdater = null;
+            AppearBar.value = value;
         }
 
         private void SetTrackBarValue(float value)
