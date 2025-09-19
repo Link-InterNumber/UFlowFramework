@@ -83,6 +83,14 @@ namespace PowerCellStudio
             return _nodes[(int) type];
         }
 
+        /// <summary>
+        /// Gets the notification information of the specified node.
+        /// 获取指定节点的通知信息。
+        /// </summary>
+        /// <param name="type">Notification type | 通知类型</param>
+        /// <param name="isOn">Whether the notification is active | 是否激活</param>
+        /// <param name="notifyNumber">Number of active notifications | 通知数量</param>
+        /// <param name="notifyValue">Notification value | 通知值</param>
         public void GetNotifyInfo(NotifyType type, out bool isOn, out int notifyNumber, out int notifyValue)
         {
             var node = GetNode(type);
@@ -101,15 +109,21 @@ namespace PowerCellStudio
             var checkNode = parent;
             while (checkNode.parent >= 0)
             {
-                checkNode = GetNode((NotifyType)parent.parent);
-                if (checkNode.index == child.index)
+                if (checkNode.parent == child.index)
                     return true;
+                checkNode = GetNode((NotifyType)checkNode.parent);
             }
 #endif
             return false;
         }
 
-        private void SetNodeParent(NotifyType child, NotifyType parent)
+        /// <summary>
+        /// Sets the parent-child relationship between notification nodes.
+        /// 设置通知节点的父子关系。
+        /// </summary>
+        /// <param name="child">Child node type | 子节点类型</param>
+        /// <param name="parent">Parent node type | 父节点类型</param>
+        public void SetNodeParent(NotifyType child, NotifyType parent)
         {
             if (child == parent)
             {
@@ -127,7 +141,7 @@ namespace PowerCellStudio
             parentNode.children.Add(childNode.index);
         }
 
-        private void RemoveNodeParent(NotifyType child, NotifyType parent)
+        public void RemoveNodeParent(NotifyType child, NotifyType parent)
         {
             var childNode = GetNode(child);
             var parentNode = GetNode(parent);
@@ -135,7 +149,11 @@ namespace PowerCellStudio
             parentNode.children.Remove(childNode.index);
         }
 
-        private void ClearAll()
+        /// <summary>
+        /// Clears all notification states and relationships.
+        /// 清除所有通知状态和关系。
+        /// </summary>
+        public void ClearAll()
         {
             foreach (var notifyNode in _nodes)
             {
@@ -181,9 +199,10 @@ namespace PowerCellStudio
         }
 
         /// <summary>
+        /// Recalculates the notification state of the specified node.
         /// 重新计算指定节点的通知状态。
         /// </summary>
-        /// <param name="nodeType">节点类型</param>
+        /// <param name="nodeType">Node type | 节点类型</param>
         public void ReCalNodeNotify(NotifyType nodeType)
         {
             var node = GetNode(nodeType);
@@ -191,9 +210,10 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 清空节点状态，并通过树结构向上计算节点状态
+        /// Clears the node state and recalculates through the tree structure upward.
+        /// 清空节点状态，并通过树结构向上计算节点状态。
         /// </summary>
-        /// <param name="nodeType">节点类型</param>
+        /// <param name="nodeType">Node type | 节点类型</param>
         public void ClearNodeNotify(NotifyType nodeType)
         {
             var node = GetNode(nodeType);
@@ -216,11 +236,12 @@ namespace PowerCellStudio
         }
 
         /// <summary>
+        /// Sets the notification state of a node.
         /// 设置通知节点的状态。
         /// </summary>
-        /// <param name="nodeType">节点类型</param>
-        /// <param name="isOn">是否开启</param>
-        /// <param name="notifyValue">通知值</param>
+        /// <param name="nodeType">Node type | 节点类型</param>
+        /// <param name="isOn">Whether to activate the notification | 是否激活通知</param>
+        /// <param name="notifyValue">Notification value | 通知值</param>
         public void SetNotify(NotifyType nodeType, bool isOn, int notifyValue = 0)
         {
             var node = GetNode(nodeType);
@@ -234,11 +255,12 @@ namespace PowerCellStudio
         }
         
         /// <summary>
-        /// 强制通知节点状态变更。
+        /// Forces a node's notification state to change.
+        /// 强制更改节点的通知状态。
         /// </summary>
-        /// <param name="nodeType">节点类型</param>
-        /// <param name="isOn">是否开启</param>
-        /// <param name="notifyValue">通知值</param>
+        /// <param name="nodeType">Node type | 节点类型</param>
+        /// <param name="isOn">Whether to activate the notification | 是否激活通知</param>
+        /// <param name="notifyValue">Notification value | 通知值</param>
         public void ForceNotify(NotifyType nodeType, bool isOn, int notifyValue = 0)
         {
             var node = GetNode(nodeType);
@@ -246,14 +268,16 @@ namespace PowerCellStudio
             node.notifyValue = notifyValue;
             node.notifyNumber = isOn ? Mathf.Max(1, node.notifyNumber + 1) : 0;
             node.Notify();
-            ReCalNodeNotify(nodeType);
+            if (node.parent >= 0)
+                ReCalNodeNotify((NotifyType)node.parent);
         }
 
         /// <summary>
+        /// Registers a notification callback.
         /// 注册通知回调。
         /// </summary>
-        /// <param name="nodeType">节点类型</param>
-        /// <param name="fun">回调方法</param>
+        /// <param name="nodeType">Node type | 节点类型</param>
+        /// <param name="fun">Callback function | 回调函数</param>
         public void Register(NotifyType nodeType, OnNotifyChange fun)
         {
             var node = GetNode(nodeType);
@@ -261,10 +285,11 @@ namespace PowerCellStudio
         }
 
         /// <summary>
+        /// Unregisters a notification callback.
         /// 注销通知回调。
         /// </summary>
-        /// <param name="nodeType">节点类型</param>
-        /// <param name="fun">回调方法</param>
+        /// <param name="nodeType">Node type | 节点类型</param>
+        /// <param name="fun">Callback function | 回调函数</param>
         public void UnRegister(NotifyType nodeType, OnNotifyChange fun)
         {
             var node = GetNode(nodeType);
@@ -272,11 +297,12 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 判断通知节点是否开启。
+        /// Checks if a notification node is active.
+        /// 检查通知节点是否激活。
         /// </summary>
-        /// <param name="nodeType">节点类型</param>
-        /// <param name="notifyNum">通知数量</param>
-        /// <returns>是否开启</returns>
+        /// <param name="nodeType">Node type | 节点类型</param>
+        /// <param name="notifyNum">Number of active notifications | 通知数量</param>
+        /// <returns>Whether the notification is active | 是否激活</returns>
         public bool IsNotifyOn(NotifyType nodeType, out int notifyNum)
         {
             var node = GetNode(nodeType);
@@ -285,11 +311,12 @@ namespace PowerCellStudio
         }
 
         /// <summary>
+        /// Gets all child nodes of the specified node.
         /// 获取指定节点的所有子节点。
         /// </summary>
-        /// <param name="notifyType">节点类型</param>
-        /// <param name="isOnOnly">只返回开启的子节点</param>
-        /// <returns>子节点集合</returns>
+        /// <param name="notifyType">Node type | 节点类型</param>
+        /// <param name="isOnOnly">Only return active child nodes | 是否只返回激活的子节点</param>
+        /// <returns>Collection of child nodes | 子节点集合</returns>
         public IEnumerable<NotifyType> GetChildren(NotifyType notifyType, bool isOnOnly = false)
         {
             var node = GetNode(notifyType);
@@ -302,10 +329,11 @@ namespace PowerCellStudio
         }
 
         /// <summary>
+        /// Gets the parent node of the specified node.
         /// 获取指定节点的父节点。
         /// </summary>
-        /// <param name="notifyType">节点类型</param>
-        /// <returns>父节点类型</returns>
+        /// <param name="notifyType">Node type | 节点类型</param>
+        /// <returns>Parent node type | 父节点类型</returns>
         public NotifyType GetParent(NotifyType notifyType)
         {
             var node = GetNode(notifyType);
@@ -313,6 +341,12 @@ namespace PowerCellStudio
             return (NotifyType) node.parent;            
         }
 
+        /// <summary>
+        /// Add `Notifier` Component on target UI node.
+        /// 在UI组件上添加 Notifier 组件。
+        /// </summary>
+        /// <param name="uiNode">UI Node | UI节点</param>
+        /// <param name="notifyType">Notify Node type | 节点类型</param>
         public static void AddNotifer(RectTransform uiNode, NotifyType notifyType)
         {
             if (uiNode == null) return;
