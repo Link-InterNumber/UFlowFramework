@@ -263,6 +263,8 @@ namespace PowerCellStudio
                 .WriteLine("MapData();")
                 .WriteLine("OnLoaded();")
                 .WriteLine("_loadStatus = AssetLoadStatus.Loaded;")
+                .WriteLine("_loadHandle.Release();")
+                .WriteLine("_loadHandle = null;")
                 .EndWriteMethod();
             
             _csFile.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Override, "void", "Release")
@@ -273,8 +275,6 @@ namespace PowerCellStudio
                 .EndWriteIf()
                 .WriteLine("rawData.Clear();")
                 .WriteLine("_dictionary.Clear();")
-                .WriteLine("_loadHandle.Release();")
-                .WriteLine("_loadHandle = null;")
                 .WriteLine("_loadStatus = AssetLoadStatus.Unload;")
                 .EndWriteMethod();
 

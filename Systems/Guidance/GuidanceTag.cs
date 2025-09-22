@@ -12,21 +12,37 @@ namespace PowerCellStudio
         public abstract void OnExecute();
 
         protected bool _inExecute = false;
+        private bool _inited;
 
         /// <summary>
         /// 关闭引导
         /// </summary>
         public abstract void OnDeExecute();
 
+        private void OnEnable()
+        {
+            if (!_inited) return;
+            GuidanceManager.instance.RegisterGuidance(this);
+        }
+
+        private void OnDisable()
+        {
+            if (!_inited) return;
+            GuidanceManager.instance.DeregisterGuidance(guidanceIndex);
+        }
+
         public virtual void OnWidgetEnable()
         {
+            _inited = true;
             if(guidanceIndex == 0) return;
-            GuidanceManager.instance.RegisterGuidance(this);
+            if (gameObject.activeInHierarchy) GuidanceManager.instance.RegisterGuidance(this);
         }
 
         public virtual void OnWidgetDisable()
         {
-            GuidanceManager.instance.DeregisterGuidance(guidanceIndex);
+            _inited = false;
+            if(guidanceIndex == 0) return;
+            if (gameObject.activeInHierarchy) GuidanceManager.instance.DeregisterGuidance(guidanceIndex);
         }
 
         public abstract Vector2 GetUIPosition();
