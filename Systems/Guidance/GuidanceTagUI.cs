@@ -30,10 +30,13 @@ namespace PowerCellStudio
             if (!canvas)
             {
                 _tempCanvas = gameObject.AddComponent<Canvas>();
-                _tempCanvas.overrideSorting = true;
-                _tempCanvas.sortingLayerName = "UI";
-                _tempCanvas.sortingOrder = 5000;
                 gameObject.AddComponent<GraphicRaycaster>();
+                // 一些Unity版本中，Canvas在创建时会优先使用默认配置，因此延迟一帧注册
+                ApplicationManager.instance.DelayedNextFrame(()=>{
+                    _tempCanvas.overrideSorting = true;
+                    _tempCanvas.sortingLayerID = SortingLayer.layers[SortingLayer.layers.Length - 1].id;
+                    _tempCanvas.sortingOrder = 5500;
+                });
             }
 
             var selsctable = GetComponent<Selectable>();
