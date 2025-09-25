@@ -34,6 +34,7 @@ namespace PowerCellStudio
         {
             base.OnInspectorGUI();
             EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Audio Setting", EditorStyles.boldLabel);
             serializedObject.Update();
             if (!_hasUpTrigger && GUILayout.Button("Add Up AudioTrigger"))
             {

@@ -6,7 +6,7 @@ using System.Linq;
 namespace PowerCellStudio
 {
     [Serializable]
-    public class RItem: ICloneT<RItem>
+    public struct RItem: ICloneT<RItem>
     {
         public int id;
         public int num;

@@ -32,6 +32,8 @@ namespace PowerCellStudio
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Image Localization", EditorStyles.boldLabel);
             serializedObject.Update();
             if (m_img.objectReferenceValue == null)
             {
