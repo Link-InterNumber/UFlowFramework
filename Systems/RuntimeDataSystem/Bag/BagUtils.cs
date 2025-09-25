@@ -67,9 +67,9 @@ namespace PowerCellStudio
 
         public static bool IsItemEnough(RItem item, params RItem[] items)
         {
-            if (item != null && !IsItemEnough(item.id, item.num)) return false;
+            if (!IsItemEnough(item.id, item.num)) return false;
             if (items == null) return true;
-            return items.All(o => o != null && IsItemEnough(o.id, o.num));
+            return items.All(o => IsItemEnough(o.id, o.num));
         }
     }
 }

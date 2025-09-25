@@ -97,6 +97,13 @@ namespace PowerCellStudio
 
         #endregion
 
+        #region 引导
+
+        public LinkEvent<int> onGuidanceStart = new LinkEvent<int>();
+        public LinkEvent<int, int> onGuidanceEnd = new LinkEvent<int, int>();
+
+        #endregion
+
         #region 语言
 
         /// <summary>

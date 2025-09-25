@@ -34,19 +34,17 @@ namespace PowerCellStudio
 
         public void AddItem(RItem rItem)
         {
-            if (rItem == null) return;
             var bag = GetRuntimeData<BagData>();
-            var currentNum = bag?.GetData(rItem.id)?.num ?? 0;
+            var currentNum = bag?.GetData(rItem.id).num ?? 0;
             rItem.num = currentNum + rItem.num;
             bag?.ReplaceData(rItem.id, rItem);
         }
 
         public void RemoveItem(RItem rItem)
         {
-            if (rItem == null) return;
             var bag = GetRuntimeData<BagData>();
-            var current = bag?.GetData(rItem.id);
-            if (current == null) return;
+            if (bag == null) return;
+            var current = bag.GetData(rItem.id);
             current.num -= rItem.num;
             current.num = Math.Max(0, current.num);
             bag.ReplaceData(rItem.id, current);
@@ -57,7 +55,7 @@ namespace PowerCellStudio
         public int GetItemNumber(int id)
         {
             var bag = GetRuntimeData<BagData>();
-            return bag?.GetData(id)?.num ?? 0;
+            return bag?.GetData(id).num ?? 0;
         }
 
         public void AddBagListener(OnRuntimeDataChange<RItem> action)
