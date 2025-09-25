@@ -147,10 +147,10 @@ namespace PowerCellStudio
                 SortingPage();
                 return currentPage as T;
             }
-            if (pushMode == PagePushMode.Replace && _pageStack.Count > 1)
+            if (pushMode == PagePushMode.Replace && _pageStack.Count > 0)
             {
                 var pageToClose = _pageStack.Pop();
-                TryCachePage(page, true, null);
+                TryCachePage(pageToClose, true, null);
             }
             _pageStack.Push(page);
             UIUtils.OpenUI(page, data);
