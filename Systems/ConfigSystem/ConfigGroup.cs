@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +9,8 @@ namespace PowerCellStudio
 {
     public delegate void OnLoadCompleted(AssetLoadStatus status);
     
-    public class ConfigGroup<T> where T : ConfAsyncLoadHandle, new ()
+    public class ConfigGroup<T> : IDisposable
+        where T : ConfAsyncLoadHandle, new ()
     {
         private List<ConfBaseCollections> _configs;
         private AssetLoadStatus _loadStatus;
@@ -80,6 +82,14 @@ namespace PowerCellStudio
                 ? AssetLoadStatus.Loaded
                 : AssetLoadStatus.Unload;
             onLoadCompleted?.Invoke(_loadStatus);
+        }
+
+        public void Dispose()
+        {
+            _configs.Clear();
+            onLoadCompleted = null;
+            _loadStatus = AssetLoadStatus.Unload;
+            _configs = null;
         }
     }
 }
