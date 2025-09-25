@@ -231,14 +231,19 @@ namespace PowerCellStudio
 
         public void RegisterEvent()
         {
-            EventManager.instance.onStartGame.AddListener(InitRuntimeData);
+            EventManager.instance.onStartGame.AddListener(OnStartGame);
             EventManager.instance.onResetGame.AddListener(ClearRuntimeData);
         }
 
         public void UnRegisterEvent()
         {
-            EventManager.instance?.onStartGame.RemoveListener(InitRuntimeData);
+            EventManager.instance?.onStartGame.RemoveListener(OnStartGame);
             EventManager.instance?.onResetGame.RemoveListener(ClearRuntimeData);
+        }
+        
+        private void OnStartGame()
+        {
+            InitRuntimeData();
         }
 
         partial void InitRuntimeData();

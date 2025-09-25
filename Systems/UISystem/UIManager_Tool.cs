@@ -206,13 +206,12 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 启用或禁用UI输入。
-        /// Enable or disable UI input.
+        /// 开启一个 Mask 窗口，阻止 UI 输入。
+        /// Open a Mask window to block UI input.
         /// </summary>
         /// <param name="enable">是否启用 / Whether to enable</param>
-        public static void EnableUIInput(bool enable)
+        public static void ShowMaskWindow(bool enable)
         {
-            EventManager.instance.onUIInputEnable?.Invoke(enable);
             if (enable) instance.CloseWindow<MaskWindow>();
             else instance.OpenWindow<MaskWindow>();
         }

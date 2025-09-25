@@ -4,9 +4,7 @@ using Unity.VisualScripting;
 
 namespace PowerCellStudio
 {
-    public delegate void OnGuidanceStart(int currentGuidanceId);
-    public delegate void OnGuidanceEnd(int currentGuidanceId, int nextGuidanceId);
-    
+   
     /// <summary>
     /// 引导管理器，用于管理游戏中的引导流程。
     /// Guidance manager for managing guidance processes within the game.
@@ -18,9 +16,6 @@ namespace PowerCellStudio
         private HashSet<int> _executedIndex;
         private List<int> _currentIndex;
         private Func<int, IGuidanceConfig> _confProvider;
-
-        public event OnGuidanceStart onGuidanceStart;
-        public event OnGuidanceEnd onGuidanceEnd;
 
         /// <summary>
         /// 当前引导索引。
@@ -232,7 +227,7 @@ namespace PowerCellStudio
                 conf = conf,
                 tag = tag
             });
-            onGuidanceStart?.Invoke(conf.id)
+            EventManager.instance.onGuidanceStart?.Invoke(conf.id);
         }
         
         /// <summary>
@@ -250,7 +245,7 @@ namespace PowerCellStudio
             if (conf != null && conf.nextGuidance > 0)
             {
                 _nextIndex = conf.nextGuidance;
-                onGuidanceEnd?.Invoke(guidanceIndex, _nextIndex);
+                EventManager.instance.onGuidanceEnd?.Invoke(guidanceIndex, _nextIndex);
                 var hasNewGuidance = ReactiveGuidance(conf.nextGuidance);
                 if (!hasNewGuidance) 
                     UIManager.instance.CloseWindow<GuidanceWindow>();
@@ -262,7 +257,7 @@ namespace PowerCellStudio
             _currentIndex.Clear();
             UIManager.instance.CloseWindow<GuidanceWindow>();
             SaveExecutedIndex();
-            onGuidanceEnd?.Invoke(guidanceIndex, _nextIndex);
+            EventManager.instance.onGuidanceEnd?.Invoke(guidanceIndex, _nextIndex);
         }
     }
 }

@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 
 namespace PowerCellStudio
 {
@@ -150,6 +152,24 @@ namespace PowerCellStudio
         {
             _applicationState = isLoading ? ApplicationState.Loading : ApplicationState.Playing;
             if (isLoading) EventManager.instance.onLoading.Invoke();
+        }
+        
+        public void SetUIInputEnable(bool enable)
+        {
+            if (!EventSystem.current)
+            {
+#if ENABLE_INPUT_SYSTEM
+                var uiModule = GameObject.FindObjectOfType<InputSystemUIInputModule>();
+                if (uiModule != null)
+                {
+                    uiModule.enabled = enable;
+                    EventManager.instance.onUIInputEnable?.Invoke(enable);
+                }
+#endif
+                return;
+            }
+            EventSystem.current.enabled = enable;
+            EventManager.instance.onUIInputEnable?.Invoke(enable);
         }
 
         public void ResetGame()
