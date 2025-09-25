@@ -109,8 +109,11 @@ namespace PowerCellStudio
 
             public T GetData(K key)
             {
-                _rawData.TryGetValue(key, out var data);
-                return data;
+                if (_rawData.TryGetValue(key, out var data))
+                {
+                    return data.Clone();
+                }
+                return default;
             }
             
             public void ReplaceData(K key, T newData)
@@ -238,10 +241,7 @@ namespace PowerCellStudio
             EventManager.instance?.onResetGame.RemoveListener(ClearRuntimeData);
         }
 
-        private  void InitRuntimeData()
-        {
-            InitBag();
-        }
+        partial void InitRuntimeData();
 
         /// <summary>
         /// 添加运行时数据
