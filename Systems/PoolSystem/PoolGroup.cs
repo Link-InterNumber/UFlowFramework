@@ -369,6 +369,10 @@ namespace PowerCellStudio
             _root = new GameObject(rootName).transform;
             _root.SetParent(rootParent);
             _root.localScale = Vector3.one;
+            foreach (var (_, pool) in _gameObjectPools)
+            {
+                pool.ChangeRoot(_root);
+            }
         }
 
         /// <summary>

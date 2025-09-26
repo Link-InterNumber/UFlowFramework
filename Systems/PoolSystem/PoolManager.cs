@@ -318,23 +318,23 @@ namespace PowerCellStudio
         /// 释放所有对象池。
         /// Dispose all object pools.
         /// </summary>
-        public void DisposeAll()
-        {
-            foreach (var poolGroup in _groupRoot)
-            {
-                poolGroup.Dispose();
-            }
-        }
+        // public void DisposeAll()
+        // {
+        //     foreach (var poolGroup in _groupRoot)
+        //     {
+        //         poolGroup.Dispose();
+        //     }
+        // }
         
         /// <summary>
         /// 释放指定组的对象池。
         /// Dispose object pools in the specified group.
         /// </summary>
         /// <param name="groupName">组 / Group name</param>
-        public void DisposeByGroup(PoolGroupName groupName)
-        {
-            GetGroup(groupName).Dispose();
-        }
+        // public void DisposeByGroup(PoolGroupName groupName)
+        // {
+        //     GetGroup(groupName).Dispose();
+        // }
         
     }
 }

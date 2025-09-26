@@ -163,5 +163,15 @@ namespace PowerCellStudio
         {
             return item.name.StartsWith(_tag);
         }
+        
+        public void ChangeRoot(Transform root)
+        {
+            _root = root;
+            foreach (var obj in _stack)
+            {
+                if (obj)
+                    obj.transform.SetParent(_root);
+            }
+        }
     }
 }
