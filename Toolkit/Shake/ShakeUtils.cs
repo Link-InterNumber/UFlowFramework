@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -32,10 +33,11 @@ namespace PowerCellStudio
             {
                 currentHandle.Cancel();
             }
-            var request = new ShakeRequest(shakeType, target, duration, frequency, magnitude, curve, isUnscaleTime);
+            var isCamera = target.GetComponent<Camera>() != null;
+            var request = new ShakeRequest(shakeType, target, duration, frequency, magnitude, curve, isUnscaleTime, isCamera);
             var handle = new ShakeHandle(request);
             _cashe[hashCode] = handle;
-            ApplicationManager.RunCoroutine(ProcessHandle(handle));
+            CoroutineRunner.instance.StartCoroutine(ProcessHandle(handle));
             return handle;
         }
 
@@ -79,15 +81,15 @@ namespace PowerCellStudio
             switch (preset)
             {
                 case ShakePreset.Small:
-                    magnitude = new Vector3(0.05f, 0.05f, 0.05f) * scale;
+                    magnitude = new Vector3(0.05f, 0.05f, 0f) * scale;
                     frequency = 20f;
                     break;
                 case ShakePreset.Medium:
-                    magnitude = new Vector3(0.15f, 0.15f, 0.15f) * scale;
+                    magnitude = new Vector3(0.15f, 0.15f, 0f) * scale;
                     frequency = 30f;
                     break;
                 case ShakePreset.Large:
-                    magnitude = new Vector3(0.3f, 0.3f, 0.3f) * scale;
+                    magnitude = new Vector3(0.3f, 0.3f, 0f) * scale;
                     frequency = 40f;
                     break;
                 default:
