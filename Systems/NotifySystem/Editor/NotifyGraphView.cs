@@ -11,8 +11,11 @@ namespace PowerCellStudio
 {
     public class NotifyGraphView : GraphView
     {
-        public NotifyGraphView()
+        private EditorWindow _editorWindow;
+        
+        public NotifyGraphView(EditorWindow editorWindow)
         {
+            _editorWindow = editorWindow;
             this.AddManipulator(new ContentZoomer());
             this.AddManipulator(new ContentDragger());
             this.AddManipulator(new SelectionDragger());
@@ -24,12 +27,17 @@ namespace PowerCellStudio
             // 右键创建新节点
             this.nodeCreationRequest = context =>
             {
-                var mousePosition = this.ChangeCoordinatesTo(this.contentViewContainer,
-                context.screenMousePosition - this.worldBound.position - Vector2.one * 200);
-                AddNode("NewNode", mousePosition);
+                // 获取鼠标屏幕坐标
+                var position = context.screenMousePosition;
+                position.x = (position.x - _editorWindow.position.position.x) / scale;
+                position.y = (position.y - _editorWindow.position.position.y) / scale;
+                
+                // 创建节点
+                AddNode("NewNode", position);
             };
             // 背景网格
             var grid = new GridBackground();
+            grid.AddToClassList("Grid");
             Insert(0, grid);
             grid.StretchToParentSize();
             // 设置初始缩放比例
@@ -125,12 +133,16 @@ namespace PowerCellStudio
             {
                 for (int i = 0; i < levels[index].Count; i++)
                 {
-                    var node = layer1[i];
-                    var connects = node.outputContainer.Query<Port>().AtIndex(0).connections;
-                    foreach (var item in connects)
+                    foreach (var l in levels[index])
                     {
-                        buffer.Add(item.input.node);
+                        var node = l;
+                        var connects = node.outputContainer.Query<Port>().AtIndex(0).connections;
+                        foreach (var item in connects)
+                        {
+                            buffer.Add(item.input.node);
+                        }
                     }
+
                 }
                 if (buffer.Count == 0) break;
                 levels.Add(buffer);
@@ -147,7 +159,7 @@ namespace PowerCellStudio
                 for (int j = 0; j < count; j++)
                 {
                     float x = startOffset.x + (i * horizontalSpacing);
-                    float y = startOffset.y + depth * verticalSpacing - totalHeight / 2f;
+                    float y = startOffset.y + j * verticalSpacing - totalHeight / 2f;
                     // 使用节点当前大小（如果为 0 则使用默认）
                     var size = list[i].GetPosition().size;
                     if (size == Vector2.zero) size = new Vector2(180, 120);

@@ -5,14 +5,15 @@ using UnityEditor.Experimental.GraphView;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor.UIElements;
 
 namespace PowerCellStudio
 {
     public class NotifyGraphWindow : EditorWindow
     {
         private NotifyGraphView graphView;
-        private const string savePath = "Assets/Script/Red/NotifyManager_Binding.cs";
-        private const string enumPath = "Assets/Script/Red/NotifyType.cs";
+        private const string savePath = "Assets/UFlowFramework/Systems/NotifySystem/NotifyManager_Binding.cs";
+        private const string enumPath = "Assets/UFlowFramework/Systems/NotifySystem/NotifyType.cs";
 
         [MenuItem("Window/Notify Graph")]
         public static void OpenWindow()
@@ -23,43 +24,50 @@ namespace PowerCellStudio
 
         private void OnEnable()
         {
-            // 读取 NotifyManager_Binding.cs 中的节点关系
-            var csLines = File.ReadAllLines(savePath);
             var nodeRelations = new List<(string child, string parent)>();
-            foreach (var line in csLines)
+            // 读取 NotifyManager_Binding.cs 中的节点关系
+            if (File.Exists(savePath))
             {
-                if (line.Contains("SetNodeParent"))
+                var csLines = File.ReadAllLines(savePath);
+                foreach (var line in csLines)
                 {
-                    var parts = line.Trim().Replace("SetNodeParent(", "").Replace(");", "").Split(',');
-                    if (parts.Length == 2)
+                    if (line.Contains("SetNodeParent"))
                     {
-                        var child = parts[0].Trim().Replace("NotifyType.", "");
-                        var parent = parts[1].Trim().Replace("NotifyType.", "");
-                        nodeRelations.Add((child, parent));
+                        var parts = line.Trim().Replace("SetNodeParent(", "").Replace(");", "").Split(',');
+                        if (parts.Length == 2)
+                        {
+                            var child = parts[0].Trim().Replace("NotifyType.", "");
+                            var parent = parts[1].Trim().Replace("NotifyType.", "");
+                            nodeRelations.Add((child, parent));
+                        }
                     }
                 }
             }
-            
-            graphView = new NotifyGraphView
+
+            graphView = new NotifyGraphView(this)
             {
                 name = "Notify Graph View"
             };
             graphView.StretchToParentSize();
             rootVisualElement.style.flexDirection = FlexDirection.Column;
             rootVisualElement.Add(graphView);
+
+
+            Toolbar toolbar = new Toolbar();
             // 在底部添加保存按钮
             // 底部 footer，用来固定显示 Save 按钮
-            var footer = new VisualElement();
-            footer.style.flexDirection = FlexDirection.Row;
-            footer.style.height = 36;
-            footer.style.alignItems = Align.Center;
-            footer.style.justifyContent = Justify.Center;
-            footer.style.paddingLeft = 4;
-            footer.style.paddingRight = 4;
-            var saveButton = new Button(() => SaveGraph()) { text = "Save Graph" };
-            footer.Add(saveButton);
-            rootVisualElement.Add(footer);
-
+            // var footer = new VisualElement();
+            // footer.style.flexDirection = FlexDirection.Row;
+            // footer.style.height = 36;
+            // footer.style.alignItems = Align.Center;
+            // footer.style.justifyContent = Justify.Center;
+            // footer.style.paddingLeft = 4;
+            // footer.style.paddingRight = 4;
+            var saveButton = new Button(SaveGraph) { text = "Save Graph" };
+            // footer.Add(saveButton);
+            toolbar.Add(saveButton);
+            rootVisualElement.Add(toolbar);
+            
             // 根据节点关系创建节点并连接
             var nodesDict = new Dictionary<string, NotifyNodeView>();
             nodesDict["Root"] = graphView.nodes.ToList().Find(n => (n as NotifyNodeView)?.GetNodeName() == "Root") as NotifyNodeView;

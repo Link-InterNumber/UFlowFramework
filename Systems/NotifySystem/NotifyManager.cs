@@ -63,20 +63,6 @@ namespace PowerCellStudio
         // }
 
         private partial void BindNodes();
-        
-        private partial void BindNodes()
-        {
-            #region Test
-        
-            // SetNodeParent(NotifyType.B, NotifyType.A);
-            // SetNodeParent(NotifyType.C, NotifyType.B);
-            // SetNodeParent(NotifyType.D, NotifyType.B);
-            // SetNotify(NotifyType.D, true, 51);
-            // SetNotify(NotifyType.C, false, 20);
-            // SetNotify(NotifyType.E, true, 1);
-        
-            #endregion
-        }
 
         private NotifyNode GetNode(NotifyType type)
         {

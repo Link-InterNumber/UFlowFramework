@@ -1,13 +1,12 @@
-﻿namespace PowerCellStudio
+namespace PowerCellStudio
 {
     public enum NotifyType
     {
-        Root = 0,
-        // TODO 不要添加int索引
+        Root,
         A,
         B,
-        C,
         D,
+        C,
         E,
         F,
     }
