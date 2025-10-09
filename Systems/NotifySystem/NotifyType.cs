@@ -5,9 +5,10 @@ namespace PowerCellStudio
         Root,
         A,
         B,
-        D,
         C,
+        D,
         E,
         F,
+        G,
     }
 }

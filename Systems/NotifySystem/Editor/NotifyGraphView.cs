@@ -157,9 +157,9 @@ namespace PowerCellStudio
                     float x = startOffset.x + (i * horizontalSpacing);
                     float y = startOffset.y + j * verticalSpacing - totalHeight / 2f;
                     // 使用节点当前大小（如果为 0 则使用默认）
-                    var size = list[i].GetPosition().size;
+                    var size = list[j].GetPosition().size;
                     if (size == Vector2.zero) size = new Vector2(180, 120);
-                    list[i].SetPosition(new Rect(new Vector2(x, y), size));
+                    list[j].SetPosition(new Rect(new Vector2(x, y), size));
                 }
             }
 
