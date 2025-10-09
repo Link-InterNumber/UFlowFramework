@@ -131,18 +131,14 @@ namespace PowerCellStudio
             var index = 0;
             while (true)
             {
-                for (int i = 0; i < levels[index].Count; i++)
+                foreach (var l in levels[index])
                 {
-                    foreach (var l in levels[index])
+                    var node = l;
+                    var connects = node.outputContainer.Query<Port>().AtIndex(0).connections;
+                    foreach (var item in connects)
                     {
-                        var node = l;
-                        var connects = node.outputContainer.Query<Port>().AtIndex(0).connections;
-                        foreach (var item in connects)
-                        {
-                            buffer.Add(item.input.node);
-                        }
+                        buffer.Add(item.input.node);
                     }
-
                 }
                 if (buffer.Count == 0) break;
                 levels.Add(buffer);
