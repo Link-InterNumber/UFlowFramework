@@ -53,6 +53,24 @@ namespace PowerCellStudio
                 }
             }
 
+            var enumFilePath = Path.Combine(_currentEnumPath, "NotifyType.cs");
+            if (File.Exists(enumFilePath))
+            {
+                var csLines = File.ReadAllLines(enumFilePath);
+                foreach (var line in csLines)
+                {
+                    var trimmedLine = line.Trim().TrimEnd(',');
+                    if (!string.IsNullOrEmpty(trimmedLine) && !trimmedLine.StartsWith("public") && !trimmedLine.StartsWith("namespace") && !trimmedLine.StartsWith("{") && !trimmedLine.StartsWith("}") && !trimmedLine.StartsWith("//") && !trimmedLine.Contains("enum"))
+                    {
+                        var nodeName = trimmedLine;
+                        if (nodeName != "Root" && !nodeRelations.Any(nr => nr.child == nodeName || nr.parent == nodeName))
+                        {
+                            nodeRelations.Add((nodeName, string.Empty));
+                        }
+                    }
+                }
+            }
+
             graphView = new NotifyGraphView(this)
             {
                 name = "Notify Graph View"
@@ -100,7 +118,7 @@ namespace PowerCellStudio
             nodesDict["Root"] = graphView.nodes.ToList().Find(n => (n as NotifyNodeView)?.GetNodeName() == "Root") as NotifyNodeView;
             foreach (var (child, parent) in nodeRelations)
             {
-                if (!nodesDict.ContainsKey(parent))
+                if (!string.IsNullOrEmpty(parent) && !nodesDict.ContainsKey(parent))
                 {
                     var parentNode = graphView.AddNode(parent, Vector2.zero);
                     graphView.AddElement(parentNode);
@@ -112,6 +130,8 @@ namespace PowerCellStudio
                     graphView.AddElement(childNode);
                     nodesDict[child] = childNode;
                 }
+                if (string.IsNullOrEmpty(parent))
+                    continue;
                 // 创建连接
                 var parentPort = nodesDict[parent].outputContainer.Query<Port>().AtIndex(0);
                 var childPort = nodesDict[child].inputContainer.Query<Port>().AtIndex(0);
