@@ -10,25 +10,31 @@ namespace PowerCellStudio
     {
         private TextField nodeNameField;
         private string nodeName;
+        private NotifyGraphView _owner;
 
-        public NotifyNodeView(string name, GraphView owner)
+        public NotifyNodeView(string name, NotifyGraphView owner)
         {
             nodeName = name;
             title = nodeName;
-
+            _owner = owner;
             // Create input and output ports
             if (nodeName != "Root")
             {
-                nodeNameField = new TextField("Node Name");
+                nodeNameField = new TextField("Type Name");
                 nodeNameField.value = nodeName;
                 nodeNameField.RegisterValueChangedCallback(evt =>
                 {
                     nodeName = evt.newValue;
                     title = nodeName;
+                    _owner.CheckNodeDuplicate();
                 });
                 mainContainer.Add(nodeNameField);
 
-                var removeButton = new Button(() => RemoveFromHierarchy()) { text = "Remove Node" };
+                var removeButton = new Button(() =>
+                {
+                    RemoveFromHierarchy();
+                    _owner.CheckNodeDuplicate();
+                }){ text = "Remove Node" };
                 mainContainer.Add(removeButton);
                 var inputPort = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Single, typeof(bool));
                 inputPort.portName = "Parent";

@@ -363,7 +363,7 @@ namespace PowerCellStudio
         }
         
         // 将名为 "My Window" 的菜单添加到 Window 菜单
-        [MenuItem ("Tools/Notify TreeView Window")]
+        [MenuItem ("Tools/Notify/TreeView Window")]
         public static void ShowWindow ()
         {
             // 获取现有打开的窗口；如果没有，则新建一个窗口：

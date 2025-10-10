@@ -6,13 +6,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using Unity.VisualScripting;
+using System;
 
 namespace PowerCellStudio
 {
     public class NotifyGraphView : GraphView
     {
         private EditorWindow _editorWindow;
-        
+
         public NotifyGraphView(EditorWindow editorWindow)
         {
             _editorWindow = editorWindow;
@@ -20,72 +21,126 @@ namespace PowerCellStudio
             this.AddManipulator(new ContentDragger());
             this.AddManipulator(new SelectionDragger());
             this.AddManipulator(new RectangleSelector());
+            // this.deleteSelection += OnDeleteSelection;
+            // this.graphViewChanged += OnGraphViewChanged;
+            // 背景网格
+            var grid = new GridBackground();
+            Insert(0, grid);
+            grid.StretchToParentSize();
 
             // styleSheets.Add(Resources.Load<StyleSheet>("NotifyGraphStyles"));
-            AddElement(CreateNode("Root", Vector2.one * 200, true));
+            AddNode("Root", Vector2.one * 200);
 
             // 右键创建新节点
             this.nodeCreationRequest = context =>
             {
                 // 获取鼠标屏幕坐标
                 var position = context.screenMousePosition;
-                position.x = (position.x - _editorWindow.position.position.x) / scale;
-                position.y = (position.y - _editorWindow.position.position.y) / scale;
-                
+                position.x = (position.x - _editorWindow.position.position.x);
+                position.y = (position.y - _editorWindow.position.position.y);
+                var finalPos = viewTransform.matrix.inverse.MultiplyPoint(position);
+
                 // 创建节点
-                AddNode("NewNode", position);
+                AddNode("NewNode", finalPos);
             };
-            // 背景网格
-            var grid = new GridBackground();
-            grid.AddToClassList("Grid");
-            Insert(0, grid);
-            grid.StretchToParentSize();
+
             // 设置初始缩放比例
             SetupZoom(ContentZoomer.DefaultMinScale, ContentZoomer.DefaultMaxScale);
-
         }
 
-        public void AddNode(string nodeName, Vector2 position)
+        // private void OnDeleteSelection(string operationName, AskUser askUser)
+        // {
+        //     CheckNodeDuplicate();
+        // }
+
+        // private GraphViewChange OnGraphViewChanged(GraphViewChange graphViewChange)
+        // {
+        //     if (graphViewChange.elementsToRemove != null)
+        //     {
+        //         var allNodes = nodes.ToList();
+        //         foreach (var item in graphViewChange.elementsToRemove)
+        //         {
+        //             var index = allNodes.FindIndex(o => o.title == item.title);
+        //             if (index >= 0)
+        //             {
+        //                 allNodes.RemoveAt(index);
+        //             }
+        //         }
+        //         var nameSet = new HashSet<string>(nodes.Select(n => n.title));
+        //         var duplicateNames = new HashSet<string>();
+        //         foreach (var node in allNodes)
+        //         {
+        //             var name = node.title;
+        //             if (nameSet.Contains(name))
+        //             {
+        //                 nameSet.Remove(name);
+        //             }
+        //             else
+        //             {
+        //                 duplicateNames.Add(name);
+        //             }
+        //         }
+        //         foreach (var node in allNodes)
+        //         {
+        //             var notifyNode = node as NotifyNodeView;
+        //             if (notifyNode == null) continue;
+        //             var name = notifyNode.GetNodeName();
+        //             if (duplicateNames.Contains(name))
+        //             {
+        //                 // 重复时背景变红
+        //                 notifyNode.style.backgroundColor = new StyleColor(Color.red);
+        //             }
+        //             else
+        //             {
+        //                 notifyNode.style.backgroundColor = new StyleColor(Color.clear);
+        //             }
+        //         }
+        //     }
+        //     return graphViewChange;
+        // }
+
+        public bool CheckNodeDuplicate()
         {
-            var node = CreateNode(nodeName, position);
-            AddElement(node);
+            var allNodes = nodes.ToList();
+            var nameSet = new HashSet<string>(nodes.Select(n => n.title));
+            var duplicateNames = new HashSet<string>();
+            foreach (var node in allNodes)
+            {
+                var name = node.title;
+                if (nameSet.Contains(name))
+                {
+                    nameSet.Remove(name);
+                }
+                else
+                {
+                    duplicateNames.Add(name);
+                }
+            }
+            foreach (var node in allNodes)
+            {
+                var notifyNode = node as NotifyNodeView;
+                if (notifyNode == null) continue;
+                var name = notifyNode.GetNodeName();
+                if (duplicateNames.Contains(name))
+                {
+                    // 重复时背景变红
+                    notifyNode.style.backgroundColor = new StyleColor(Color.red);
+                }
+                else
+                {
+                    notifyNode.style.backgroundColor = new StyleColor(Color.clear);
+                }
+            }
+            return duplicateNames.Count > 0;
         }
 
-        public NotifyNodeView CreateNode(string nodeName, Vector2 position, bool isRoot = false)
+        public NotifyNodeView AddNode(string nodeName, Vector2 position)
         {
             var nodeView = new NotifyNodeView(nodeName, this);
             nodeView.SetPosition(new Rect(position, Vector2.zero));
+            AddElement(nodeView);
+            CheckNodeDuplicate();
             return nodeView;
-        }
-
-        public void SaveGraph()
-        {
-            var nodes = GetNodes();
-            var notifyTypeLines = new List<string>();
-            var parentChildLines = new List<string>();
-
-            foreach (var node in nodes)
-            {
-                if (node is NotifyNodeView notifyNode)
-                {
-                    notifyTypeLines.Add($"        {notifyNode.GetNodeName()},");
-                    foreach (var child in notifyNode.Children())
-                    {
-                        parentChildLines.Add($"            SetNodeParent(NotifyType.{notifyNode.GetNodeName()}, NotifyType.{(child as NotifyNodeView).GetNodeName()});");
-                    }
-                }
-            }
-
-            var notifyTypeContent = $"namespace PowerCellStudio\n{{\n    public enum NotifyType\n    {{\n        Root = 0,\n{string.Join("\n", notifyTypeLines)}\n    }}\n}}";
-            File.WriteAllText("Assets/Scripts/Red/NotifyType.cs", notifyTypeContent);
-
-            var bindingContent = $"private partial void BindNodes()\n{{\n{string.Join("\n", parentChildLines)}\n}}";
-            File.WriteAllText("Assets/Scripts/Red/NotifyManager_Binding.cs", bindingContent);
-        }
-
-        private IEnumerable<NotifyNodeView> GetNodes()
-        {
-            return this.Children().OfType<NotifyNodeView>();
         }
 
         public override List<Port> GetCompatiblePorts(Port startAnchor, NodeAdapter nodeAdapter)
