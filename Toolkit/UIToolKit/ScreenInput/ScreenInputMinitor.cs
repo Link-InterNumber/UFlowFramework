@@ -39,7 +39,7 @@ namespace PowerCellStudio
          if (_inputHandles.ContainsKey(type))
          {
             _inputHandles[type].Dispose();
-            _removeBuffer.Add(type);
+            // _removeBuffer.Add(type);
          }
          _inputHandles[type] = handle;
          handle.OnEnable();

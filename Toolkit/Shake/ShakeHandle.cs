@@ -52,7 +52,17 @@ namespace PowerCellStudio
                 float x = Mathf.PerlinNoise(time * _data.frequency, 3) * 2 - 1; // 输出范围 [-1,1]
                 float y = Mathf.PerlinNoise(time * _data.frequency, 4) * 2 - 1;
                 float z = Mathf.PerlinNoise(time * _data.frequency, 5) * 2 - 1;
-                Quaternion shakeRotation = Quaternion.Euler(x * _data.magnitude.x * curvePosition, y * _data.magnitude.y * curvePosition, x * _data.magnitude.z * curvePosition);
+                var magnitude = _data.magnitude * 5;
+                if (_data.isCamera)
+                {
+                    magnitude.z = Mathf.Max(magnitude.x, magnitude.y, magnitude.z);
+                    magnitude.x = 0f;
+                    magnitude.y = 0f;
+                }
+                Quaternion shakeRotation = Quaternion.Euler(
+                    x * magnitude.x * curvePosition,
+                    y * magnitude.y * curvePosition,
+                    z * magnitude.z * curvePosition);
                 _data.target.localRotation = _data.origRota * shakeRotation;
             }
         }
@@ -78,25 +88,29 @@ namespace PowerCellStudio
 
         public Quaternion origRota;
 
+        public bool isCamera;
+
         public ShakeRequest(
-            ShakeUtils.ShakeType shakeType,
-            Transform target,
-            float duration,
-            float frequency,
-            Vector3  magnitude,
-            AnimationCurve curve,
-            bool isUnscaleTime)
+        ShakeUtils.ShakeType shakeType,
+        Transform target,
+        float duration,
+        float frequency,
+        Vector3 magnitude,
+        AnimationCurve curve,
+        bool isUnscaleTime,
+        bool isCamera)
         {
             this.shakeType = shakeType;
             this.target = target;
             this.duration = duration;
             this.frequency = frequency;
-            this. magnitude = magnitude;
+            this.magnitude = magnitude;
             this.curve = curve;
             this.isUnscaleTime = isUnscaleTime;
+            this.isCamera = isCamera;
 
             origPos = target.position;
             origRota = target.localRotation;
-        }
+      }
     }
 }
