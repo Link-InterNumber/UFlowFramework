@@ -146,10 +146,6 @@ namespace PowerCellStudio
         public override List<Port> GetCompatiblePorts(Port startAnchor, NodeAdapter nodeAdapter)
         {
             var compatiblePorts = new List<Port>();
-            if (startAnchor.capacity == Port.Capacity.Single)
-            {
-
-            }
             foreach (var port in ports.ToList())
             {
                 if (startAnchor.node == port.node ||

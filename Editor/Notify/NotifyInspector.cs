@@ -21,8 +21,8 @@ namespace PowerCellStudio
 
     public class NotifyTree : TreeView
     {
-        private float kRowHeights = 20f;
-        private float kToggleWidth = 20f;
+        private float _kRowHeights = 20f;
+        private float _kToggleWidth = 20f;
 
         public NotifyTree(TreeViewState state) : base(state)
         {
@@ -36,8 +36,8 @@ namespace PowerCellStudio
             // columnIndexForTreeFoldouts = 2;
             showAlternatingRowBackgrounds = true;
             showBorder = true;
-            customFoldoutYOffset = (kRowHeights - EditorGUIUtility.singleLineHeight) * 0.5f; 
-            // extraSpaceBeforeIconAndLabel = kToggleWidth;
+            customFoldoutYOffset = (_kRowHeights - EditorGUIUtility.singleLineHeight) * 0.5f; 
+            // extraSpaceBeforeIconAndLabel = _kToggleWidth;
             // multiColumnHeader.sortingChanged += OnSortingChanged;
             Reload();
         }
@@ -63,7 +63,7 @@ namespace PowerCellStudio
                     // 在标签文本的左侧创建一个开关按钮
                     Rect toggleRect = cellRect;
                     toggleRect.x += GetContentIndent(item);
-                    toggleRect.width = kToggleWidth;
+                    toggleRect.width = _kToggleWidth;
                     // if (toggleRect.xMax < cellRect.xMax)
                     //     item.data.enabled = EditorGUI.Toggle(toggleRect, item.data.enabled);
                     // 默认图标和标签

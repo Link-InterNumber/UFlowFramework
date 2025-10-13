@@ -11,12 +11,12 @@ namespace PowerCellStudio
 {
     public class NotifyGraphWindow : EditorWindow
     {
-        private NotifyGraphView graphView;
-        private const string savePath = "Assets/UFlowFramework/Systems/NotifySystem";
-        private const string enumPath = "Assets/UFlowFramework/Systems/NotifySystem";
+        private NotifyGraphView _graphView;
+        private const string _savePath = "Assets/UFlowFramework/Systems/NotifySystem";
+        private const string _enumPath = "Assets/UFlowFramework/Systems/NotifySystem";
 
-        private const string savePathSaveKey = "NotifyGraphWindow_SavePath";
-        private const string enumPathSaveKey = "NotifyGraphWindow_EnumPath";
+        private const string _savePathSaveKey = "NotifyGraphWindow_SavePath";
+        private const string _enumPathSaveKey = "NotifyGraphWindow_EnumPath";
 
         private string _currentSavePath;
         private string _currentEnumPath;
@@ -31,8 +31,8 @@ namespace PowerCellStudio
         private void OnEnable()
         {
             var nodeRelations = new List<(string child, string parent)>();
-            _currentSavePath = EditorPrefs.GetString(savePathSaveKey, savePath);
-            _currentEnumPath = EditorPrefs.GetString(enumPathSaveKey, enumPath);
+            _currentSavePath = EditorPrefs.GetString(_savePathSaveKey, _savePath);
+            _currentEnumPath = EditorPrefs.GetString(_enumPathSaveKey, _enumPath);
             // 读取 NotifyManager_Binding.cs 中的节点关系
             var bindFilePath = Path.Combine(_currentSavePath, "NotifyManager_Binding.cs");
             if (File.Exists(bindFilePath))
@@ -71,13 +71,13 @@ namespace PowerCellStudio
                 }
             }
 
-            graphView = new NotifyGraphView(this)
+            _graphView = new NotifyGraphView(this)
             {
                 name = "Notify Graph View"
             };
-            graphView.StretchToParentSize();
+            _graphView.StretchToParentSize();
             rootVisualElement.style.flexDirection = FlexDirection.Column;
-            rootVisualElement.Add(graphView);
+            rootVisualElement.Add(_graphView);
 
             Toolbar toolbarText = new Toolbar();
             // enumPath
@@ -106,28 +106,28 @@ namespace PowerCellStudio
             var saveButton = new Button(SaveGraph) { text = "Save Graph" };
             toolbar.Add(saveButton);
             // 添加保存按钮
-            var autoLayout = new Button(() => graphView.AutoLayout()) { text = "Auto Layout" };
+            var autoLayout = new Button(() => _graphView.AutoLayout()) { text = "Auto Layout" };
             toolbar.Add(autoLayout);
             // 检查按钮
-            var checkButton = new Button(() => graphView.CheckNodeDuplicate()) { text = "Check Node" };
+            var checkButton = new Button(() => _graphView.CheckNodeDuplicate()) { text = "Check Node" };
             toolbar.Add(checkButton);
             rootVisualElement.Add(toolbar);
 
             // 根据节点关系创建节点并连接
             var nodesDict = new Dictionary<string, NotifyNodeView>();
-            nodesDict["Root"] = graphView.nodes.ToList().Find(n => (n as NotifyNodeView)?.GetNodeName() == "Root") as NotifyNodeView;
+            nodesDict["Root"] = _graphView.nodes.ToList().Find(n => (n as NotifyNodeView)?.GetNodeName() == "Root") as NotifyNodeView;
             foreach (var (child, parent) in nodeRelations)
             {
                 if (!string.IsNullOrEmpty(parent) && !nodesDict.ContainsKey(parent))
                 {
-                    var parentNode = graphView.AddNode(parent, Vector2.zero);
-                    graphView.AddElement(parentNode);
+                    var parentNode = _graphView.AddNode(parent, Vector2.zero);
+                    _graphView.AddElement(parentNode);
                     nodesDict[parent] = parentNode;
                 }
                 if (!nodesDict.ContainsKey(child))
                 {
-                    var childNode = graphView.AddNode(child, Vector2.zero);
-                    graphView.AddElement(childNode);
+                    var childNode = _graphView.AddNode(child, Vector2.zero);
+                    _graphView.AddElement(childNode);
                     nodesDict[child] = childNode;
                 }
                 if (string.IsNullOrEmpty(parent))
@@ -138,11 +138,11 @@ namespace PowerCellStudio
                 if (parentPort != null && childPort != null)
                 {
                     var edge = parentPort.ConnectTo(childPort);
-                    graphView.Add(edge);
+                    _graphView.Add(edge);
                 }
             }
             // 自动布局
-            graphView.AutoLayout();
+            _graphView.AutoLayout();
 
             // 添加键盘监听（Ctrl/Cmd + S）
             rootVisualElement.focusable = true;
@@ -169,7 +169,7 @@ namespace PowerCellStudio
                 return; 
             }
             
-            var nodes = graphView.nodes.ToList();
+            var nodes = _graphView.nodes.ToList();
             List<string> nodeNames = new List<string>();
             List<(string child, string parent)> relationships = new List<(string, string)>();
 
@@ -194,8 +194,8 @@ namespace PowerCellStudio
             SaveBinding(relationships);
             EditorUtility.DisplayDialog("Save Graph", "Graph saved successfully!", "OK");
             // 保存路径到 EditorPrefs
-            EditorPrefs.SetString(savePathSaveKey, _currentSavePath);
-            EditorPrefs.SetString(enumPathSaveKey, _currentEnumPath);
+            EditorPrefs.SetString(_savePathSaveKey, _currentSavePath);
+            EditorPrefs.SetString(_enumPathSaveKey, _currentEnumPath);
         }
 
         private void SaveEnum(List<string> nodeNames)
