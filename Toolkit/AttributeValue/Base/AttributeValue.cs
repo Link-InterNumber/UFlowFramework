@@ -196,7 +196,7 @@ namespace PowerCellStudio
         /// </summary>
         /// <param name="action">The action function.
         /// 动作函数。</param>
-        public AttributeAction<T>[] GetActions(Func<T, T, T> action)
+        public AttributeAction<T>[] GetActions(AttributeValueChange<T> action)
         {
             return actions.GetActions(action);
         }
@@ -211,7 +211,7 @@ namespace PowerCellStudio
         /// 表示动作的函数。</param>
         /// <returns>Whether the insert was successful.
         /// 插入是否成功。</returns>
-        public bool Push(string tag, Func<T, T, T> func) { return Push(func, AttributePriority.First, tag) != null; }
+        public bool Push(string tag, AttributeValueChange<T> func) { return Push(func, AttributePriority.First, tag) != null; }
 
         /// <summary>
         /// Inserts a computation action with the specified priority and tag.
@@ -225,7 +225,7 @@ namespace PowerCellStudio
         /// 动作的标签。</param>
         /// <returns>The inserted action.
         /// 插入的动作。</returns>
-        public AttributeAction<T> Push(Func<T, T, T> func, AttributePriority priority = AttributePriority.First, string tag = "")
+        public virtual AttributeAction<T> Push(AttributeValueChange<T> func, AttributePriority priority = AttributePriority.First, string tag = "")
         {
             if (func == null) return null;
             _isDirty = true;
@@ -251,6 +251,18 @@ namespace PowerCellStudio
         /// <param name="action">The action to remove.
         /// 要移除的动作。</param>
         public void Remove(AttributeAction<T> action)
+        {
+            actions.Remove(action);
+            _isDirty = true;
+        }
+
+        /// <summary>
+        /// Removes actions by their action function.
+        /// 通过动作函数移除动作。
+        /// </summary>
+        /// <param name="action">The action function to remove.
+        /// 要移除的动作函数。</param>
+        public void Remove(AttributeValueChange<T> action)
         {
             actions.Remove(action);
             _isDirty = true;
