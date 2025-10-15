@@ -134,6 +134,8 @@ namespace PowerCellStudio
                 {
                     _trackRenders = _asset.tracks.Select(o => new TrackRenderer(_asset, o)).ToList();
                 }
+                
+
                 GUILayout.FlexibleSpace();
                 //  GUILayout.Label($"Duration: {_asset.duration:0.00}s");
                 //  _asset.duration = Mathf.Max(0.1f, EditorGUILayout.Slider(_asset.duration, 0.1f, 120f, GUILayout.Width(200)));
