@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace PowerCellStudio
 {
@@ -18,6 +17,13 @@ namespace PowerCellStudio
         private float _pixelsPerSecond = 100f;
 
         private ActClipData _selection;
+
+        #region Preview
+
+        private ActRuntimePlayer _previewTarget;
+        private ActPreview _preview;
+
+        #endregion
 
         [MenuItem("Window/Act/Act Editor")]
         public static void Open()
@@ -125,6 +131,44 @@ namespace PowerCellStudio
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
             {
                 _asset = (ActAsset)EditorGUILayout.ObjectField(_asset, typeof(ActAsset), false, GUILayout.Width(250));
+                _previewTarget = (ActRuntimePlayer)EditorGUILayout.ObjectField(_previewTarget, typeof(ActRuntimePlayer), true, GUILayout.Width(200));
+                if (_preview == null && _previewTarget && _asset )
+                {
+                    _preview = new ActPreview(_asset, _previewTarget);
+                }
+                if (_previewTarget == null || _asset == null)
+                {
+                    if (_preview != null)
+                    {
+                        _preview.Dispose();
+                        _preview = null;
+                    }
+                }
+                else if (_preview != null && _preview.Asset != _asset)
+                {
+                    _preview.SetAsset(_asset);
+                }
+                else if (_preview != null && _preview.Target != _previewTarget)
+                {
+                    _preview.SetTarget(_previewTarget);
+                }
+
+                if (_preview != null)
+                {
+                    _preview.Loop = GUILayout.Toggle(_preview.Loop, "Loop");
+                    if (GUILayout.Button("Play", EditorStyles.toolbarButton, GUILayout.Width(50)))
+                    {
+                        _preview.Play();
+                    }
+                    if (GUILayout.Button("Pause", EditorStyles.toolbarButton, GUILayout.Width(50)))
+                    {
+                        _preview.Pause();
+                    }
+                    if (GUILayout.Button("Stop", EditorStyles.toolbarButton, GUILayout.Width(50)))
+                    {
+                        _preview.Stop();
+                    }
+                }
                 if (_asset == null)
                 {
                     if (_trackRenders != null) _trackRenders = null;

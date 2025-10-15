@@ -27,6 +27,11 @@ namespace PowerCellStudio
             }
             return true;
         }
+        
+        public void Restart()
+        {
+            _time = 0f;
+        }
 
         private float _time;
         public void Simulate(float dt, ActRuntimePlayer target, out bool isEnd)
@@ -60,7 +65,7 @@ namespace PowerCellStudio
                 }
             }
             _time += dt;
-            isEnd = _time >= maxTime;
+            isEnd = _time > maxTime;
         }
     }
 }

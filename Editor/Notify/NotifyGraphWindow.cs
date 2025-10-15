@@ -163,7 +163,7 @@ namespace PowerCellStudio
 
         private void SaveGraph()
         {
-            if (graphView.CheckNodeDuplicate())
+            if (_graphView.CheckNodeDuplicate())
             {
                 EditorUtility.DisplayDialog("Save Graph", "Please resolve duplicate node names before saving.", "OK");
                 return; 
