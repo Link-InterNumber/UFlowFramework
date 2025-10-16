@@ -1,6 +1,5 @@
 using System.Collections;
 using UnityEngine;
-using Unity.VisualScripting;
 
 namespace PowerCellStudio
 {
@@ -73,7 +72,7 @@ namespace PowerCellStudio
             {
                 StopRumble();
             }
-            _RumbleCoroutine = CoroutineRunner.instance.StartCoroutine(RumbleRoutine(lowFrequency, highFrequency, duration));
+            _RumbleCoroutine = ApplicationManager.RunCoroutine(RumbleRoutine(lowFrequency, highFrequency, duration));
         }
 
         private static void StopRumble()

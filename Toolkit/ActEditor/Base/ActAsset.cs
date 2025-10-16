@@ -27,10 +27,24 @@ namespace PowerCellStudio
             }
             return true;
         }
-        
+
         public void Restart()
         {
             _time = 0f;
+        }
+
+        public void EvaluateAt(float time, ActRuntimePlayer target)
+        {
+            for (int i = 0; i < tracks.Count; i++)
+            {
+                var track = tracks[i];
+                for (int j = 0; j < track.clips.Count; j++)
+                {
+                    var clip = track.clips[j];
+                    clip.Simulate(target, _time);
+                }
+            }
+            _time = time;
         }
 
         private float _time;
@@ -50,18 +64,7 @@ namespace PowerCellStudio
                 {
                     var clip = track.clips[j];
                     maxTime = Mathf.Max(maxTime, clip.start + clip.length);
-                    if (_time < clip.start)
-                    {
-                        if (_time + dt >= clip.start)
-                            clip.OnStart(target);
-                        continue;
-                    }
-                    if (_time > clip.start + clip.length) continue;
-                    clip.DoAction(target, _time);
-                    if (_time + dt > clip.start + clip.length)
-                    {
-                        clip.OnEnd(target);
-                    }
+                    clip.Simulate(target, _time);
                 }
             }
             _time += dt;

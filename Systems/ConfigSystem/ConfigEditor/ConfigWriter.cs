@@ -504,7 +504,7 @@ namespace PowerCellStudio
             foreach (var (key, info) in _fieldMap)
             {
                 var typeName = info.IsList ? $"List<{info.typeName}>" : info.typeName;
-                _csFile.WriteLine($"[SerializeField]")
+                _csFile.WriteLine((info.IsList || info.typeName.Contains("[]")) ? "[SerializeField, SerializeReference]" : "[SerializeField]")
                     .WriteField(CsWriter.FieldSign.Private,
                         typeName,
                         $"_{info.fieldName}")

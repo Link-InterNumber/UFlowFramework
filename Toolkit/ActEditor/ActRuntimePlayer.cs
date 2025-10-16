@@ -1,5 +1,8 @@
 using UnityEngine;
 
-public class ActRuntimePlayer : MonoBehaviour
+namespace PowerCellStudio
 {
+    public class ActRuntimePlayer : MonoBehaviour
+    {
+    }
 }

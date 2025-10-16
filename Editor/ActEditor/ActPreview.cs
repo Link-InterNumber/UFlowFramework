@@ -16,8 +16,8 @@ namespace PowerCellStudio
         public ActRuntimePlayer Target { get; private set; }
 
         public bool IsPlaying { get; private set; }
-        public bool Loop { get; set; } = true;
-        public float Speed { get; set; } = 1f;
+        public bool Loop;
+        public float Speed = 1f;
         public float CurrentTime { get; private set; }
         public float Duration { get; private set; }
         
@@ -52,7 +52,6 @@ namespace PowerCellStudio
             UnloadAll();
 
             Asset = asset;
-            PrepareAll();
         }
 
         public void SetTarget(ActRuntimePlayer target)
@@ -64,14 +63,16 @@ namespace PowerCellStudio
             UnloadAll();
 
             Target = target;
-            PrepareAll();
         }
 
         public void Play()
         {
             if (Asset == null || Target == null) return;
             if (Speed <= 0f) Speed = 1f;
+            UnloadAll();
+            PrepareAll();
             IsPlaying = true;
+            CurrentTime = 0;
             Asset.Restart();
 #if UNITY_EDITOR
             _lastEditorTime = 0;
@@ -89,21 +90,14 @@ namespace PowerCellStudio
             EndAll();
         }
 
-        public void Seek(float time)
-        {
-            time = Mathf.Max(0f, time);
-            if (Duration > 0f && !Loop) time = Mathf.Min(time, Duration);
-            EvaluateAt(time, 0f);
-        }
-
         // 主评估：进入/离开片段并执行动作
-        private void EvaluateAt(float time, float dt)
+        public void EvaluateAt(float time)
         {
             CurrentTime = time;
             if (Asset == null || Target == null) return;
-            Asset.Simulate(dt, Target, out var isEnd);
-            if (isEnd && !Loop) IsPlaying = false;
-            else if (isEnd) Asset.Restart();
+            Asset.EvaluateAt(time, Target);
+            // if (isEnd && !Loop) IsPlaying = false;
+            // else if (isEnd) Asset.Restart();
         }
 
 #if UNITY_EDITOR
@@ -128,8 +122,12 @@ namespace PowerCellStudio
                 t = Mathf.Clamp(t, 0f, Mathf.Max(0.0001f, Duration));
                 IsPlaying = t < Duration;
             }
-
-            EvaluateAt(t, dt * Mathf.Max(0.0001f, Speed));
+            CurrentTime = t;
+            if (Asset == null || Target == null) return;
+            Asset.Simulate(dt, Target, out var isEnd);
+            if (isEnd && !Loop) IsPlaying = false;
+            else if (isEnd) Asset.Restart();
+            // EvaluateAt(t, dt * Mathf.Max(0.0001f, Speed));
         }
 #endif
 
@@ -170,7 +168,7 @@ namespace PowerCellStudio
             foreach (var c in Asset.tracks)
             {
                 foreach (var clip in c.clips)
-                    SafeOnEnd(clip);
+                    clip.Simulate(Target, 999999);
             }
         }
 
@@ -212,19 +210,6 @@ namespace PowerCellStudio
         //         Debug.LogException(ex);
         //     }
         // }
-
-        private void SafeOnEnd(ActClipData c)
-        {
-            if (c == null) return;
-            try
-            {
-                c.OnEnd(Target);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-            }
-        }
 
         private void SafeRelease(ActClipData c)
         {

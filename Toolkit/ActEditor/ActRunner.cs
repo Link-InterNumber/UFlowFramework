@@ -21,10 +21,16 @@ namespace PowerCellStudio
         private State _state = State.Empty;
         public State state => _state;
 
+        void OnDestroy()
+        {
+            Cancel();
+        }
+
         public void Play(string actPath, ActRuntimePlayer target)
         {
             if (_actAsset == null) return;
             _state = State.Loading;
+            _actRuntimePlayer = target;
             for (int i = 0; i < _actAsset.tracks.Count; i++)
             {
                 var track = _actAsset.tracks[i];
@@ -53,7 +59,8 @@ namespace PowerCellStudio
         public void Cancel()
         {
             if (_actAsset == null) return;
-            // Application.StartCoroutine(CancelRoutine(_actAsset, _actRuntimePlayer));
+            if (_actAsset && _actRuntimePlayer)
+                ApplicationManager.RunCoroutine(CancelRoutine(_actAsset, _actRuntimePlayer));
             _state = State.Empty;
             _actAsset = null;
             _actRuntimePlayer = null;

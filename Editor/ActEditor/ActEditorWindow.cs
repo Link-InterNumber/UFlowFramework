@@ -132,7 +132,7 @@ namespace PowerCellStudio
             {
                 _asset = (ActAsset)EditorGUILayout.ObjectField(_asset, typeof(ActAsset), false, GUILayout.Width(250));
                 _previewTarget = (ActRuntimePlayer)EditorGUILayout.ObjectField(_previewTarget, typeof(ActRuntimePlayer), true, GUILayout.Width(200));
-                if (_preview == null && _previewTarget && _asset )
+                if (_preview == null && _previewTarget && _asset)
                 {
                     _preview = new ActPreview(_asset, _previewTarget);
                 }
@@ -156,6 +156,7 @@ namespace PowerCellStudio
                 if (_preview != null)
                 {
                     _preview.Loop = GUILayout.Toggle(_preview.Loop, "Loop");
+                    GUILayout.Label($"Time: {_preview.CurrentTime:0.00}s", GUILayout.Width(100));
                     if (GUILayout.Button("Play", EditorStyles.toolbarButton, GUILayout.Width(50)))
                     {
                         _preview.Play();
@@ -178,7 +179,7 @@ namespace PowerCellStudio
                 {
                     _trackRenders = _asset.tracks.Select(o => new TrackRenderer(_asset, o)).ToList();
                 }
-                
+
 
                 GUILayout.FlexibleSpace();
                 //  GUILayout.Label($"Duration: {_asset.duration:0.00}s");
@@ -195,6 +196,7 @@ namespace PowerCellStudio
             }
         }
 
+        private bool onPreviewDraw;
         private void DrawTimeRuler(Rect rect)
         {
             EditorGUI.DrawRect(rect, new Color(0.15f, 0.15f, 0.15f));
@@ -223,6 +225,41 @@ namespace PowerCellStudio
 
                 if (major)
                     GUI.Label(new Rect(x + 2, body.y + 2, 40, 16), t.ToString("0.0") + "s", EditorStyles.miniLabel);
+            }
+            // 绘制一条线表示当前播放时间_preview.CurrentTime
+            if (_preview != null)
+            {
+                float x = body.x + _preview.CurrentTime * _pixelsPerSecond - _scroll.x;
+                if (x >= body.x && x <= body.xMax)
+                {
+                    // Handles.color = Color.red;
+                    // Handles.DrawLine(new Vector3(x, body.y), new Vector3(x, body.yMax));
+                    var drawRect = new Rect(x, body.y, 2, body.height);
+                    EditorGUI.DrawRect(drawRect, Color.red);
+                    EditorGUIUtility.AddCursorRect(drawRect, MouseCursor.ResizeHorizontal);
+                    var e = Event.current;
+                    if (e.type == EventType.MouseDown && drawRect.Contains(e.mousePosition))
+                    {
+                        onPreviewDraw = true;
+                        e.Use();
+                    }
+                    if (onPreviewDraw)
+                    {
+                        if (e.type == EventType.MouseDrag)
+                        {
+                            float t = (e.mousePosition.x - body.x + _scroll.x) / _pixelsPerSecond;
+                            t = Mathf.Clamp(t, 0f, Mathf.Max(_asset?.duration ?? totalTime, totalTime));
+                            _preview.EvaluateAt(t);
+                            e.Use();
+                        }
+                        else if (e.type == EventType.MouseUp)
+                        {
+                            onPreviewDraw = false;
+                            e.Use();
+                        }
+                    }
+
+                }
             }
         }
 
