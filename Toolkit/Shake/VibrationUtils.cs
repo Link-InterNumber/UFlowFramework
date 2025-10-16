@@ -1,4 +1,5 @@
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -79,7 +80,7 @@ namespace PowerCellStudio
         {
             if (_RumbleCoroutine != null)
             {
-                CoroutineRunner.instance.StopCoroutine(_RumbleCoroutine);
+                ApplicationManager.instance.StopCoroutine(_RumbleCoroutine);
                 _RumbleCoroutine = null;
             }
             var gamepads = UnityEngine.InputSystem.Gamepad.all;

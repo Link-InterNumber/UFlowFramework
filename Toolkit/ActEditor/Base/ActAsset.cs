@@ -35,6 +35,7 @@ namespace PowerCellStudio
 
         public void EvaluateAt(float time, ActRuntimePlayer target)
         {
+            if (tracks == null || tracks.Count == 0 || !target) return;
             for (int i = 0; i < tracks.Count; i++)
             {
                 var track = tracks[i];
@@ -50,7 +51,7 @@ namespace PowerCellStudio
         private float _time;
         public void Simulate(float dt, ActRuntimePlayer target, out bool isEnd)
         {
-            if (tracks == null || tracks.Count == 0)
+            if (tracks == null || tracks.Count == 0 || !target)
             {
                 isEnd = true;
                 return;

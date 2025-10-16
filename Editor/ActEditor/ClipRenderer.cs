@@ -29,7 +29,7 @@ namespace PowerCellStudio
         }
 
         // hasSelected 是输出参数，用于告诉 TrackRenderer 本行是否包含当前选中项
-        public void DrawClip(Rect trackRect, ref ActClipData selection, float pixelsPerSecond, ref Vector2 scroll, ref bool hasSelected)
+        public void DrawClip(Rect trackRect, ref ActClipData selection, float pixelsPerSecond, Vector2 scroll, ref bool hasSelected)
         {
             float x = trackRect.x + _clip.start * pixelsPerSecond - scroll.x;
             float w = Mathf.Max(_clip.length * pixelsPerSecond, 8f);

@@ -42,6 +42,7 @@ namespace PowerCellStudio
         private Quaternion _rotation;
         protected override void OnStart(ActRuntimePlayer target)
         {
+            if (!target) return;
             _sampleTarget = new GameObject($"[ActSample]{target.name}").transform;
             var startTime = lastTime < start ? 0 : _loadedClip.length;
             _loadedClip.SampleAnimation(_sampleTarget.gameObject, startTime);

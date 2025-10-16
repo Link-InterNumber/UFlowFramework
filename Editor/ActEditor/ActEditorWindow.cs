@@ -25,7 +25,7 @@ namespace PowerCellStudio
 
         #endregion
 
-        [MenuItem("Window/Act/Act Editor")]
+        [MenuItem("Tools/Act/Act Editor")]
         public static void Open()
         {
             GetWindow<ActEditorWindow>("Act Editor");
@@ -131,6 +131,24 @@ namespace PowerCellStudio
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
             {
                 _asset = (ActAsset)EditorGUILayout.ObjectField(_asset, typeof(ActAsset), false, GUILayout.Width(250));
+                if (_asset == null)
+                {
+                    // 创建按钮
+                    if (GUILayout.Button("Create", EditorStyles.toolbarButton, GUILayout.Width(50)))
+                    {
+                        string path = EditorUtility.SaveFilePanelInProject("Create New ActAsset", "New ActAsset", "asset", "Please enter a file name to save the act asset to");
+                        if (!string.IsNullOrEmpty(path))
+                        {
+                            var newAsset = CreateInstance<ActAsset>();
+                            AssetDatabase.CreateAsset(newAsset, path);
+                            AssetDatabase.SaveAssets();
+                            _asset = newAsset;
+                            EditorUtility.FocusProjectWindow();
+                            Selection.activeObject = newAsset;
+                        } 
+                    }
+                }
+                
                 _previewTarget = (ActRuntimePlayer)EditorGUILayout.ObjectField(_previewTarget, typeof(ActRuntimePlayer), true, GUILayout.Width(200));
                 if (_preview == null && _previewTarget && _asset)
                 {

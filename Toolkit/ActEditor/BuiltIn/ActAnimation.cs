@@ -44,7 +44,6 @@ namespace PowerCellStudio
         {
             var animator = target.GetComponent<Animator>();
             if (animator == null) return;
-            if (_loadedClip == null) return;
             if (sampleAnimation)
             {
                 animator.enabled = false;

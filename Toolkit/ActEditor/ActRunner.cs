@@ -66,7 +66,7 @@ namespace PowerCellStudio
             _actRuntimePlayer = null;
         }
 
-        private IEnumerable CancelRoutine(ActAsset actAsset, ActRuntimePlayer target)
+        private IEnumerator CancelRoutine(ActAsset actAsset, ActRuntimePlayer target)
         {
             while (!actAsset.IsReady())
             {

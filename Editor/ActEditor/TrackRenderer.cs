@@ -67,7 +67,7 @@ namespace PowerCellStudio
             // Clips
             foreach (var clip in _clipRenderers)
             {
-                clip.DrawClip(body, ref selection, pixelsPerSecond, ref scroll, ref hasSelected);
+                clip.DrawClip(body, ref selection, pixelsPerSecond, scroll, ref hasSelected);
             }
 
             // 右键菜单
@@ -98,7 +98,8 @@ namespace PowerCellStudio
                         {
                             Undo.RecordObject(_asset, "Add Clip");
                             var newClip = (ActClipData)System.Activator.CreateInstance(type);
-                            newClip.start = Mathf.Max(0f, scrollX / pixelsPerSecond);
+                            var startPos = e.mousePosition.x - body.x + scrollX;
+                            newClip.start = Mathf.Max(0f, startPos / pixelsPerSecond);
                             newClip.length = 1f;
                             _track.clips.Add(newClip);
                             EditorUtility.SetDirty(_asset);
