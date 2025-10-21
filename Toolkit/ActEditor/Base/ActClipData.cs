@@ -112,7 +112,7 @@ namespace PowerCellStudio
         /// </summary>
         /// <param name="target">中文: 运行时播放器目标。English: Runtime player target.</param>
         /// <param name="inEditor">中文: 是否在编辑器模式下。English: Whether running in editor mode.</param>
-        public abstract void Prepare(ActRuntimePlayer target, bool inEditor);
+        public abstract void Prepare(ActRuntimePlayer target, IAssetLoader assetloader, bool inEditor);
 
         /// <summary>
         /// 中文: ACT Asset被销毁时，释放该片段占用的资源（例如卸载引用、清理缓存）。

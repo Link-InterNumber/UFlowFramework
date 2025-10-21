@@ -142,7 +142,7 @@ namespace PowerCellStudio
                 {
                     try
                     {
-                        clip.Prepare(Target, true);
+                        clip.Prepare(Target, null, true);
                     }
                     catch (Exception ex)
                     {

@@ -8,7 +8,7 @@ namespace PowerCellStudio
 
     }
 
-    public class ActManager : TempMonoSingleton<ActManager>
+    public class TimelineACTManager : TempMonoSingleton<TimelineACTManager>
     {
         private LinkPool<TimelineActRunner> _runnerPool;
         private PlayableDirector _director;
@@ -19,7 +19,7 @@ namespace PowerCellStudio
             base.Init(data);
             _runnerPool = new LinkPool<TimelineActRunner>(() => new TimelineActRunner(), 5, 5);
             _director = gameObject.AddComponent<PlayableDirector>();
-            _loader = AssetUtils.SpawnLoader("ActManager");
+            _loader = AssetUtils.SpawnLoader("TimelineACTManager");
         }
 
         protected override void OnDestroy()

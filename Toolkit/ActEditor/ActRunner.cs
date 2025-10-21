@@ -3,6 +3,8 @@ using UnityEngine;
 
 namespace PowerCellStudio
 {
+    public delegate void ActEvent(ActRuntimePlayer target);
+
     public class ActRunner : MonoBehaviour
     {
         public bool ignoreTimeScale = false;
@@ -16,10 +18,16 @@ namespace PowerCellStudio
             Empty,
             Loading,
             Playing,
+            Pause,
         }
 
         private State _state = State.Empty;
         public State state => _state;
+
+        public ActEvent OnActPlayStart;
+        public ActEvent OnActPlayEnd;
+
+        private IAssetLoader _assetLoader;
 
         void OnDestroy()
         {
@@ -28,16 +36,26 @@ namespace PowerCellStudio
 
         public void Play(string actPath, ActRuntimePlayer target)
         {
-            if (_actAsset == null) return;
             _state = State.Loading;
+            if (_state != State.Empty)
+                Cancel();
+            if (_assetLoader != null) AssetUtils.DeSpawnLoader(_assetLoader);
+            _assetLoader = AssetUtils.SpawnLoader(gameObject.name);
             _actRuntimePlayer = target;
+            _assetLoader.LoadAsync<ActAsset>(actPath, OnActAssetLoaded);
+        }
+
+        private void OnActAssetLoaded(ActAsset actAsset)
+        {
+            _actAsset = actAsset;
+            if (_actAsset == null) return;
             for (int i = 0; i < _actAsset.tracks.Count; i++)
             {
                 var track = _actAsset.tracks[i];
                 for (int j = 0; j < track.clips.Count; j++)
                 {
                     var clip = track.clips[j];
-                    clip.Prepare(target, false);
+                    clip.Prepare(_actRuntimePlayer, _assetLoader, false);
                 }
             }
         }
@@ -54,11 +72,14 @@ namespace PowerCellStudio
                     clip.ReleaseAsset(target);
                 }
             }
+            OnActPlayEnd?.Invoke(target);
+            AssetUtils.DeSpawnLoader(_assetLoader);
+            _assetLoader = null;
         }
 
         public void Cancel()
         {
-            if (_actAsset == null) return;
+            if (_state == State.Empty) return;
             if (_actAsset && _actRuntimePlayer)
                 ApplicationManager.RunCoroutine(CancelRoutine(_actAsset, _actRuntimePlayer));
             _state = State.Empty;
@@ -66,9 +87,24 @@ namespace PowerCellStudio
             _actRuntimePlayer = null;
         }
 
+        public void Pause()
+        {
+            if (_actAsset == null) return;
+            if (_state == State.Pause || _state == State.Empty) return;
+            _state = State.Pause;
+        }
+
+        public void Resume()
+        {
+            if (_actAsset == null) return;
+            if (_state != State.Pause) return;
+            if (_actAsset.IsReady()) _state = State.Playing;
+            else _state = State.Loading;
+        }
+
         private IEnumerator CancelRoutine(ActAsset actAsset, ActRuntimePlayer target)
         {
-            while (!actAsset.IsReady())
+            while (actAsset == null || !actAsset.IsReady())
             {
                 yield return null;
             }
@@ -81,9 +117,14 @@ namespace PowerCellStudio
             switch (_state)
             {
                 case State.Empty:
+                case State.Pause:
                     break;
                 case State.Loading:
-                    if (_actAsset.IsReady()) _state = State.Playing;
+                    if (_actAsset != null && _actAsset.IsReady())
+                    {
+                        _state = State.Playing;
+                        OnActPlayStart?.Invoke(_actRuntimePlayer);
+                    }
                     break;
                 case State.Playing:
                     var dt = ignoreTimeScale ? Time.unscaledDeltaTime : Time.deltaTime;
