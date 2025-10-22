@@ -104,25 +104,70 @@ namespace PowerCellStudio
                 }
             }
 
-#if UNITY_STANDALONE_WIN
-            Parallel.ForEach(imageFiles, file =>
+            if (Application.platform == RuntimePlatform.WindowsEditor)
             {
-                string relativePath = file.Substring(sourceFolder.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                string saveDir = Path.Combine(targetFolder, Path.GetDirectoryName(relativePath));
-                string fileName = Path.GetFileNameWithoutExtension(file) + "_scaled" + Path.GetExtension(file);
-                string savePath = Path.Combine(saveDir, fileName);
-
-                if (File.Exists(savePath))
-                    return;
-
-                if (!Directory.Exists(saveDir))
-                    Directory.CreateDirectory(saveDir);
-
-                using (var srcImage = Image.FromFile(file))
+                Parallel.ForEach(imageFiles, file =>
                 {
-                    int newWidth = (int)(srcImage.Width * scalePercent / 100f);
-                    int newHeight = (int)(srcImage.Height * scalePercent / 100f);
+                    string relativePath = file.Substring(sourceFolder.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                    string saveDir = Path.Combine(targetFolder, Path.GetDirectoryName(relativePath));
+                    string fileName = Path.GetFileNameWithoutExtension(file) + "_scaled" + Path.GetExtension(file);
+                    string savePath = Path.Combine(saveDir, fileName);
 
+                    if (File.Exists(savePath))
+                        return;
+
+                    if (!Directory.Exists(saveDir))
+                        Directory.CreateDirectory(saveDir);
+
+                    using (var srcImage = Image.FromFile(file))
+                    {
+                        int newWidth = (int)(srcImage.Width * scalePercent / 100f);
+                        int newHeight = (int)(srcImage.Height * scalePercent / 100f);
+
+                        if (newWidth < textureMinSize || newHeight < textureMinSize)
+                        {
+                            // 直接拷贝原图
+                            File.Copy(file, Path.Combine(saveDir, Path.GetFileName(file)), true);
+                        }
+                        else
+                        {
+                            using (var newBmp = new Bitmap(newWidth, newHeight))
+                            using (var g = System.Drawing.Graphics.FromImage(newBmp))
+                            {
+                                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                                g.DrawImage(srcImage, 0, 0, newWidth, newHeight);
+
+                                if (file.EndsWith(".png"))
+                                    newBmp.Save(savePath, ImageFormat.Png);
+                                else
+                                    newBmp.Save(savePath, ImageFormat.Jpeg);
+                            }
+                        }
+                    }
+                });
+            }
+            else
+            {
+                // 非Windows平台，主线程用Unity API处理
+                foreach (string file in imageFiles)
+                {
+                    string relativePath = file.Substring(sourceFolder.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                    string saveDir = Path.Combine(targetFolder, Path.GetDirectoryName(relativePath));
+                    string fileName = Path.GetFileNameWithoutExtension(file) + "_scaled" + Path.GetExtension(file);
+                    string savePath = Path.Combine(saveDir, fileName);
+
+                    if (File.Exists(savePath))
+                        continue;
+
+                    if (!Directory.Exists(saveDir))
+                        Directory.CreateDirectory(saveDir);
+
+                    byte[] bytes = File.ReadAllBytes(file);
+                    Texture2D tex = new Texture2D(2, 2);
+                    tex.LoadImage(bytes);
+
+                    int newWidth = Mathf.RoundToInt(tex.width * scalePercent / 100f);
+                    int newHeight = Mathf.RoundToInt(tex.height * scalePercent / 100f);
                     if (newWidth < textureMinSize || newHeight < textureMinSize)
                     {
                         // 直接拷贝原图
@@ -130,67 +175,26 @@ namespace PowerCellStudio
                     }
                     else
                     {
-                        using (var newBmp = new Bitmap(newWidth, newHeight))
-                        using (var g = System.Drawing.Graphics.FromImage(newBmp))
-                        {
-                            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                            g.DrawImage(srcImage, 0, 0, newWidth, newHeight);
+                        RenderTexture rt = new RenderTexture(newWidth, newHeight, 0);
+                        rt.filterMode = FilterMode.Bilinear;
+                        UnityEngine.Graphics.Blit(tex, rt);
 
-                            if (file.EndsWith(".png"))
-                                newBmp.Save(savePath, ImageFormat.Png);
-                            else
-                                newBmp.Save(savePath, ImageFormat.Jpeg);
-                        }
+                        Texture2D newTexture = new Texture2D(rt.width, rt.height, tex.format, false);
+                        RenderTexture.active = rt;
+                        newTexture.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+                        newTexture.Apply();
+                        RenderTexture.active = null;
+
+                        byte[] outBytes = file.EndsWith(".png") ? newTexture.EncodeToPNG() : newTexture.EncodeToJPG();
+                        File.WriteAllBytes(savePath, outBytes);
+
+                        DestroyImmediate(newTexture);
+                        rt.Release();
                     }
+                    DestroyImmediate(tex);
                 }
-            });
-#else
-            // 非Windows平台，主线程用Unity API处理
-            foreach (string file in imageFiles)
-            {
-                string relativePath = file.Substring(sourceFolder.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                string saveDir = Path.Combine(targetFolder, Path.GetDirectoryName(relativePath));
-                string fileName = Path.GetFileNameWithoutExtension(file) + "_scaled" + Path.GetExtension(file);
-                string savePath = Path.Combine(saveDir, fileName);
-
-                if (File.Exists(savePath))
-                    continue;
-
-                if (!Directory.Exists(saveDir))
-                    Directory.CreateDirectory(saveDir);
-
-                byte[] bytes = File.ReadAllBytes(file);
-                Texture2D tex = new Texture2D(2, 2);
-                tex.LoadImage(bytes);
-
-                int newWidth = Mathf.RoundToInt(tex.width * scalePercent / 100f);
-                int newHeight = Mathf.RoundToInt(tex.height * scalePercent / 100f);
-                if (newWidth < textureMinSize || newHeight < textureMinSize)
-                {
-                    // 直接拷贝原图
-                    File.Copy(file, Path.Combine(saveDir, Path.GetFileName(file)), true);
-                }
-                else
-                {
-                    RenderTexture rt = new RenderTexture(newWidth, newHeight, 0);
-                    rt.filterMode = FilterMode.Bilinear;
-                    Graphics.Blit(tex, rt);
-
-                    Texture2D newTexture = new Texture2D(rt.width, rt.height, tex.format, false);
-                    RenderTexture.active = rt;
-                    newTexture.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
-                    newTexture.Apply();
-                    RenderTexture.active = null;
-
-                    byte[] outBytes = file.EndsWith(".png") ? newTexture.EncodeToPNG() : newTexture.EncodeToJPG();
-                    File.WriteAllBytes(savePath, outBytes);
-
-                    DestroyImmediate(newTexture);
-                    rt.Release();
-                }
-                DestroyImmediate(tex);
             }
-#endif
+
             AssetDatabase.Refresh();
             Debug.Log("Batch resize and save completed!");
         }
