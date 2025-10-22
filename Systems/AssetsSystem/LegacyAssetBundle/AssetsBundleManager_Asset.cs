@@ -46,32 +46,27 @@ namespace PowerCellStudio
             _preloadHandles.Add(path, loadAssetRequest);
         }
 
-        public LoaderYieldInstruction<T> LoadAsset<T>(string bundleName, string assetPath)
+        public T LoadAsset<T>(string bundleName, string assetPath)
             where T : Object
         {
-            if (_preloadHandles.ContainsKey(assetPath))
+            if (_preloadHandles.TryGetValue(assetPath, out var handle) && handle.isDone)
             {
-                var handle = _preloadHandles[assetPath];
                 _preloadHandles.Remove(assetPath);
-                return handle as LoaderYieldInstruction<T>;
+                var asset = handle.asset as T;
+                handle.Dispose();
+                return asset;
             }
 
-            var loadAssetRequest = new LoaderYieldInstruction<T>(assetPath);
             if (GetAssetBundle(bundleName, out var bundle))
             {
                 if (bundle == null)
                 {
-                    loadAssetRequest.SetAsset(null);
-                    return loadAssetRequest;
+                    return null;
                 }
                 var asset = bundle.LoadAsset<T>(assetPath);
-                loadAssetRequest.SetAsset(asset);
+                return asset;
             }
-            else
-            {
-                loadAssetRequest.SetAsset(null);
-            }
-            return loadAssetRequest;
+            return null;
         }
         
         public void LoadAssetAsync<T>(string bundleName, string assetPath, LoaderYieldInstruction<T> loadAssetRequest)

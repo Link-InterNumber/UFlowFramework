@@ -60,6 +60,7 @@ namespace PowerCellStudio
             //     onLoadFailed?.Invoke(_assetPath);
             // else 
             _onLoadCompleted?.Invoke(loadedAsset, _assetPath);
+            _onLoadCompleted = null;
 #if !UNITY_WEBGL
             _taskCompletionSource?.SetResult(loadedAsset);
 #endif

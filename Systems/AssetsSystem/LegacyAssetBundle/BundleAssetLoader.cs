@@ -340,7 +340,7 @@ namespace PowerCellStudio
             }
 #endif
             var bundleName = GetBundleName(address);
-            return _assetsBundleManager.LoadAsset<T>(bundleName, address).asset;
+            return _assetsBundleManager.LoadAsset<T>(bundleName, address);
         }
 #endif
 

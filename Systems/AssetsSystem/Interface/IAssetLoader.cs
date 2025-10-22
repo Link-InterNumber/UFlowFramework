@@ -20,7 +20,9 @@ namespace PowerCellStudio
         
         public void LoadAsync<T>(string address, Action<T> onSuccess, Action onFail = null) where T : UnityEngine.Object;
 
+#if !UNITY_WEBGL
         public Task<T> LoadTask<T>(string address) where T : UnityEngine.Object;
+#endif
 
         public LoaderYieldInstruction<T> LoadAsYieldInstruction<T>(string address) where T : UnityEngine.Object;
 

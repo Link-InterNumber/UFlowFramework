@@ -23,7 +23,7 @@ namespace PowerCellStudio
 
         private AnimationClip _loadedClip;
 
-        public override void Prepare(ActRuntimePlayer target, bool inEditor)
+        public override void Prepare(ActRuntimePlayer target, IAssetLoader assetloader, bool inEditor)
         {
             if (string.IsNullOrEmpty(clip.assetPath)) return;
             if (inEditor)
