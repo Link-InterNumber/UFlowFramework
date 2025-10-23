@@ -14,6 +14,14 @@ namespace PowerCellStudio
         private Dictionary<string, BundleInfo> _clientManifest;
         private string _remotePath = "http://localhost:8000/StreamingAssets/";
 
+        private string BuildRemoteUrl(string fileName)
+        {
+            var safeName = Path.GetFileName(fileName);
+            // 基础防注入：只允许文件名，不允许路径分隔符
+            if (string.IsNullOrEmpty(safeName) || safeName != fileName) return null;
+            return $"{_remotePath.TrimEnd('/')}/{Uri.EscapeUriString(safeName)}";
+        }
+
         private bool IsBundleNeedLoadFromRemote(string bundleName)
         {
             if (_remoteManifest == null || _remoteManifest.Count == 0) return false;
@@ -47,7 +55,7 @@ namespace PowerCellStudio
             try
             {
                 var data = JsonConvert.DeserializeObject<RemoteManifest>(json);
-                result = data?.GetMap()??null;
+                result = data?.GetMap() ?? null;
             }
             catch (Exception e)
             {
@@ -69,27 +77,29 @@ namespace PowerCellStudio
                 result = null;
             }
         }
-        
+
         private IEnumerator GetServerRemoteManifest()
         {
 #if UNITY_EDITOR
             var url = "file://" + Path.Combine(Application.streamingAssetsPath, "remoteManifest.json");
 #else
-            var url = Path.Combine(_remotePath, "remoteManifest.json");
+            var url = BuildRemoteUrl("remoteManifest.json");
 #endif
             UnityWebRequest request = UnityWebRequest.Get(url);
+            request.timeout = 30;
             yield return request.SendWebRequest();
             if (request.result == UnityWebRequest.Result.Success)
             {
                 string json = request.downloadHandler.text;
                 var data = JsonConvert.DeserializeObject<RemoteManifest>(json);
-                _remoteManifest =  data?.GetMap()??null;
+                _remoteManifest = data?.GetMap() ?? null;
             }
             else
             {
                 AssetLog.LogError("下载remoteManifest.json失败: " + request.error);
             }
             if (_remoteManifest == null) _remoteManifest = new Dictionary<string, BundleInfo>();
+            request.Dispose();
         }
 
         private void SaveRemoteManifest(Dictionary<string, BundleInfo> data)
@@ -113,11 +123,11 @@ namespace PowerCellStudio
 
         private IEnumerator LoadRemoteBundle(string bundleName, LoaderYieldInstruction<AssetBundle> handler = null)
         {
-            var url = Path.Combine(_remotePath, bundleName);
+            var url = BuildRemoteUrl(bundleName);
             var webRequest = UnityWebRequestAssetBundle.GetAssetBundle(url);
             yield return webRequest.SendWebRequest();
             var bundle = DownloadHandlerAssetBundle.GetContent(webRequest);
-            if (!bundle) 
+            if (!bundle)
             {
                 webRequest.Dispose();
                 if (handler == null) yield break;
