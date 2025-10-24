@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
+
 #if !UNITY_WEBGL
 using System.Threading.Tasks;
 #endif
-using UnityEngine;
 
 namespace PowerCellStudio
 {
@@ -10,9 +12,10 @@ namespace PowerCellStudio
     {
         public bool isDone { get; }
     }
-    
+
     public delegate void OnLoadCompleted<T>(T asset, string assetPath);
-    // public delegate void OnLoadFailed(string assetPath);
+    public delegate void OnLoadSuccess<T>(T asset);
+    public delegate void OnLoadFailed();
 
     public class LoaderYieldInstruction<T> : CustomYieldInstruction, ILoaderYieldInstruction
         where T : class
@@ -25,7 +28,18 @@ namespace PowerCellStudio
         private TaskCompletionSource<T> _taskCompletionSource;
 #endif
         private event OnLoadCompleted<T> _onLoadCompleted;
-        // public event OnLoadFailed onLoadFailed;
+        private event OnLoadSuccess<T> _onLoadSuccess;
+        private event OnLoadFailed _onLoadFailed;
+
+//         internal void Reset(string assetPath)
+//         {
+//             _assetPath = assetPath;
+//             isDone = false;
+//             asset = null;
+// #if !UNITY_WEBGL
+//             _taskCompletionSource = new TaskCompletionSource<T>();
+// #endif
+//         }
 
         public LoaderYieldInstruction(string assetPath)
         {
@@ -38,7 +52,7 @@ namespace PowerCellStudio
         }
 
 #if !UNITY_WEBGL
-        public Task<T> Task => _taskCompletionSource?.Task??null;
+        public Task<T> Task => _taskCompletionSource?.Task ?? null;
 #endif
 
         public void OnLoadCompleted(OnLoadCompleted<T> callback)
@@ -51,16 +65,41 @@ namespace PowerCellStudio
             _onLoadCompleted += callback;
         }
 
+        public void OnLoadSuccess(OnLoadSuccess<T> callback)
+        {
+            if (isDone)
+            {
+                if (asset != null)
+                    callback?.Invoke(asset);
+                return;
+            }
+            _onLoadSuccess += callback;
+        }
+
+        public void OnLoadFailed(OnLoadFailed callback)
+        {
+            if (isDone)
+            {
+                if (asset == null)
+                    callback?.Invoke();
+                return;
+            }
+            _onLoadFailed += callback;
+        }
+
         public void SetAsset(T loadedAsset)
         {
             if (isDone) return;
             isDone = true;
             asset = loadedAsset;
-            // if(asset == null)
-            //     onLoadFailed?.Invoke(_assetPath);
-            // else 
             _onLoadCompleted?.Invoke(loadedAsset, _assetPath);
+            if (asset == null)
+                _onLoadFailed?.Invoke();
+            else
+                _onLoadSuccess?.Invoke(loadedAsset);
             _onLoadCompleted = null;
+            _onLoadSuccess = null;
+            _onLoadFailed = null;
 #if !UNITY_WEBGL
             _taskCompletionSource?.SetResult(loadedAsset);
 #endif
@@ -70,8 +109,9 @@ namespace PowerCellStudio
         {
             isDone = true;
             asset = null;
-            // onLoadFailed = null;
             _onLoadCompleted = null;
+            _onLoadSuccess = null;
+            _onLoadFailed = null;
             _assetPath = null;
 #if !UNITY_WEBGL
             _taskCompletionSource = null;
