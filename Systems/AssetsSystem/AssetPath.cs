@@ -9,7 +9,7 @@ namespace PowerCellStudio
     {
         public string assetPath;
 
-        public void LoadAsync(IAssetLoader assetLoader, Action<T> onSuccess)
+        public void LoadAsync(IAssetLoader assetLoader, OnLoadSuccess<T> onSuccess)
         {
             if (assetLoader == null || string.IsNullOrEmpty(assetPath)) return;
             assetLoader.LoadAsync<T>(assetPath, onSuccess);
