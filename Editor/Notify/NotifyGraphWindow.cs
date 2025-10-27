@@ -28,6 +28,7 @@ namespace PowerCellStudio
             window.titleContent = new GUIContent("Notify Graph");
         }
 
+        private string _findNodeName = "";
         private void OnEnable()
         {
             var nodeRelations = new List<(string child, string parent)>();
@@ -111,6 +112,17 @@ namespace PowerCellStudio
             // 检查按钮
             var checkButton = new Button(() => _graphView.CheckNodeDuplicate()) { text = "Check Node" };
             toolbar.Add(checkButton);
+            // 查找按钮
+            var findButton = new Button(() => _graphView.FindNodeByNamePrompt(_findNodeName)) { text = "Find Node" };
+            toolbar.Add(findButton);
+            var findTextField = new TextField();
+            findTextField.style.minWidth = 200;
+            findTextField.RegisterValueChangedCallback(evt =>
+            {
+                _findNodeName = evt.newValue;
+            });
+            toolbar.Add(findTextField);
+
             rootVisualElement.Add(toolbar);
 
             // 根据节点关系创建节点并连接
