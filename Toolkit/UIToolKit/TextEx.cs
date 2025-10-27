@@ -50,13 +50,12 @@ namespace PowerCellStudio
             if (param != null && param.Length > 0)
             {
                 _paramCache = param;
-                text = string.Format(LocalizationManager.instance.GetString(key), param);
             }
             else
             {
                 _paramCache = null;
-                text = LocalizationManager.instance.GetString(key);
             }
+            SetLocalizedText();
             if(_addListener) return;
             EventManager.instance.onLanguageChange.AddListener(OnLocalChange);
             _addListener = true;
@@ -72,14 +71,14 @@ namespace PowerCellStudio
 #if UNITY_EDITOR
             if(!Application.isPlaying) return;
 #endif
-            if (_paramCache != null && _paramCache.Length > 0)
+            if (!LocalizationManager.instance.TryGetString(localizationKey, out var localizedText, _paramCache))
             {
-                text = string.Format(LocalizationManager.instance.GetString(localizationKey), _paramCache);
+#if UNITY_EDITOR
+                text = $"[N/A]{localizationKey}";
+#endif
+                return;
             }
-            else
-            {
-                text = LocalizationManager.instance.GetString(localizationKey);
-            }
+            text = localizedText;
         }
     }
 }
