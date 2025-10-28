@@ -1,6 +1,6 @@
 using System.Collections;
-using UnityEngine;
 using Unity.VisualScripting;
+using UnityEngine;
 
 namespace PowerCellStudio
 {
@@ -73,14 +73,14 @@ namespace PowerCellStudio
             {
                 StopRumble();
             }
-            _RumbleCoroutine = CoroutineRunner.instance.StartCoroutine(RumbleRoutine(lowFrequency, highFrequency, duration));
+            _RumbleCoroutine = ApplicationManager.RunCoroutine(RumbleRoutine(lowFrequency, highFrequency, duration));
         }
 
         private static void StopRumble()
         {
             if (_RumbleCoroutine != null)
             {
-                CoroutineRunner.instance.StopCoroutine(_RumbleCoroutine);
+                ApplicationManager.instance.StopCoroutine(_RumbleCoroutine);
                 _RumbleCoroutine = null;
             }
             var gamepads = UnityEngine.InputSystem.Gamepad.all;

@@ -38,17 +38,20 @@ namespace PowerCellStudio
                 _emptyCount++;
                 return;
             }
-            AddWaitingCount();
             var showWaiting = _showWaiting || (maskWindowData?.showWaiting ?? false);
             goWaiting.SetActive(showWaiting);
             if (maskWindowData.canClose != null)
             {
+                AddWaitingCount();
                 _waitingQueue.Enqueue(maskWindowData.canClose);
             }
             if (maskWindowData.yieldInstruction != null)
             {
+                AddWaitingCount();
                 ApplicationManager.RunCoroutine(Wait(maskWindowData.yieldInstruction));
             }
+            if (maskWindowData.canClose == null && maskWindowData.yieldInstruction == null)
+                _emptyCount++;
         }
         
         private void AddWaitingCount()
@@ -100,7 +103,7 @@ namespace PowerCellStudio
         bool IUIComponent.Close()
         {
             _emptyCount--;
-            if (_waitingCount || _emptyCount > 0)
+            if (_waitingCount || _emptyCount)
             {
                 return false;
             }

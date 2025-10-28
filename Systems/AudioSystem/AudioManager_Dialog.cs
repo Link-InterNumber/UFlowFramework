@@ -10,10 +10,7 @@ namespace PowerCellStudio
         public void PlayDialog(string clipRef, Action callback = null)
         {
             if(string.IsNullOrEmpty(clipRef)) return;
-            if (_dialogPlayer == null)
-            {
-                _dialogPlayer = DialogPlayer.Create(transform, "DialogPlayer");
-            }
+            CheckPlayer(AudioSourceType.Dialog);
             _dialogPlayer.PlayDialog(clipRef, callback);
         }
 

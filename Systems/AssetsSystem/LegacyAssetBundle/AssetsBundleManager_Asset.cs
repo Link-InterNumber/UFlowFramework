@@ -40,40 +40,35 @@ namespace PowerCellStudio
         {
             if (_preloadHandles == null) _preloadHandles = new Dictionary<string, LoaderYieldInstruction<Object>>();
             if (_preloadHandles.ContainsKey(path)) return;
-            var loadAssetRequest = new LoaderYieldInstruction<Object>(path);
+            var loadAssetRequest = AssetUtils.GetLoadHandler<Object>(path);
             var bundleName = GetBundleNameByAsset(path);
             LoadAssetAsync<Object>(bundleName, path, loadAssetRequest);
             _preloadHandles.Add(path, loadAssetRequest);
         }
 
-        public LoaderYieldInstruction<T> LoadAsset<T>(string bundleName, string assetPath)
+        public T LoadAsset<T>(string bundleName, string assetPath)
             where T : Object
         {
-            if (_preloadHandles.ContainsKey(assetPath))
+            if (_preloadHandles.TryGetValue(assetPath, out var handle) && handle.isDone)
             {
-                var handle = _preloadHandles[assetPath];
                 _preloadHandles.Remove(assetPath);
-                return handle as LoaderYieldInstruction<T>;
+                var asset = handle.asset as T;
+                AssetUtils.ReleaseLoadHandler<T>(handle);
+                return asset;
             }
 
-            var loadAssetRequest = new LoaderYieldInstruction<T>(assetPath);
             if (GetAssetBundle(bundleName, out var bundle))
             {
                 if (bundle == null)
                 {
-                    loadAssetRequest.SetAsset(null);
-                    return loadAssetRequest;
+                    return null;
                 }
                 var asset = bundle.LoadAsset<T>(assetPath);
-                loadAssetRequest.SetAsset(asset);
+                return asset;
             }
-            else
-            {
-                loadAssetRequest.SetAsset(null);
-            }
-            return loadAssetRequest;
+            return null;
         }
-        
+
         public void LoadAssetAsync<T>(string bundleName, string assetPath, LoaderYieldInstruction<T> loadAssetRequest)
             where T : Object
         {
@@ -85,6 +80,7 @@ namespace PowerCellStudio
                 if (handle.isDone)
                 {
                     loadAssetRequest.SetAsset(handle.asset as T);
+                    AssetUtils.ReleaseLoadHandler<T>(handle);
                 }
                 else
                 {

@@ -18,14 +18,14 @@ namespace PowerCellStudio
         
         public bool IsLoading(string address);
         
-        public void LoadAsync<T>(string address, Action<T> onSuccess, Action onFail = null) where T : UnityEngine.Object;
+        public void LoadAsync<T>(string address, OnLoadSuccess<T> onSuccess, OnLoadFailed onFail = null) where T : UnityEngine.Object;
 
         public Task<T> LoadTask<T>(string address) where T : UnityEngine.Object;
 
         public LoaderYieldInstruction<T> LoadAsYieldInstruction<T>(string address) where T : UnityEngine.Object;
 
-        public void AsyncLoadNInstantiate(string address, Action<GameObject> onSuccess, Action onFail = null);
+        public void AsyncLoadNInstantiate(string address, OnLoadSuccess<GameObject> onSuccess, OnLoadFailed onFail = null);
         
-        public void AsyncLoadNInstantiate(string address, Transform parent, Action<GameObject> onSuccess, Action onFail = null);
+        public void AsyncLoadNInstantiate(string address, Transform parent, OnLoadSuccess<GameObject> onSuccess, OnLoadFailed onFail = null);
     }
 }

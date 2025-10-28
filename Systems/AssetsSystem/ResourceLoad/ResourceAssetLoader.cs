@@ -59,7 +59,7 @@ namespace PowerCellStudio
             return _waitForLoaded.Contains(address);
         }
 
-        public void LoadAsync<T>(string address, Action<T> onSuccess, Action onFail = null) where T : Object
+        public void LoadAsync<T>(string address, OnLoadSuccess<T> onSuccess, OnLoadFailed onFail = null) where T : Object
         {
             if(_disposed) return;
             // 从resources文件夹中异步加载资源
@@ -146,7 +146,7 @@ namespace PowerCellStudio
             return instruction;
         }
 
-        public void AsyncLoadNInstantiate(string address, Action<GameObject> onSuccess, Action onFail = null)
+        public void AsyncLoadNInstantiate(string address, OnLoadSuccess<GameObject> onSuccess, OnLoadFailed onFail = null)
         {
             if(_disposed) return;
             var assetName = Path.GetFileNameWithoutExtension(address);
@@ -180,7 +180,7 @@ namespace PowerCellStudio
             };
         }
 
-        public void AsyncLoadNInstantiate(string address, Transform parent, Action<GameObject> onSuccess, Action onFail = null)
+        public void AsyncLoadNInstantiate(string address, Transform parent, OnLoadSuccess<GameObject> onSuccess, OnLoadFailed onFail = null)
         {
             if(_disposed) return;
             var assetName = Path.GetFileNameWithoutExtension(address);

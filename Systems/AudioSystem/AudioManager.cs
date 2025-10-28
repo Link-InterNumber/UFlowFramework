@@ -33,6 +33,31 @@ namespace PowerCellStudio
             base.Deinit();
         }
 
+        private void CheckPlayer(AudioSourceType type)
+        {
+            switch (type)
+            {
+                case AudioSourceType.Music:
+                    if (_musicPlayer != null) break;
+                    _musicPlayer = MusicAudioSourcePlayer.Create(transform, "MusicPlayer");
+                    break;
+                case AudioSourceType.Ambience:
+                    if (_ambiencePlayer != null) break;
+                    _ambiencePlayer = MusicAudioSourcePlayer.Create(transform, "AmbiencePlayer");
+                    break;
+                case AudioSourceType.UIEffect:
+                    break;
+                case AudioSourceType.Effect3D:
+                    break;
+                case AudioSourceType.Dialog:
+                    if (_dialogPlayer != null) break;
+                    _dialogPlayer = DialogPlayer.Create(transform, "DialogPlayer");
+                    break;
+                default:
+                    break;
+            }
+        }
+
         /// <summary>
         /// 获取指定类型音频的当前音量。
         /// Get the current volume of the specified audio source type.
@@ -42,6 +67,7 @@ namespace PowerCellStudio
         /// <returns>当前音量值 / Current volume value</returns>
         public float GetVolume(AudioSourceType type, bool isReal = false)
         {
+            CheckPlayer(type);
             switch (type)
             {
                 case AudioSourceType.Music:
@@ -68,6 +94,7 @@ namespace PowerCellStudio
         /// <param name="transferTime">过渡时间 / Transition duration</param>
         public void SetVolume(AudioSourceType type, float newValue, float transferTime = 0.3f)
         {
+            CheckPlayer(type);
             var v = Mathf.Clamp01(newValue);
             switch (type)
             {
@@ -99,6 +126,7 @@ namespace PowerCellStudio
         /// <returns>最大音量值 / Maximum volume value</returns>
         public float GetMaxVolume(AudioSourceType type)
         {
+            CheckPlayer(type);
             switch (type)
             {
                 case AudioSourceType.Music:
@@ -124,6 +152,7 @@ namespace PowerCellStudio
         /// <param name="newValue">新的最大音量值 / New maximum volume value</param>
         public void SetMaxVolume(AudioSourceType type, float newValue)
         {
+            CheckPlayer(type);
             var v = Mathf.Clamp01(newValue);
             switch (type)
             {
@@ -155,6 +184,7 @@ namespace PowerCellStudio
         /// <returns>是否静音 / Whether it is muted</returns>
         public bool IsMute(AudioSourceType type)
         {
+            CheckPlayer(type);
             switch (type)
             {
                 case AudioSourceType.Music:
@@ -180,6 +210,7 @@ namespace PowerCellStudio
         /// <param name="transferDuration">静音过渡时间 / Muting transition duration</param>
         public void Mute(AudioSourceType type, float transferDuration)
         {
+            CheckPlayer(type);
             switch (type)
             {
                 case AudioSourceType.Music:
@@ -210,6 +241,7 @@ namespace PowerCellStudio
         /// <param name="transferDuration">取消静音过渡时间 / Unmuting transition duration</param>
         public void Unmute(AudioSourceType type, float transferDuration)
         {
+            CheckPlayer(type);
             switch (type)
             {
                 case AudioSourceType.Music:

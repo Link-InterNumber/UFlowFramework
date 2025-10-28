@@ -59,10 +59,12 @@ namespace PowerCellStudio
             if (_stringTable == null) return "N/A";
             var entry = _stringTable.GetEntry(key);
             if (entry == null) return key;
-            return string.Format(entry.GetLocalizedString(), param);
+            if (param == null || param.Length == 0)
+                return entry.GetLocalizedString();
+            return string.Format(entry.GetLocalizedString(),param);
         }
         
-        public bool TryGetString(string key, out string result)
+        public bool TryGetString(string key, out string result, params object[] param)
         {
             if (_stringTable == null)
             {
@@ -70,7 +72,15 @@ namespace PowerCellStudio
                 return false;
             }
             var entry = _stringTable.GetEntry(key);
-            result = entry?.GetLocalizedString() ?? key;
+            var entryStr = entry?.GetLocalizedString() ?? key;
+            if (param == null || param.Length == 0)
+            {
+                result = entryStr;
+            }
+            else
+            {
+                result = string.Format(entryStr, param);
+            }
             return entry != null;
         }
         

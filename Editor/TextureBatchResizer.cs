@@ -3,6 +3,12 @@
 using UnityEngine;
 using UnityEditor;
 using System.IO;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+#if UNITY_STANDALONE_WIN
+using System.Drawing;
+using System.Drawing.Imaging;
+#endif
 
 namespace PowerCellStudio
 {
@@ -19,14 +25,12 @@ namespace PowerCellStudio
             GetWindow(typeof(TextureBatchResizer), false, "Batch Resize and Save Images");
         }
 
-        // 打开窗口时加载上次的设置
         void OnEnable()
         {
             sourceFolder = EditorPrefs.GetString("TextureBatchResizer_SourceFolder", "");
             targetFolder = EditorPrefs.GetString("TextureBatchResizer_TargetFolder", "Assets/ResizedImages");
         }
 
-        // 关闭窗口时保存当前设置
         void OnDisable()
         {
             EditorPrefs.SetString("TextureBatchResizer_SourceFolder", sourceFolder);
@@ -47,7 +51,7 @@ namespace PowerCellStudio
                 }
             }
             EditorGUILayout.EndHorizontal();
-            
+
             EditorGUILayout.BeginHorizontal();
             targetFolder = EditorGUILayout.TextField("Target Folder (Assets path)", targetFolder);
             if (GUILayout.Button("Browse", GUILayout.MaxWidth(80)))
@@ -91,9 +95,61 @@ namespace PowerCellStudio
         void ProcessImages()
         {
             string[] files = Directory.GetFiles(sourceFolder, "*.*", SearchOption.AllDirectories);
+            var imageFiles = new List<string>();
             foreach (string file in files)
             {
                 if (file.EndsWith(".png") || file.EndsWith(".jpg") || file.EndsWith(".jpeg"))
+                {
+                    imageFiles.Add(file);
+                }
+            }
+
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+            {
+                Parallel.ForEach(imageFiles, file =>
+                {
+                    string relativePath = file.Substring(sourceFolder.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                    string saveDir = Path.Combine(targetFolder, Path.GetDirectoryName(relativePath));
+                    string fileName = Path.GetFileNameWithoutExtension(file) + "_scaled" + Path.GetExtension(file);
+                    string savePath = Path.Combine(saveDir, fileName);
+
+                    if (File.Exists(savePath))
+                        return;
+
+                    if (!Directory.Exists(saveDir))
+                        Directory.CreateDirectory(saveDir);
+
+                    using (var srcImage = Image.FromFile(file))
+                    {
+                        int newWidth = (int)(srcImage.Width * scalePercent / 100f);
+                        int newHeight = (int)(srcImage.Height * scalePercent / 100f);
+
+                        if (newWidth < textureMinSize || newHeight < textureMinSize)
+                        {
+                            // 直接拷贝原图
+                            File.Copy(file, Path.Combine(saveDir, Path.GetFileName(file)), true);
+                        }
+                        else
+                        {
+                            using (var newBmp = new Bitmap(newWidth, newHeight))
+                            using (var g = System.Drawing.Graphics.FromImage(newBmp))
+                            {
+                                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                                g.DrawImage(srcImage, 0, 0, newWidth, newHeight);
+
+                                if (file.EndsWith(".png"))
+                                    newBmp.Save(savePath, ImageFormat.Png);
+                                else
+                                    newBmp.Save(savePath, ImageFormat.Jpeg);
+                            }
+                        }
+                    }
+                });
+            }
+            else
+            {
+                // 非Windows平台，主线程用Unity API处理
+                foreach (string file in imageFiles)
                 {
                     string relativePath = file.Substring(sourceFolder.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
                     string saveDir = Path.Combine(targetFolder, Path.GetDirectoryName(relativePath));
@@ -114,35 +170,31 @@ namespace PowerCellStudio
                     int newHeight = Mathf.RoundToInt(tex.height * scalePercent / 100f);
                     if (newWidth < textureMinSize || newHeight < textureMinSize)
                     {
-                        // Copy original image directly
+                        // 直接拷贝原图
                         File.Copy(file, Path.Combine(saveDir, Path.GetFileName(file)), true);
                     }
                     else
                     {
-                        // Create RenderTexture
                         RenderTexture rt = new RenderTexture(newWidth, newHeight, 0);
                         rt.filterMode = FilterMode.Bilinear;
-                        // Use Graphics.Blit for scaling and copying
-                        Graphics.Blit(tex, rt);
+                        UnityEngine.Graphics.Blit(tex, rt);
 
-                        // Read from RenderTexture to new Texture2D
                         Texture2D newTexture = new Texture2D(rt.width, rt.height, tex.format, false);
                         RenderTexture.active = rt;
                         newTexture.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
                         newTexture.Apply();
                         RenderTexture.active = null;
 
-                        // Write to disk
                         byte[] outBytes = file.EndsWith(".png") ? newTexture.EncodeToPNG() : newTexture.EncodeToJPG();
                         File.WriteAllBytes(savePath, outBytes);
 
-                        // Release intermediate files
                         DestroyImmediate(newTexture);
                         rt.Release();
                     }
                     DestroyImmediate(tex);
                 }
             }
+
             AssetDatabase.Refresh();
             Debug.Log("Batch resize and save completed!");
         }
@@ -157,7 +209,7 @@ namespace PowerCellStudio
                 {
                     var filaName = Path.GetFileNameWithoutExtension(file);
                     if (!filaName.Contains("_scaled")) continue;
-                    
+
                     string assetPath = file.Replace(Application.dataPath, "Assets").Replace("\\", "/");
                     TextureImporter importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
                     if (importer == null) continue;

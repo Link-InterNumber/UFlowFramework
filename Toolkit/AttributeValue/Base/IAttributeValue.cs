@@ -13,7 +13,7 @@ namespace PowerCellStudio
         public T Calculate();
         public T GetCurrent();
         public T GetOrigin();
-        public bool Push(string tag, Func<T, T, T> func);
+        public bool Push(string tag, AttributeValueChange<T> func);
         public void Remove(string tag);
     }
 }

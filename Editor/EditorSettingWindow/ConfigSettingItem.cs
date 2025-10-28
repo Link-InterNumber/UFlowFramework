@@ -74,6 +74,7 @@ namespace PowerCellStudio
             {
                 SaveData();
                 ConfigMenu.CreateConfigAsset();
+                ConfigMenu.CreateLocalizationCsv();
             }
             GUILayout.Space(10);
             if (GUILayout.Button("Delete Config Assets"))
@@ -85,6 +86,7 @@ namespace PowerCellStudio
             {
                 ConfigMenu.DeleteConfigAsset();
                 ConfigMenu.CreateConfigAssetByForce();
+                ConfigMenu.CreateLocalizationCsv();
             }
             GUILayout.Space(10);
             if (GUILayout.Button("Create Localization csv"))

@@ -302,13 +302,19 @@ namespace PowerCellStudio
                 }
                 case ConstSetting.ConfigSaveMode.Json:
                 {
-                    var textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
+                    var fullPath = Path.GetFullPath(path);
+                    if (!File.Exists(fullPath))
+                    {
+                        ConfigLog.LogError($"Cannot find asset at path {path}");
+                        return null;
+                    }
+                    var textAsset = File.ReadAllText(fullPath, Encoding.UTF8);
                     if (textAsset == null)
                     {
                         ConfigLog.LogError($"Cannot find asset at path {path}");
                         return null;
                     }
-                    var json = EncryptUtils.AESDecrypt(textAsset.text, ConstSetting.FileEncryptionKey);
+                    var json = EncryptUtils.AESDecrypt(textAsset, ConstSetting.FileEncryptionKey);
                     var typeName = Path.GetFileNameWithoutExtension(path);
                     // typeName = typeName.Replace("Assets/ConfigAsset/", "");
                     typeName = typeName.Remove(typeName.Length - 5, 5);
@@ -319,13 +325,19 @@ namespace PowerCellStudio
                 }
                 case ConstSetting.ConfigSaveMode.Binary:
                 {
-                    var textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
-                    if (textAsset == null)
+                    var fullPath = Path.GetFullPath(path);
+                    if (!File.Exists(fullPath))
                     {
                         ConfigLog.LogError($"Cannot find asset at path {path}");
                         return null;
                     }
-                    var bytes = EncryptUtils.AESDecrypt(textAsset.bytes, ConstSetting.FileEncryptionKey);
+                    var textBytes = File.ReadAllBytes(fullPath); // AssetDatabase.LoadAssetAtPath<TextAsset>(path);
+                    if (textBytes == null)
+                    {
+                        ConfigLog.LogError($"Cannot find asset at path {path}");
+                        return null;
+                    }
+                    var bytes = EncryptUtils.AESDecrypt(textBytes, ConstSetting.FileEncryptionKey);
                     using MemoryStream stream = new MemoryStream(bytes);
                     BinaryFormatter formatter = new BinaryFormatter();
                     var deserializeObj = formatter.Deserialize(stream);
@@ -348,26 +360,37 @@ namespace PowerCellStudio
             try
             {
                 var assetPath = EditorPrefs.GetString(ConfigSettingWindow.SaveKey.assetFilePath, "Assets/ConfigAsset/");
-                var assetType = "ScriptableObject";
+                var extension = ".asset";
                 switch (ConstSetting.ConfigConfigSaveMode)
                 {
                     case ConstSetting.ConfigSaveMode.ScriptableObject:
                         break;
                     case ConstSetting.ConfigSaveMode.Binary:
+                        extension = ".bytes";
+                        break;
                     case ConstSetting.ConfigSaveMode.Json:
-                        assetType = "TextAsset";
+                        extension = ".json";
                         break;
                     default:
-                        throw new ArgumentOutOfRangeException();
+                        break;
                 }
-                var assets = AssetDatabase.FindAssets($"t:{assetType} ConfAsset", new []{assetPath} );
+                // 通过扩展名在文件夹内查找文件并获得文件路径列表
+                var fullFolder = Path.GetFullPath(assetPath);
+                var assetPaths = new List<string>();
+
+                if (Directory.Exists(fullFolder))
+                {
+                    var files = Directory.GetFiles(fullFolder, $"*{extension}", SearchOption.TopDirectoryOnly);
+                    assetPaths.AddRange(files.Select(f => Path.Combine(assetPath, Path.GetFileName(f))));
+                }
+
                 var stringTable = LocalizationSettings.StringDatabase.GetTable(ConstSetting.LocalizationStringTable);
                 var assetTable = LocalizationSettings.AssetDatabase.GetTable(ConstSetting.LocalizationAssetTable);
                 if(!stringTable && !assetTable) return;
-                for (var i = 0; i < assets.Length; i++)
+                for (var i = 0; i < assetPaths.Count; i++)
                 {
-                    var guid = assets[i];
-                    var conf = GetConfData(AssetDatabase.GUIDToAssetPath(guid));
+                    var path = assetPaths[i];
+                    var conf = GetConfData(path);
                     if (conf == null) continue;
                     var sourceField =  conf.GetType().GetField("source", BindingFlags.Public | BindingFlags.Instance);
                     if (sourceField == null) continue;
