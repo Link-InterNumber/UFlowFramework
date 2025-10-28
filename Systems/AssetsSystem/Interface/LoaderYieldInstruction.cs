@@ -17,9 +17,7 @@ namespace PowerCellStudio
         public bool isDone { get; private set; }
         public T asset { get; private set; }
         private string _assetPath;
-#if !UNITY_WEBGL
         private TaskCompletionSource<T> _taskCompletionSource;
-#endif
         private event OnLoadCompleted<T> _onLoadCompleted;
         private event OnLoadSuccess<T> _onLoadSuccess;
         private event OnLoadFailed _onLoadFailed;
@@ -47,14 +45,10 @@ namespace PowerCellStudio
             _onLoadCompleted = null;
             _onLoadSuccess = null;
             _onLoadFailed = null;
-#if !UNITY_WEBGL
             _taskCompletionSource = new TaskCompletionSource<T>();
-#endif
         }
 
-#if !UNITY_WEBGL
         public Task<T> Task => _taskCompletionSource?.Task ?? null;
-#endif
 
         internal void OnLoadCompleted(OnLoadCompleted<T> callback)
         {
@@ -97,9 +91,7 @@ namespace PowerCellStudio
                 _onLoadFailed?.Invoke();
             else
                 _onLoadSuccess?.Invoke(loadedAsset);
-#if !UNITY_WEBGL
             _taskCompletionSource?.SetResult(loadedAsset);
-#endif
             _onLoadCompleted?.Invoke(loadedAsset, _assetPath);
             _onLoadCompleted = null;
             _onLoadSuccess = null;
@@ -114,9 +106,7 @@ namespace PowerCellStudio
             _onLoadSuccess = null;
             _onLoadFailed = null;
             _assetPath = null;
-#if !UNITY_WEBGL
             _taskCompletionSource = null;
-#endif
         }
     }
 }
