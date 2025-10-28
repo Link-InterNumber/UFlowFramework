@@ -315,7 +315,7 @@ namespace PowerCellStudio
             address = AssetUtils.EditorCheckPath(address);
 #endif
             var handle = GetLoadHandle<T>(address);
-            var instruction = new LoaderYieldInstruction<T>(address);
+            var instruction = AssetUtils.GetLoadHandler<T>(address);
             if (handle.IsDone)
             {
                 instruction.SetAsset(handle.Result);
@@ -446,7 +446,7 @@ namespace PowerCellStudio
             where T : Object
         {
             var handle = GetLoadHandle<T>(assetReference);
-            var instruction = new LoaderYieldInstruction<T>(assetReference.AssetGUID);
+            var instruction = AssetUtils.GetLoadHandler<T>(assetReference.AssetGUID);
             if (handle.IsDone)
             {
                 instruction.SetAsset(handle.Result);

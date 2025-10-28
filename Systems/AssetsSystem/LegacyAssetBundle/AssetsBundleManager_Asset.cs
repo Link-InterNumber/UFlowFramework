@@ -40,7 +40,7 @@ namespace PowerCellStudio
         {
             if (_preloadHandles == null) _preloadHandles = new Dictionary<string, LoaderYieldInstruction<Object>>();
             if (_preloadHandles.ContainsKey(path)) return;
-            var loadAssetRequest = new LoaderYieldInstruction<Object>(path);
+            var loadAssetRequest = AssetUtils.GetLoadHandler<Object>(path);
             var bundleName = GetBundleNameByAsset(path);
             LoadAssetAsync<Object>(bundleName, path, loadAssetRequest);
             _preloadHandles.Add(path, loadAssetRequest);
@@ -53,7 +53,7 @@ namespace PowerCellStudio
             {
                 _preloadHandles.Remove(assetPath);
                 var asset = handle.asset as T;
-                handle.Dispose();
+                AssetUtils.ReleaseLoadHandler<T>(handle);
                 return asset;
             }
 
@@ -68,7 +68,7 @@ namespace PowerCellStudio
             }
             return null;
         }
-        
+
         public void LoadAssetAsync<T>(string bundleName, string assetPath, LoaderYieldInstruction<T> loadAssetRequest)
             where T : Object
         {
@@ -80,6 +80,7 @@ namespace PowerCellStudio
                 if (handle.isDone)
                 {
                     loadAssetRequest.SetAsset(handle.asset as T);
+                    AssetUtils.ReleaseLoadHandler<T>(handle);
                 }
                 else
                 {
