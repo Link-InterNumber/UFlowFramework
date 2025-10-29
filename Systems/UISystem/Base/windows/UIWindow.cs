@@ -29,7 +29,7 @@ namespace PowerCellStudio
             }
         }
 
-        public bool isOpened => gameObject.activeSelf;
+        public bool isOpened => gameObject.activeInHierarchy;
         public virtual void OnUIDestroy()
         {
             AssetUtils.DeSpawnLoader(_assetsLoader);
