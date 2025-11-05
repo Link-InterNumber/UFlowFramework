@@ -649,7 +649,9 @@ namespace PowerCellStudio
             CheckDirectory(CaptureDirectory);
             yield return new WaitForEndOfFrame();
             var path = Path.Combine(SavePath, CaptureDirectory, $"{fileName}.png");
-            RenderTexture rt = new RenderTexture((int)rect.width, (int)rect.height, 0);
+            RenderTexture rt = new RenderTexture((int)rect.width, (int)rect.height, 24);
+            rt.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D32_SFloat;
+            rt.format = RenderTextureFormat.ARGB32;
             camera.targetTexture = rt;
             camera.Render();
             RenderTexture.active = rt;
