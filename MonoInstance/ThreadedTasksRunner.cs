@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace PowerCellStudio
 {
-    [DonotInitModuleIAutoly]
+    [DonotInitModuleAutoly]
     public class ThreadedTasksRunner : MonoSingleton<ThreadedTasksRunner>
     {
 #if !UNITY_WEBG

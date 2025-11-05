@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace GameProtocol
 {
-    [DonotInitModuleIAutoly]
+    [DonotInitModuleAutoly]
     public partial class NetClientManager : SingletonBase<NetClientManager>, IExecutionModule
     {
         private UnityTcpClient _client;
