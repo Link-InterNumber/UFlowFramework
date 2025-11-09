@@ -123,6 +123,12 @@ namespace PowerCellStudio
                 case LogType.Error:
                     if (!tglError.isOn) return;
                     break;
+                case LogType.Assert:
+                    if (!tglError.isOn) return;
+                    break;
+                case LogType.Exception:
+                    if (!tglError.isOn) return;
+                    break;
                 default:
                     return;
             }
@@ -142,6 +148,12 @@ namespace PowerCellStudio
                         if (!tglWarning.isOn) return false;
                         break;
                     case LogType.Error:
+                        if (!tglError.isOn) return false;
+                        break;
+                    case LogType.Assert:
+                        if (!tglError.isOn) return false;
+                        break;
+                    case LogType.Exception:
                         if (!tglError.isOn) return false;
                         break;
                     default:
