@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Gray
-  m_Shader: {fileID: -6465566751694194690, guid: 2e6ca6d1fe1cfe941893f68e26e8e99b, type: 3}
+  m_Shader: {fileID: 4800000, guid: cb5371cc744f1f3429873b50da3ced23, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -42,11 +42,14 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _Gray: 1
     - _GrayValue: 1
     - _QueueControl: 0
     - _QueueOffset: 0
     m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _GrayColor: {r: 0.17188221, g: 0.7830189, b: 0, a: 0}
+    - _GrayMask: {r: 0.299, g: 0.587, b: 0.114, a: 1}
   m_BuildTextureStacks: []
 --- !u!114 &4813853412986343711
 MonoBehaviour:

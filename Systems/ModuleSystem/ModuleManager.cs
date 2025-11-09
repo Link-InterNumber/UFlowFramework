@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace PowerCellStudio
 {
-    [DonotInitModuleIAutoly]
+    [DonotInitModuleAutoly]
     public class ModuleManager : MonoSingleton<ModuleManager>
     {
 #if UNITY_EDITOR
@@ -81,7 +81,7 @@ namespace PowerCellStudio
                 var property = type.GetProperty("instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
                 if (property == null) continue;
                 object typeInstance = null;
-                if (type.GetCustomAttribute<DonotInitModuleIAutoly>() != null)
+                if (type.GetCustomAttribute<DonotInitModuleAutoly>() != null)
                 {
                     // 获取当前类型的instance属性
                     typeInstance = property.GetValue(null, null);
@@ -127,7 +127,7 @@ namespace PowerCellStudio
                 // 判断是否已经实例化
                 var exitGo = GameObject.Find(type.Name);
                 var instanceGo = exitGo?.GetComponent(type)?? null;
-                if (instanceGo == null && type.GetCustomAttribute<DonotInitModuleIAutoly>() == null)
+                if (instanceGo == null && type.GetCustomAttribute<DonotInitModuleAutoly>() == null)
                 {
                     var go = new GameObject(type.Name);
                     instanceGo = go.AddComponent(type);
