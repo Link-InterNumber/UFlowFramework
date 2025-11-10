@@ -5,10 +5,8 @@ using UnityEditor;
 using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-#if UNITY_STANDALONE_WIN
 using System.Drawing;
 using System.Drawing.Imaging;
-#endif
 
 namespace PowerCellStudio
 {
