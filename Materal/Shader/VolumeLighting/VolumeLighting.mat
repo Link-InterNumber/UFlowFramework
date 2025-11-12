@@ -29,7 +29,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _LightIntensity: 0.19
+    - _LightIntensity: 0.25
     - _MaxDistance: 200
     - _MaxStep: 200
     - _ShadowPower: 1

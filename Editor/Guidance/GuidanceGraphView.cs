@@ -76,7 +76,7 @@ namespace PowerCellStudio
 
         private IGuidanceConfig GetConfig(int id)
         {
-            return _configProvider?.Get(id) ?? new TestConfig();
+            return _configProvider?.Get(id) ?? null;
         }
 
         public void ClearGraph()

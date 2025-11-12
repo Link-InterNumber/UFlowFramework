@@ -2,14 +2,22 @@ Shader "PostEffect/VolumeLighting"
 {
     Properties
     {
-
         _MainTex ("_MainTex", 2D) = "black" {}
         _MaxStep ("_MaxStep", float) = 200
-        _MaxDistance ("_MaxDistance", float) = 1000
-        _LightIntensity ("_LightIntensity", float) = 0.01
-        _StepSize ("_StepSize", float) = 0.1
+        _MaxDistance ("_MaxDistance", float) = 200
+        _LightIntensity ("_LightIntensity", Range(0, 10)) = 0.5
+        _StepSize ("_StepSize", Range(0, 2)) = 0.1
         _LightColor ("_LightColor", Color) = (1, 1, 1, 1)
-        _ShadowPower ("_ShadowPower", float) = 1.0
+        _ShadowPower ("_ShadowPower", Range(0, 3)) = 1.0
+        _MaxHeight ("_MaxHeight", float) = 1000.0
+        _FadeDistance ("_FadeDistance", float) = 100.0
+
+        [Toggle(_Noise)]_Noise ("_Noise", Float) = 1.0
+        _NoiseScale ("_NoiseScale", Range(0, 3)) = 0.5
+        _NoiseSpeed ("_NoiseSpeed", Range(0, 5)) = 1.0
+        _NoiseIntensity ("_NoiseIntensity", Range(0, 3)) = 2.0
+        _NoiseDirection ("_NoiseDirection (xyz)", Vector) = (1, 0, 0, 0)
+        _NoiseOctaves ("_NoiseOctaves", Range(0, 5)) = 1
     }
     SubShader
     {
@@ -18,13 +26,12 @@ Shader "PostEffect/VolumeLighting"
         ZTest Always
         Cull Off
 
-        HLSLINCLUDE
-        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+        // HLSLINCLUDE
 
-        // CBUFFER_START(UnityPerMaterial)
+        // // CBUFFER_START(UnityPerMaterial)
 
-        // CBUFFER_END
-        ENDHLSL
+        // // CBUFFER_END
+        // ENDHLSL
 
         Pass
         {
@@ -39,15 +46,18 @@ Shader "PostEffect/VolumeLighting"
             // 接收阴影所需关键字
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
-            // #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
-            // #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
+            // // #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            // // #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile _ _SHADOWS_SOFT
+            #pragma shader_feature_local _Noise
             // #pragma shader_feature _ _ALPHATEST_ON
 
             #pragma vertex vert
             #pragma fragment frag
 
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 
 
             struct Attributes
@@ -77,6 +87,62 @@ Shader "PostEffect/VolumeLighting"
             half4 _LightColor;
             float _ShadowPower;
 
+            // Noise params
+            float _NoiseScale;
+            float _NoiseSpeed;
+            float _NoiseIntensity;
+            float3 _NoiseDirection;
+            int _NoiseOctaves;
+            float _MaxHeight;
+            float _FadeDistance;
+
+            // --- Procedural noise (value noise + FBM) ---
+            float Hash31(float3 p)
+            {
+                p = frac(p * 0.1031);
+                p += dot(p, p.yzx + 33.33);
+                return frac((p.x + p.y) * p.z);
+            }
+
+            float ValueNoise3D(float3 p)
+            {
+                float3 i = floor(p);
+                float3 f = frac(p);
+                float3 u = f * f * (3.0 - 2.0 * f);
+
+                float n000 = Hash31(i + float3(0,0,0));
+                float n100 = Hash31(i + float3(1,0,0));
+                float n010 = Hash31(i + float3(0,1,0));
+                float n110 = Hash31(i + float3(1,1,0));
+                float n001 = Hash31(i + float3(0,0,1));
+                float n101 = Hash31(i + float3(1,0,1));
+                float n011 = Hash31(i + float3(0,1,1));
+                float n111 = Hash31(i + float3(1,1,1));
+
+                float nx00 = lerp(n000, n100, u.x);
+                float nx10 = lerp(n010, n110, u.x);
+                float nx01 = lerp(n001, n101, u.x);
+                float nx11 = lerp(n011, n111, u.x);
+
+                float nxy0 = lerp(nx00, nx10, u.y);
+                float nxy1 = lerp(nx01, nx11, u.y);
+
+                return lerp(nxy0, nxy1, u.z); // 0..1
+            }
+
+            float FBM3D(float3 p, int octaves)
+            {
+                float amp = 0.5;
+                float sum = 0.0;
+                for (int k = 0; k < octaves; k++)
+                {
+                    sum += ValueNoise3D(p) * amp;
+                    p *= 2.0;
+                    amp *= 0.5;
+                }
+                return sum; // ~0..1
+            }
+
             float4 GetTheWorldPos(float2 ScreenUV, float Depth)
             {
                 //获取像素的屏幕空间位置
@@ -96,18 +162,6 @@ Shader "PostEffect/VolumeLighting"
             {
                 float4 shadowCoord = TransformWorldToShadowCoord(posWorld);
                 float shadow = MainLightRealtimeShadow(shadowCoord);
-// #if defined(_ADDITIONAL_LIGHTS)
-//                 // 获取额外光源处理
-//                 int pixelLightCount = GetAdditionalLightsCount();
-//                 for(int index = 0; index < pixelLightCount; index++)
-//                 {
-//                     Light light = GetAdditionalLight(index, posWorld, half4(1,1,1,1));
-//                     // 计算光照颜色和衰减
-//                     float attenuatedLightShadow = (light.distanceAttenuation * light.shadowAttenuation);
-//                     // float addtionalShadow = AdditionalLightRealtimeShadow(index, posWorld, light.direction);
-//                     shadow +=  attenuatedLightShadow;
-//                 }
-// #endif
                 return shadow;
             }
 
@@ -143,8 +197,23 @@ Shader "PostEffect/VolumeLighting"
                     d += delta;
                     if(d > m_length) break;
                     currentPos += addLength;
+                    // 高度衰减
+                    float heightFade = saturate((_MaxHeight - currentPos.y) / _FadeDistance);
+                    if (heightFade <= 0) continue;
+
+                    // 世界空间的动画噪声（固定在空间中，不随相机抖动）
+                    #ifdef _Noise
+                    float t = _TimeParameters.x * _NoiseSpeed;
+                    float3 dir = _NoiseDirection / max(length(_NoiseDirection), 1e-5);
+                    float3 noisePos = currentPos * _NoiseScale + dir * t;
+                    float n = FBM3D(noisePos, _NoiseOctaves);
+                    float density = saturate(pow(n , 3 - _NoiseIntensity));
+                    #else
+                    float density = 1.0;
+                    #endif
+
                     float shadow = GetShadow(currentPos);
-                    totalInt += _LightIntensity * shadow;
+                    totalInt += _LightIntensity * shadow * density * heightFade;
                 }
                 half3 lightCol = pow(totalInt / maxLightValue, _ShadowPower) * _LightColor.rgb * _MainLightColor.rgb;
                 half3 oCol = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv).rgb;
