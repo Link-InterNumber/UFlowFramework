@@ -240,9 +240,9 @@ Shader "PostEffect/VolumeLighting"
                     float t = _TimeParameters.x * _NoiseSpeed;
                     float3 noisePos = currentPos * _NoiseScale + noiseDir * t;
                     float n = FBM3D(noisePos, _NoiseOctaves);
-                    float noiseFade = 2 - smoothstep(50, 100, d);
+                    float noiseFade = smoothstep(50, 100, d);
                     // n = smoothstep(0, noiseFade+ 0.001, n);
-                    float density = saturate(pow(n * noiseFade, 3 - _NoiseIntensity));
+                    float density = saturate(pow(n + noiseFade, 3 - _NoiseIntensity));
                     #else
                     float density = 1.0;
                     #endif
