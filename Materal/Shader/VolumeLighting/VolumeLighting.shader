@@ -2,22 +2,36 @@ Shader "PostEffect/VolumeLighting"
 {
     Properties
     {
-        _MainTex ("_MainTex", 2D) = "black" {}
-        _MaxStep ("_MaxStep", float) = 200
-        _MaxDistance ("_MaxDistance", float) = 200
-        _LightIntensity ("_LightIntensity", Range(0, 10)) = 0.5
-        _StepSize ("_StepSize", Range(0, 2)) = 0.1
-        _LightColor ("_LightColor", Color) = (1, 1, 1, 1)
-        _ShadowPower ("_ShadowPower", Range(0, 3)) = 1.0
-        _MaxHeight ("_MaxHeight", float) = 1000.0
-        _FadeDistance ("_FadeDistance", float) = 100.0
+        [Header(Base)]
+        _MainTex ("MainTex", 2D) = "black" {}
 
-        [Toggle(_Noise)]_Noise ("_Noise", Float) = 1.0
-        _NoiseScale ("_NoiseScale", Range(0, 3)) = 0.5
-        _NoiseSpeed ("_NoiseSpeed", Range(0, 5)) = 1.0
-        _NoiseIntensity ("_NoiseIntensity", Range(0, 3)) = 2.0
-        _NoiseDirection ("_NoiseDirection (xyz)", Vector) = (1, 0, 0, 0)
-        _NoiseOctaves ("_NoiseOctaves", Range(0, 5)) = 1
+        [Header(Raymarch)]
+        _MaxStep ("MaxStep", float) = 200
+        _MaxDistance ("MaxDistance", float) = 200
+        _StepSize ("StepSize", Range(0, 2)) = 0.1
+
+        [Header(Lighting)]
+        _LightIntensity ("LightIntensity", Range(0, 10)) = 0.5
+        _LightColor ("LightColor", Color) = (1, 1, 1, 1)
+        _ShadowPower ("ShadowPower", Range(0, 3)) = 1.0
+
+        [Header(Height)]
+        _MaxHeight ("MaxHeight", float) = 1000.0
+        _FadeDistance ("FadeDistance", float) = 100.0
+
+        [Header(Noise)]
+        [Toggle(_Noise)]_Noise ("Noise", Float) = 1.0
+        _NoiseScale ("NoiseScale", Range(0, 3)) = 0.5
+        _NoiseSpeed ("NoiseSpeed", Range(0, 5)) = 1.0
+        _NoiseIntensity ("NoiseIntensity", Range(0, 3)) = 2.0
+        _NoiseDirection ("NoiseDirection (xyz)", Vector) = (1, 0, 0, 0)
+        _NoiseOctaves ("NoiseOctaves", Range(0, 5)) = 1
+
+        [Header(Advanced)]
+        [Toggle(_SmoothLinearToExp)]_SmoothLinearToExp ("SmoothLinearToExp", Float) = 1.0
+        _PreciseSteps ("PreciseSteps", Float) = 100
+        _TransitionSteps ("TransitionSteps", Float) = 50
+        _StepScale ("StepScale", Float) = 10.0
     }
     SubShader
     {
@@ -50,6 +64,7 @@ Shader "PostEffect/VolumeLighting"
             // // #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile _ _SHADOWS_SOFT
             #pragma shader_feature_local _Noise
+            #pragma shader_feature_local _SmoothLinearToExp
             // #pragma shader_feature _ _ALPHATEST_ON
 
             #pragma vertex vert
@@ -95,6 +110,10 @@ Shader "PostEffect/VolumeLighting"
             int _NoiseOctaves;
             float _MaxHeight;
             float _FadeDistance;
+
+            float _PreciseSteps;
+            float _TransitionSteps;
+            float _StepScale;
 
             // --- Procedural noise (value noise + FBM) ---
             float Hash31(float3 p)
@@ -176,6 +195,11 @@ Shader "PostEffect/VolumeLighting"
                 return o;
             }
 
+            float SmoothLinearToExp(float x, float n, float k, float a)
+            {
+                float s = smoothstep(n, n + a, x);
+                return (1-s) + s * k;
+            }
 
             half4 frag(Varyings i) : SV_Target
             {
@@ -186,28 +210,39 @@ Shader "PostEffect/VolumeLighting"
                 float3 worldPos = GetTheWorldPos(uv, depth).xyz;
                 float3 rd = normalize(worldPos - ro);
                 float3 currentPos = ro;
-                float maxLightValue = min(_MaxStep, _MaxDistance / _StepSize);
+                float maxLightValue = min(_MaxStep, _MaxDistance / _StepSize);;
                 float m_length = min(length(worldPos - ro), _MaxDistance);
                 float delta = _StepSize;
                 float3 addLength = delta * rd;
                 float totalInt = 0;
                 float d = 0;
+                float3 noiseDir = _NoiseDirection / max(length(_NoiseDirection), 1e-5);
                 for(int j = 0; j < _MaxStep; j ++)
                 {
+                    // 采样位置超过最大采样距离则跳出
+                    #ifdef _SmoothLinearToExp
+                    float scale = SmoothLinearToExp(j + 1, _PreciseSteps, _StepScale, _TransitionSteps);
+                    d += delta * scale;
+                    if(d > m_length) break;
+                    currentPos += addLength * scale;
+                    #else
                     d += delta;
                     if(d > m_length) break;
                     currentPos += addLength;
+                    #endif
+
                     // 高度衰减
                     float heightFade = saturate((_MaxHeight - currentPos.y) / _FadeDistance);
                     if (heightFade <= 0) continue;
 
-                    // 世界空间的动画噪声（固定在空间中，不随相机抖动）
+                    // 世界空间的动画噪声
                     #ifdef _Noise
                     float t = _TimeParameters.x * _NoiseSpeed;
-                    float3 dir = _NoiseDirection / max(length(_NoiseDirection), 1e-5);
-                    float3 noisePos = currentPos * _NoiseScale + dir * t;
+                    float3 noisePos = currentPos * _NoiseScale + noiseDir * t;
                     float n = FBM3D(noisePos, _NoiseOctaves);
-                    float density = saturate(pow(n , 3 - _NoiseIntensity));
+                    float noiseFade = 2 - smoothstep(50, 100, d);
+                    // n = smoothstep(0, noiseFade+ 0.001, n);
+                    float density = saturate(pow(n * noiseFade, 3 - _NoiseIntensity));
                     #else
                     float density = 1.0;
                     #endif
