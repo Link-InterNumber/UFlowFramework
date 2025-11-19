@@ -11,14 +11,18 @@ namespace PowerCellStudio
         
         protected override void BeforeLoaded()
         {
-            img.enabled = false;
+            // img.enabled = false;
+        }
+
+        protected override void OnLoaded(Object asset)
+        {
+            img.sprite = asset as Sprite;
+            // img.enabled = true;
         }
         
-        protected override void OnLoaded(AsyncOperationHandle<Object> handle)
+        protected override void OnLoadFailed()
         {
-            if (handle.Status == AsyncOperationStatus.Succeeded)
-                img.sprite = handle.Result as Sprite;
-            img.enabled = true;
+            // img.enabled = true;
         }
     }
 }

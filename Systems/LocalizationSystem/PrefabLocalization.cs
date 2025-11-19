@@ -9,10 +9,9 @@ namespace PowerCellStudio
         {
         }
         
-        protected override void OnLoaded(AsyncOperationHandle<Object> handle)
+        protected override void OnLoaded(Object asset)
         {
-            if (handle.Status != AsyncOperationStatus.Succeeded) return;
-            var prefab = handle.Result as GameObject;
+            var prefab = asset as GameObject;
             if (!prefab) return;
             var oldGo = transform.GetChild(0);
             oldGo.SetParent(null);
@@ -27,6 +26,9 @@ namespace PowerCellStudio
             goTr.SetSiblingIndex(0);
         }
 
-
+        protected override void OnLoadFailed()
+        {
+            
+        }
     }
 }

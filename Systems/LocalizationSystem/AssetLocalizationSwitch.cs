@@ -30,12 +30,15 @@ namespace PowerCellStudio
         {
             BeforeLoaded();
             var handler = LocalizationManager.instance.GetAssetAsync<Object>(localizationKey);
-            handler.Completed += OnLoaded;
+            handler.OnLoadSuccess(OnLoaded);
+            handler.OnLoadFailed(OnLoadFailed);
         }
 
         protected abstract void BeforeLoaded();
-        
-        protected abstract void OnLoaded(AsyncOperationHandle<Object> handle);
+
+        protected abstract void OnLoaded(Object asset);
+
+        protected abstract void OnLoadFailed();
         
     }
 }
