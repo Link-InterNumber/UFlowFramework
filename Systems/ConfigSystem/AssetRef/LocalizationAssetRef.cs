@@ -7,9 +7,9 @@ namespace PowerCellStudio
     {
         public override string Get()
         {
-            if (LocalizationManager.instance.TryGetAssetGuid(localizationKey, out string path))
+            if (LocalizationManager.instance.TryGetAssetGuid(localizationKey, out string guid))
             {
-                return path;
+                return guid;
             }
 #if UNITY_EDITOR
             return localizationKey;
