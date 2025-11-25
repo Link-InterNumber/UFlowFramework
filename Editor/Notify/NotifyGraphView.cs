@@ -48,6 +48,25 @@ namespace PowerCellStudio
             SetupZoom(ContentZoomer.DefaultMinScale, ContentZoomer.DefaultMaxScale);
         }
 
+        public void ClearGraph()
+        {
+            if (nodes.Count() == 0)
+                return;
+            foreach (var node in nodes.ToList())
+            {
+                if (node.outputContainer.Query<Port>().AtIndex(0).connected)
+                {
+                    var connections = node.outputContainer.Query<Port>().AtIndex(0).connections.ToList();
+                    foreach (var connection in connections)
+                    {
+                        RemoveElement(connection);
+                    }
+                }
+                RemoveElement(node);
+            }
+            AddNode("Root", Vector2.one * 200);
+        }
+
         // private void OnDeleteSelection(string operationName, AskUser askUser)
         // {
         //     CheckNodeDuplicate();

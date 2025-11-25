@@ -3,7 +3,7 @@ using System.Text;
 
 namespace PowerCellStudio
 {
-    public class CsWriter
+    public class CsWriter : IDisposable
     {
         public enum MethodSign
         {
@@ -256,6 +256,13 @@ namespace PowerCellStudio
         public override string ToString()
         {
             return _sb.ToString();
+        }
+
+        public void Dispose()
+        {
+            _sb.Clear();
+            _sb = null;
+            _tab = null;
         }
     }
 }

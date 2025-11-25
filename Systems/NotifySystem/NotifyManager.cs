@@ -123,6 +123,11 @@ namespace PowerCellStudio
                 ModuleLog.LogError<NotifyManager>($"Can not set [{child}] as child node to [{parent}], because the two nodes forming a loop");
                 return;
             }
+            if (childNode.parent >= 0)
+            {
+                var oldParentNode = _nodes[childNode.parent];
+                oldParentNode.children.Remove(childNode.index);
+            }
             childNode.parent = parentNode.index;
             parentNode.children.Add(childNode.index);
         }
