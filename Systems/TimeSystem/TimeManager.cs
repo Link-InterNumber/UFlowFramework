@@ -191,11 +191,11 @@ namespace PowerCellStudio
         
         private long GetStartTime()
         {
-            var timeSave = PlayerDataUtils.ReadPlayerPrefs<TimeSave>();
+            var timeSave = PlayerDataUtils.Read<TimeSave>(PlayerDataType.PlayerPrefs);
             if (timeSave.startTime == 0L)
             {
                 timeSave.startTime = DateTime.Now.Ticks;
-                PlayerDataUtils.SavePlayerPrefs<TimeSave>(timeSave);
+                PlayerDataUtils.Save<TimeSave>(timeSave, PlayerDataType.PlayerPrefs);
             }
             return timeSave.startTime;
         }
@@ -206,7 +206,7 @@ namespace PowerCellStudio
             {
                 startTime = _startTime + _unscaleTimeWithoutPause,
             };
-            PlayerDataUtils.SavePlayerPrefs<TimeSave>(timeSave);
+            PlayerDataUtils.Save<TimeSave>(timeSave, PlayerDataType.PlayerPrefs);
         }
 
         /// <summary>

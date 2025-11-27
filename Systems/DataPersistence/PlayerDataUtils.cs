@@ -1,119 +1,309 @@
 using System;
 using System.Collections;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
+using System.Reflection;
+using UnityEngine;
+using Object = UnityEngine.Object;
 #if !UNITY_WEBGL
 using System.Threading.Tasks;
-using Microsoft.Xbox.Services.Client;
 #endif
-using Newtonsoft.Json;
-using UnityEngine;
-using UnityEngine.Networking;
-using UnityEngine.Events;
-using Object = UnityEngine.Object;
 
 namespace PowerCellStudio
 {
+    public enum PlayerDataType
+    {
+        Json = 0,
+        Binary,
+        PlayerPrefs,
+    }
+
     public static partial class PlayerDataUtils
     {
-        public static readonly string SavePath = $"{Application.persistentDataPath}";
+        private static PersistenceDataProcessor[] _persistenceDataProcessors;
+        private static readonly CaptureDataProcessor _captureProcessor = new CaptureDataProcessor();
 
-        private static readonly string JsonDirectory = "Json";
-        private static readonly string BinaryDirectory = "Binary";
-        private static readonly string CaptureDirectory = "Capture";
-
-        private static void CheckDirectory(string name)
+        private static void Init()
         {
-            var directory = Path.Combine(SavePath, name);
-            if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
+            var enumValues = Enum.GetValues(typeof(PlayerDataType));
+            _persistenceDataProcessors = new PersistenceDataProcessor[enumValues.Length];
+
+            var assembly = Assembly.GetExecutingAssembly();
+            var types = assembly.GetTypes();
+            foreach (var type in types)
+            {
+                if (type.IsAbstract || !type.IsSubclassOf(typeof(PersistenceDataProcessor)))
+                    continue;
+
+                // 获取自定义特性
+                var attribute = type.GetCustomAttribute<DataProcessorAttribute>();
+                if (attribute != null)
+                {
+                    try
+                    {
+                        // 4. 创建实例
+                        var instance = (PersistenceDataProcessor)Activator.CreateInstance(type);
+
+                        // 5. 根据枚举值放入数组对应的索引位置
+                        int index = (int)attribute.DataType;
+                        if (index < _persistenceDataProcessors.Length)
+                        {
+                            _persistenceDataProcessors[index] = instance;
+#if UNITY_EDITOR
+                            LinkLog.Log($"[PlayerDataUtils] Registered {type.Name} for {attribute.DataType}");
+#endif
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        LinkLog.LogError($"[PlayerDataUtils] Failed to instantiate processor for {attribute.DataType}: {e.Message}");
+                    }
+                }
+            }
+#if UNITY_EDITOR
+            for (int i = 0; i < _persistenceDataProcessors.Length; i++)
+            {
+                if (_persistenceDataProcessors[i] == null && Enum.IsDefined(typeof(PlayerDataType), i))
+                {
+                    LinkLog.LogWarning($"[PlayerDataUtils] No processor registered for PlayerDataType: {(PlayerDataType)i}");
+                }
+            }
+#endif
         }
 
-        public static bool HasPlayerPrefsSave(string saveKey)
+        private static PersistenceDataProcessor GetProcessor(PlayerDataType dataType)
         {
-            return PlayerPrefs.HasKey(saveKey);
+            if (_persistenceDataProcessors == null)
+            {
+                Init();
+            }
+            int index = (int)dataType;
+            if (index >= 0 && index < _persistenceDataProcessors.Length)
+            {
+                return _persistenceDataProcessors[index];
+            }
+            return null;
         }
-        
-        public static bool HasPlayerPrefsSave<T>()
+
+        public static bool HasSave(string saveKey, Type dataType)
+        {
+            var processor = GetProcessor(PlayerDataType.PlayerPrefs);
+            if (processor == null) return false;
+            return processor.HasSave(saveKey);
+        }
+
+        public static bool HasSave<T>(Type dataType)
             where T : IPersistenceData
         {
             var key = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            return PlayerPrefs.HasKey(key);
+            return HasSave(key, dataType);
         }
-        
-        public static bool HasJsonSave(string fileName)
-        {
-            var directory = Path.Combine(SavePath, JsonDirectory);
-            if (!Directory.Exists(directory)) return false;
-            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
-            return File.Exists(path);
-        }
-        
-        public static bool HasJsonSave<T>()
+
+        #region Save
+        public static bool Save<T>(string saveKey, T data, PlayerDataType dataType, bool encrypt = true)
             where T : IPersistenceData
         {
-            var directory = Path.Combine(SavePath, JsonDirectory);
-            if (!Directory.Exists(directory)) return false;
-            var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
-            return File.Exists(path);
+            var processor = GetProcessor(dataType);
+            if (processor == null) return false;
+            return processor.Save<T>(saveKey, data, encrypt);
         }
-        
-        public static bool HasBinarySave(string fileName)
-        {
-            var directory = Path.Combine(SavePath, BinaryDirectory);
-            if (!Directory.Exists(directory)) return false;
-            var path = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
-            return File.Exists(path);
-        }
-        
-        public static bool HasBinarySave<T>()
+
+        public static bool Save<T>(T data, PlayerDataType dataType, bool encrypt = true)
             where T : IPersistenceData
         {
-            var directory = Path.Combine(SavePath, BinaryDirectory);
-            if (!Directory.Exists(directory)) return false;
-            var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            var path = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
-            return File.Exists(path);
+            var key = $"{typeof(T).Namespace}_{typeof(T).Name}";
+            return Save<T>(key, data, dataType, encrypt);
         }
+
+        public static void SaveAsync<T>(string saveKey, T data, PlayerDataType dataType, Action<bool> onComplete, bool encrypt = true)
+            where T : IPersistenceData
+        {
+            var processor = GetProcessor(dataType);
+            if (processor == null)
+            {
+                onComplete?.Invoke(false);
+                return;
+            }
+            processor.SaveAsync<T>(saveKey, data, onComplete, encrypt);
+        }
+
+        public static void SaveAsync<T>(T data, PlayerDataType dataType, Action<bool> onComplete, bool encrypt = true)
+            where T : IPersistenceData
+        {
+            var key = $"{typeof(T).Namespace}_{typeof(T).Name}";
+            SaveAsync<T>(key, data, dataType, onComplete, encrypt);
+        }
+
+        public static YieldInstructionCompletionSource<bool> SaveAsYieldInstruction<T>(string saveKey, T data, PlayerDataType dataType, bool encrypt = true)
+            where T : IPersistenceData
+        {
+            var token = new YieldInstructionCompletionSource<bool>();
+            var processor = GetProcessor(dataType);
+            if (processor == null)
+            {
+                token.SetResult(false);
+                return token;
+            }
+            processor.SaveAsync<T>(saveKey, data, token.SetResult, encrypt);
+            return token;
+        }
+
+        public static YieldInstructionCompletionSource<bool> SaveAsYieldInstruction<T>(T data, PlayerDataType dataType, bool encrypt = true)
+            where T : IPersistenceData
+        {
+            var key = $"{typeof(T).Namespace}_{typeof(T).Name}";
+            return SaveAsYieldInstruction<T>(key, data, dataType, encrypt);
+        }
+
+#if !UNITY_WEBGL
+        public static Task<bool> SaveAsTask<T>(string saveKey, T data, PlayerDataType dataType, bool encrypt = true)
+            where T : IPersistenceData
+        {
+            var processor = GetProcessor(dataType);
+            if (processor == null) return Task.FromResult(false);
+            var tcs = new TaskCompletionSource<bool>();
+            processor.SaveAsync<T>(saveKey, data, tcs.SetResult, encrypt);
+            return tcs.Task;
+        }
+
+        public static Task<bool> SaveAsTask<T>(T data, PlayerDataType dataType, bool encrypt = true)
+            where T : IPersistenceData
+        {
+            var key = $"{typeof(T).Namespace}_{typeof(T).Name}";
+            return SaveAsTask<T>(key, data, dataType, encrypt);
+        }
+#endif
+
+        #endregion
+
+        #region Read
+        public static T Read<T>(string saveKey, PlayerDataType dataType, bool decrypt = true)
+            where T : IPersistenceData
+        {
+            var processor = GetProcessor(dataType);
+            if (processor == null) return default;
+            return processor.Read<T>(saveKey, decrypt);
+        }
+
+        public static T Read<T>(PlayerDataType dataType, bool decrypt = true)
+            where T : IPersistenceData
+        {
+            var key = $"{typeof(T).Namespace}_{typeof(T).Name}";
+            return Read<T>(key, dataType, decrypt);
+        }
+
+        public static void ReadAsync<T>(string saveKey, PlayerDataType dataType, Action<T> onComplete, bool decrypt = true)
+            where T : IPersistenceData
+        {
+            var processor = GetProcessor(dataType);
+            if (processor == null)
+            {
+                onComplete?.Invoke(default);
+                return;
+            }
+            processor.ReadAsync<T>(saveKey, onComplete, decrypt);
+        }
+
+        public static void ReadAsync<T>(PlayerDataType dataType, Action<T> onComplete, bool decrypt = true)
+            where T : IPersistenceData
+        {
+            var key = $"{typeof(T).Namespace}_{typeof(T).Name}";
+            ReadAsync<T>(key, dataType, onComplete, decrypt);
+        }
+
+        public static YieldInstructionCompletionSource<T> ReadAsYieldInstruction<T>(string saveKey, PlayerDataType dataType, bool decrypt = true)
+            where T : IPersistenceData
+        {
+            var token = new YieldInstructionCompletionSource<T>();
+            var processor = GetProcessor(dataType);
+            if (processor == null)
+            {
+                token.SetResult(default);
+                return token;
+            }
+            processor.ReadAsync<T>(saveKey, token.SetResult, decrypt);
+            return token;
+        }
+
+        public static YieldInstructionCompletionSource<T> ReadAsYieldInstruction<T>(PlayerDataType dataType, bool decrypt = true)
+            where T : IPersistenceData
+        {
+            var key = $"{typeof(T).Namespace}_{typeof(T).Name}";
+            return ReadAsYieldInstruction<T>(key, dataType, decrypt);
+        }
+
+#if !UNITY_WEBGL
+        public static Task<T> ReadAsTask<T>(string saveKey, PlayerDataType dataType, bool decrypt = true)
+            where T : IPersistenceData
+        {
+            var processor = GetProcessor(dataType);
+            if (processor == null) return default;
+            var tcs = new TaskCompletionSource<T>();
+            processor.ReadAsync<T>(saveKey, tcs.SetResult, decrypt);
+            return tcs.Task;
+        }
+
+        public static Task<T> ReadAsTask<T>(PlayerDataType dataType, bool decrypt = true)
+            where T : IPersistenceData
+        {
+            var key = $"{typeof(T).Namespace}_{typeof(T).Name}";
+            return ReadAsTask<T>(key, dataType, decrypt);
+        }
+#endif
+
+        #endregion
+
+        #region Clear
+        public static void Clear(string saveKey, PlayerDataType dataType)
+        {
+            var processor = GetProcessor(dataType);
+            if (processor == null) return;
+            processor.Clear(saveKey);
+        }
+
+        public static void Clear<T>(PlayerDataType dataType)
+            where T : IPersistenceData
+        {
+            var key = $"{typeof(T).Namespace}_{typeof(T).Name}";
+            Clear(key, dataType);
+        }
+
+        public static void ClearAll(PlayerDataType dataType)
+        {
+            var processor = GetProcessor(dataType);
+            if (processor == null) return;
+            processor.ClearAll();
+        }
+
+        public static void ClearAllData()
+        {
+            ClearCapture();
+            if (_persistenceDataProcessors == null) return;
+            foreach (var processor in _persistenceDataProcessors)
+            {
+                processor?.ClearAll();
+            }
+        }
+        #endregion
 
         public static bool HasCapture(string fileName)
         {
-            var directory = Path.Combine(SavePath, CaptureDirectory);
-            if (!Directory.Exists(directory)) return false;
-            var path = Path.Combine(SavePath, CaptureDirectory, $"{fileName}.png");
-            return File.Exists(path);
+            return _captureProcessor.HasSave(fileName);
         }
-        
+
         #region PlayerPrefsSave
-
-        public static void SavePlayerPrefs<T>(string key, T data)
-            where T : IPersistenceData
-        {
-            string json = JsonConvert.SerializeObject(data);
-            PlayerPrefs.SetString(key, json);
-            PlayerPrefs.Save();
-        }
-
-        public static void SavePlayerPrefs<T>(T data)
-            where T : IPersistenceData
-        {
-            var key = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            SavePlayerPrefs(key, data);
-        }
 
         public static void SavePlayerPrefs(string key, int data)
         {
             PlayerPrefs.SetInt(key, data);
             PlayerPrefs.Save();
         }
-        
+
         public static void SavePlayerPrefs(string key, string data)
         {
             PlayerPrefs.SetString(key, data);
             PlayerPrefs.Save();
         }
-        
+
         public static void SavePlayerPrefs(string key, float data)
         {
             PlayerPrefs.SetFloat(key, data);
@@ -128,505 +318,45 @@ namespace PowerCellStudio
         {
             return PlayerPrefs.GetInt(key, defaultValue);
         }
-        
+
         public static string ReadPlayerString(string key, string defaultValue)
         {
             return PlayerPrefs.GetString(key, defaultValue);
         }
-        
+
         public static float ReadPlayerFloat(string key, float defaultValue)
         {
             return PlayerPrefs.GetFloat(key, defaultValue);
         }
 
-        public static T ReadPlayerPrefs<T>(string key)
-            where T : IPersistenceData
-        {
-            var json = PlayerPrefs.GetString(key, "{}");
-            return JsonConvert.DeserializeObject<T>(json);
-        }
-        
-        public static T ReadPlayerPrefs<T>()
-            where T : IPersistenceData
-        {
-            var key = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            return ReadPlayerPrefs<T>(key);
-        }
-
-        public static void ClearPlayerPrefs(string key)
-        {
-            PlayerPrefs.DeleteKey(key);
-        }
-        
-        public static void ClearPlayerPrefs<T>()
-            where T : IPersistenceData
-        {
-            var key = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            PlayerPrefs.DeleteKey(key);
-        }
-        
-        public static void ClearAllPlayerPrefs()
-        {
-            PlayerPrefs.DeleteAll();
-        }
-
         #endregion
 
-        #region JsonSave
+        #region DebugLog
 
-        private static string Encrypt(string data)
+        public static void SaveDebugLog(DebugLogSaver coroutineRunner, string fileName, string data)
         {
-            return EncryptUtils.Base64Encrypt(data);
-        }
-
-        private static string Decrypt(string data)
-        {
-            return EncryptUtils.Base64Decrypt(data);
-        }
-        
-        public static Coroutine SaveDebugLog(DebugLogSaver coroutineRunner, string fileName, string data)
-        {
-            if(string.IsNullOrEmpty(fileName)) return null;
-            return coroutineRunner.StartCoroutine(SaveDebugLogHandle($"{fileName}_LinkLogLog", data));
-        }
-
-        private static IEnumerator SaveDebugLogHandle(string fileName, string data)
-        {
-            CheckDirectory("Debug");
-            yield return null;
+            if (string.IsNullOrEmpty(fileName)) return;
+            var directory = Path.Combine($"{Application.persistentDataPath}", "Debug");
+            if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
             // string json = JsonConvert.SerializeObject(data);
-            var path = Path.Combine(SavePath, "Debug", $"{fileName}.txt");
+            var path = Path.Combine($"{Application.persistentDataPath}", "Debug", $"{fileName}.txt");
 
             // 检查文件是否存在
             if (!File.Exists(path))
             {
                 // 如果文件不存在，创建文件
-                yield return File.WriteAllTextAsync(path, data).AsCoroutine();
+                File.WriteAllTextAsync(path, data);
 #if UNITY_EDITOR
-                Debug.LogWarning("Save Debug txt At: "+ path);
+                Debug.LogWarning("Save Debug txt At: " + path);
 #endif
-                yield break;
+                return;
             }
-            
+
             // 异步添加文本到文件末尾
-            yield return File.AppendAllTextAsync(path, data).AsCoroutine();
+            File.AppendAllTextAsync(path, data);
 #if UNITY_EDITOR
-            Debug.LogWarning("Save Debug txt At: "+ path);
+            Debug.LogWarning("Save Debug txt At: " + path);
 #endif
-        }
-
-        public static bool SaveJson<T>(string fileName, T data, bool encrypt = true)
-            where T : IPersistenceData
-        {
-            if (string.IsNullOrEmpty(fileName)) return false;
-            CheckDirectory(JsonDirectory);
-            string json = JsonConvert.SerializeObject(data);
-            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
-            if (encrypt)
-            {
-                var jsonEn = Encrypt(json);
-                File.WriteAllText(path, jsonEn);
-            }
-            else
-            {
-                File.WriteAllText(path, json);
-            }
-            LinkLog.Log($"Save a Json at {path}");
-            return true;
-        }
-
-        public static bool SaveJson<T>(T data, bool encrypt = true)
-            where T : IPersistenceData
-        {
-            if (data == null) return false;
-            var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            return SaveJson(fileName, data, encrypt);
-        }
-
-        public static Coroutine SaveJsonAsync<T>(string fileName, T data, Action action = null, bool encrypt = true)
-            where T : IPersistenceData
-        {
-            if (string.IsNullOrEmpty(fileName)) return null;
-            return ApplicationManager.RunCoroutine(SaveJsonHandle(fileName, data, action, encrypt));
-        }
-        
-        public static Coroutine SaveJsonAsync<T>(T data, Action action = null, bool encrypt = true)
-            where T : IPersistenceData
-        {
-            var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            if (string.IsNullOrEmpty(fileName)) return null;
-            return ApplicationManager.RunCoroutine(SaveJsonHandle(fileName, data, action, encrypt));
-        }
-        
-        private static IEnumerator SaveJsonHandle<T>(string fileName, T data, Action action, bool encrypt = true)
-            where T : IPersistenceData
-        {
-            CheckDirectory(JsonDirectory);
-            yield return null;
-            string json = JsonConvert.SerializeObject(data);
-            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
-            if (encrypt)
-            {
-                var jsonEn = Encrypt(json);
-                yield return File.WriteAllTextAsync(path, jsonEn).AsCoroutine();
-            }
-            else
-            {
-                yield return File.WriteAllTextAsync(path, json).AsCoroutine();
-            }
-            action?.Invoke();
-            LinkLog.Log($"Save a Json at {path}");
-        }
-
-        #endregion
-
-        #region JsonRead
-        
-        public static T ReadJson<T>(string fileName, bool decrypt = true)
-            where T : IPersistenceData
-        {
-            if(string.IsNullOrEmpty(fileName)) return default;
-            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
-            if (!File.Exists(path)) return default;
-            var jsonEn = File.ReadAllText(path);
-            T result = default;
-            try
-            {
-                if (decrypt)
-                {
-                    var json = Decrypt(jsonEn);
-                    result = JsonConvert.DeserializeObject<T>(json);
-                }
-                result = JsonConvert.DeserializeObject<T>(jsonEn);
-            }
-            catch (Exception e)
-            {
-                LinkLog.LogError(e);
-            }
-            return result;
-        }
-
-        public static T ReadJson<T>(bool decrypt = true)
-            where T : IPersistenceData
-        {
-            var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            return ReadJson<T>(fileName, decrypt);
-        }
-        
-        public static LoaderYieldInstruction<T> ReadJsonAsync<T>(string fileName, UnityAction<T> action, bool decrypt = true)
-            where T : class, IPersistenceData
-        {
-            if (string.IsNullOrEmpty(fileName)) return null;
-            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
-            var loadHandler = new LoaderYieldInstruction<T>(path);
-            if (action != null) loadHandler.OnLoadCompleted((savedData, path) => {action.Invoke(savedData);});
-            ApplicationManager.RunCoroutine(ReadJsonHandle(path, loadHandler, decrypt));
-            return loadHandler;
-        }
-        
-        public static LoaderYieldInstruction<T> ReadJsonAsync<T>(UnityAction<T> action, bool decrypt = true)
-            where T : class, IPersistenceData
-        {
-            var typ = typeof(T);
-            var fileName = $"{typ.Namespace}_{typ.Name}";
-            // if (string.IsNullOrEmpty(fileName)) return null;
-            // var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
-            // var loaderYieldInstruction = new LoaderYieldInstruction<T>(path)
-            // if (action != null) loaderYieldInstruction.onLoadSuccess += (savedData, path) => {action.Invoke(savedData)};
-            // ApplicationManager.RunCoroutine(ReadJsonHandle(fileName, actiloaderYieldInstructionon, decrypt));
-            return ReadJsonAsync<T>(fileName, action, decrypt);
-        }
-        
-        private static IEnumerator ReadJsonHandle<T>(string path, LoaderYieldInstruction<T> loadHandler, bool decrypt)
-            where T : class, IPersistenceData
-        {
-            if (!File.Exists(path)) 
-            {
-                loadHandler.SetAsset(null);
-                yield break;
-            }
-            string uri = "file://" + path;
-            T data = null;
-            using (UnityWebRequest request = UnityWebRequest.Get(uri))
-            {
-                yield return request.SendWebRequest();
-
-                if (request.result == UnityWebRequest.Result.Success)
-                {
-                    string jsonEn = request.downloadHandler.text;
-                    var json = decrypt ? Decrypt(jsonEn) : jsonEn;
-                    data = JsonConvert.DeserializeObject<T>(json);
-                }
-                else
-                {
-                    LinkLog.LogError("Failed to read file: " + request.error);
-                }
-            }
-            loadHandler.SetAsset(data);
-            // var task = File.ReadAllTextAsync(path);
-            // yield return task.AsCoroutine();
-            // var jsonEn = task.Result;
-            // if (decrypt)
-            // {
-            //     var json = Decrypt(jsonEn);
-            //     var dataDe = JsonConvert.DeserializeObject<T>(json);
-            //     loadHandler.SetAsset(dataDe);
-            //     yield break;
-            // }
-            // var data = JsonConvert.DeserializeObject<T>(jsonEn);
-            // loadHandler.SetAsset(data);
-        }
-        
-        public static void ClearJson(string fileName)
-        {
-            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
-            if (!File.Exists(path)) return;
-            File.Delete(path);
-        }
-        
-        public static void ClearJson<T>()
-            where T : IPersistenceData
-        {
-            var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            var path = Path.Combine(SavePath, JsonDirectory, $"{fileName}.json");
-            if (!File.Exists(path)) return;
-            File.Delete(path);
-        }
-        
-        public static void ClearAllJson()
-        {
-            var path = Path.Combine(SavePath, JsonDirectory);
-            if (!Directory.Exists(path)) return;
-            DirectoryInfo di = new DirectoryInfo(path);
-            di.Delete(true);
-        }
-
-        #endregion
-
-        #region BinarySave
-        
-        public static bool SaveDataBinary<T>(string fileName, T data, bool encrypt = true)
-            where T : IPersistenceData
-        {
-            if (string.IsNullOrEmpty(fileName)) return false;
-            CheckDirectory(BinaryDirectory);
-            var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                BinaryFormatter formatter = new BinaryFormatter();
-                formatter.Serialize(memoryStream, data);
-                var bytes = memoryStream.ToArray();
-                if(encrypt) bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
-                File.WriteAllBytes(filePath, bytes);
-                memoryStream.Close();
-            }
-            LinkLog.Log($"Save a Binary at {filePath}");
-            return true;
-        }
-
-        public static bool SaveDataBinary<T>(T data, bool encrypt = true)
-            where T : IPersistenceData
-        {
-            if (data == null) return false;
-            var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            return SaveDataBinary(fileName, data, encrypt);
-        }
-
-#if !UNITY_WEBGL
-        public static async Task SaveDataBinaryTask<T>(string fileName, T data, bool encrypt = true)
-            where T : IPersistenceData
-        {
-            if(string.IsNullOrEmpty(fileName)) return;
-            CheckDirectory(BinaryDirectory);
-            var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                BinaryFormatter formatter = new BinaryFormatter();
-                formatter.Serialize(memoryStream, data);
-                var bytes = memoryStream.ToArray();
-                if(encrypt) bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
-                await File.WriteAllBytesAsync(filePath, bytes);
-                memoryStream.Close();
-            }
-            LinkLog.Log($"Save a Binary at {filePath}");
-        }
-
-        public static async Task SaveDataBinaryTask<T>(T data, bool encrypt = true)
-            where T : IPersistenceData
-        {
-            var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            await SaveDataBinaryTask(fileName, data, encrypt);
-        }
-#endif
-
-        public static Coroutine SaveDataBinaryAsync<T>(string fileName, T data, Action action, bool encrypt = true)
-            where T : IPersistenceData
-        {
-            if(string.IsNullOrEmpty(fileName)) return null;
-            return ApplicationManager.RunCoroutine(SaveDataBinaryHandler(fileName, data, action, encrypt));
-        }
-
-        public static Coroutine SaveDataBinaryAsync<T>(T data, Action action, bool encrypt = true)
-            where T : IPersistenceData
-        {
-            var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            return SaveDataBinaryAsync(fileName, data, action, encrypt);
-        }
-        
-        private static IEnumerator SaveDataBinaryHandler<T>(string fileName, T data, Action action, bool encrypt = true)
-            where T : IPersistenceData
-        {
-            CheckDirectory(BinaryDirectory);
-            var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
-            // 创建一个文件流用于保存数据
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                BinaryFormatter formatter = new BinaryFormatter();
-                formatter.Serialize(memoryStream, data);
-                var bytes = memoryStream.ToArray();
-                if(encrypt) bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
-                yield return File.WriteAllBytesAsync(filePath, bytes).AsCoroutine();
-                memoryStream.Close();
-            }
-            action?.Invoke();
-            LinkLog.Log($"Save a Binary at {filePath}");
-        }
-
-        #endregion
-
-        #region BinaryRead
-
-        private static IEnumerator ReadBinaryCoroutineHandle<T>(string filePath, LoaderYieldInstruction<T> loadHandler, bool decrypt = true)
-            where T : class, IPersistenceData
-        {
-            // if (string.IsNullOrEmpty(fileName)) yield break;
-            // var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
-            if (!File.Exists(filePath)) 
-            {
-                loadHandler.SetAsset(null);
-                yield break;
-            }
-
-            string uri = "file://" + filePath;
-            byte[] decryptedData = null;
-            using (UnityWebRequest request = UnityWebRequest.Get(uri))
-            {
-                yield return request.SendWebRequest();
-
-                if (request.result == UnityWebRequest.Result.Success)
-                {
-                    var encryptedData = request.downloadHandler.data;
-                    decryptedData = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
-                }
-                else
-                {
-                    LinkLog.LogError("Failed to read file: " + request.error);
-                }
-            }
-            if (decryptedData == null)
-            {
-                loadHandler.SetAsset(null);
-                yield break;
-            }
-
-            T data = null;
-            using (MemoryStream memoryStream = new MemoryStream(decryptedData))
-            {
-                // 使用BinaryFormatter进行反序列化
-                BinaryFormatter formatter = new BinaryFormatter();
-                data = (T)formatter.Deserialize(memoryStream);
-                // 关闭文件流
-                memoryStream.Close();
-            }
-            loadHandler.SetAsset(data);
-        }
-        
-        public static LoaderYieldInstruction<T> ReadBinaryAsync<T>(string fileName, Action<T> callback, bool decrypt = true)
-            where T : class, IPersistenceData
-        {
-            if(string.IsNullOrEmpty(fileName)) return null;
-            var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
-            var loadHandler = new LoaderYieldInstruction<T>(filePath);
-            if (callback != null) loadHandler.OnLoadCompleted((savedData, path) => {callback.Invoke(savedData);});
-            ApplicationManager.RunCoroutine(ReadBinaryCoroutineHandle(filePath, loadHandler, decrypt));
-            return loadHandler;
-        }
-        
-        public static LoaderYieldInstruction<T> ReadBinaryAsync<T>(Action<T> callback, bool decrypt = true)
-            where T : class, IPersistenceData
-        {
-            var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            return ReadBinaryAsync(fileName, callback, decrypt);
-        }
-        
-        // public static async Task<T> ReadBinaryTask<T>(string fileName, bool decrypt = true)
-        //     where T : IPersistenceData
-        // {
-        //     if(string.IsNullOrEmpty(fileName)) return default;
-        //     var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
-        //     if (!File.Exists(filePath)) return default;
-        //     byte[] encryptedData = await File.ReadAllBytesAsync(filePath);
-        //     var decryptedData = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
-        //     using MemoryStream memoryStream = new MemoryStream(decryptedData);
-        //     // 使用BinaryFormatter进行反序列化
-        //     BinaryFormatter formatter = new BinaryFormatter();
-        //     T data = (T)formatter.Deserialize(memoryStream);
-        //     // 关闭文件流
-        //     memoryStream.Close();
-        //     return data;
-        // }
-        
-        // public static async Task<T> ReadBinaryTask<T>(bool decrypt = true)
-        //     where T : IPersistenceData
-        // {
-        //     var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-        //     return await ReadBinaryTask<T>(fileName, decrypt);
-        // }
-
-        public static T ReadBinary<T>(string fileName, bool decrypt = true)
-            where T : IPersistenceData
-        {
-            if(string.IsNullOrEmpty(fileName)) return default;
-            var filePath = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
-            if (!File.Exists(filePath)) return default;
-            byte[] encryptedData = File.ReadAllBytes(filePath);
-            var decryptedData = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
-            using MemoryStream memoryStream = new MemoryStream(decryptedData);
-            // 使用BinaryFormatter进行反序列化
-            BinaryFormatter formatter = new BinaryFormatter();
-            T data = (T)formatter.Deserialize(memoryStream);
-            // 关闭文件流
-            memoryStream.Close();
-            return data;
-        }
-
-        public static T ReadBinary<T>(bool decrypt = true)
-            where T : IPersistenceData
-        {
-            var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            return ReadBinary<T>(fileName, decrypt);
-        }
-
-        public static void ClearBinary(string fileName)
-        {
-            var path = Path.Combine(SavePath, BinaryDirectory, $"{fileName}.bytes");
-            if (!File.Exists(path)) return;
-            File.Delete(path);
-        }
-        
-        public static void ClearBinary<T>()
-            where T : IPersistenceData
-        {
-            var fileName = $"{typeof(T).Namespace}_{typeof(T).Name}";
-            ClearBinary(fileName);
-        }
-        
-        public static void ClearAllBinary()
-        {
-            var path = Path.Combine(SavePath, BinaryDirectory);
-            if (!Directory.Exists(path)) return;
-            DirectoryInfo di = new DirectoryInfo(path);
-            di.Delete(true);
         }
 
         #endregion
@@ -635,20 +365,18 @@ namespace PowerCellStudio
 
         private static bool captureTakeing = false;
 
-        public static Coroutine TakeCapture(string fileName, Rect rect, Camera camera = null)
+        public static Coroutine TakeCapture(string fileName, Rect rect, Camera camera = null, bool encrypt = false)
         {
             if (captureTakeing) return null;
             captureTakeing = true;
             if (camera == null)
-                return ApplicationManager.RunCoroutine(ScreenCapture(fileName, rect));
-            return ApplicationManager.RunCoroutine(CameraCapture(camera, fileName, rect));
+                return ApplicationManager.RunCoroutine(ScreenCapture(fileName, rect, encrypt));
+            return ApplicationManager.RunCoroutine(CameraCapture(camera, fileName, rect, encrypt));
         }
 
-        private static IEnumerator CameraCapture(Camera camera, string fileName, Rect rect)
+        private static IEnumerator CameraCapture(Camera camera, string fileName, Rect rect, bool encrypt)
         {
-            CheckDirectory(CaptureDirectory);
             yield return new WaitForEndOfFrame();
-            var path = Path.Combine(SavePath, CaptureDirectory, $"{fileName}.png");
             RenderTexture rt = new RenderTexture((int)rect.width, (int)rect.height, 24);
             rt.depthStencilFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.D32_SFloat;
             rt.format = RenderTextureFormat.ARGB32;
@@ -656,128 +384,82 @@ namespace PowerCellStudio
             camera.Render();
             RenderTexture.active = rt;
             Texture2D texture2D = new Texture2D((int)rect.width, (int)rect.height, TextureFormat.RGB24, false);
-            texture2D.ReadPixels(rect, 0,0);
+            texture2D.ReadPixels(rect, 0, 0);
             texture2D.Apply();
             var bytes = texture2D.EncodeToPNG();
-            File.WriteAllBytes(path, bytes);
+            var token = new YieldInstructionCompletionSource<bool>();
+            _captureProcessor.SaveAsync(fileName, texture2D, token.SetResult, encrypt);
             camera.targetTexture = null;
             RenderTexture.active = null;
             Object.Destroy(rt);
             Object.Destroy(texture2D);
+            yield return token;
             captureTakeing = false;
 #if UNITY_EDITOR
-            LinkLog.Log($"Save a camera capture at {path}");
+            if (token.Result)
+            {
+                _captureProcessor.TryGetSaveFilePath(fileName, out var path);
+                LinkLog.Log($"Save a camera capture at {path}");
+            }
 #endif
         }
-        
-        private static IEnumerator ScreenCapture(string fileName, Rect rect)
+
+        private static IEnumerator ScreenCapture(string fileName, Rect rect, bool encrypt)
         {
-            CheckDirectory(CaptureDirectory);
             yield return new WaitForEndOfFrame();
-            var path = Path.Combine(SavePath, CaptureDirectory, $"{fileName}.png");
             Texture2D texture2D = new Texture2D((int)rect.width, (int)rect.height, TextureFormat.RGB24, false);
-            texture2D.ReadPixels(rect, 0,0);
+            texture2D.ReadPixels(rect, 0, 0);
             texture2D.Apply();
-            var pngbytes = texture2D.EncodeToPNG();
-            File.WriteAllBytes(path, pngbytes);
+            var token = new YieldInstructionCompletionSource<bool>();
+            _captureProcessor.SaveAsync(fileName, texture2D, token.SetResult, encrypt);
             Object.Destroy(texture2D);
+            yield return token;
             captureTakeing = false;
 #if UNITY_EDITOR
-            LinkLog.Log($"Save a Capture at {path}");
+            if (token.Result)
+            {
+                _captureProcessor.TryGetSaveFilePath(fileName, out var path);
+                LinkLog.Log($"Save a Capture at {path}");
+            }
 #endif
         }
 
-        public static Sprite LoadCapture(string fileName)
+        public static Sprite LoadCapture(string fileName, bool decrypt = false)
         {
-            var path = Path.Combine(SavePath, CaptureDirectory, $"{fileName}.png");
-            if (!File.Exists(path)) return null;
-            FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read);
-            byte[] imgByte = new byte[stream.Length];
-            var read = stream.Read(imgByte, 0, imgByte.Length);
-            stream.Close();
-            stream.Dispose();
-            Texture2D texture2D = new Texture2D(640, 360);
-            texture2D.LoadImage(imgByte);
-            return Sprite.Create(texture2D, new Rect(0f,0f, texture2D.width, texture2D.height), new Vector2(0.5f, 0.5f));
+            return _captureProcessor.Read(fileName, decrypt);
         }
-        
-        public static LoaderYieldInstruction<Sprite> LoadCaptureAsync(string fileName, Action<Sprite> action)
-        {
-            var path = Path.Combine(SavePath, CaptureDirectory, $"{fileName}.png");
-            if (!File.Exists(path)) return null;
-            var loadHandler = new LoaderYieldInstruction<Sprite>(path);
-            if (action != null) loadHandler.OnLoadCompleted((asset, path) => {action.Invoke(asset);});
-            ApplicationManager.RunCoroutine(LoadCaptureHandle(path, loadHandler));
-            return loadHandler;
-        }
-        
-        public static IEnumerator LoadCaptureHandle(string path, LoaderYieldInstruction<Sprite> loadHandler)
-        {
-            if (!File.Exists(path)) 
-            {
-                loadHandler.SetAsset(null);
-                yield break;
-            }
-            // 使用 file:// 协议加载本地文件
-            string url = "file://" + path;
-            Sprite sprite = null;
-            using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(url))
-            {
-                // 发送请求并等待完成
-                yield return request.SendWebRequest();
 
-                if (request.result == UnityWebRequest.Result.Success)
-                {
-                    // 获取 Texture2D
-                    Texture2D texture = DownloadHandlerTexture.GetContent(request);
-
-                    // 创建 Sprite
-                    sprite = Sprite.Create(
-                        texture,
-                        new Rect(0, 0, texture.width, texture.height),
-                        new Vector2(0.5f, 0.5f) // 设置 Sprite 的锚点为中心
-                    );
-                }
-                else
-                {
-                    LinkLog.LogError("加载图片失败: " + request.error);
-                }
-            }
-            loadHandler.SetAsset(sprite);
-            // FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read);
-            // byte[] imgByte = new byte[stream.Length];
-            // yield return stream.ReadAsync(imgByte, 0, imgByte.Length).AsCoroutine();
-            // stream.Close();
-            // stream.Dispose();
-            // Texture2D texture2D = new Texture2D(640, 360);
-            // texture2D.LoadImage(imgByte);
-            // var sprite =  Sprite.Create(texture2D, new Rect(0f,0f, texture2D.width, texture2D.height), new Vector2(0.5f, 0.5f));
-            // action?.Invoke(sprite);
+        public static void LoadCaptureAsync(string fileName, Action<Sprite> action, bool decrypt = false)
+        {
+            _captureProcessor.ReadAsync(fileName, action, decrypt);
         }
-        
+
+        public static YieldInstructionCompletionSource<Sprite> LoadCaptureAsYieldInstruction(string fileName, bool decrypt = false)
+        {
+            var token = new YieldInstructionCompletionSource<Sprite>();
+            _captureProcessor.ReadAsync(fileName, token.SetResult, decrypt);
+            return token;
+        }
+
+#if !UNITY_WEBGL
+        public static Task<Sprite> LoadCaptureAsTask(string fileName, bool decrypt = false)
+        {
+            var tcs = new TaskCompletionSource<Sprite>();
+            _captureProcessor.ReadAsync(fileName, tcs.SetResult, decrypt);
+            return tcs.Task;
+        }
+#endif
+
         public static void DeleteCapture(string fileName)
         {
-            var path = Path.Combine(SavePath, CaptureDirectory, $"{fileName}.png");
-            if (!File.Exists(path)) return;
-            File.Delete(path);
+            _captureProcessor.Clear(fileName);
         }
-        
+
         public static void ClearCapture()
         {
-            var path = Path.Combine(SavePath, CaptureDirectory);
-            if (!Directory.Exists(path)) return;
-            DirectoryInfo di = new DirectoryInfo(path);
-            di.Delete(true);
+            _captureProcessor.ClearAll();
         }
 
         #endregion
-
-        public static void ClearAll()
-        {
-            ClearAllPlayerPrefs();
-            ClearAllJson();
-            ClearAllBinary();
-            ClearCapture();
-        }
     }
 }

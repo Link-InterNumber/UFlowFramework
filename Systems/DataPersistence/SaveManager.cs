@@ -28,7 +28,7 @@ namespace PowerCellStudio
 
       public PlayerSave LoadSave(SaveSlot slot)
       {
-         var saves = PlayerDataUtils.ReadBinary<PlayerSaveCollection>();
+         var saves = PlayerDataUtils.Read<PlayerSaveCollection>(PlayerDataType.Binary);
          if (saves == null || saves.playerSaves == null || saves.playerSaves.Count == 0)
          {
             return null;
@@ -48,7 +48,7 @@ namespace PowerCellStudio
             playerName = name,
             slotIndex = (int)slot,
          };
-         var saves = PlayerDataUtils.ReadBinary<PlayerSaveCollection>();
+         var saves = PlayerDataUtils.Read<PlayerSaveCollection>(PlayerDataType.Binary);
          if (saves == null || saves.playerSaves == null)
          {
             saves = new PlayerSaveCollection();
@@ -56,7 +56,7 @@ namespace PowerCellStudio
          }
          saves.playerSaves.RemoveAll(o => o.slotIndex == (int)slot);
          saves.playerSaves.Add(save);
-         PlayerDataUtils.SaveDataBinaryAsync<PlayerSaveCollection>(saves, null);
+         PlayerDataUtils.SaveAsync<PlayerSaveCollection>(saves, PlayerDataType.Binary, null);
          return save;
       }
 
@@ -64,7 +64,7 @@ namespace PowerCellStudio
       {
          if (save == null) return;
 
-         var saves = PlayerDataUtils.ReadBinary<PlayerSaveCollection>();
+         var saves = PlayerDataUtils.Read<PlayerSaveCollection>(PlayerDataType.Binary);
          if (saves == null)
          {
             saves = new PlayerSaveCollection();
@@ -75,7 +75,7 @@ namespace PowerCellStudio
          }
          saves.playerSaves.RemoveAll(o => o.slotIndex == (int)save.slotIndex);
          saves.playerSaves.Add(save);
-         PlayerDataUtils.SaveDataBinaryAsync<PlayerSaveCollection>(saves, null);
+         PlayerDataUtils.SaveAsync<PlayerSaveCollection>(saves, PlayerDataType.Binary, null);
       }
 
       public void SavePlayer()

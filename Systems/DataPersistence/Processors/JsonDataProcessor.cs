@@ -1,0 +1,163 @@
+using System;
+using System.IO;
+using Newtonsoft.Json;
+#if !UNITY_WEBGL
+using System.Threading.Tasks;
+#endif
+
+namespace PowerCellStudio
+{
+    [DataProcessor(PlayerDataType.Json)]
+    public class JsonDataProcessor : PersistenceDataProcessor
+    {
+        private static readonly string _directoryName = "Json";
+        private static readonly string _extension = "json";
+        public override string directoryName => _directoryName;
+        public override string extension => _extension;
+
+        public override bool Save<T>(string saveKey, T data, bool encrypt)
+        {
+            if (!TryGetSaveFilePath(saveKey, out var filePath)) return false;
+            CheckDirectory();
+            try
+            {
+                string json = JsonConvert.SerializeObject(data);
+                if (encrypt)
+                {
+                    var jsonEn = EncryptUtils.Base64Encrypt(json);
+                    File.WriteAllText(filePath, jsonEn);
+                }
+                else
+                {
+                    File.WriteAllText(filePath, json);
+                }
+                LinkLog.Log($"Save a Json at {filePath}");
+                return true;
+            }
+            catch (Exception e)
+            {
+                LinkLog.LogError($"Failed to save json data: {e.Message}");
+                return false;
+            }
+        }
+
+        public override void SaveAsync<T>(string saveKey, T data, Action<bool> onComplete, bool encrypt)
+        {
+#if UNITY_WEBGL
+            var isSuccess = Save<T>(saveKey, data, encrypt);
+            onComplete?.Invoke(isSuccess);
+#else
+            CheckDirectory();
+            _ = SaveDataJsonHandler(saveKey, data, onComplete, encrypt);
+#endif
+        }
+
+        private async Task SaveDataJsonHandler<T>(string saveKey, T data, Action<bool> onComplete, bool encrypt)
+        {
+            if (!TryGetSaveFilePath(saveKey, out var filePath))
+            {
+                onComplete?.Invoke(default);
+                return;
+            }
+            try
+            {
+                await Task.Run(() =>
+                {
+                    string json = JsonConvert.SerializeObject(data);
+                    if (encrypt)
+                    {
+                        var jsonEn = EncryptUtils.Base64Encrypt(json);
+                        File.WriteAllText(filePath, jsonEn);
+                    }
+                    else
+                    {
+                        File.WriteAllText(filePath, json);
+                    }
+                });
+                LinkLog.Log($"Save a Json at {filePath}");
+                onComplete?.Invoke(true);
+            }
+            catch (Exception e)
+            {
+                LinkLog.LogError($"Failed to save json data: {e.Message}");
+                onComplete?.Invoke(false);
+            }
+        }
+
+        public override T Read<T>(string saveKey, bool decrypt)
+        {
+            if (!TryGetSaveFilePath(saveKey, out var filePath)) return default;
+            if (!File.Exists(filePath)) return default;
+
+            var jsonEn = File.ReadAllText(filePath);
+            T result = default;
+            try
+            {
+                if (decrypt)
+                {
+                    var json = EncryptUtils.Base64Decrypt(jsonEn);
+                    result = JsonConvert.DeserializeObject<T>(json);
+                }
+                result = JsonConvert.DeserializeObject<T>(jsonEn);
+            }
+            catch (Exception e)
+            {
+                LinkLog.LogError($"Failed to read json data: {e.Message}");
+            }
+            return result;
+        }
+
+        public override void ReadAsync<T>(string saveKey, Action<T> onComplete, bool decrypt)
+        {
+#if UNITY_WEBGL
+            var data = Read<T>(saveKey, decrypt);
+            onComplete?.Invoke(data);
+#else
+            if (!TryGetSaveFilePath(saveKey, out var filePath)) return;
+            if (!File.Exists(filePath)) return;
+            _ = ReadDataBinaryHandler(saveKey, onComplete, decrypt);
+#endif
+        }
+
+        private async Task ReadDataBinaryHandler<T>(string saveKey, Action<T> onComplete, bool decrypt)
+        {
+            if (!TryGetSaveFilePath(saveKey, out var filePath))
+            {
+                onComplete?.Invoke(default);
+                return;
+            }
+            if (!File.Exists(filePath)) 
+            {
+                onComplete?.Invoke(default); // 建议：文件不存在也应回调
+                return;
+            }
+            try
+            {
+                T data = default;
+                await Task.Run(() =>
+                {
+                    var jsonEn = File.ReadAllText(filePath);
+                    try
+                    {
+                        if (decrypt)
+                        {
+                            var json = EncryptUtils.Base64Decrypt(jsonEn);
+                            data = JsonConvert.DeserializeObject<T>(json);
+                        }
+                        data = JsonConvert.DeserializeObject<T>(jsonEn);
+                    }
+                    catch (Exception e)
+                    {
+                        LinkLog.LogError($"Failed to read json data: {e.Message}");
+                    }
+                });
+                onComplete?.Invoke(data);
+            }
+            catch (Exception e)
+            {
+                LinkLog.LogError($"Failed to read json data: {e.Message}");
+                onComplete?.Invoke(default);
+            }
+        }
+    }
+}

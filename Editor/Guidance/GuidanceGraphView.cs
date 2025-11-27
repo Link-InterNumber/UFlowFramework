@@ -81,6 +81,8 @@ namespace PowerCellStudio
 
         public void ClearGraph()
         {
+            if (nodes.Count() == 0)
+                return;
             foreach (var node in nodes.ToList())
             {
                 if (node.outputContainer.Query<Port>().AtIndex(0).connected)
@@ -276,6 +278,8 @@ namespace PowerCellStudio
         /// </summary>
         public void AutoLayout(float horizontalSpacing = 350f, float verticalSpacing = 400f, Vector2 startOffset = default)
         {
+            if (nodes.Count() == 0)
+                return;
             if (startOffset == default) startOffset = new Vector2(100, 100);
 
             // List<List<Node>> levels = new List<List<Node>>();
