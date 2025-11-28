@@ -10,6 +10,10 @@ using System.Threading.Tasks;
 
 namespace PowerCellStudio
 {
+    /// <summary>
+    /// 玩家数据类型枚举。
+    /// Enumeration for player data types.
+    /// </summary>
     public enum PlayerDataType
     {
         Json = 0,
@@ -17,6 +21,10 @@ namespace PowerCellStudio
         PlayerPrefs,
     }
 
+    /// <summary>
+    /// 玩家数据工具类，提供数据保存、读取、清除等功能。
+    /// Utility class for player data, providing save, read, and clear functionalities.
+    /// </summary>
     public static partial class PlayerDataUtils
     {
         private static PersistenceDataProcessor[] _persistenceDataProcessors;
@@ -84,6 +92,13 @@ namespace PowerCellStudio
             return null;
         }
 
+        /// <summary>
+        /// 检查是否存在指定键的数据。
+        /// Checks if data exists for the specified key.
+        /// </summary>
+        /// <param name="saveKey">保存数据的键。The key for the saved data.</param>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <returns>如果存在数据，则返回 true；否则返回 false。Returns true if the data exists; otherwise, false.</returns>
         public static bool HasSave(string saveKey, Type dataType)
         {
             var processor = GetProcessor(PlayerDataType.PlayerPrefs);
@@ -91,6 +106,13 @@ namespace PowerCellStudio
             return processor.HasSave(saveKey);
         }
 
+        /// <summary>
+        /// 检查是否存在指定类型的数据。
+        /// Checks if data exists for the specified type.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <returns>如果存在数据，则返回 true；否则返回 false。Returns true if the data exists; otherwise, false.</returns>
         public static bool HasSave<T>(Type dataType)
             where T : IPersistenceData
         {
@@ -99,6 +121,16 @@ namespace PowerCellStudio
         }
 
         #region Save
+        /// <summary>
+        /// 保存数据到指定键。
+        /// Saves data to the specified key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="saveKey">保存数据的键。The key for the saved data.</param>
+        /// <param name="data">要保存的数据。The data to save.</param>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="encrypt">是否加密数据。Whether to encrypt the data.</param>
+        /// <returns>如果保存成功，则返回 true；否则返回 false。Returns true if the data is saved successfully; otherwise, false.</returns>
         public static bool Save<T>(string saveKey, T data, PlayerDataType dataType, bool encrypt = true)
             where T : IPersistenceData
         {
@@ -107,6 +139,15 @@ namespace PowerCellStudio
             return processor.Save<T>(saveKey, data, encrypt);
         }
 
+        /// <summary>
+        /// 保存数据到默认键。
+        /// Saves data to the default key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="data">要保存的数据。The data to save.</param>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="encrypt">是否加密数据。Whether to encrypt the data.</param>
+        /// <returns>如果保存成功，则返回 true；否则返回 false。Returns true if the data is saved successfully; otherwise, false.</returns>
         public static bool Save<T>(T data, PlayerDataType dataType, bool encrypt = true)
             where T : IPersistenceData
         {
@@ -114,6 +155,16 @@ namespace PowerCellStudio
             return Save<T>(key, data, dataType, encrypt);
         }
 
+        /// <summary>
+        /// 异步保存数据到指定键。
+        /// Asynchronously saves data to the specified key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="saveKey">保存数据的键。The key for the saved data.</param>
+        /// <param name="data">要保存的数据。The data to save.</param>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="onComplete">保存完成时的回调。The callback to invoke when the save operation is complete.</param>
+        /// <param name="encrypt">是否加密数据。Whether to encrypt the data.</param>
         public static void SaveAsync<T>(string saveKey, T data, PlayerDataType dataType, Action<bool> onComplete, bool encrypt = true)
             where T : IPersistenceData
         {
@@ -126,6 +177,15 @@ namespace PowerCellStudio
             processor.SaveAsync<T>(saveKey, data, onComplete, encrypt);
         }
 
+        /// <summary>
+        /// 异步保存数据到默认键。
+        /// Asynchronously saves data to the default key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="data">要保存的数据。The data to save.</param>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="onComplete">保存完成时的回调。The callback to invoke when the save operation is complete.</param>
+        /// <param name="encrypt">是否加密数据。Whether to encrypt the data.</param>
         public static void SaveAsync<T>(T data, PlayerDataType dataType, Action<bool> onComplete, bool encrypt = true)
             where T : IPersistenceData
         {
@@ -133,6 +193,19 @@ namespace PowerCellStudio
             SaveAsync<T>(key, data, dataType, onComplete, encrypt);
         }
 
+        /// <summary>
+        /// 作为协程保存数据到指定键。
+        /// Saves data as a coroutine to the specified key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="saveKey">保存数据的键。The key for the saved data.</param>
+        /// <param name="data">要保存的数据。The data to save.</param>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="encrypt">是否加密数据。Whether to encrypt the data.</param>
+        /// <returns>
+        /// 返回一个协程等待对象，用于在协程中等待保存完成。
+        /// Returns a coroutine wait object to wait for the save operation to complete in a coroutine.
+        /// </returns> 
         public static YieldInstructionCompletionSource<bool> SaveAsYieldInstruction<T>(string saveKey, T data, PlayerDataType dataType, bool encrypt = true)
             where T : IPersistenceData
         {
@@ -147,6 +220,18 @@ namespace PowerCellStudio
             return token;
         }
 
+        /// <summary>
+        /// 作为协程保存数据到默认键。
+        /// Saves data as a coroutine to the default key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="data">要保存的数据。The data to save.</param>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="encrypt">是否加密数据。Whether to encrypt the data.</param>
+        /// <returns>
+        /// 返回一个协程等待对象，用于在协程中等待保存完成。
+        /// Returns a coroutine wait object to wait for the save operation to complete in a coroutine.
+        /// </returns>
         public static YieldInstructionCompletionSource<bool> SaveAsYieldInstruction<T>(T data, PlayerDataType dataType, bool encrypt = true)
             where T : IPersistenceData
         {
@@ -155,6 +240,19 @@ namespace PowerCellStudio
         }
 
 #if !UNITY_WEBGL
+        /// <summary>
+        /// 以任务形式保存数据到指定键。
+        /// Saves data as a task to the specified key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="saveKey">保存数据的键。The key for the saved data.</param>
+        /// <param name="data">要保存的数据。The data to save.</param>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="encrypt">是否加密数据。Whether to encrypt the data.</param>
+        /// <returns>
+        /// 返回一个任务对象，表示保存操作的异步结果。
+        /// Returns a task object representing the asynchronous result of the save operation.
+        /// </returns>
         public static Task<bool> SaveAsTask<T>(string saveKey, T data, PlayerDataType dataType, bool encrypt = true)
             where T : IPersistenceData
         {
@@ -165,6 +263,18 @@ namespace PowerCellStudio
             return tcs.Task;
         }
 
+        /// <summary>
+        /// 以任务形式保存数据到默认键。
+        /// Saves data as a task to the default key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="data">要保存的数据。The data to save.</param>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="encrypt">是否加密数据。Whether to encrypt the data.</param>
+        /// <returns>
+        /// 返回一个任务对象，表示保存操作的异步结果。
+        /// Returns a task object representing the asynchronous result of the save operation.
+        /// </returns>
         public static Task<bool> SaveAsTask<T>(T data, PlayerDataType dataType, bool encrypt = true)
             where T : IPersistenceData
         {
@@ -176,6 +286,15 @@ namespace PowerCellStudio
         #endregion
 
         #region Read
+        /// <summary>
+        /// 从指定键读取数据。
+        /// Reads data from the specified key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="saveKey">保存数据的键。The key for the saved data.</param>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="decrypt">是否解密数据。Whether to decrypt the data.</param>
+        /// <returns>读取的数据。The data that was read.</returns>
         public static T Read<T>(string saveKey, PlayerDataType dataType, bool decrypt = true)
             where T : IPersistenceData
         {
@@ -184,6 +303,14 @@ namespace PowerCellStudio
             return processor.Read<T>(saveKey, decrypt);
         }
 
+        /// <summary>
+        /// 从默认键读取数据。
+        /// Reads data from the default key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="decrypt">是否解密数据。Whether to decrypt the data.</param>
+        /// <returns>读取的数据。The data that was read.</returns>
         public static T Read<T>(PlayerDataType dataType, bool decrypt = true)
             where T : IPersistenceData
         {
@@ -191,6 +318,16 @@ namespace PowerCellStudio
             return Read<T>(key, dataType, decrypt);
         }
 
+        /// <summary>
+        /// 异步从指定键读取数据。
+        /// Asynchronously reads data from the specified key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="saveKey">保存数据的键。The key for the saved data.</param>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="onComplete">读取完成时的回调。The callback to invoke when the read operation is complete.</param>
+        /// <param name="decrypt">是否解密数据。Whether to decrypt the data.</param>
+        /// <returns>读取的数据。The data that was read.</returns>
         public static void ReadAsync<T>(string saveKey, PlayerDataType dataType, Action<T> onComplete, bool decrypt = true)
             where T : IPersistenceData
         {
@@ -203,6 +340,15 @@ namespace PowerCellStudio
             processor.ReadAsync<T>(saveKey, onComplete, decrypt);
         }
 
+        /// <summary>
+        /// 异步从默认键读取数据。
+        /// Asynchronously reads data from the default key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="onComplete">读取完成时的回调。The callback to invoke when the read operation is complete.</param>
+        /// <param name="decrypt">是否解密数据。Whether to decrypt the data.</param>
+        /// <returns>读取的数据。The data that was read.</returns>
         public static void ReadAsync<T>(PlayerDataType dataType, Action<T> onComplete, bool decrypt = true)
             where T : IPersistenceData
         {
@@ -210,6 +356,18 @@ namespace PowerCellStudio
             ReadAsync<T>(key, dataType, onComplete, decrypt);
         }
 
+        /// <summary>
+        /// 作为协程从指定键读取数据。
+        /// Reads data as a coroutine from the specified key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="saveKey">保存数据的键。The key for the saved data.</param>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="decrypt">是否解密数据。Whether to decrypt the data.</param>
+        /// <returns>
+        /// 返回一个协程等待对象，用于在协程中等待读取完成。
+        /// Returns a coroutine wait object to wait for the read operation to complete in a coroutine.
+        /// </returns>
         public static YieldInstructionCompletionSource<T> ReadAsYieldInstruction<T>(string saveKey, PlayerDataType dataType, bool decrypt = true)
             where T : IPersistenceData
         {
@@ -224,6 +382,17 @@ namespace PowerCellStudio
             return token;
         }
 
+        /// <summary>
+        /// 作为协程从默认键读取数据。
+        /// Reads data as a coroutine from the default key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="decrypt">是否解密数据。Whether to decrypt the data.</param>
+        /// <returns>
+        /// 返回一个协程等待对象，用于在协程中等待读取完成。
+        /// Returns a coroutine wait object to wait for the read operation to complete in a coroutine.
+        /// </returns>
         public static YieldInstructionCompletionSource<T> ReadAsYieldInstruction<T>(PlayerDataType dataType, bool decrypt = true)
             where T : IPersistenceData
         {
@@ -232,6 +401,18 @@ namespace PowerCellStudio
         }
 
 #if !UNITY_WEBGL
+        /// <summary>
+        /// 以任务形式从指定键读取数据。
+        /// Reads data as a task from the specified key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="saveKey">保存数据的键。The key for the saved data.</param>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="decrypt">是否解密数据。Whether to decrypt the data.</param>
+        /// <returns>
+        /// 返回一个任务对象，表示读取操作的异步结果。
+        /// Returns a task object representing the asynchronous result of the read operation.
+        /// </returns>
         public static Task<T> ReadAsTask<T>(string saveKey, PlayerDataType dataType, bool decrypt = true)
             where T : IPersistenceData
         {
@@ -242,6 +423,17 @@ namespace PowerCellStudio
             return tcs.Task;
         }
 
+        /// <summary>
+        /// 以任务形式从默认键读取数据。
+        /// Reads data as a task from the default key.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="dataType">数据类型。The data type.</param>
+        /// <param name="decrypt">是否解密数据。Whether to decrypt the data.</param>
+        /// <returns>
+        /// 返回一个任务对象，表示读取操作的异步结果。
+        /// Returns a task object representing the asynchronous result of the read operation.
+        /// </returns>
         public static Task<T> ReadAsTask<T>(PlayerDataType dataType, bool decrypt = true)
             where T : IPersistenceData
         {
@@ -253,6 +445,12 @@ namespace PowerCellStudio
         #endregion
 
         #region Clear
+        /// <summary>
+        /// 清除指定键的数据。
+        /// Clears the data for the specified key.
+        /// </summary>
+        /// <param name="saveKey">保存数据的键。The key for the saved data.</param>
+        /// <param name="dataType">数据类型。The data type.</param>
         public static void Clear(string saveKey, PlayerDataType dataType)
         {
             var processor = GetProcessor(dataType);
@@ -260,6 +458,12 @@ namespace PowerCellStudio
             processor.Clear(saveKey);
         }
 
+        /// <summary>
+        /// 清除指定类型的数据。
+        /// Clears the data for the specified type.
+        /// </summary>
+        /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
+        /// <param name="dataType">数据类型。The data type.</param>
         public static void Clear<T>(PlayerDataType dataType)
             where T : IPersistenceData
         {
@@ -267,6 +471,11 @@ namespace PowerCellStudio
             Clear(key, dataType);
         }
 
+        /// <summary>
+        /// 清除所有指定数据类型的数据。
+        /// Clears all data of the specified data type.
+        /// </summary>
+        /// <param name="dataType">数据类型。The data type.</param>
         public static void ClearAll(PlayerDataType dataType)
         {
             var processor = GetProcessor(dataType);
@@ -274,6 +483,10 @@ namespace PowerCellStudio
             processor.ClearAll();
         }
 
+        /// <summary>
+        /// 清除所有数据。
+        /// Clears all data.
+        /// </summary>
         public static void ClearAllData()
         {
             ClearCapture();
@@ -285,25 +498,43 @@ namespace PowerCellStudio
         }
         #endregion
 
+        /// <summary>
+        /// 是否存在指定名称的截图。
+        /// Checks if a capture with the specified name exists.
+        /// </summary>
+        /// <param name="fileName">截图文件名。The name of the capture file
+        /// </param>
+        /// <returns>如果存在截图，则返回 true；否则返回 false。Returns true if the capture exists; otherwise, false.</returns>
         public static bool HasCapture(string fileName)
         {
             return _captureProcessor.HasSave(fileName);
         }
 
         #region PlayerPrefsSave
-
+        /// <summary>
+        /// 保存整数到 PlayerPrefs。
+        /// Saves an integer to PlayerPrefs.
+        /// </summary>
         public static void SavePlayerPrefs(string key, int data)
         {
             PlayerPrefs.SetInt(key, data);
             PlayerPrefs.Save();
         }
 
+        /// <summary>
+        /// 保存字符串到 PlayerPrefs。
+        /// Saves a string to PlayerPrefs.
+        /// </summary>
         public static void SavePlayerPrefs(string key, string data)
         {
             PlayerPrefs.SetString(key, data);
             PlayerPrefs.Save();
         }
 
+        /// <summary>
+        /// 保存浮点数到 PlayerPrefs。
+        /// Saves a float to PlayerPrefs.
+        /// </summary>
         public static void SavePlayerPrefs(string key, float data)
         {
             PlayerPrefs.SetFloat(key, data);
@@ -314,16 +545,28 @@ namespace PowerCellStudio
 
         #region PlayerPrefsRead
 
+        /// <summary>
+        /// 从 PlayerPrefs 读取整数。
+        /// Reads an integer from PlayerPrefs.
+        /// </summary>
         public static int ReadPlayerInt(string key, int defaultValue)
         {
             return PlayerPrefs.GetInt(key, defaultValue);
         }
 
+        /// <summary>
+        /// 从 PlayerPrefs 读取字符串。
+        /// Reads a string from PlayerPrefs.
+        /// </summary>
         public static string ReadPlayerString(string key, string defaultValue)
         {
             return PlayerPrefs.GetString(key, defaultValue);
         }
 
+        /// <summary>
+        /// 从 PlayerPrefs 读取浮点数。
+        /// Reads a float from PlayerPrefs.
+        /// </summary>
         public static float ReadPlayerFloat(string key, float defaultValue)
         {
             return PlayerPrefs.GetFloat(key, defaultValue);
@@ -365,6 +608,15 @@ namespace PowerCellStudio
 
         private static bool captureTakeing = false;
 
+        /// <summary>
+        /// 截取屏幕或摄像机画面并保存为图片。
+        /// Captures the screen or camera view and saves it as an image.
+        /// </summary>
+        /// <param name="fileName">保存的文件名（不含扩展名）。The name of the file to save (without extension).</param>
+        /// <param name="rect">截取区域。The area to capture.</param>
+        /// <param name="camera">可选的摄像机对象。如果为 null，则截取屏幕。Optional camera object. If null, captures the screen.</param>
+        /// <param name="encrypt">是否加密保存的图片。Whether to encrypt the saved image.</param>
+        /// <returns>返回一个协程对象，用于在协程中等待截取完成。</returns>
         public static Coroutine TakeCapture(string fileName, Rect rect, Camera camera = null, bool encrypt = false)
         {
             if (captureTakeing) return null;
@@ -424,16 +676,43 @@ namespace PowerCellStudio
 #endif
         }
 
+        /// <summary>
+        /// 加载已保存的截图。
+        /// Loads a saved capture.
+        /// </summary>
+        /// <param name="fileName">截图文件名。The name of the capture file.</param>
+        /// <param name="decrypt">是否解密图片。Whether to decrypt the image.</
+        /// param>
+        /// <returns>返回加载的截图精灵对象。</returns>
         public static Sprite LoadCapture(string fileName, bool decrypt = false)
         {
             return _captureProcessor.Read(fileName, decrypt);
         }
 
+        /// <summary>
+        /// 异步加载已保存的截图。
+        /// Asynchronously loads a saved capture.
+        /// </summary>
+        /// <param name="fileName">截图文件名。The name of the capture file
+        /// </param>
+        /// <param name="action">加载完成时的回调。The callback to invoke
+        /// </param>
+        /// <param name="decrypt">是否解密图片。Whether to decrypt the image.</param>
         public static void LoadCaptureAsync(string fileName, Action<Sprite> action, bool decrypt = false)
         {
             _captureProcessor.ReadAsync(fileName, action, decrypt);
         }
 
+        /// <summary>
+        /// 作为协程加载已保存的截图。
+        /// Loads a saved capture as a coroutine.
+        /// </summary>
+        /// <param name="fileName">截图文件名。The name of the capture file.</param>
+        /// <param name="decrypt">是否解密图片。Whether to decrypt the image.</param>
+        /// <returns>
+        /// 返回一个协程等待对象，用于在协程中等待加载完成。
+        /// Returns a coroutine wait object to wait for the load operation to complete in a coroutine.
+        /// </returns>
         public static YieldInstructionCompletionSource<Sprite> LoadCaptureAsYieldInstruction(string fileName, bool decrypt = false)
         {
             var token = new YieldInstructionCompletionSource<Sprite>();
@@ -442,6 +721,16 @@ namespace PowerCellStudio
         }
 
 #if !UNITY_WEBGL
+        /// <summary>
+        /// 以任务形式加载已保存的截图。
+        /// Loads a saved capture as a task.
+        /// </summary>
+        /// <param name="fileName">截图文件名。The name of the capture file.</param>
+        /// <param name="decrypt">是否解密图片。Whether to decrypt the image.</param>
+        /// <returns>
+        /// 返回一个任务对象，表示加载操作的异步结果。
+        /// Returns a task object representing the asynchronous result of the load operation.
+        /// </returns>
         public static Task<Sprite> LoadCaptureAsTask(string fileName, bool decrypt = false)
         {
             var tcs = new TaskCompletionSource<Sprite>();
@@ -450,11 +739,20 @@ namespace PowerCellStudio
         }
 #endif
 
+        /// <summary>
+        /// 删除已保存的截图。
+        /// Deletes a saved capture.
+        /// </summary>
+        /// <param name="fileName">截图文件名。The name of the capture file.</param>
         public static void DeleteCapture(string fileName)
         {
             _captureProcessor.Clear(fileName);
         }
 
+        /// <summary>
+        /// 清除所有截图。
+        /// Clears all captures.
+        /// </summary>
         public static void ClearCapture()
         {
             _captureProcessor.ClearAll();
