@@ -17,12 +17,12 @@ namespace PowerCellStudio
         private static LoadMode _loadMode = LoadMode.Addressable;
         public static LoadMode loadMode => _loadMode;
         private static IAssetManager _assetManager;
-        // private static AssetsBundleManager _assetsBundleManager;
-        // private static AddressableManager _addressableManager;
+        
+        private static LoaderYieldInstructionPool _loaderYieldInstructionPool;
         
         public static AssetInitState initState => _assetManager?.initState ?? AssetInitState.Complete;
 
-        public static float initProcess =>_assetManager?.initProcess??0f;
+        public static float initProcess => _assetManager?.initProcess ?? 0f;
 
         public static IAssetLoader SpawnLoader(string tag= "")
         {
@@ -31,25 +31,26 @@ namespace PowerCellStudio
         
         public static void Init(MonoBehaviour coroutineRunner, Action callBack)
         {
+            _loaderYieldInstructionPool = new LoaderYieldInstructionPool();
             switch (_loadMode)
             {
                 case LoadMode.AssetBundle:
-                    if(_assetManager != null) break;
-                    _assetManager = new AssetsBundleManager(); 
+                    if (_assetManager != null) break;
+                    _assetManager = new AssetsBundleManager();
                     _assetManager.Init(coroutineRunner, callBack);
                     break;
                 case LoadMode.Addressable:
-                    if(_assetManager != null) break;
+                    if (_assetManager != null) break;
                     _assetManager = new AddressableManager();
                     _assetManager.Init(coroutineRunner, callBack);
                     break;
                 case LoadMode.Resources:
-                    if(_assetManager != null) break;
+                    if (_assetManager != null) break;
                     _assetManager = new ResourceManager();
                     _assetManager.Init(coroutineRunner, callBack);
                     break;
                 default:
-                    if(_assetManager != null) break;
+                    if (_assetManager != null) break;
                     _assetManager = new AssetsBundleManager();
                     _assetManager.Init(coroutineRunner, callBack);
                     break;
@@ -67,7 +68,7 @@ namespace PowerCellStudio
         {
             _assetManager?.DeSpawnAllLoader();
         }
-        
+
         public static void DeSpawnLoaderByTag(string tag)
         {
             _assetManager?.DeSpawnLoaderByTag(tag);
@@ -116,7 +117,7 @@ namespace PowerCellStudio
             }
             return paths;
         }
-        
+
         public static string CombinePaths(params string[] paths)
         {
             if (paths == null || paths.Length == 0)
@@ -163,6 +164,16 @@ namespace PowerCellStudio
             }
 
             return new string(pathBuffer.Slice(0, position));
+        }
+
+        public static LoaderYieldInstruction<T> GetLoadHandler<T>(string path) where T : class
+        {
+            return _loaderYieldInstructionPool.Get<T>(path);
+        }
+        
+        public static void ReleaseLoadHandler<T>(ILoaderYieldInstruction item) where T : class
+        {
+            _loaderYieldInstructionPool.Release<T>(item);
         }
 
         public static void ClearUnusedAsset()

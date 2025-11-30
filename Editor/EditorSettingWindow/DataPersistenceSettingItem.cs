@@ -22,12 +22,14 @@ namespace PowerCellStudio
 
         public string itemName => "Persistence Data";
 
+        public static readonly string SavePathRoot = $"{Application.persistentDataPath}";
+
         public void InitSave()
         {
             dataDictionary = new Dictionary<string, string>();
 
             var typeStrJson = "Json";
-            string folderPath = Path.Combine(PlayerDataUtils.SavePath, typeStrJson);
+            string folderPath = Path.Combine(SavePathRoot, typeStrJson);
             if (Directory.Exists(folderPath))
             {
                 var files = Directory.GetFiles(folderPath);
@@ -39,7 +41,7 @@ namespace PowerCellStudio
             }
             
             var typeStrBinary = "Binary";
-            folderPath = Path.Combine(PlayerDataUtils.SavePath, typeStrBinary);
+            folderPath = Path.Combine(SavePathRoot, typeStrBinary);
             if (Directory.Exists(folderPath))
             {
                 var files = Directory.GetFiles(folderPath);
@@ -64,15 +66,15 @@ namespace PowerCellStudio
         {
             if (GUILayout.Button("Clear Player Prefs"))
             {
-                PlayerDataUtils.ClearAllPlayerPrefs();
+                PlayerDataUtils.ClearAll(PlayerDataType.PlayerPrefs);
             }
             if (GUILayout.Button("Clear Json"))
             {
-                PlayerDataUtils.ClearAllJson();
+                PlayerDataUtils.ClearAll(PlayerDataType.Json);
             }
             if (GUILayout.Button("Clear Binary"))
             {
-                PlayerDataUtils.ClearAllBinary();
+                PlayerDataUtils.ClearAll(PlayerDataType.Binary);
             }
             if (GUILayout.Button("Delete All Capture"))
             {
@@ -80,7 +82,7 @@ namespace PowerCellStudio
             }
             if (GUILayout.Button("Delete All"))
             {
-                PlayerDataUtils.ClearAll();
+                PlayerDataUtils.ClearAllData();
             }
             // 读取
             _searchKey = EditorGUILayout.TextField("Data Save Key:", _searchKey);
@@ -134,11 +136,11 @@ namespace PowerCellStudio
                     {
                         if (entry.Value == "Json")
                         {
-                            PlayerDataUtils.ClearJson(entry.Key);
+                            PlayerDataUtils.Clear(entry.Key, PlayerDataType.Json);
                         }
                         else if (entry.Value == "Binary")
                         {
-                            PlayerDataUtils.ClearBinary(entry.Key);
+                            PlayerDataUtils.Clear(entry.Key, PlayerDataType.Binary);
                         }
                         dataDictionary.Remove(entry.Key);
                         GUILayout.EndHorizontal();
@@ -161,7 +163,7 @@ namespace PowerCellStudio
         private string ReadJson(string fileName, bool decrypt = true)
         {
             if(string.IsNullOrEmpty(fileName)) return default;
-            var path = Path.Combine(PlayerDataUtils.SavePath, "Json", $"{fileName}.json");
+            var path = Path.Combine(SavePathRoot, "Json", $"{fileName}.json");
             if (!File.Exists(path)) return default;
             var jsonEn = File.ReadAllText(path);
             if (decrypt)
@@ -180,7 +182,7 @@ namespace PowerCellStudio
         private string ReadBinary(string fileName, bool decrypt = true)
         {
             if(string.IsNullOrEmpty(fileName)) return default;
-            var filePath = Path.Combine(PlayerDataUtils.SavePath, "Binary", $"{fileName}.bytes");
+            var filePath = Path.Combine(SavePathRoot, "Binary", $"{fileName}.bytes");
             if (!File.Exists(filePath)) return default;
             byte[] encryptedData = File.ReadAllBytes(filePath);
             var decryptedData = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;

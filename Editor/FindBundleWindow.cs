@@ -9,7 +9,7 @@ namespace PowerCellStudio
     public class FindBundleWindow : FolderEditorWindow
     {
         Dictionary<string,List<string>> dataString = new Dictionary<string, List<string>>();
-        private string _bundleName;
+        private string _bundleName = "";
         private string _printResult;
         private Vector2 _scrollPosition;
 

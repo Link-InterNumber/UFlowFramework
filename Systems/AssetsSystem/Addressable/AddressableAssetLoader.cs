@@ -129,7 +129,7 @@ namespace PowerCellStudio
 //             return gameObj;
 //         }
         
-        public void AsyncLoadNInstantiate(string address, Action<GameObject> onSuccess, Action onFail = null)
+        public void AsyncLoadNInstantiate(string address, OnLoadSuccess<GameObject> onSuccess, OnLoadFailed onFail = null)
         {
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
@@ -151,7 +151,7 @@ namespace PowerCellStudio
             };
         }
 
-        public void AsyncLoadNInstantiate(string address, Transform parent, Action<GameObject> onSuccess, Action onFail = null)
+        public void AsyncLoadNInstantiate(string address, Transform parent, OnLoadSuccess<GameObject> onSuccess, OnLoadFailed onFail = null)
         {
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
@@ -259,7 +259,7 @@ namespace PowerCellStudio
         /// <param name="address">资源的地址</param>
         /// <param name="onSuccess">资源成功加载时调用的回调</param>
         /// <param name="onFail">资源加载失败时调用的回调</param>
-        public void LoadAsync<T>(string address, Action<T> onSuccess, Action onFail = null) where T : Object
+        public void LoadAsync<T>(string address, OnLoadSuccess<T> onSuccess, OnLoadFailed onFail = null) where T : Object
         {
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
@@ -315,7 +315,7 @@ namespace PowerCellStudio
             address = AssetUtils.EditorCheckPath(address);
 #endif
             var handle = GetLoadHandle<T>(address);
-            var instruction = new LoaderYieldInstruction<T>(address);
+            var instruction = AssetUtils.GetLoadHandler<T>(address);
             if (handle.IsDone)
             {
                 instruction.SetAsset(handle.Result);
@@ -373,7 +373,7 @@ namespace PowerCellStudio
         /// <typeparam name="T">要加载的资源类型</typeparam>
         /// <param name="assetReference">资源的引用</param>
         /// <param name="action">资源成功加载时调用的回调</param>
-        public void LoadAsync<T>(AssetReferenceT<T> assetReference, Action<T> action) where T : Object
+        public void LoadAsync<T>(AssetReferenceT<T> assetReference, OnLoadSuccess<T> action) where T : Object
         {
             var handle = GetLoadHandle<T>(assetReference);
             if (handle.IsDone)
@@ -398,7 +398,7 @@ namespace PowerCellStudio
         /// <param name="assetReference">资源的引用</param>
         /// <param name="onSuccess">资源成功加载时调用的回调</param>
         /// <param name="onFail">资源加载失败时调用的回调</param>
-        public void LoadAsync<T>(AssetReference assetReference, Action<T> onSuccess, Action onFail) where T : Object
+        public void LoadAsync<T>(AssetReference assetReference, OnLoadSuccess<T> onSuccess, OnLoadFailed onFail) where T : Object
         {
             var handle = GetLoadHandle<T>(assetReference);
             if (handle.IsDone)
@@ -446,7 +446,7 @@ namespace PowerCellStudio
             where T : Object
         {
             var handle = GetLoadHandle<T>(assetReference);
-            var instruction = new LoaderYieldInstruction<T>(assetReference.AssetGUID);
+            var instruction = AssetUtils.GetLoadHandler<T>(assetReference.AssetGUID);
             if (handle.IsDone)
             {
                 instruction.SetAsset(handle.Result);

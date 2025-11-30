@@ -48,6 +48,25 @@ namespace PowerCellStudio
             SetupZoom(ContentZoomer.DefaultMinScale, ContentZoomer.DefaultMaxScale);
         }
 
+        public void ClearGraph()
+        {
+            if (nodes.Count() == 0)
+                return;
+            foreach (var node in nodes.ToList())
+            {
+                if (node.outputContainer.Query<Port>().AtIndex(0).connected)
+                {
+                    var connections = node.outputContainer.Query<Port>().AtIndex(0).connections.ToList();
+                    foreach (var connection in connections)
+                    {
+                        RemoveElement(connection);
+                    }
+                }
+                RemoveElement(node);
+            }
+            AddNode("Root", Vector2.one * 200);
+        }
+
         // private void OnDeleteSelection(string operationName, AskUser askUser)
         // {
         //     CheckNodeDuplicate();
@@ -134,6 +153,29 @@ namespace PowerCellStudio
             return duplicateNames.Count > 0;
         }
 
+        public void FindNodeByNamePrompt(string nodeName)
+        {
+            if (string.IsNullOrEmpty(nodeName)) return;
+            var lowerName = nodeName.ToLower();
+            var targetNode = nodes.ToList().Find(n =>
+            {
+                var notifyNode = n as NotifyNodeView;
+                if (notifyNode == null) return false;
+                return notifyNode.GetNodeName().ToLower() == lowerName;
+            });
+
+            if (targetNode != null)
+            {
+                ClearSelection();
+                AddToSelection(targetNode);
+                FrameSelection();
+            }
+            else
+            {
+                EditorUtility.DisplayDialog("Find Node", $"Node with name '{nodeName}' not found.", "OK");
+            }
+        }
+
         public NotifyNodeView AddNode(string nodeName, Vector2 position)
         {
             var nodeView = new NotifyNodeView(nodeName, this);
@@ -146,10 +188,6 @@ namespace PowerCellStudio
         public override List<Port> GetCompatiblePorts(Port startAnchor, NodeAdapter nodeAdapter)
         {
             var compatiblePorts = new List<Port>();
-            if (startAnchor.capacity == Port.Capacity.Single)
-            {
-
-            }
             foreach (var port in ports.ToList())
             {
                 if (startAnchor.node == port.node ||

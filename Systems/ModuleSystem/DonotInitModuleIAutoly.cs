@@ -3,7 +3,7 @@
 namespace PowerCellStudio
 {
     [AttributeUsage(AttributeTargets.Class)]
-    public class DonotInitModuleIAutoly : Attribute
+    public class DonotInitModuleAutoly : Attribute
     {
     }
 }

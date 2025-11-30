@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -37,7 +36,7 @@ namespace PowerCellStudio
             var request = new ShakeRequest(shakeType, target, duration, frequency, magnitude, curve, isUnscaleTime, isCamera);
             var handle = new ShakeHandle(request);
             _cashe[hashCode] = handle;
-            CoroutineRunner.instance.StartCoroutine(ProcessHandle(handle));
+            ApplicationManager.RunCoroutine(ProcessHandle(handle));
             return handle;
         }
 

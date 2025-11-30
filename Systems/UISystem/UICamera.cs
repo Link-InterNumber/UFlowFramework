@@ -6,7 +6,7 @@ using UnityEngine.Rendering;
 
 namespace PowerCellStudio
 {
-    [DonotInitModuleIAutoly]
+    [DonotInitModuleAutoly]
     public class UICamera: MonoSingleton<UICamera>
     {
         private Camera _cameraCom;

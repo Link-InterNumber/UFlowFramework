@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace PowerCellStudio
 {
-    [DonotInitModuleIAutoly]
+    [DonotInitModuleAutoly]
     public class ThreadedTasksRunner : MonoSingleton<ThreadedTasksRunner>
     {
 #if !UNITY_WEBG
@@ -51,7 +51,7 @@ namespace PowerCellStudio
                 }
                 catch (System.Exception ex)
                 {
-                    Debug.LogError($"Task failed: {ex}");
+                    _mainThreadActions.Enqueue(()=>Debug.LogError($"Task failed: {ex}"););
                 }
             });
 #endif
@@ -85,7 +85,7 @@ namespace PowerCellStudio
                 }
                 catch (System.Exception ex)
                 {
-                    Debug.LogError($"Task failed: {ex}");
+                    _mainThreadActions.Enqueue(()=>Debug.LogError($"Task failed: {ex}"));
                 }
             });
 #endif

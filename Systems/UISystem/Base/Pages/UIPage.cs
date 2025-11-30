@@ -32,7 +32,7 @@ namespace PowerCellStudio
         
         public RectTransform rectTransform => transform as RectTransform;
 
-        public bool isOpened => gameObject.activeSelf;
+        public bool isOpened => gameObject.activeInHierarchy;
         
         public void OnUIDestroy()
         {

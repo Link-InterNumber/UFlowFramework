@@ -11,6 +11,23 @@ namespace PowerCellStudio
     /// </summary>
     public static class ReflectionUtils
     {
+        #region Create Instance
+
+        public static T Create<T>(params object[] parameters)
+        {
+            var type = typeof(T);
+            return Create<T>(type, parameters);
+        }
+
+        public static T Create<T>(Type baseType, params object[] parameters)
+        {
+            if (baseType.IsAbstract || baseType.IsInterface)
+                throw new InvalidOperationException($"Cannot create an instance of abstract class or interface '{baseType.FullName}'.");
+            return (T)Activator.CreateInstance(baseType, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, parameters, null);
+        }
+
+        #endregion
+
         #region Instance
 
         /// <summary>

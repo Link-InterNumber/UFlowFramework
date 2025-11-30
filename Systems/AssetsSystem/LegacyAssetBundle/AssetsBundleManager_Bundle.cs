@@ -317,7 +317,8 @@ namespace PowerCellStudio
             if(_waitForLoadList.TryGetValue(bundleName, out var request))
             {
                 _waitForLoadList.Remove(bundleName);
-                request?.Dispose();
+                // request?.Dispose();
+                AssetUtils.ReleaseLoadHandler<AssetBundle>(request);
             }
             if (!loadedBundle)
             {
@@ -441,7 +442,7 @@ namespace PowerCellStudio
                 if(onGetBundle != null) current.OnLoadCompleted(onGetBundle);
                 return;
             }
-            var newRequest = new LoaderYieldInstruction<AssetBundle>(bundleName);
+            var newRequest = AssetUtils.GetLoadHandler<AssetBundle>(bundleName);
             if(onGetBundle != null) newRequest.OnLoadCompleted(onGetBundle);
             _waitForLoadList.Add(bundleName, newRequest);
             _loadedBundleDic.Remove(bundleName);
@@ -473,7 +474,7 @@ namespace PowerCellStudio
                 }
                 else
                 {
-                    var newRequest = new LoaderYieldInstruction<AssetBundle>(bundleName);
+                    var newRequest = AssetUtils.GetLoadHandler<AssetBundle>(bundleName);
                     _waitForLoadList.Add(bundleName, newRequest);
                     _loadedBundleDic.Remove(bundleName);
                     _coroutineRunner.StartCoroutine(AsyncLoadSingleAssetsBundle(bundleName, newRequest));
@@ -640,7 +641,8 @@ namespace PowerCellStudio
                 var bundleName = GetBundleNameByAsset(path);
                 if (Path.GetFileNameWithoutExtension(bundleName) == bundleRef.Bundle.name)
                 {
-                    _preloadHandles[path].Dispose();
+                    // _preloadHandles[path].Dispose();
+                    AssetUtils.ReleaseLoadHandler<UnityEngine.Object>(_preloadHandles[path]);
                     _preloadHandles.Remove(path);
                 }
             }
@@ -666,7 +668,8 @@ namespace PowerCellStudio
             var preload = _preloadHandles.Values.ToList();
             foreach (var handler in preload)
             {
-                handler.Dispose();
+                // handler.Dispose();
+                AssetUtils.ReleaseLoadHandler<UnityEngine.Object>(handler);
             }
             _preloadHandles.Clear();
 

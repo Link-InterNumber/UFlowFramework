@@ -77,7 +77,7 @@ namespace PowerCellStudio
 
         private void LoadExecutedIndex()
         {
-            var save = PlayerDataUtils.ReadPlayerPrefs<GuidanceSave>();
+            var save = PlayerDataUtils.Read<GuidanceSave>(PlayerDataType.PlayerPrefs);
             if (save == null || save.executedIndex == null || save.executedIndex.Count == 0) return;
             for (var i = 0; i < save.executedIndex.Count; i++)
             {
@@ -92,7 +92,7 @@ namespace PowerCellStudio
             {
                 save.executedIndex.Add(i);
             }
-            PlayerDataUtils.SavePlayerPrefs(save);
+            PlayerDataUtils.Save(save, PlayerDataType.PlayerPrefs);
         }
 
         public void SetConfigProvider(Func<int, IGuidanceConfig> fun)

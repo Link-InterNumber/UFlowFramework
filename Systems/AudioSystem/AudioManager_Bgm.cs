@@ -22,8 +22,8 @@ namespace PowerCellStudio
         private void PlayMusic(string[] clipsRefs, MusicGroup group, bool randPlay, bool restart,
             float fadeoutTime = 0.5f, float intervalTime = 0.3f, float fadeinTime = 0.5f)
         {
-            if(clipsRefs == null || clipsRefs.Length == 0) return;
-            if (_musicPlayer == null) _musicPlayer = MusicAudioSourcePlayer.Create(transform, "MusicPlayer");
+            if (clipsRefs == null || clipsRefs.Length == 0) return;
+            CheckPlayer(AudioSourceType.Music);
             if(_musicPlayer.IsMute) return;
             _musicPlayer.Play(clipsRefs, group, randPlay, restart, fadeoutTime, intervalTime, fadeinTime);
         }

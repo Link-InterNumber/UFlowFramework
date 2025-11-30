@@ -70,6 +70,18 @@ namespace PowerCellStudio
             options.options = BuildOptions.None;
             // options.locationPathName = Environment.CurrentDirectory;
             BuildPlayerOptions playerSettings = BuildPlayerWindow.DefaultBuildMethods.GetBuildPlayerOptions(options);
+            if (playerSettings.target == BuildTarget.Android && PlayerSettings.Android.useCustomKeystore)
+            {
+                if (!File.Exists(PlayerSettings.Android.keystoreName))
+                {
+                    var keyPath = EditorUtility.OpenFolderPanel("Select the folder of excel files", Environment.CurrentDirectory, "");
+                    if(string.IsNullOrEmpty(keyPath)) return;
+                    PlayerSettings.Android.keystoreName = keyPath;
+                }
+                PlayerSettings.Android.keystorePass = androidKeystorePass;
+                PlayerSettings.Android.keyaliasName = androidKeyaliasName;
+                PlayerSettings.Android.keyaliasPass = androidKeyaliasPass;
+            }
             var path = Environment.CurrentDirectory + $"/Build/{playerSettings.target}/";
             playerSettings.locationPathName = path + GetBuildTargetName(playerSettings.target);
             playerSettings.options |= BuildOptions.CompressWithLz4;

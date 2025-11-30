@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace PowerCellStudio
 {
-    [DonotInitModuleIAutoly]
+    [DonotInitModuleAutoly]
     public class ModuleManager : MonoSingleton<ModuleManager>
     {
 #if UNITY_EDITOR
@@ -78,12 +78,21 @@ namespace PowerCellStudio
                 .ToList();
             foreach (var type in res)
             {
-                if (type.GetCustomAttribute<DonotInitModuleIAutoly>() != null) continue;
                 var property = type.GetProperty("instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
                 if (property == null) continue;
-                property.SetValue(null, Activator.CreateInstance(type));
-                var instance = property.GetValue(null, null);
-                if (instance is IModule module)
+                object typeInstance = null;
+                if (type.GetCustomAttribute<DonotInitModuleAutoly>() != null)
+                {
+                    // 获取当前类型的instance属性
+                    typeInstance = property.GetValue(null, null);
+                }
+                else
+                {
+                    property.SetValue(null, Activator.CreateInstance(type));
+                    typeInstance = property.GetValue(null, null);
+                }
+                if (typeInstance == null) continue;
+                if (typeInstance is IModule module)
                 {
                     module.OnInit();
                     AddModule(type, module);
@@ -93,8 +102,8 @@ namespace PowerCellStudio
                 {
                     name = type.Name,
                     mono = null,
-                    inExecution = instance is IExecutionModule,
-                    inLaterExecution = instance is ILaterExecutionModule
+                    inExecution = typeInstance is IExecutionModule,
+                    inLaterExecution = typeInstance is ILaterExecutionModule
                 });
 #endif
             }
@@ -115,15 +124,15 @@ namespace PowerCellStudio
                 .ToList();
             foreach (var type in res)
             {
-                if (type.GetCustomAttribute<DonotInitModuleIAutoly>() != null) continue;
                 // 判断是否已经实例化
                 var exitGo = GameObject.Find(type.Name);
                 var instanceGo = exitGo?.GetComponent(type)?? null;
-                if (instanceGo == null)
+                if (instanceGo == null && type.GetCustomAttribute<DonotInitModuleAutoly>() == null)
                 {
                     var go = new GameObject(type.Name);
                     instanceGo = go.AddComponent(type);
                 }
+                if (instanceGo == null) continue;
                 if (instanceGo is IModule module)
                 {
                     module.OnInit();
@@ -185,7 +194,7 @@ namespace PowerCellStudio
             {
                 eventModule.RegisterEvent();
             }
-            if ((module is IFixedExecutionModule fixedExecutionModule && _fixedExecutionModule != null))
+            if (module is IFixedExecutionModule fixedExecutionModule && _fixedExecutionModule != null)
             {
                 fixedExecutionModule.inExecution = true;
                 _fixedExecutionModule[type] = fixedExecutionModule;
@@ -201,6 +210,12 @@ namespace PowerCellStudio
                 _laterExecutionModule[type] = laterExecutionModule;
             }
             if(_modules != null) _modules[type] = module;
+        }
+        
+        public void AddModule<T>(T module) where T : class, IModule
+        {
+            var type = module.GetType();
+            AddModule(type, module);
         }
         
         public void RemoveModule(Type type)

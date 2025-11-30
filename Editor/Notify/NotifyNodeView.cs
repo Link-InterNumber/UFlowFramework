@@ -8,27 +8,27 @@ namespace PowerCellStudio
 {
     public class NotifyNodeView : Node
     {
-        private TextField nodeNameField;
-        private string nodeName;
+        private TextField _nodeNameField;
+        private string _nodeName;
         private NotifyGraphView _owner;
 
         public NotifyNodeView(string name, NotifyGraphView owner)
         {
-            nodeName = name;
-            title = nodeName;
+            _nodeName = name;
+            title = _nodeName;
             _owner = owner;
             // Create input and output ports
-            if (nodeName != "Root")
+            if (_nodeName != "Root")
             {
-                nodeNameField = new TextField("Type Name");
-                nodeNameField.value = nodeName;
-                nodeNameField.RegisterValueChangedCallback(evt =>
+                _nodeNameField = new TextField("Type Name");
+                _nodeNameField.value = _nodeName;
+                _nodeNameField.RegisterValueChangedCallback(evt =>
                 {
-                    nodeName = evt.newValue;
-                    title = nodeName;
+                    _nodeName = evt.newValue;
+                    title = _nodeName;
                     _owner.CheckNodeDuplicate();
                 });
-                mainContainer.Add(nodeNameField);
+                mainContainer.Add(_nodeNameField);
 
                 var removeButton = new Button(() =>
                 {
@@ -54,7 +54,7 @@ namespace PowerCellStudio
 
         public string GetNodeName()
         {
-            return nodeName;
+            return _nodeName;
         }
     }
 }

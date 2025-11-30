@@ -74,7 +74,7 @@ namespace PowerCellStudio
         private IEnumerator OnAddressableInited()
         {
             yield return ConfigManager.instance.Init(null);
-            yield return LocalizationManager.instance.Init(null);
+            yield return LocalizationManager.instance.Init(new UnityLocalizationProvider(), null);
             ApplicationManager.instance.SetLoading(false);
             EventManager.instance.onStartGame.Invoke();
             ReadyForStart();

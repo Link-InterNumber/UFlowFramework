@@ -121,8 +121,26 @@ namespace PowerCellStudio
             return _waitForLoaded.ContainsKey(address);
         }
 
+        private void OnLoadFinish<T>(T asset, string address) where T : Object
+        {
+            var bundleName = GetBundleName(address);
+            if (_waitForLoaded.TryGetValue(address, out var handler))
+            {
+                _waitForLoaded.Remove(address);
+                AssetUtils.ReleaseLoadHandler<T>(handler);
+            }
+            if(!asset)
+            {
+                // handler.Dispose();
+                AssetLog.LogError($"Can not Find Asset, path:[{address}], bundle name:[{bundleName}]");
+                return;
+            }
+            _cache[address] = asset;
+            AddRef(bundleName);
+        }
+
 #if UNITY_EDITOR
-        private T EditorSimulateLoad<T>(string address, float delay, Action<T> callback) where T : Object
+        private T EditorSimulateLoad<T>(string address, float delay, OnLoadSuccess<T> callback, OnLoadFailed onLoadFailed = null) where T : Object
         {
             if (_waitForLoaded.TryGetValue(address, out var handler))
             {
@@ -133,7 +151,7 @@ namespace PowerCellStudio
             if(!asset)
             {
                 AssetLog.LogError($"Can not Find Asset, path:<{address}>");
-                callback?.Invoke(null);
+                onLoadFailed?.Invoke();
                 return null;
             }
             var bundleName = GetBundleName(address);
@@ -154,7 +172,7 @@ namespace PowerCellStudio
         }
 #endif
 
-        public void LoadAsync<T>(string address, Action<T> onSuccess, Action onFail = null) where T : Object
+        public void LoadAsync<T>(string address, OnLoadSuccess<T> onSuccess, OnLoadFailed onFail = null) where T : Object
         {
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
@@ -167,61 +185,23 @@ namespace PowerCellStudio
 #if UNITY_EDITOR
             if (!AssetsBundleManager.simulateAssetBundleInEditor)
             {
-                EditorSimulateLoad<T>(address, Time.unscaledDeltaTime * Random.Range(1,5), onSuccess); 
+                EditorSimulateLoad<T>(address, Time.unscaledDeltaTime * Random.Range(1,5), onSuccess, onFail); 
                 return;
             }
 #endif
             if (TryGetExitRequest(address, out var instruction) && instruction is LoaderYieldInstruction<T> request)
             {
-                request.OnLoadCompleted((a, path) =>
-                {
-                    if(!a)
-                    {
-                        onFail?.Invoke();
-                        return;
-                    }
-                    onSuccess?.Invoke(a);
-                });
+                if (onSuccess != null) request.OnLoadSuccess(onSuccess);
+                if (onFail != null) request.OnLoadFailed(onFail);
                 return;
             }
             var bundleName = GetBundleName(address);
-            var loadRequest = new LoaderYieldInstruction<T>(address);
-            loadRequest.OnLoadCompleted((a, path) =>
-            {
-                if(!a)
-                {
-                    OnLoadFail(path, onFail);
-                    return;
-                }
-                OnLoadSuccess(path, onSuccess, a);
-            });
+            var loadRequest = AssetUtils.GetLoadHandler<T>(address);
+            loadRequest.OnLoadCompleted(OnLoadFinish<T>);
+            if (onSuccess != null) loadRequest.OnLoadSuccess(onSuccess);
+            if (onFail != null) loadRequest.OnLoadFailed(onFail);
             _waitForLoaded.Add(address, loadRequest);
             _assetsBundleManager.LoadAssetAsync<T>(bundleName, address, loadRequest);
-        }
-
-        private void OnLoadFail(string address, Action onFail)
-        {
-            if (_waitForLoaded.TryGetValue(address, out var handler))
-            {
-                handler.Dispose();
-                _waitForLoaded.Remove(address);
-            }
-            var bundleName = GetBundleName(address);
-            AssetLog.LogError($"Can not Find Asset, path:[{address}], bundle name:[{bundleName}]");
-            onFail?.Invoke();
-        }
-        
-        private void OnLoadSuccess<T>(string address, Action<T> onSuccess, T asset) 
-            where T : Object
-        {
-            _cache[address] = asset;
-            onSuccess?.Invoke(asset);
-            var bundleName = GetBundleName(address);
-            AddRef(bundleName);
-            if (_waitForLoaded.TryGetValue(address, out var handler))
-            {
-                _waitForLoaded.Remove(address);
-            }
         }
 
         public Task<T> LoadTask<T>(string address) where T : Object
@@ -243,7 +223,7 @@ namespace PowerCellStudio
                 return request.Task;
             }
             var bundleName = GetBundleName(address);
-            var loadRequest = new LoaderYieldInstruction<T>(address);
+            var loadRequest = AssetUtils.GetLoadHandler<T>(address);
             loadRequest.OnLoadCompleted(OnLoadFinish<T>);
             _waitForLoaded.Add(address, loadRequest);
             _assetsBundleManager.LoadAssetAsync<T>(bundleName, address,loadRequest);
@@ -257,18 +237,19 @@ namespace PowerCellStudio
 #endif
             if(TryGetFromCache<T>(address, out var cached))
             {
-                var instruction = new LoaderYieldInstruction<T>(address);
+                var instruction = AssetUtils.GetLoadHandler<T>(address);
                 instruction.SetAsset(cached);
                 return instruction;
             }
             if (TryGetExitRequest(address, out var exit) && exit is LoaderYieldInstruction<T> request)
             {
+                _waitForLoaded.Remove(address);
                 return request;
             }
 #if UNITY_EDITOR
             if (!AssetsBundleManager.simulateAssetBundleInEditor)
             {
-                var instruction = new LoaderYieldInstruction<T>(address);
+                var instruction = AssetUtils.GetLoadHandler<T>(address);
                 EditorSimulateLoad<T>(address, Time.unscaledDeltaTime * Random.Range(1,5), (a) =>
                 {
                     instruction.SetAsset(a);
@@ -277,24 +258,14 @@ namespace PowerCellStudio
             }
 #endif
             var bundleName = GetBundleName(address);
-            var loadRequest = new LoaderYieldInstruction<T>(address);
+            var loadRequest = AssetUtils.GetLoadHandler<T>(address);
             loadRequest.OnLoadCompleted(OnLoadFinish<T>);
-            _waitForLoaded.Add(address, loadRequest);
+            // _waitForLoaded.Add(address, loadRequest);
             _assetsBundleManager.LoadAssetAsync<T>(bundleName, address, loadRequest);
             return loadRequest;
         }
 
-        private void OnLoadFinish<T>(T asset, string address) where T : Object
-        {
-            if(!asset)
-            {
-                OnLoadFail(address, null);
-                return;
-            }
-            OnLoadSuccess(address, null, asset);
-        }
-
-        public void AsyncLoadNInstantiate(string address, Action<GameObject> onSuccess, Action onFail = null)
+        public void AsyncLoadNInstantiate(string address, OnLoadSuccess<GameObject> onSuccess, OnLoadFailed onFail = null)
         {
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
@@ -308,7 +279,7 @@ namespace PowerCellStudio
             }, onFail);
         }
 
-        public void AsyncLoadNInstantiate(string address, Transform parent, Action<GameObject> onSuccess, Action onFail = null)
+        public void AsyncLoadNInstantiate(string address, Transform parent, OnLoadSuccess<GameObject> onSuccess, OnLoadFailed onFail = null)
         {
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
@@ -340,7 +311,7 @@ namespace PowerCellStudio
             }
 #endif
             var bundleName = GetBundleName(address);
-            return _assetsBundleManager.LoadAsset<T>(bundleName, address).asset;
+            return _assetsBundleManager.LoadAsset<T>(bundleName, address);
         }
 #endif
 

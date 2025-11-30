@@ -49,7 +49,7 @@ public class MazeGenerator_RB_bits : MonoBehaviour
 
     public void BuildMaze()
     {
-        var data = PlayerDataUtils.ReadJson<PlayerSave>("save.txt");
+        var data = PlayerDataUtils.Read<PlayerSave>("save", PlayerDataType.Binary);
         
         if (_isBuilding || _builded) return;
         ApplicationManager.RunCoroutine(FullMaze());

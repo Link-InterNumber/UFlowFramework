@@ -93,6 +93,7 @@ namespace PowerCellStudio
             {
                 SaveSettings();
                 ConfigMenu.CreateConfigAsset();
+                ConfigMenu.CreateLocalizationCsv();
             }
             GUILayout.Space(10);
             if (GUILayout.Button("Delete Config Assets"))

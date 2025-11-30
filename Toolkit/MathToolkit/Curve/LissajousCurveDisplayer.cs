@@ -6,20 +6,20 @@ namespace PowerCellStudio
     {
 #if UNITY_EDITOR
         public Color debugColor = Color.magenta;
-        public LissajousCurve Oval2DDate;
+        public LissajousCurve curveData;
         public bool useWorldPosition = false;
         [Min(365)] public int count = 365;
         
         private void OnDrawGizmos()
         {
-            if (Oval2DDate ==null) return;
+            if (curveData ==null) return;
             var oriColor = Gizmos.color;
             Gizmos.color = debugColor;
             Vector2[] tempList = new Vector2[count];
             for (int i = 0; i < count; i++)
             {
-                if(useWorldPosition) tempList[i] = Oval2DDate.Update(Mathf.PI * 2f / count);
-                else tempList[i] = Oval2DDate.Update(Mathf.PI * 2f / count) + (Vector2)transform.position;
+                if(useWorldPosition) tempList[i] = curveData.Update(Mathf.PI * 2f / count);
+                else tempList[i] = curveData.Update(Mathf.PI * 2f / count) + (Vector2)transform.position;
             }
             for (int i = 1; i < tempList.Length; i++)
             {
