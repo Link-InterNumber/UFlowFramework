@@ -261,8 +261,8 @@ namespace PowerCellStudio
                 .WriteLine("_refCount = 1;")
                 .WriteLine($"rawData = (configData as {_fileName}Data)?.source;")
                 .WriteLine("MapData();")
-                .WriteLine("OnLoaded();")
                 .WriteLine("_loadStatus = AssetLoadStatus.Loaded;")
+                .WriteLine("OnLoaded();")
                 .WriteLine("_loadHandle.Release();")
                 .WriteLine("_loadHandle = null;")
                 .EndWriteMethod();
