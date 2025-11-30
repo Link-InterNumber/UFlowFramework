@@ -55,6 +55,18 @@ namespace PowerCellStudio
                 if (!result) return;
             }
             var options = new BuildPlayerOptions();
+            if (options.target == BuildTarget.Android && PlayerSettings.Android.useCustomKeystore)
+            {
+                if (!File.Exists(PlayerSettings.Android.keystoreName))
+                {
+                    var keyPath = EditorUtility.OpenFolderPanel("Select the folder of excel files", Environment.CurrentDirectory, "");
+                    if(string.IsNullOrEmpty(keyPath)) return;
+                    PlayerSettings.Android.keystoreName = keyPath;
+                }
+                PlayerSettings.Android.keystorePass = androidKeystorePass;
+                PlayerSettings.Android.keyaliasName = androidKeyaliasName;
+                PlayerSettings.Android.keyaliasPass = androidKeyaliasPass;
+            }
             options.options = BuildOptions.None;
             // options.locationPathName = Environment.CurrentDirectory;
             BuildPlayerOptions playerSettings = BuildPlayerWindow.DefaultBuildMethods.GetBuildPlayerOptions(options);
@@ -111,9 +123,18 @@ namespace PowerCellStudio
                 if(string.IsNullOrEmpty(keyPath)) return;
                 PlayerSettings.Android.keystoreName = keyPath;
             }
-            PlayerSettings.Android.keystorePass = androidKeystorePass;
-            PlayerSettings.Android.keyaliasName = androidKeyaliasName;
-            PlayerSettings.Android.keyaliasPass = androidKeyaliasPass;
+            if (PlayerSettings.Android.useCustomKeystore)
+            {
+                if (!File.Exists(PlayerSettings.Android.keystoreName))
+                {
+                    var keyPath = EditorUtility.OpenFolderPanel("Select the folder of excel files", Environment.CurrentDirectory, "");
+                    if(string.IsNullOrEmpty(keyPath)) return;
+                    PlayerSettings.Android.keystoreName = keyPath;
+                }
+                PlayerSettings.Android.keystorePass = androidKeystorePass;
+                PlayerSettings.Android.keyaliasName = androidKeyaliasName;
+                PlayerSettings.Android.keyaliasPass = androidKeyaliasPass;
+            }
             if (!AddressableBuilder.IsBuildOnPlayerBuild())
             {
                 var result =  AddressableBuilder.BuildAddressables();
