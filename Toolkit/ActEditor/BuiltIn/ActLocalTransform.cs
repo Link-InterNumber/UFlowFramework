@@ -26,7 +26,7 @@ namespace PowerCellStudio
 #endif
                 return;
             }
-            _loadedClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AnimationClip>(clip.assetPath);
+            assetloader.LoadAsync<AnimationClip>(clip.assetPath, (a) => _loadedClip = a);
         }
 
         public override void ReleaseAsset(ActRuntimePlayer target)
