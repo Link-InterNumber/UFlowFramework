@@ -5,6 +5,10 @@
 
 # main 分支存在未验证功能，使用 release 分支！
 
+# 仓库原址
+
+[https://github.com/Link-InterNumber/UFlowFramework](https://github.com/Link-InterNumber/UFlowFramework)
+
 ## 🚨 环境要求
  
  ### 强制依赖包

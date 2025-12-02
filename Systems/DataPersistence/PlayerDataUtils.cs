@@ -99,7 +99,7 @@ namespace PowerCellStudio
         /// <param name="saveKey">保存数据的键。The key for the saved data.</param>
         /// <param name="dataType">数据类型。The data type.</param>
         /// <returns>如果存在数据，则返回 true；否则返回 false。Returns true if the data exists; otherwise, false.</returns>
-        public static bool HasSave(string saveKey, Type dataType)
+        public static bool HasSave(string saveKey, PlayerDataType dataType)
         {
             var processor = GetProcessor(PlayerDataType.PlayerPrefs);
             if (processor == null) return false;
@@ -113,7 +113,7 @@ namespace PowerCellStudio
         /// <typeparam name="T">数据的类型。The type of the data.</typeparam>
         /// <param name="dataType">数据类型。The data type.</param>
         /// <returns>如果存在数据，则返回 true；否则返回 false。Returns true if the data exists; otherwise, false.</returns>
-        public static bool HasSave<T>(Type dataType)
+        public static bool HasSave<T>(PlayerDataType dataType)
             where T : IPersistenceData
         {
             var key = $"{typeof(T).Namespace}_{typeof(T).Name}";
