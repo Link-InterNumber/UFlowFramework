@@ -59,11 +59,6 @@ namespace PowerCellStudio
                 onComplete?.Invoke(false);
                 return;
             }
-            if (!File.Exists(filePath)) 
-            {
-                onComplete?.Invoke(default);
-                return;
-            }
             try
             {
                 // 将繁重的 序列化 和 加密 工作移至线程池，避免阻塞主线程
