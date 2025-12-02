@@ -15,158 +15,192 @@ namespace PowerCellStudio
     public class DataPersistenceSettingItem : IEditorSettingWindowItem
     {
         private string _searchKey;
-
-        private Dictionary<string, string> dataDictionary;
+        private PersistenceDataProcessor[] _persistenceDataProcessors;
+        private CaptureDataProcessor _captureProcessor;
+        private Dictionary<string, string> _dataDictionary;
         private string selectedDataKey;
         private string readedDataString;
-
         public string itemName => "Persistence Data";
+        private bool _isEncrypt = true;
 
-        public static readonly string SavePathRoot = $"{Application.persistentDataPath}";
-
+        private Sprite _loadedSprite;
         public void InitSave()
         {
-            dataDictionary = new Dictionary<string, string>();
+            _dataDictionary = new Dictionary<string, string>();
+            _captureProcessor = new CaptureDataProcessor();
+            var enumValues = Enum.GetValues(typeof(PlayerDataType));
+            _persistenceDataProcessors = new PersistenceDataProcessor[enumValues.Length];
 
-            var typeStrJson = "Json";
-            string folderPath = Path.Combine(SavePathRoot, typeStrJson);
-            if (Directory.Exists(folderPath))
+            var assembly = typeof(PersistenceDataProcessor).Assembly;
+            var types = assembly.GetTypes();
+            foreach (var type in types)
             {
-                var files = Directory.GetFiles(folderPath);
-                foreach (string file in files)
+                if (type.IsAbstract || !type.IsSubclassOf(typeof(PersistenceDataProcessor)))
+                    continue;
+
+                // 获取自定义特性
+                var attribute = type.GetCustomAttribute<DataProcessorAttribute>();
+                if (attribute != null)
                 {
-                    string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
-                    dataDictionary.Add(fileNameWithoutExtension, typeStrJson);
+                    try
+                    {
+                        // 4. 创建实例
+                        var instance = (PersistenceDataProcessor)Activator.CreateInstance(type);
+
+                        // 5. 根据枚举值放入数组对应的索引位置
+                        int index = (int)attribute.DataType;
+                        if (index < _persistenceDataProcessors.Length)
+                        {
+                            _persistenceDataProcessors[index] = instance;
+#if UNITY_EDITOR
+                            LinkLog.Log($"[PlayerDataUtils] Registered {type.Name} for {attribute.DataType}");
+#endif
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        LinkLog.LogError($"[PlayerDataUtils] Failed to instantiate processor for {attribute.DataType}: {e.Message}");
+                    }
                 }
             }
-            
-            var typeStrBinary = "Binary";
-            folderPath = Path.Combine(SavePathRoot, typeStrBinary);
-            if (Directory.Exists(folderPath))
+#if UNITY_EDITOR
+            for (int i = 0; i < _persistenceDataProcessors.Length; i++)
             {
-                var files = Directory.GetFiles(folderPath);
-                foreach (string file in files)
+                if (_persistenceDataProcessors[i] == null && Enum.IsDefined(typeof(PlayerDataType), i))
                 {
-                    string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file);
-                    dataDictionary.Add(fileNameWithoutExtension, typeStrBinary);
+                    LinkLog.LogWarning($"[PlayerDataUtils] No processor registered for PlayerDataType: {(PlayerDataType)i}");
                 }
             }
+#endif
         }
 
         public void OnDestroy()
         {
             _searchKey = null;
-            dataDictionary?.Clear();
-            dataDictionary = null;
+            _dataDictionary = null;
+            _persistenceDataProcessors = null;
+            _captureProcessor = null;
             selectedDataKey = null;
             readedDataString = null;
+            _loadedSprite = null;
         }
 
         public void OnGUI(EditorWindow window)
         {
             if (GUILayout.Button("Clear Player Prefs"))
             {
-                PlayerDataUtils.ClearAll(PlayerDataType.PlayerPrefs);
+                _persistenceDataProcessors[(int)PlayerDataType.PlayerPrefs].ClearAll();
             }
             if (GUILayout.Button("Clear Json"))
             {
-                PlayerDataUtils.ClearAll(PlayerDataType.Json);
+                _persistenceDataProcessors[(int)PlayerDataType.Json].ClearAll();
             }
             if (GUILayout.Button("Clear Binary"))
             {
-                PlayerDataUtils.ClearAll(PlayerDataType.Binary);
+                _persistenceDataProcessors[(int)PlayerDataType.Binary].ClearAll();
             }
             if (GUILayout.Button("Delete All Capture"))
             {
-                PlayerDataUtils.ClearCapture();
+                _captureProcessor.ClearAll();
             }
             if (GUILayout.Button("Delete All"))
             {
-                PlayerDataUtils.ClearAllData();
+                _persistenceDataProcessors[(int)PlayerDataType.PlayerPrefs].ClearAll();
+                _persistenceDataProcessors[(int)PlayerDataType.Json].ClearAll();
+                _persistenceDataProcessors[(int)PlayerDataType.Binary].ClearAll();
+                _captureProcessor.ClearAll();
             }
             // 读取
             _searchKey = EditorGUILayout.TextField("Data Save Key:", _searchKey);
+            _isEncrypt = EditorGUILayout.Toggle("Decrypt Data", _isEncrypt);
             EditorGUILayout.LabelField("If no saved key is specified, the key is the name of type of the data class");
-            if (GUILayout.Button("Read") && dataDictionary.TryGetValue(_searchKey, out var typeName))
+            if (!string.IsNullOrEmpty(_searchKey) && GUILayout.Button("Read"))
             {
                 selectedDataKey = _searchKey;
-                if (typeName == "Json")
-                {
-                    readedDataString = ReadJson(_searchKey);
-                }
-                else if (typeName == "Binary")
-                {
-                    readedDataString = ReadBinary(_searchKey);
-                }
+                ReadData();
+                _loadedSprite = null;
             }
 
-            if (GUILayout.Button("Refresh Data"))
+            if (!string.IsNullOrEmpty(_searchKey) && GUILayout.Button("Load Capture"))
             {
-                dataDictionary = null;
-                InitSave();
+                _loadedSprite = _captureProcessor.Read(_searchKey, _isEncrypt);
+                _dataDictionary.Clear();
                 return;
             }
 
-            if (dataDictionary.Count > 0)
+            if (_dataDictionary != null && _dataDictionary.Count > 0)
             {
                 // Start of scroll view
                 // scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(300));
-            
-                foreach (var entry in dataDictionary)
+                GUILayout.Label("Saved Data:");
+                foreach (var entry in _dataDictionary)
                 {
                     GUILayout.BeginHorizontal();
-
-                    GUILayout.Label(entry.Key, GUILayout.Width(200));
-                    GUILayout.Label(entry.Value, GUILayout.Width(50));
-
-                    if (GUILayout.Button("Show", GUILayout.Width(50)))
-                    {
-                        selectedDataKey = entry.Key;
-                        if (entry.Value == "Json")
-                        {
-                            readedDataString = ReadJson(entry.Key);
-                        }
-                        else if (entry.Value == "Binary")
-                        {
-                            readedDataString = ReadBinary(entry.Key);
-                        }
-                    }
+                    GUILayout.Label($"{entry.Key}: ", GUILayout.Width(80));
+                    GUILayout.Label(entry.Value);
 
                     if (GUILayout.Button("Delete", GUILayout.Width(50)))
                     {
-                        if (entry.Value == "Json")
+                        if (entry.Key == "Json")
                         {
                             PlayerDataUtils.Clear(entry.Key, PlayerDataType.Json);
                         }
-                        else if (entry.Value == "Binary")
+                        else if (entry.Key == "Binary")
                         {
                             PlayerDataUtils.Clear(entry.Key, PlayerDataType.Binary);
                         }
-                        dataDictionary.Remove(entry.Key);
+                        else if (entry.Key == "PlayerPrefs")
+                        {
+                            PlayerDataUtils.Clear(entry.Key, PlayerDataType.PlayerPrefs);
+                        }
+                        _dataDictionary.Remove(entry.Key);
                         GUILayout.EndHorizontal();
                         break;
                     }
                     GUILayout.EndHorizontal();
                 }
+            }
             
-                // End of scroll view
-                // GUILayout.EndScrollView();
+            if (_loadedSprite != null)
+            {
+                GUILayout.Label("Loaded Capture:");
+                GUILayout.Label(_loadedSprite.texture, GUILayout.Width(400), GUILayout.Height(400 * (_loadedSprite.texture.height / (float)_loadedSprite.texture.width)));
+                
             }
             GUILayout.Space(10);
-
-            if (!string.IsNullOrEmpty(selectedDataKey) && dataDictionary.ContainsKey(selectedDataKey))
+        }
+        
+        private void ReadData()
+        {
+            _dataDictionary.Clear();
+            // Read Json Data
+            var jsonProcessor = _persistenceDataProcessors[(int)PlayerDataType.Json];
+            if (jsonProcessor.TryGetSaveFilePath(selectedDataKey, out var path))
             {
-                GUILayout.Label($"Selected Key: {selectedDataKey}\nValue:\n{readedDataString}");
+                var json = ReadJson(path);
+                if (!string.IsNullOrEmpty(json)) _dataDictionary.Add("Json", json);
+            }
+            // Read Binary Data
+            var binaryProcessor = _persistenceDataProcessors[(int)PlayerDataType.Binary];
+            if (binaryProcessor.TryGetSaveFilePath(selectedDataKey, out var binPath))
+            {
+                var binData = ReadBinary(binPath);
+                if (!string.IsNullOrEmpty(binData)) _dataDictionary.Add("Binary", binData);
+            }
+            // Read Player Prefs Data
+            var playerPrefsProcessor = _persistenceDataProcessors[(int)PlayerDataType.PlayerPrefs];
+            if (playerPrefsProcessor.TryGetSaveFilePath(selectedDataKey, out var prefPath))
+            {
+                var prefData = ReadPlayerPrefs(selectedDataKey);
+                if (!string.IsNullOrEmpty(prefData)) _dataDictionary.Add("PlayerPrefs", prefData);
             }
         }
 
-        private string ReadJson(string fileName, bool decrypt = true)
+        private string ReadJson(string path, bool decrypt = true)
         {
-            if(string.IsNullOrEmpty(fileName)) return default;
-            var path = Path.Combine(SavePathRoot, "Json", $"{fileName}.json");
-            if (!File.Exists(path)) return default;
+            if (!File.Exists(path)) return null;
             var jsonEn = File.ReadAllText(path);
-            if (decrypt)
+            if (_isEncrypt)
             {
                 var json = EncryptUtils.Base64Decrypt(jsonEn);
                 dynamic parsedJson = JsonConvert.DeserializeObject(json);
@@ -179,62 +213,49 @@ namespace PowerCellStudio
             }
         }
 
-        private string ReadBinary(string fileName, bool decrypt = true)
+        private string ReadBinary(string binPath, bool decrypt = true)
         {
-            if(string.IsNullOrEmpty(fileName)) return default;
-            var filePath = Path.Combine(SavePathRoot, "Binary", $"{fileName}.bytes");
-            if (!File.Exists(filePath)) return default;
-            byte[] encryptedData = File.ReadAllBytes(filePath);
-            var decryptedData = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
+            if (!File.Exists(binPath)) return null;
+            byte[] encryptedData = File.ReadAllBytes(binPath);
+            var decryptedData = _isEncrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
             using MemoryStream memoryStream = new MemoryStream(decryptedData);
             // 使用BinaryFormatter进行反序列化
             BinaryFormatter formatter = new BinaryFormatter();
             var data = formatter.Deserialize(memoryStream);
             // 关闭文件流
             memoryStream.Close();
-            
-            StringBuilder result = new StringBuilder();
-            result.AppendLine("{");
 
-            var fields = data.GetType()
-                .GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            string json = JsonConvert.SerializeObject(data, Formatting.Indented);
+            return json;
+        }
 
-            foreach (var field in fields)
+        private string ReadPlayerPrefs(string prefKey, bool decrypt = true)
+        {
+            if (!PlayerPrefs.HasKey(prefKey)) return null;
+            var prefValue = PlayerPrefs.GetString(prefKey, null);
+            if (!string.IsNullOrEmpty(prefValue))
             {
-                // Optionally check for NonSerialized attribute
-                if (Attribute.IsDefined(field, typeof(NonSerializedAttribute)))
-                    continue;
-
-                var fieldValue = field.GetValue(data);
-                result.Append($"\t{field.Name} = ");
-
-                if (fieldValue is IList list)
+                if (_isEncrypt)
                 {
-                    result.AppendLine("[");
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        result.AppendLine($"\t\t{list[i]},");
-                    }
-                    result.AppendLine("\t\t],");
-                }
-                else if (fieldValue is IDictionary dictionary)
-                {
-                    result.AppendLine("{");
-                    foreach (DictionaryEntry entry in dictionary)
-                    {
-                        result.AppendLine($"\t\t[ {entry.Key}: {entry.Value} ],");
-                    }
-                    result.AppendLine("\t\t},");
+                    var decryptedPref = EncryptUtils.Base64Decrypt(prefValue);
+                    dynamic parsedJson = JsonConvert.DeserializeObject(decryptedPref);
+                    return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
                 }
                 else
                 {
-                    // Handle other field types here
-                    result.AppendLine($"{fieldValue},");
+                    dynamic parsedJson = JsonConvert.DeserializeObject(prefValue);
+                    return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
                 }
             }
-            result.Append("}");
-            
-            return result.ToString();
+            else if (PlayerPrefs.GetInt(prefKey, int.MinValue) != int.MinValue)
+            {
+                return PlayerPrefs.GetInt(prefKey).ToString();
+            }
+            else if (PlayerPrefs.GetFloat(prefKey, float.MinValue) != float.MinValue)
+            {
+                return PlayerPrefs.GetFloat(prefKey).ToString();
+            }
+            return null;
         }
 
         public void SaveData(){}
