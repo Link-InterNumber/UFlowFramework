@@ -37,8 +37,18 @@ namespace PowerCellStudio
         }
 
         private static Type[] _findType = new[]
-            { typeof(Button), typeof(Toggle), typeof(Slider), typeof(InputField), typeof(ListUpdater) };
+            { typeof(Button), typeof(Toggle), typeof(Slider), typeof(InputField), typeof(IListUpdater) };
 
+        private static string[] _prefixes = { "btn", "button", "tgl", "toggle", "sld", "slider", "ipf", "lst", "list", "inputfield" };
+
+        private static Dictionary<string, string> _componentPrefixes = new Dictionary<string, string>()
+        {
+            { "Button", "Btn" },
+            { "Toggle", "Tgl" },
+            { "Slider", "Sld" },
+            { "InputField", "Ipf" },
+            { "IListUpdater", "Lst" },
+        };
 
         [MenuItem("Assets/UFlow/Create UI Script", false, 1)]
         private static void CreateUIScript()
@@ -84,7 +94,7 @@ namespace PowerCellStudio
             ResolveDuplicateNames();
             
             // 显示命名空间输入窗口
-            ContentInputEditorWindow.ShowWindow(GenerateScript, "Define Namespace", "");
+            ContentInputEditorWindow.ShowWindow(GenerateScript, "Define Namespace", "Namespace", "");
         }
 
         private static void FindAllTargetComps(Type[] targets, Transform parent, string currentPath, List<CompInfo> compInfos)
@@ -92,12 +102,12 @@ namespace PowerCellStudio
             foreach (Transform child in parent)
             {
                 // 生成相对路径（相对于预制体根节点）
-                string newPath = string.IsNullOrEmpty(currentPath) 
-                    ? child.name 
+                string newPath = string.IsNullOrEmpty(currentPath)
+                    ? child.name
                     : $"{currentPath}/{child.name}";
 
                 var hasList = false;
-                for (var i = 0; i < targets.Length; i ++)
+                for (var i = 0; i < targets.Length; i++)
                 {
                     var target = targets[i];
                     var comp = child.GetComponent(target);
@@ -107,20 +117,29 @@ namespace PowerCellStudio
                         // gameObjectName = comp.gameObject.name,
                         compType = target,
                         relativePath = newPath,
-                        fieldName = target.Name.ToLower() + MakeValidVariableName(child.name),
-                        methodName = target.Name + MakeValidVariableName(child.name),
+                        fieldName = GetPrefixByType(target, true) + MakeValidVariableName(child.name),
+                        methodName = GetPrefixByType(target, false) + MakeValidVariableName(child.name),
                     });
-                    if (i == targets.Length -1) hasList = true;
+                    if (i == targets.Length - 1) hasList = true;
                     break;
                 }
                 if (hasList) continue;
-                
+
                 // 递归查找子节点
                 if (child.childCount > 0)
                 {
                     FindAllTargetComps(_findType, child, newPath, compInfos);
                 }
             }
+        }
+        
+        private static string GetPrefixByType(Type type, bool toLower)
+        {
+            if (_componentPrefixes.TryGetValue(type.Name, out var prefix))
+            {
+                return toLower ? prefix.ToLower() : prefix;
+            }
+            return string.Empty;
         }
 
         // 处理重复的字段名
@@ -262,7 +281,7 @@ namespace PowerCellStudio
                 sb.WriteLine($"{info.fieldName}.onValueChanged.AddListener(On{info.methodName}ValueChanged);");
             else if (info.compType == typeof(InputField))
                 sb.WriteLine($"{info.fieldName}.onValueChanged.AddListener(On{info.methodName}ValueChanged);");
-            else if (info.compType == typeof(ListUpdater))
+            else if (info.compType == typeof(IListUpdater))
                 sb.WriteLine($"{info.fieldName}.onItemInteraction += On{info.methodName}Invoke;");
             // 其他类型可根据需要扩展
         }
@@ -277,7 +296,7 @@ namespace PowerCellStudio
                 sb.WriteLine($"{info.fieldName}.onValueChanged.RemoveListener(On{info.methodName}ValueChanged);");
             else if (info.compType == typeof(InputField))
                 sb.WriteLine($"{info.fieldName}.onValueChanged.RemoveListener(On{info.methodName}ValueChanged);");
-            else if (info.compType == typeof(ListUpdater))
+            else if (info.compType == typeof(IListUpdater))
                 sb.WriteLine($"{info.fieldName}.onItemInteraction -= On{info.methodName}Invoke;");
             // 其他类型可根据需要扩展
         }
@@ -300,7 +319,7 @@ namespace PowerCellStudio
                 sb.StartWriteMethod(CsWriter.MethodSign.Private, CsWriter.MethodSign.None, "void", $"On{info.methodName}ValueChanged", "string input")
                     .Space()
                     .EndWriteMethod();
-            else if (info.compType == typeof(ListUpdater))
+            else if (info.compType == typeof(IListUpdater))
                 sb.StartWriteMethod(CsWriter.MethodSign.Private, CsWriter.MethodSign.None, "void", $"On{info.methodName}Invoke", "IListItem item", "int index", "object passData")
                     .Space()
                     .EndWriteMethod();
@@ -309,6 +328,15 @@ namespace PowerCellStudio
         // 生成有效的变量名
         private static string MakeValidVariableName(string input)
         {
+            // 移除input开头的"btn", "tgl", "sld", "ipf", "lst"
+            foreach (var prefix in _prefixes)
+            {
+                if (input.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    input = input.Substring(prefix.Length);
+                    break;
+                }
+            }
             // 移除非字母数字字符，首字母大写
             StringBuilder sb = new StringBuilder();
             bool capitalizeNext = true;
