@@ -2,9 +2,6 @@ Shader "PostEffect/VolumeLighting"
 {
     Properties
     {
-        [Header(Base)]
-        _MainTex ("MainTex", 2D) = "black" {}
-
         [Header(Raymarch)]
         _MaxStep ("MaxStep", float) = 200
         _MaxDistance ("MaxDistance", float) = 200
@@ -94,7 +91,6 @@ Shader "PostEffect/VolumeLighting"
             };
 
             TEXTURE2D_X_FLOAT(_CameraDepthTexture); SAMPLER(sampler_CameraDepthTexture);
-            TEXTURE2D(_MainTex); SAMPLER(sampler_MainTex);
             float _MaxDistance;
             float _MaxStep;
             float _StepSize;
@@ -251,9 +247,7 @@ Shader "PostEffect/VolumeLighting"
                     totalInt += _LightIntensity * shadow * density * heightFade;
                 }
                 half3 lightCol = pow(totalInt / maxLightValue, _ShadowPower) * _LightColor.rgb * _MainLightColor.rgb;
-                half3 oCol = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv).rgb;
-                half3 dCol = lightCol + oCol;
-                return real4(dCol, 1);
+                return real4(lightCol, 1);
 
             }
 

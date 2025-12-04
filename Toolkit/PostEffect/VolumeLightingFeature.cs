@@ -21,13 +21,15 @@ namespace PowerCellStudio
             Material volumeLightingMaterail;
             Material compositeMaterial;
 
-            static readonly int MainTexId = Shader.PropertyToID("_MainTex");
-            static readonly int TempTargetId = Shader.PropertyToID("_TempTargetVolumLighting");
-            static readonly int MaxStepId = Shader.PropertyToID("_MaxStep");
-            static readonly int MaxDistanceId = Shader.PropertyToID("_MaxDistance");
-            static readonly int StepSizeId = Shader.PropertyToID("_StepSize");
-            static readonly int LightIntensityId = Shader.PropertyToID("_LightIntensity");
-            static readonly int ShadowPowerId = Shader.PropertyToID("_ShadowPower");
+            // static readonly int MainTexId = Shader.PropertyToID("_MainTex");
+            // static readonly int TempTargetId = Shader.PropertyToID("_TempTargetVolumLighting");
+            // static readonly int MaxStepId = Shader.PropertyToID("_MaxStep");
+            // static readonly int MaxDistanceId = Shader.PropertyToID("_MaxDistance");
+            // static readonly int StepSizeId = Shader.PropertyToID("_StepSize");
+            // static readonly int LightIntensityId = Shader.PropertyToID("_LightIntensity");
+            // static readonly int ShadowPowerId = Shader.PropertyToID("_ShadowPower");
+            static readonly int _BaseTex = Shader.PropertyToID("_BaseTex");
+            static readonly int _BlendTex = Shader.PropertyToID("_BlendTex");
 
             static readonly string k_RenderTag = "Render Volume Lighting Effects";
 
@@ -83,8 +85,6 @@ namespace PowerCellStudio
             {
             }
 
-            private string _BaseTex = "_BaseTex";
-            private string _BlendTex = "_BlendTex";
             void Render(CommandBuffer cmd, ref RenderingData renderingData)
             {
                 ref var cameraData = ref renderingData.cameraData;
@@ -99,7 +99,7 @@ namespace PowerCellStudio
                 var h = cameraData.camera.scaledPixelHeight / downSample;
                 var downSampleTexture = RenderTexture.GetTemporary(w, h, 0, RenderTextureFormat.Default);
                 // 设置体积光材质参数
-                volumeLightingMaterail.SetTexture(MainTexId, downSampleTexture);
+                // volumeLightingMaterail.SetTexture(MainTexId, downSampleTexture);
                 // volumeLightingMaterail.SetInt(MaxStepId, volumeLighting.maxStep.value);
                 // volumeLightingMaterail.SetFloat(MaxDistanceId, volumeLighting.maxDistance.value);
                 // volumeLightingMaterail.SetFloat(StepSizeId, volumeLighting.stepSize.value);
