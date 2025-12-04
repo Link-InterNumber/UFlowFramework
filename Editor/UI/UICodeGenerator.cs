@@ -213,6 +213,10 @@ namespace PowerCellStudio
             // 添加按钮字段和路径注释
             foreach (var CompInfo in _CompInfos)
             {
+                if (CompInfo.compType == typeof(Button) && CompInfo.fieldName.Contains("close", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
                 sb.WriteLine($"// Path: {CompInfo.relativePath}")
                     .WriteLine($"public {CompInfo.compType.Name} {CompInfo.fieldName};")
                     .Space();
@@ -273,6 +277,10 @@ namespace PowerCellStudio
 
         private static void AddListenerStr(CompInfo info, CsWriter sb)
         {
+            if (info.compType == typeof(Button) && info.fieldName.Contains("close", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
             if (info.compType == typeof(Button))
                 sb.WriteLine($"{info.fieldName}.onClick.AddListener(On{info.methodName}Clicked);");
             else if (info.compType == typeof(Toggle))
@@ -282,12 +290,16 @@ namespace PowerCellStudio
             else if (info.compType == typeof(InputField))
                 sb.WriteLine($"{info.fieldName}.onValueChanged.AddListener(On{info.methodName}ValueChanged);");
             else if (info.compType == typeof(IListUpdater))
-                sb.WriteLine($"{info.fieldName}.onItemInteraction += On{info.methodName}Invoke;");
+                sb.WriteLine($"{info.fieldName}.AddInteractionListener(On{info.methodName}Interaction);");
             // 其他类型可根据需要扩展
         }
 
         private static void RemoveListenerStr(CompInfo info, CsWriter sb)
         {
+            if (info.compType == typeof(Button) && info.fieldName.Contains("close", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
             if (info.compType == typeof(Button))
                 sb.WriteLine($"{info.fieldName}.onClick.RemoveListener(On{info.methodName}Clicked);");
             else if (info.compType == typeof(Toggle))
@@ -297,12 +309,16 @@ namespace PowerCellStudio
             else if (info.compType == typeof(InputField))
                 sb.WriteLine($"{info.fieldName}.onValueChanged.RemoveListener(On{info.methodName}ValueChanged);");
             else if (info.compType == typeof(IListUpdater))
-                sb.WriteLine($"{info.fieldName}.onItemInteraction -= On{info.methodName}Invoke;");
+                sb.WriteLine($"{info.fieldName}.RemoveInteractionListener(On{info.methodName}Interaction);");
             // 其他类型可根据需要扩展
         }
 
         private static void AddListenerMethod(CompInfo info, CsWriter sb)
         {
+            if (info.compType == typeof(Button) && info.fieldName.Contains("close", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
             if (info.compType == typeof(Button))
                 sb.StartWriteMethod(CsWriter.MethodSign.Private, CsWriter.MethodSign.None, "void", $"On{info.methodName}Clicked")
                     .Space()
@@ -320,7 +336,7 @@ namespace PowerCellStudio
                     .Space()
                     .EndWriteMethod();
             else if (info.compType == typeof(IListUpdater))
-                sb.StartWriteMethod(CsWriter.MethodSign.Private, CsWriter.MethodSign.None, "void", $"On{info.methodName}Invoke", "IListItem item", "int index", "object passData")
+                sb.StartWriteMethod(CsWriter.MethodSign.Private, CsWriter.MethodSign.None, "void", $"On{info.methodName}Interaction", "IListItem item", "int index", "object passData")
                     .Space()
                     .EndWriteMethod();
         }
@@ -382,14 +398,27 @@ namespace PowerCellStudio
             if (uiType != null)
             {
                 var uiComp = prefab.AddComponent(uiType);
+                var closeBtns = new List<Button>();
                 foreach (var compInfo in compInfos)
                 {
+                    if (compInfo.compType == typeof(Button) && compInfo.fieldName.Contains("close", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var findPath = compInfo.relativePath.Split('/');
+                        var btnNode = prefab.transform;
+                        foreach (var node in findPath)
+                        {
+                            btnNode = btnNode.Find(node);
+                        }
+                        var btnComp = btnNode.gameObject.GetComponent<Button>();
+                        if (btnComp) closeBtns.Add(btnComp);
+                        continue;
+                    }
                     FieldInfo fields = uiType.GetField(compInfo.fieldName, BindingFlags.Public | BindingFlags.Instance);
                     if (fields == null)
                     {
                         continue;
                     }
-                    
+
                     var nodes = compInfo.relativePath.Split('/');
                     var currentNode = prefab.transform;
                     foreach (var node in nodes)
@@ -397,7 +426,15 @@ namespace PowerCellStudio
                         currentNode = currentNode.Find(node);
                     }
                     var compValue = currentNode.gameObject.GetComponent(compInfo.compType);
-                    fields.SetValue(uiComp, compValue);
+                    if(compValue) fields.SetValue(uiComp, compValue);
+                }
+                if (closeBtns.Count > 0)
+                {
+                    FieldInfo closeField = uiType.GetField("closeBtn", BindingFlags.Public | BindingFlags.Instance);
+                    if (closeField != null)
+                    {
+                        closeField.SetValue(uiComp, closeBtns.ToArray());
+                    }
                 }
             }
             else

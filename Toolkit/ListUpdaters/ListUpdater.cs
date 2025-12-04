@@ -28,6 +28,18 @@ namespace PowerCellStudio
         /// 获取资产加载器。
         /// </summary>
         public IAssetLoader AssetLoader { get; }
+
+        /// <summary>
+        /// Adds a listener for item interaction events.
+        /// 为子节点交互事件添加监听器。
+        /// </summary>
+        public void AddInteractionListener(OnItemInteraction listener);
+
+        /// <summary>
+        /// Removes a listener for item interaction events.
+        /// 为子节点交互事件移除监听器。
+        /// </summary>
+        public void RemoveInteractionListener(OnItemInteraction listener);
         
         /// <summary>
         /// Triggers the registered logic for a child item.
@@ -96,8 +108,18 @@ namespace PowerCellStudio
         private IAssetLoader _assetLoader;
 
         public IAssetLoader AssetLoader => _assetLoader;
-        
+
         public event OnItemInteraction onItemInteraction;
+
+        public void AddInteractionListener(OnItemInteraction listener)
+        {
+            onItemInteraction += listener;
+        }
+
+        public void RemoveInteractionListener(OnItemInteraction listener)
+        {
+            onItemInteraction -= listener;
+        }
 
         public void ItemInteraction(IListItem item, object passData)
         {

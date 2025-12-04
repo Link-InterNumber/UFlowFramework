@@ -59,6 +59,16 @@ namespace PowerCellStudio
 
         public event OnItemInteraction onItemInteraction;
 
+        public void AddInteractionListener(OnItemInteraction listener)
+        {
+            onItemInteraction += listener;
+        }
+
+        public void RemoveInteractionListener(OnItemInteraction listener)
+        {
+            onItemInteraction -= listener;
+        }
+
         public void ItemInteraction(IListItem item, object passData)
         {
             if(item == null) return;

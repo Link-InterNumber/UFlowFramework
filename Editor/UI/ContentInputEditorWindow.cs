@@ -8,7 +8,12 @@ namespace PowerCellStudio
     {
         private string _inputContent = "";
 
-        public string inputContent {set => _inputContent = value;}
+        public string inputContent { set => _inputContent = value; }
+
+        private string _lableText = "Enter Content:";
+        public string lableText { set => _lableText = value; }
+
+        private static readonly string _saveKey = "ContentInputEditorWindow_LastInput";
 
         private Action<string> _callback;
         public Action<string> callback
@@ -16,11 +21,22 @@ namespace PowerCellStudio
             set => _callback = value;
         }
         
-        public static void ShowWindow(Action<string> callback, string title, string defaultValue)
+        public static void ShowWindow(Action<string> callback, string title, string lableText, string defaultValue)
         {
             ContentInputEditorWindow editorWindow = GetWindow<ContentInputEditorWindow>(true, title, true);
             editorWindow.callback = callback;
-            editorWindow.inputContent = defaultValue;
+            if (string.IsNullOrEmpty(defaultValue))
+            {
+                editorWindow.inputContent = EditorPrefs.GetString(_saveKey, "");
+            }
+            else
+            {
+                editorWindow.inputContent = defaultValue;
+            }
+            if (!string.IsNullOrEmpty(lableText))
+            {
+                editorWindow.lableText = lableText;
+            }
             editorWindow.minSize = new Vector2(300, 100);
             editorWindow.maxSize = new Vector2(600, 100);
             editorWindow.ShowModalUtility();
@@ -29,7 +45,7 @@ namespace PowerCellStudio
         void OnGUI()
         {
             GUILayout.Space(10);
-            GUILayout.Label("Enter Content", EditorStyles.boldLabel);
+            GUILayout.Label(_lableText, EditorStyles.boldLabel);
             
             GUILayout.Space(5);
             _inputContent = EditorGUILayout.TextField("Content", _inputContent);
@@ -41,6 +57,7 @@ namespace PowerCellStudio
             
             if (GUILayout.Button("Confirm", GUILayout.Width(100)))
             {
+                EditorPrefs.SetString(_saveKey, _inputContent);
                 _callback?.Invoke(_inputContent.Trim());
                 Close();
             }
