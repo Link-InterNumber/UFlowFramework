@@ -85,7 +85,20 @@ namespace PowerCellStudio
         public static string FormatTime(this int timeInSec)
         {
             var timeSpan = new TimeSpan(0, 0, 0, timeInSec);
-            return timeSpan.ToString(@"hh\:mm\:ss");
+            return FormatTime(timeSpan);
+        }
+        
+        public static string FormatTime(this TimeSpan timeSpan)
+        {
+            if (timeSpan.TotalHours >= 100)
+            {
+                return $"{(int)timeSpan.TotalHours}:{timeSpan:mm\\:ss}";
+            }
+            if (timeSpan.TotalMinutes >= 60)
+            {
+                return timeSpan.ToString(@"hh\:mm\:ss");
+            }
+            return timeSpan.ToString(@"mm\:ss");
         }
 
         /// <summary>

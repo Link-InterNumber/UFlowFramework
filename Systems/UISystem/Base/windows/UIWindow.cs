@@ -88,6 +88,7 @@ namespace PowerCellStudio
 
         public virtual void RegisterEvent()
         {
+            OnCanvasHierarchyChanged();
             if (closeBtn == null) return;
             foreach (var button in closeBtn)
             {

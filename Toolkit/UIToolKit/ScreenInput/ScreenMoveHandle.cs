@@ -160,6 +160,7 @@ namespace PowerCellStudio
                         state = ScreenInputEventState.End
                     });
                     _lastPressTime = 0;
+                    _currentId = -1;
                 }
 #endif
             }

@@ -85,7 +85,7 @@ namespace PowerCellStudio
                 result.Append(GetNumberUnitCn(num, isTraditional));
                 return result.ToString();
             }
-            result.Append(num);
+            result.Append(num.ToString());
             return result.ToString();
         }
 

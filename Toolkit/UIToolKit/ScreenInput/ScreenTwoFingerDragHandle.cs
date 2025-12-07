@@ -63,16 +63,19 @@ namespace PowerCellStudio
       }
 
 #if ENABLE_INPUT_SYSTEM
+      private bool _fingerDragging = false;
       private void OnFingerDown(UnityEngine.InputSystem.EnhancedTouch.Finger finger)
       {
-         if (!_isMouseDragging) return;
+         if (!_fingerDragging) return;
          EndDragging();
+         _fingerDragging = false;
       }
 
       private void OnFingerUp(UnityEngine.InputSystem.EnhancedTouch.Finger finger)
       {
-         if (!_isMouseDragging) return;
+         if (!_fingerDragging) return;
          EndDragging();
+         _fingerDragging = false;
       }
 
       private void OnFingerMove(UnityEngine.InputSystem.EnhancedTouch.Finger finger)
@@ -89,7 +92,7 @@ namespace PowerCellStudio
          {
             Vector2 avgDelta = (delta0 + delta1) / 2f;
             _lastMousePosition = (touch0.screenPosition + touch1.screenPosition) / 2f;
-            if (!_isMouseDragging)
+            if (!_fingerDragging)
             {
                _startTime = Time.time;
             }
@@ -97,10 +100,10 @@ namespace PowerCellStudio
             {
                screenPos = _lastMousePosition,
                delta = avgDelta,
-               state = _isMouseDragging ? ScreenInputEventState.Execute : ScreenInputEventState.Start,
+               state = _fingerDragging ? ScreenInputEventState.Execute : ScreenInputEventState.Start,
                pressTime = Time.time - _startTime
             });
-            _isMouseDragging = true;
+            _fingerDragging = true;
          }
       }
 #endif

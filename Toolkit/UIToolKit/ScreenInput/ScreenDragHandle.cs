@@ -1,4 +1,5 @@
 using UnityEngine;
+
 namespace PowerCellStudio
 {
    public class ScreenDragHandle : IScreenInputHandle
@@ -61,16 +62,19 @@ namespace PowerCellStudio
       }
 
 #if ENABLE_INPUT_SYSTEM
+      private bool _fingerDragging = false;
       private void OnFingerDown(UnityEngine.InputSystem.EnhancedTouch.Finger finger)
       {
-         if (!_isDragging) return;
+         if (!_fingerDragging) return;
          EndDragging();
+         _fingerDragging = false;
       }
 
       private void OnFingerUp(UnityEngine.InputSystem.EnhancedTouch.Finger finger)
       {
-         if (!_isDragging) return;
+         if (!_fingerDragging) return;
          EndDragging();
+         _fingerDragging = false;
       }
 
       private void OnFingerMove(UnityEngine.InputSystem.EnhancedTouch.Finger finger)
@@ -80,16 +84,15 @@ namespace PowerCellStudio
             return;
          }
          var touch = finger.currentTouch;
-         if (!_isDragging && touch.delta.sqrMagnitude < 25f) return;
          _onDrag?.Invoke(new ScreenInputEvent
          {
             screenPos = touch.screenPosition,
             delta = touch.delta,
             pressTime = (float)touch.time,
-            state = _isDragging ? ScreenInputEventState.Execute : ScreenInputEventState.Start,
+            state = _fingerDragging ? ScreenInputEventState.Execute : ScreenInputEventState.Start,
          });
          _lastPos = finger.screenPosition;
-         _isDragging = true;
+         _fingerDragging = true;
       }
 #endif
 
@@ -138,7 +141,7 @@ namespace PowerCellStudio
             if (mouse.leftButton.isPressed)
             {
                var delta = mouse.delta.value;
-               if (!_isDragging && delta.sqrMagnitude < 25f) return;
+               // if (!_isDragging && delta.sqrMagnitude < 25f) return;
                if (delta.sqrMagnitude > 0.01f)
                {
                   _onDrag?.Invoke(new ScreenInputEvent
@@ -164,6 +167,7 @@ namespace PowerCellStudio
                _isDragging = false;
             }
 #else
+            if (!Input.mousePresent) return;
             if (Input.GetMouseButtonDown(0))
             {
                _lastPos = Input.mousePosition;

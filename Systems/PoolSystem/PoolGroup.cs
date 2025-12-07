@@ -363,6 +363,7 @@ namespace PowerCellStudio
         /// </summary>
         private void ReplaceNewRoot()
         {
+            if (!_root) return;
             var rootParent = _root.parent;
             var rootName = _root.name;
             GameObject.Destroy(_root.gameObject);

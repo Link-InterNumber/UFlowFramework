@@ -19,7 +19,8 @@ namespace PowerCellStudio
 
             // 绘制 String 字段
             Rect stringRect = new Rect(position.x, position.y, position.width, singleLineHeight);
-
+            // EditorGUILayout.LabelField(label);
+            
             var fieldType = fieldInfo.FieldType;
             var gens = fieldType.GetGenericArguments();
             var genericType = (gens != null && gens.Length > 0) ? gens[0] : null;
@@ -46,14 +47,9 @@ namespace PowerCellStudio
                 {
                     myStringProperty.stringValue = string.Empty;
                 }
-                EditorGUI.PropertyField(stringRect, myStringProperty, new GUIContent("Asset Path"));
-                GUI.enabled = true;
             }
-            else
-            {
-                EditorGUI.PropertyField(stringRect, myStringProperty, new GUIContent("Asset Path"));
-                GUI.enabled = true;
-            }
+            EditorGUI.PropertyField(stringRect, myStringProperty, new GUIContent(property.name));
+            GUI.enabled = true;
             EditorGUILayout.Space();
         }
     }
