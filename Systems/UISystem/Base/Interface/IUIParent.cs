@@ -43,14 +43,14 @@ namespace PowerCellStudio
         /// <param name="data">打开UI时传入的数据 / Data passed when opening the UI</param>
         /// <param name="beforeOpen">UI开启前执行的回调 / Callback executed before UI opens</param>
         /// <typeparam name="T">UI类 / UI class</typeparam>
-        public void OpenUI<T>(object data, Action beforeOpen = null) where T : UIBehaviour, IUIChild;
+        public void OpenUI<T>(object data, Action beforeOpen = null) where T : class, IUIChild;
         
         /// <summary>
         /// 预加载界面
         /// Preload the UI
         /// </summary>
         /// <typeparam name="T">UI类 / UI class</typeparam>
-        public void PreloadUI<T>() where T : UIBehaviour, IUIChild;
+        public void PreloadUI<T>() where T : class, IUIChild;
         
         /// <summary>
         /// 关闭界面
@@ -59,27 +59,27 @@ namespace PowerCellStudio
         /// <param name="onClosed">关闭后执行的回调 / Callback after closing</param>
         /// <typeparam name="T">关闭后执行的回调 / UI class</typeparam>
         /// <returns>是否成功关闭界面 / Whether the UI was closed successfully</returns>
-        public bool CloseUI<T>(Action onClosed = null) where T : UIBehaviour, IUIChild;
+        public bool CloseUI<T>(Action onClosed = null) where T : class, IUIChild;
         
-        internal bool CloseUI<T>(T uiChild, Action afterClosed = null) where T : UIBehaviour, IUIChild;
+        internal bool CloseUI<T>(T uiChild, Action afterClosed = null) where T : class, IUIChild;
         
         /// <summary>
         /// 获取已经加载的UI
         /// Get the loaded UI
         /// </summary>
-        T GetUI<T>() where T : UIBehaviour, IUIChild;
+        T GetUI<T>() where T : class, IUIChild;
         
         /// <summary>
         /// 获取打开的UI
         /// Get the opened UI
         /// </summary>
-        T GetOpenedUI<T>() where T : UIBehaviour, IUIChild;
+        T GetOpenedUI<T>() where T : class, IUIChild;
 
         /// <summary>
         /// 界面是否在加载中
         /// Whether the UI is being loaded
         /// </summary>
-        public bool IsUIGoingToOpen<T>(out IOpenWindowRequest request) where T : UIBehaviour, IUIChild;
+        public bool IsUIGoingToOpen<T>(out IOpenWindowRequest request) where T : class, IUIChild;
         
         /// <summary>
         /// 获取最上层的UI

@@ -366,7 +366,7 @@ namespace PowerCellStudio
         /// <param name="data">窗口数据 / Window data</param>
         private void OnUIWindowOpened(IUIChild data)
         {
-            if (data is IUIStandAlone standAlone) return;
+            if (data is IUIStandAlone) return;
             if (_pageStack.Count < 2 || currentPage.pushMode == PagePushMode.Overlap) return;
             var index = 0;
             foreach (var uiParent in _pageStack)

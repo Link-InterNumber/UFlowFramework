@@ -32,7 +32,7 @@ namespace PowerCellStudio
         
         public RectTransform rectTransform => transform as RectTransform;
 
-        public bool isOpened => gameObject.activeInHierarchy;
+        public bool isOpened => gameObject.activeSelf;
         
         public void OnUIDestroy()
         {
@@ -43,7 +43,7 @@ namespace PowerCellStudio
             _windowRequests = null;
         }
 
-        public void OpenUI<T>(object data, Action beforeOpen = null) where T : UIBehaviour, IUIChild
+        public void OpenUI<T>(object data, Action beforeOpen = null) where T : class, IUIChild
         {
             var panelType = typeof(T);
             if (IsUIGoingToOpen<T>(out var request))
@@ -64,20 +64,20 @@ namespace PowerCellStudio
                 UIUtils.OpenUI(window, data);
                 return;
             }
-            var newRequest = new OpenWindowRequest(this, panelType, false, data, beforeOpen);
+            var newRequest = OpenWindowRequestFactroy.Create(this, panelType, false, data, beforeOpen);
             _windowRequests.AddWindowRequest(newRequest);
         }
 
-        public void PreloadUI<T>() where T : UIBehaviour, IUIChild
+        public void PreloadUI<T>() where T : class, IUIChild
         {
             if (IsUIGoingToOpen<T>(out _)) return;
             var window = GetUI<T>();
             if (window != null) return;
-            var newRequest = new OpenWindowRequest(this, typeof(T), true, null, null);
+            var newRequest = OpenWindowRequestFactroy.Create(this, typeof(T), true, null, null);
             _windowRequests.AddWindowRequest(newRequest);
         }
 
-        public bool CloseUI<T>(Action onClosed) where T : UIBehaviour, IUIChild
+        public bool CloseUI<T>(Action onClosed) where T : class, IUIChild
         {
             var window = GetUI<T>();
             if (window == null) return false;
@@ -103,22 +103,22 @@ namespace PowerCellStudio
             return true;
         }
 
-        public T GetOpenedUI<T>() where T : UIBehaviour, IUIChild
+        public T GetOpenedUI<T>() where T : class, IUIChild
         {
             return _openedUIs?.LastOrDefault(x => x is T) as T;
         }
 
-        public bool IsWindowOpened<T>() where T : UIBehaviour, IUIChild
+        public bool IsWindowOpened<T>() where T : class, IUIChild
         {
             return GetOpenedUI<T>() != null;
         }
 
-        public T GetUI<T>() where T : UIBehaviour, IUIChild
+        public T GetUI<T>() where T : class, IUIChild
         {
             return _children.TryGetValue(typeof(T), out var child) ? (T) child : null;
         }
 
-        public bool IsUIGoingToOpen<T>(out IOpenWindowRequest request) where T : UIBehaviour, IUIChild
+        public bool IsUIGoingToOpen<T>(out IOpenWindowRequest request) where T : class, IUIChild
         {
             return _windowRequests.IsUIGoingToOpen<T>(out request);
         }

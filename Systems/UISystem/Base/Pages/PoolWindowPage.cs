@@ -37,13 +37,13 @@ namespace PowerCellStudio
                 beforeOpen?.Invoke();
                 return;
             }
-            var newRequest = new OpenWindowRequest(this, panelType, false, data, () =>
+            var newRequest = OpenWindowRequestFactroy.Create(this, panelType, false, data, () =>
             {
                 var openedWindow = GetUI<T>();
                 UIUtils.SetUIChildToParent(openedWindow, page);
                 beforeOpen?.Invoke();
             });
-            newRequest.Load();
+            _windowRequests.AddWindowRequest(newRequest);
         }
 
         public override void OnClose()
