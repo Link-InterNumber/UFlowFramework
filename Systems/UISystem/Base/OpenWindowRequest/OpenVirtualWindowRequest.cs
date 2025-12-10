@@ -57,6 +57,7 @@ namespace PowerCellStudio
                 UILog.LogError($"{_bindWindowType.Name}没有挂载在预制体上");
                 return null;
             }
+            instanceWindow.name = instanceWindow.name + $"({windowType.Name})";
             var virtualWindowInstance = Activator.CreateInstance(windowType);
             ReflectionUtils.InvokeMethod(virtualWindowInstance, "BindWindow", windowInstance);
             _bindWindowType = null;

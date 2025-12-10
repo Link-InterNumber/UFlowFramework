@@ -53,7 +53,7 @@ namespace PowerCellStudio
         public override T Read<T>(string saveKey, bool decrypt)
         {
             if (!PlayerPrefs.HasKey(saveKey)) return default;
-            string json = PlayerPrefs.GetString(saveKey);
+            string json = PlayerPrefs.GetString(saveKey, "{}");
             if (decrypt)
             {
                 var jsonDe = EncryptUtils.Base64Decrypt(json);

@@ -277,7 +277,7 @@ namespace PowerCellStudio
         /// <typeparam name="T">窗口类型 / Type of window</typeparam>
         /// <param name="includeClosed">是否包括关闭的界面，默认包括 / Include closed windows, default is true</param>
         /// <returns>窗口实例, 如果没有则返回null / Instance of the window, or null if not found</returns>
-        public T GetWindow<T>(bool includeClosed = true) where T : UIBehaviour, IUIChild
+        public T GetWindow<T>(bool includeClosed = true) where T : class, IUIChild
         {
             var windowType = typeof(T);
             if (typeof(IUIStandAlone).IsAssignableFrom(windowType))
@@ -293,7 +293,7 @@ namespace PowerCellStudio
         /// </summary>
         /// <typeparam name="T">窗口类型 / Type of window</typeparam>
         /// <returns>资源加载器, 如果没有则返回null / Instance of the assetsLoader of window, or null if not found</returns>
-        public IAssetLoader GetAssetLoader<T>() where T : UIBehaviour, IUIChild
+        public IAssetLoader GetAssetLoader<T>() where T : class, IUIChild
         {
             return GetWindow<T>()?.assetsLoader ?? null;
         }
@@ -305,7 +305,7 @@ namespace PowerCellStudio
         /// <typeparam name="T">窗口类型 / Type of window</typeparam>
         /// <param name="data">窗口数据 / Window data</param>
         /// <param name="beforeOpen">打开前的操作 / Actions before opening</param>
-        public void OpenWindow<T>(object data = null, Action beforeOpen = null) where T : UIBehaviour, IUIChild
+        public void OpenWindow<T>(object data = null, Action beforeOpen = null) where T : class, IUIChild
         {
             var windowType = typeof(T);
             if (typeof(IUIStandAlone).IsAssignableFrom(windowType))
@@ -313,7 +313,7 @@ namespace PowerCellStudio
                 _standAlonePage.OpenUI<T>(data, beforeOpen);
                 return;
             }
-            if (!currentPage.GetUI<T>() && typeof(IUIPoolable).IsAssignableFrom(windowType))
+            if (currentPage.GetUI<T>() == null && typeof(IUIPoolable).IsAssignableFrom(windowType))
             {
                 _poolPage.OpenUI<T>(currentPage, data, beforeOpen);
                 return;
@@ -328,7 +328,7 @@ namespace PowerCellStudio
         /// <typeparam name="T">窗口类型 / Type of window</typeparam>
         /// <param name="onClosed">关闭后的操作 / Actions after closing</param>
         /// <param name="destroy">是否关闭后销毁 / Whether to destroy after closing</param>
-        public void CloseWindow<T>(Action onClosed = null, bool destroy = false) where T : UIBehaviour, IUIChild
+        public void CloseWindow<T>(Action onClosed = null, bool destroy = false) where T : class, IUIChild
         {
             var windowType = typeof(T);
             if (typeof(IUIStandAlone).IsAssignableFrom(windowType))
@@ -349,7 +349,7 @@ namespace PowerCellStudio
                     UIUtils.DestroyUI(window, null);
                 }
                 else if (typeof(IUIPoolable).IsAssignableFrom(windowType)
-                         && !_poolPage.GetUI<T>() 
+                         && _poolPage.GetUI<T>() == null 
                          && !_poolPage.IsUIGoingToOpen<T>(out _))
                 {
                     var window = currentPage.GetUI<T>();

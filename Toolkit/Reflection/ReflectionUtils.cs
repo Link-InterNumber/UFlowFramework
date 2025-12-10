@@ -258,5 +258,36 @@ namespace PowerCellStudio
                 )
                 .ToList();
         }
+
+        /// <summary>
+        /// Determines whether a type is a subclass of a specified base type or generic type definition.
+        /// 判断一个类型是否是指定基类或泛型类型定义的子类。
+        /// </summary>
+        /// <param name="baseType">The base type or generic type definition. 基类或泛型类型定义。</param>
+        /// <param name="toCheck">The type to check. 要检查的类型。</ param>
+        public static bool IsSubclassOf(Type baseType, Type toCheck)
+        {
+            if (baseType.IsAssignableFrom(toCheck) && baseType != toCheck)
+            {
+                return true;
+            }
+            else if (IsSubclassOfRawGeneric(baseType, toCheck))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private static bool IsSubclassOfRawGeneric(Type generic, Type toCheck)
+        {
+            while (toCheck != null && toCheck != typeof(object))
+            {
+                if (toCheck.IsGenericType && toCheck.GetGenericTypeDefinition() == generic)
+                    return true;
+                toCheck = toCheck.BaseType;
+            }
+            return false;
+        }
+
     }
 }

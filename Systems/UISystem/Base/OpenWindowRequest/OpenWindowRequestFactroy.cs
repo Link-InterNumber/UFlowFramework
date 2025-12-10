@@ -10,11 +10,22 @@ namespace PowerCellStudio
             {
                 return new OpenUIWindowRequest(parent, windowType, preload, sourceData, beforeOpen);
             }
-            else if(typeof(UIVirtualWindow<>).IsAssignableFrom(windowType))
+            else if (IsSubclassOfRawGeneric(typeof(UIVirtualWindow<>), windowType))
             {
                 return new OpenVirtualWindowRequest(parent, windowType, preload, sourceData, beforeOpen);
             }
             return null;
+        }
+
+        private static bool IsSubclassOfRawGeneric(Type generic, Type toCheck)
+        {
+            while (toCheck != null && toCheck != typeof(object))
+            {
+                if (toCheck.IsGenericType && toCheck.GetGenericTypeDefinition() == generic)
+                    return true;
+                toCheck = toCheck.BaseType;
+            }
+            return false;
         }
     }
 }

@@ -10,7 +10,7 @@ namespace PowerCellStudio
             
         }
 
-        public void OpenUI<T>(IUIParent page, object data, Action beforeOpen) where T : UIBehaviour, IUIChild
+        public void OpenUI<T>(IUIParent page, object data, Action beforeOpen) where T : class, IUIChild
         {
             var panelType = typeof(T);
             if (IsUIGoingToOpen<T>(out var request))

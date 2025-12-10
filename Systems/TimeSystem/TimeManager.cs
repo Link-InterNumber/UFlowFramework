@@ -192,6 +192,10 @@ namespace PowerCellStudio
         private long GetStartTime()
         {
             var timeSave = PlayerDataUtils.Read<TimeSave>(PlayerDataType.PlayerPrefs);
+            if (timeSave == null)
+            {
+                timeSave = new TimeSave();
+            }
             if (timeSave.startTime == 0L)
             {
                 timeSave.startTime = DateTime.Now.Ticks;
