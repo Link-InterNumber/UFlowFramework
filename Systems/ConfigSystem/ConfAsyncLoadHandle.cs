@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using Newtonsoft.Json;
 using UnityEngine;
+using System.IO.Compression;
+using System.Text;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -79,10 +80,15 @@ namespace PowerCellStudio
                 return;
             }
             var bytes = EncryptUtils.AESDecrypt(textAsset.bytes, ConstSetting.FileEncryptionKey); // 解密配置文件
-            using MemoryStream stream = new MemoryStream(bytes);
-            BinaryFormatter formatter = new BinaryFormatter();
-            T data = (T) formatter.Deserialize(stream);
-            stream.Close();
+            using (var compressedStream = new MemoryStream(bytes))
+            using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
+            using (var resultStream = new MemoryStream())
+            {
+                gzipStream.CopyTo(resultStream);
+                bytes = resultStream.ToArray();
+            }
+            var json = Encoding.UTF8.GetString(bytes);
+            var data = JsonConvert.DeserializeObject<T>(json);
             Completed?.Invoke(data);
         }
 
@@ -128,10 +134,15 @@ namespace PowerCellStudio
             {
                 byte[] readAllBytes = File.ReadAllBytes(path);
                 var bytes = EncryptUtils.AESDecrypt(readAllBytes, ConstSetting.FileEncryptionKey); // 解密配置文件
-                using MemoryStream stream = new MemoryStream(bytes);
-                BinaryFormatter formatter = new BinaryFormatter();
-                data = (T) formatter.Deserialize(stream);
-                stream.Close();
+                using (var compressedStream = new MemoryStream(bytes))
+                using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
+                using (var resultStream = new MemoryStream())
+                {
+                    gzipStream.CopyTo(resultStream);
+                    bytes = resultStream.ToArray();
+                }
+                var json = Encoding.UTF8.GetString(bytes);
+                data = JsonConvert.DeserializeObject<T>(json);
             }
             catch (Exception e)
             {
@@ -188,10 +199,15 @@ namespace PowerCellStudio
         private void OnLoadBinaryCompleted<T>(TextAsset obj) where T :ConfBaseData
         {
             var bytes = EncryptUtils.AESDecrypt(obj.bytes, ConstSetting.FileEncryptionKey); // 解密配置文件
-            using MemoryStream stream = new MemoryStream(bytes);
-            BinaryFormatter formatter = new BinaryFormatter();
-            T data = (T) formatter.Deserialize(stream);
-            stream.Close();
+            using (var compressedStream = new MemoryStream(bytes))
+            using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
+            using (var resultStream = new MemoryStream())
+            {
+                gzipStream.CopyTo(resultStream);
+                bytes = resultStream.ToArray();
+            }
+            var json = Encoding.UTF8.GetString(bytes);
+            var data = JsonConvert.DeserializeObject<T>(json);
             Completed?.Invoke(data);
         }
 
@@ -345,11 +361,16 @@ namespace PowerCellStudio
                 Completed?.Invoke(null);
                 yield break;
             }
-            using MemoryStream stream = new MemoryStream(textAsset.bytes);
-            BinaryFormatter formatter = new BinaryFormatter();
-            string json = (string) formatter.Deserialize(stream);
+            var bytes = EncryptUtils.AESDecrypt(textAsset.bytes, ConstSetting.FileEncryptionKey); // 解密配置文件
+            using (var compressedStream = new MemoryStream(bytes))
+            using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
+            using (var resultStream = new MemoryStream())
+            {
+                gzipStream.CopyTo(resultStream);
+                bytes = resultStream.ToArray();
+            }
+            var json = Encoding.UTF8.GetString(bytes);
             var data = JsonConvert.DeserializeObject<T>(json);
-            stream.Close();
             Completed?.Invoke(data);
         }
     

@@ -1,7 +1,8 @@
 using System;
-using System.Collections;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
+using Newtonsoft.Json;
+using System.IO.Compression;
 #if !UNITY_WEBGL
 using System.Threading.Tasks;
 #endif
@@ -22,15 +23,24 @@ namespace PowerCellStudio
             CheckDirectory();
             try
             {
-                using (MemoryStream memoryStream = new MemoryStream())
+                var json = JsonConvert.SerializeObject(data, Formatting.None, new JsonSerializerSettings
                 {
-                    BinaryFormatter formatter = new BinaryFormatter();
-                    formatter.Serialize(memoryStream, data);
-                    var bytes = memoryStream.ToArray();
-                    if (encrypt) bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
-                    File.WriteAllBytes(filePath, bytes);
-                    memoryStream.Close();
+                    // TypeNameHandling = TypeNameHandling.Auto,
+                    PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                });
+                var bytes = Encoding.UTF8.GetBytes(json);
+                // 2. GZip 压缩
+                using (var memoryStream = new MemoryStream())
+                {
+                    using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress))
+                    {
+                        gzipStream.Write(bytes, 0, bytes.Length);
+                    }
+                    bytes = memoryStream.ToArray();
                 }
+                if (encrypt) bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
+                File.WriteAllBytes(filePath, bytes);
+                
                 LinkLog.Log($"Save a Binary at {filePath}");
             }
             catch (Exception e)
@@ -51,7 +61,6 @@ namespace PowerCellStudio
             _ = SaveDataBinaryHandler(saveKey, data, onComplete, encrypt);
 #endif
         }
-
         private async Task SaveDataBinaryHandler<T>(string saveKey, T data, Action<bool> onComplete, bool encrypt)
         {
             if (!TryGetSaveFilePath(saveKey, out var filePath))
@@ -62,21 +71,31 @@ namespace PowerCellStudio
             try
             {
                 // 将繁重的 序列化 和 加密 工作移至线程池，避免阻塞主线程
-                await Task.Run(() =>
+                await Task.Run(async () =>
                 {
-                    using (MemoryStream memoryStream = new MemoryStream())
+                    var json = JsonConvert.SerializeObject(data, Formatting.None, new JsonSerializerSettings
                     {
-                        BinaryFormatter formatter = new BinaryFormatter();
-                        formatter.Serialize(memoryStream, data);
+                        // TypeNameHandling = TypeNameHandling.Auto,
+                        PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                    });
+                    var bytes = Encoding.UTF8.GetBytes(json);
 
-                        var bytes = memoryStream.ToArray();
-                        if (encrypt)
+                    // 2. GZip 压缩
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress))
                         {
-                            bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
+                            await gzipStream.WriteAsync(bytes, 0, bytes.Length);
                         }
-
-                        File.WriteAllBytesAsync(filePath, bytes);
+                        bytes = memoryStream.ToArray();
                     }
+                
+                    if (encrypt)
+                    {
+                        bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
+                    }
+
+                    await File.WriteAllBytesAsync(filePath, bytes);
                 });
 
                 LinkLog.Log($"Save a Binary at {filePath}");
@@ -98,12 +117,21 @@ namespace PowerCellStudio
             {
                 byte[] encryptedData = File.ReadAllBytes(filePath);
                 var decryptedData = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
-                using MemoryStream memoryStream = new MemoryStream(decryptedData);
-                // 使用BinaryFormatter进行反序列化
-                BinaryFormatter formatter = new BinaryFormatter();
-                T data = (T)formatter.Deserialize(memoryStream);
-                // 关闭文件流
-                memoryStream.Close();
+
+                using (var compressedStream = new MemoryStream(decryptedData))
+                using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
+                using (var resultStream = new MemoryStream())
+                {
+                    gzipStream.CopyTo(resultStream);
+                    decryptedData = resultStream.ToArray();
+                }
+
+                var json = Encoding.UTF8.GetString(decryptedData);
+                T data = JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings
+                {
+                    // TypeNameHandling = TypeNameHandling.Auto,
+                    PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                });
                 return data;
             }
             catch (Exception e)
@@ -124,7 +152,6 @@ namespace PowerCellStudio
             _ = ReadDataBinaryHandler(saveKey, onComplete, decrypt);
 #endif
         }
-
         private async Task ReadDataBinaryHandler<T>(string saveKey, Action<T> onComplete, bool decrypt)
         {
             if (!TryGetSaveFilePath(saveKey, out var filePath))
@@ -135,16 +162,25 @@ namespace PowerCellStudio
             try
             {
                 T data = default;
-                await Task.Run(() =>
+                await Task.Run(async () =>
                 {
-                    byte[] encryptedData = File.ReadAllBytes(filePath);
+                    byte[] encryptedData = await File.ReadAllBytesAsync(filePath);
                     var decryptedData = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
-                    using (MemoryStream memoryStream = new MemoryStream(decryptedData))
+
+                    using (var compressedStream = new MemoryStream(decryptedData))
+                    using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
+                    using (var resultStream = new MemoryStream())
                     {
-                        // 使用BinaryFormatter进行反序列化
-                        BinaryFormatter formatter = new BinaryFormatter();
-                        data = (T)formatter.Deserialize(memoryStream);
+                        await gzipStream.CopyToAsync(resultStream);
+                        decryptedData = resultStream.ToArray();
                     }
+                
+                    var json = Encoding.UTF8.GetString(decryptedData);
+                    data = JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings
+                    {
+                        // TypeNameHandling = TypeNameHandling.Auto,
+                        PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                    });
                 });
                 onComplete?.Invoke(data);
             }

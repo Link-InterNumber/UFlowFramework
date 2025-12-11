@@ -24,7 +24,7 @@ namespace PowerCellStudio
                 string json = JsonConvert.SerializeObject(data);
                 if (encrypt)
                 {
-                    var jsonEn = EncryptUtils.Base64Encrypt(json);
+                    var jsonEn = EncryptUtils.AESEncrypt(json, ConstSetting.FileEncryptionKey);
                     File.WriteAllText(filePath, jsonEn);
                 }
                 else
@@ -61,17 +61,17 @@ namespace PowerCellStudio
             }
             try
             {
-                await Task.Run(() =>
+                await Task.Run(async () =>
                 {
                     string json = JsonConvert.SerializeObject(data);
                     if (encrypt)
                     {
-                        var jsonEn = EncryptUtils.Base64Encrypt(json);
-                        File.WriteAllText(filePath, jsonEn);
+                        var jsonEn = EncryptUtils.AESEncrypt(json, ConstSetting.FileEncryptionKey);
+                        await File.WriteAllTextAsync(filePath, jsonEn);
                     }
                     else
                     {
-                        File.WriteAllText(filePath, json);
+                        await File.WriteAllTextAsync(filePath, json);
                     }
                 });
                 LinkLog.Log($"Save a Json at {filePath}");
@@ -95,7 +95,7 @@ namespace PowerCellStudio
             {
                 if (decrypt)
                 {
-                    var json = EncryptUtils.Base64Decrypt(jsonEn);
+                    var json = EncryptUtils.AESDecrypt(jsonEn, ConstSetting.FileEncryptionKey);
                     result = JsonConvert.DeserializeObject<T>(json);
                 }
                 result = JsonConvert.DeserializeObject<T>(jsonEn);
@@ -134,14 +134,14 @@ namespace PowerCellStudio
             try
             {
                 T data = default;
-                await Task.Run(() =>
+                await Task.Run(async () =>
                 {
-                    var jsonEn = File.ReadAllText(filePath);
+                    var jsonEn = await File.ReadAllTextAsync(filePath);
                     try
                     {
                         if (decrypt)
                         {
-                            var json = EncryptUtils.Base64Decrypt(jsonEn);
+                            var json = EncryptUtils.AESDecrypt(jsonEn, ConstSetting.FileEncryptionKey);
                             data = JsonConvert.DeserializeObject<T>(json);
                         }
                         data = JsonConvert.DeserializeObject<T>(jsonEn);

@@ -79,12 +79,14 @@ namespace PowerCellStudio
                         "Newtonsoft.Json");
                     break;
                 case ConstSetting.ConfigSaveMode.Binary:
-                    _csFile.WriteUsing("System", 
-                        "System.Collections.Generic", 
-                        "System.IO", 
-                        "System.Linq", 
+                    _csFile.WriteUsing("System",
+                        "System.Collections.Generic",
+                        "System.IO",
+                        "System.Linq",
                         "UnityEngine",
-                        "System.Runtime.Serialization.Formatters.Binary");
+                        "System.Text",
+                        "Newtonsoft.Json",
+                        "System.IO.Compression");
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -198,21 +200,24 @@ namespace PowerCellStudio
                     break;
                 case ConstSetting.ConfigSaveMode.Json:
                     _csFile.WriteLine("string json = JsonConvert.SerializeObject(asset);");
-                    _csFile.WriteLine("json = EncryptUtils.AESDecrypt(json, ConstSetting.FileEncryptionKey);"); // 加密配置文件
+                    _csFile.WriteLine("json = EncryptUtils.AESEncrypt(json, ConstSetting.FileEncryptionKey);"); // 加密配置文件
                     _csFile.WriteLine($"File.WriteAllText(\"{assetPath}{_fileName}Asset.{extensionName}\", json);");
                     _csFile.WriteLine($"ConfigLog.Log(\"Config Asset Created => [{_fileName}]\");");
                     break;
                 case ConstSetting.ConfigSaveMode.Binary:
-                    _csFile.WriteLine("using (MemoryStream memoryStream = new MemoryStream())");
+                    _csFile.WriteLine("string json = JsonConvert.SerializeObject(asset);");
+                    _csFile.WriteLine("var bytes = Encoding.UTF8.GetBytes(json);");
+                    _csFile.WriteLine("using (var memoryStream = new MemoryStream())");
                     _csFile.StartWriteBody();
-                    _csFile.WriteVar("formatter", "new BinaryFormatter()");
-                    _csFile.WriteLine("formatter.Serialize(memoryStream, asset);");
-                    _csFile.WriteVar("bytes", "memoryStream.ToArray();");
-                    _csFile.WriteLine("bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);"); // 加密配置文件
+                    _csFile.WriteLine("using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress))");
+                    _csFile.StartWriteBody();
+                    _csFile.WriteLine("gzipStream.Write(bytes, 0, bytes.Length);");
+                    _csFile.EndWriteBody();
+                    _csFile.WriteLine("bytes = memoryStream.ToArray();");
+                    _csFile.EndWriteBody();
+                    _csFile.WriteLine("bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);");
                     _csFile.WriteLine($"File.WriteAllBytes(\"{assetPath}{_fileName}Asset.{extensionName}\", bytes);");
                     _csFile.WriteLine($"ConfigLog.Log(\"Config Asset Created => [{_fileName}]\");");
-                    _csFile.WriteLine("memoryStream.Close();");
-                    _csFile.EndWriteBody();
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

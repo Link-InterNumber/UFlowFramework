@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using System.Collections.Generic;
 #if !UNITY_WEBGL
 using System.Threading.Tasks;
 #endif
@@ -32,14 +33,29 @@ namespace PowerCellStudio
 
         private static void Init()
         {
+            // 旧数据转换器列表初始化
+            var dataTranslators = new List<DataTranslatorBase>();
+            var dataTranslatorType = typeof(DataTranslatorBase);
+            // 存储处理器数组初始化
             var enumValues = Enum.GetValues(typeof(PlayerDataType));
             _persistenceDataProcessors = new PersistenceDataProcessor[enumValues.Length];
+            var persistenceDataProcessorType = typeof(PersistenceDataProcessor);
 
             var assembly = Assembly.GetExecutingAssembly();
             var types = assembly.GetTypes();
             foreach (var type in types)
             {
-                if (type.IsAbstract || !type.IsSubclassOf(typeof(PersistenceDataProcessor)))
+                if (type.IsAbstract)
+                    continue;
+
+                if (dataTranslatorType.IsAssignableFrom(type))
+                {
+                    var instance = (DataTranslatorBase)Activator.CreateInstance(type);
+                    dataTranslators.Add(instance);
+                    continue;
+                }
+
+                if (!persistenceDataProcessorType.IsAssignableFrom(type))
                     continue;
 
                 // 获取自定义特性
@@ -67,6 +83,7 @@ namespace PowerCellStudio
                     }
                 }
             }
+
 #if UNITY_EDITOR
             for (int i = 0; i < _persistenceDataProcessors.Length; i++)
             {
@@ -76,6 +93,21 @@ namespace PowerCellStudio
                 }
             }
 #endif
+
+            // 执行数据转换
+            if (dataTranslators.Count == 0) return;
+            dataTranslators.Sort((a, b) => a.version.CompareTo(b.version));
+            foreach (var translator in dataTranslators)
+            {
+                try
+                {
+                    translator.TryTranslator();
+                }
+                catch (Exception e)
+                {
+                    LinkLog.LogError($"[PlayerDataUtils] Data translation failed for {translator.GetType().Name}:\n {e.Message}");
+                }
+            }
         }
 
         private static PersistenceDataProcessor GetProcessor(PlayerDataType dataType)
