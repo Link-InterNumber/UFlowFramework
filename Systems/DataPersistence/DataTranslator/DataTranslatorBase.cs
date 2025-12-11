@@ -21,7 +21,7 @@ namespace PowerCellStudio
 
         protected abstract object ReadOldData(string filePath, bool decrypt);
 
-        public void TryTranslator()
+        public virtual void TryTranslator()
         {
             if (PlayerPrefs.GetInt(saveKey, 0) != 0) return;
             var processor = targetProcessor;
