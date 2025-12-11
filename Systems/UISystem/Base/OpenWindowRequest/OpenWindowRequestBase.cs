@@ -79,9 +79,9 @@ namespace PowerCellStudio
                 return;
             }
             ui.prefabPath = _windowPath;
-            if (!_parent.transform)
+            if (!_parent.transform || _parent.windowRequests == null)
             {
-                UILog.LogError($"{_parent.GetType().Name}已经被销毁");
+                UILog.LogError($"正在打开【{_windowType.Name}】但【{_parent.GetType().Name}】已经被销毁");
                 ApplicationManager.instance.DelayedNextFrame(() =>
                 {
                     GameObject.Destroy(go);

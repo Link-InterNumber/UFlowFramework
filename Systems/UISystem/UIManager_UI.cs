@@ -105,12 +105,11 @@ namespace PowerCellStudio
         /// </summary>
         /// <param name="page">页面实例 / Page instance</param>
         /// <returns>是否有窗口正在打开 / Whether any windows are opening</returns>
-        private bool IsAnyWindowOpening(IUIParent page)
+        public bool IsAnyWindowOpening(IUIParent page)
         {
             if (page == null) return false;
             if (page.windowRequests != null && page.windowRequests.Count > 0)
             {
-                UILog.LogError($"[{page.transform.name}] is opening window(s), please wait!");
                 return true;
             }
             return false;
@@ -134,10 +133,6 @@ namespace PowerCellStudio
         /// <returns>页面实例 / Instance of the page</returns>
         public T PushPage<T>(object data = null, PagePushMode pushMode = PagePushMode.CloseOther) where T : UIBehaviour, IUIParent
         {
-            if (IsAnyWindowOpening(currentPage))
-            {
-                return null;
-            }
             var page = GetOrCreatePage<T>();
             if (page == null) return null;
             page.pushMode = pushMode;
@@ -165,11 +160,16 @@ namespace PowerCellStudio
         /// <param name="callback">回调函数 / Callback function</param>
         public void PopPage(Action callback = null)
         {
-            if (IsAnyWindowOpening(currentPage))
+            // if (IsAnyWindowOpening(currentPage))
+            // {
+            //     UILog.LogError($"[{currentPage.transform.name}] is opening window(s), please wait!");
+            //     return;
+            // }
+            if (_pageStack.Count < 2)
             {
+                UILog.LogError("You must keep at least one page!");
                 return;
             }
-            if (_pageStack.Count < 2) return;
             var page = _pageStack.Pop();
             if (currentPage.pushMode == PagePushMode.Overlap)
             {
@@ -232,10 +232,11 @@ namespace PowerCellStudio
             {
                 var page = GetPage<T>();
                 if (page == null) return;
-                if (IsAnyWindowOpening(page))
-                {
-                    return;
-                }
+                // if (IsAnyWindowOpening(page))
+                // {
+                //     UILog.LogError($"[{page.transform.name}] is opening window(s), please wait!");
+                //     return;
+                // }
                 _pageStack.Remove(page);
                 TryCachePage(page, destroy, callback);
                 SortingPage();
@@ -267,6 +268,11 @@ namespace PowerCellStudio
             yield return new WaitForSecondsRealtime(time);
             if (!_cachedUIs.TryGetValue(uiType, out var cachedPage)) yield break;
             _cachedUIs.Remove(uiType);
+            var page = cachedPage as IUIParent;
+            // while (IsAnyWindowOpening(page))
+            // {
+            //     yield return null;
+            // }
             UIUtils.ClosePageInstance(cachedPage as IUIParent, true, null, _poolPage);
         }
 
@@ -371,7 +377,7 @@ namespace PowerCellStudio
             var index = 0;
             foreach (var uiParent in _pageStack)
             {
-                if (index > 0 && uiParent.isOpened && !IsAnyWindowOpening(uiParent))
+                if (index > 0 && uiParent.isOpened)
                 {
                     UIUtils.ClosePageInstance(uiParent, false, null, _poolPage);
                 }
