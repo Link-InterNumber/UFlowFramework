@@ -23,7 +23,7 @@ namespace PowerCellStudio
 
         public void TryTranslator()
         {
-            if (PlayerPrefs.GetInt(saveKey, 0) == 0) return;
+            if (PlayerPrefs.GetInt(saveKey, 0) != 0) return;
             var processor = targetProcessor;
             var saveRoot = Path.Combine(BasePlayerDataProcessor.SavePathRoot, processor.directoryName);
             if (!Directory.Exists(saveRoot))
