@@ -162,7 +162,7 @@ namespace PowerCellStudio
                 obj.SetActive(true);
                 var li = obj.GetComponent<IListItem>();
                 li?.UpdateContent(i, _dataList[i], this);
-                _itemDict.Add(i, new RecycleItem{index = i, transform = t, listItem = li});
+                _itemDict[i] = new RecycleItem { index = i, transform = t, listItem = li };
             }
             var removeNumber = _container.transform.childCount;
             if (numItems < removeNumber)
