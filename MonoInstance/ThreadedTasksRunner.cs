@@ -32,7 +32,7 @@ namespace PowerCellStudio
         /// 主线程回调（可选）。</param>
         public void RunTaskAsync(System.Action backgroundTask, System.Action mainThreadCallback = null)
         {
-#if !UNITY_WEBGL
+#if UNITY_WEBGL
             backgroundTask?.Invoke();
             mainThreadCallback?.Invoke();
 #else
@@ -51,7 +51,7 @@ namespace PowerCellStudio
                 }
                 catch (System.Exception ex)
                 {
-                    _mainThreadActions.Enqueue(()=>Debug.LogError($"Task failed: {ex}"););
+                    _mainThreadActions.Enqueue(()=>Debug.LogError($"Task failed: {ex}"));
                 }
             });
 #endif
@@ -69,7 +69,7 @@ namespace PowerCellStudio
         /// 主线程回调（可选）。</param>
         public void RunTaskAsync<T>(System.Action<T> backgroundTask, T parameter, System.Action mainThreadCallback = null)
         {
-#if !UNITY_WEBGL
+#if UNITY_WEBGL
             backgroundTask?.Invoke(parameter);
             mainThreadCallback?.Invoke();
 #else

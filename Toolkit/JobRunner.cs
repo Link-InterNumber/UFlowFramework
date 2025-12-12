@@ -25,11 +25,9 @@ namespace PowerCellStudio
         /// Synchronously runs an IJob type job and completes calculation on the main thread.
         /// </summary>
         /// <typeparam name="TJob">Job结构体类型 / Job struct type</typeparam>
-        /// <typeparam name="T">结果类型 / Result type</typeparam>
         /// <param name="job">要执行的Job实例 / Job instance to execute</param>
-        public void SyncRunJob<TJob, T>(TJob job)
+        public void SyncRunJob<TJob>(TJob job)
            where TJob : struct, IJob
-           where T : struct
         {
 #if UNITY_WEBGL
             // WebGL不支持JobSystem，直接返回原始结果
