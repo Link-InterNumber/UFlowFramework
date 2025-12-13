@@ -67,7 +67,7 @@ namespace PowerCellStudio
                 return;
             }
             var jsonString = EncryptUtils.AESDecrypt(textAsset.text, ConstSetting.FileEncryptionKey); // 解密配置文件
-            var data = JsonConvert.DeserializeObject<T>(jsonString);
+            var data = SerializeUtils.DeserializeFromJson<T>(jsonString);
             Completed?.Invoke(data);
         }
 
@@ -80,15 +80,7 @@ namespace PowerCellStudio
                 return;
             }
             var bytes = EncryptUtils.AESDecrypt(textAsset.bytes, ConstSetting.FileEncryptionKey); // 解密配置文件
-            using (var compressedStream = new MemoryStream(bytes))
-            using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
-            using (var resultStream = new MemoryStream())
-            {
-                gzipStream.CopyTo(resultStream);
-                bytes = resultStream.ToArray();
-            }
-            var json = Encoding.UTF8.GetString(bytes);
-            var data = JsonConvert.DeserializeObject<T>(json);
+            var data = SerializeUtils.DeserializeFromBinary<T>(bytes);
             Completed?.Invoke(data);
         }
 
@@ -115,7 +107,7 @@ namespace PowerCellStudio
             {
                 string text = File.ReadAllText(path);
                 var jsonString = EncryptUtils.AESDecrypt(text, ConstSetting.FileEncryptionKey); // 解密配置文件
-                data = JsonConvert.DeserializeObject<T>(jsonString);
+                data = SerializeUtils.DeserializeFromJson<T>(jsonString);
             }
             catch (Exception e)
             {
@@ -134,15 +126,7 @@ namespace PowerCellStudio
             {
                 byte[] readAllBytes = File.ReadAllBytes(path);
                 var bytes = EncryptUtils.AESDecrypt(readAllBytes, ConstSetting.FileEncryptionKey); // 解密配置文件
-                using (var compressedStream = new MemoryStream(bytes))
-                using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
-                using (var resultStream = new MemoryStream())
-                {
-                    gzipStream.CopyTo(resultStream);
-                    bytes = resultStream.ToArray();
-                }
-                var json = Encoding.UTF8.GetString(bytes);
-                data = JsonConvert.DeserializeObject<T>(json);
+                data = SerializeUtils.DeserializeFromBinary<T>(bytes);
             }
             catch (Exception e)
             {
@@ -186,7 +170,7 @@ namespace PowerCellStudio
         private void OnLoadJsonCompleted<T>(TextAsset obj) where T :ConfBaseData
         {
             var jsonString = EncryptUtils.AESDecrypt(obj.text, ConstSetting.FileEncryptionKey); // 解密配置文件
-            var data = JsonConvert.DeserializeObject<T>(jsonString);
+            var data = SerializeUtils.DeserializeFromJson<T>(jsonString);
             Completed?.Invoke(data);
         }
 
@@ -199,15 +183,7 @@ namespace PowerCellStudio
         private void OnLoadBinaryCompleted<T>(TextAsset obj) where T :ConfBaseData
         {
             var bytes = EncryptUtils.AESDecrypt(obj.bytes, ConstSetting.FileEncryptionKey); // 解密配置文件
-            using (var compressedStream = new MemoryStream(bytes))
-            using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
-            using (var resultStream = new MemoryStream())
-            {
-                gzipStream.CopyTo(resultStream);
-                bytes = resultStream.ToArray();
-            }
-            var json = Encoding.UTF8.GetString(bytes);
-            var data = JsonConvert.DeserializeObject<T>(json);
+            var data = SerializeUtils.DeserializeFromBinary<T>(bytes);
             Completed?.Invoke(data);
         }
 
@@ -253,7 +229,7 @@ namespace PowerCellStudio
     //             return;
     //         }
     //         var jsonString = EncryptUtils.AESDecrypt(obj.Result.text, ConstsSetting.BinaryEncryptionKey);
-    //         var data = JsonConvert.DeserializeObject<T>(jsonString);
+    //         var data = SerializeUtils.DeserializeFromJson<T>(jsonString);
     //         Completed?.Invoke(data);
     //     }
     //
@@ -276,10 +252,7 @@ namespace PowerCellStudio
     //             return;
     //         }
     //         var bytes = EncryptUtils.AESDecrypt(obj.Result.bytes, ConstsSetting.BinaryEncryptionKey);
-    //         using MemoryStream stream = new MemoryStream(bytes);
-    //         BinaryFormatter formatter = new BinaryFormatter();
-    //         string json = (string) formatter.Deserialize(stream);
-    //         var data = JsonConvert.DeserializeObject<T>(json);
+    //         var data = SerializeUtils.DeserializeFromBinary<T>(bytes);
     //         stream.Close();
     //         Completed?.Invoke(data);
     //     }
@@ -334,7 +307,7 @@ namespace PowerCellStudio
                 yield break;
             }
             var jsonString = EncryptUtils.AESDecrypt(json.text, ConstSetting.FileEncryptionKey);
-            var loaded = JsonConvert.DeserializeObject<T>(jsonString);
+            var loaded = SerializeUtils.DeserializeFromJson<T>(jsonString);
             Completed?.Invoke(loaded);
         }
     
@@ -362,15 +335,7 @@ namespace PowerCellStudio
                 yield break;
             }
             var bytes = EncryptUtils.AESDecrypt(textAsset.bytes, ConstSetting.FileEncryptionKey); // 解密配置文件
-            using (var compressedStream = new MemoryStream(bytes))
-            using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
-            using (var resultStream = new MemoryStream())
-            {
-                gzipStream.CopyTo(resultStream);
-                bytes = resultStream.ToArray();
-            }
-            var json = Encoding.UTF8.GetString(bytes);
-            var data = JsonConvert.DeserializeObject<T>(json);
+            var data = SerializeUtils.DeserializeFromBinary<T>(bytes);
             Completed?.Invoke(data);
         }
     

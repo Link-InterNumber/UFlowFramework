@@ -1,8 +1,5 @@
 using System;
 using System.IO;
-using System.Text;
-using Newtonsoft.Json;
-using System.IO.Compression;
 #if !UNITY_WEBGL
 using System.Threading.Tasks;
 #endif
@@ -23,24 +20,9 @@ namespace PowerCellStudio
             CheckDirectory();
             try
             {
-                var json = JsonConvert.SerializeObject(data, Formatting.None, new JsonSerializerSettings
-                {
-                    // TypeNameHandling = TypeNameHandling.Auto,
-                    PreserveReferencesHandling = PreserveReferencesHandling.Objects
-                });
-                var bytes = Encoding.UTF8.GetBytes(json);
-                // 2. GZip 压缩
-                using (var memoryStream = new MemoryStream())
-                {
-                    using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress))
-                    {
-                        gzipStream.Write(bytes, 0, bytes.Length);
-                    }
-                    bytes = memoryStream.ToArray();
-                }
+                var bytes = SerializeUtils.SerializeToBinary(data);
                 if (encrypt) bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
                 File.WriteAllBytes(filePath, bytes);
-                
                 LinkLog.Log($"Save a Binary at {filePath}");
             }
             catch (Exception e)
@@ -73,23 +55,7 @@ namespace PowerCellStudio
                 // 将繁重的 序列化 和 加密 工作移至线程池，避免阻塞主线程
                 await Task.Run(async () =>
                 {
-                    var json = JsonConvert.SerializeObject(data, Formatting.None, new JsonSerializerSettings
-                    {
-                        // TypeNameHandling = TypeNameHandling.Auto,
-                        PreserveReferencesHandling = PreserveReferencesHandling.Objects
-                    });
-                    var bytes = Encoding.UTF8.GetBytes(json);
-
-                    // 2. GZip 压缩
-                    using (var memoryStream = new MemoryStream())
-                    {
-                        using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress))
-                        {
-                            await gzipStream.WriteAsync(bytes, 0, bytes.Length);
-                        }
-                        bytes = memoryStream.ToArray();
-                    }
-                
+                    var bytes = await SerializeUtils.SerializeToBinaryAsync(data);
                     if (encrypt)
                     {
                         bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
@@ -117,22 +83,8 @@ namespace PowerCellStudio
             {
                 byte[] encryptedData = File.ReadAllBytes(filePath);
                 var decryptedData = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
-
-                using (var compressedStream = new MemoryStream(decryptedData))
-                using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
-                using (var resultStream = new MemoryStream())
-                {
-                    gzipStream.CopyTo(resultStream);
-                    decryptedData = resultStream.ToArray();
-                }
-
-                var json = Encoding.UTF8.GetString(decryptedData);
-                T data = JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings
-                {
-                    // TypeNameHandling = TypeNameHandling.Auto,
-                    PreserveReferencesHandling = PreserveReferencesHandling.Objects
-                });
-                return data;
+                
+                return SerializeUtils.DeserializeFromBinary<T>(decryptedData);
             }
             catch (Exception e)
             {
@@ -175,21 +127,7 @@ namespace PowerCellStudio
                 {
                     byte[] encryptedData = await File.ReadAllBytesAsync(filePath);
                     var decryptedData = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
-
-                    using (var compressedStream = new MemoryStream(decryptedData))
-                    using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
-                    using (var resultStream = new MemoryStream())
-                    {
-                        await gzipStream.CopyToAsync(resultStream);
-                        decryptedData = resultStream.ToArray();
-                    }
-                
-                    var json = Encoding.UTF8.GetString(decryptedData);
-                    data = JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings
-                    {
-                        // TypeNameHandling = TypeNameHandling.Auto,
-                        PreserveReferencesHandling = PreserveReferencesHandling.Objects
-                    });
+                    data = await SerializeUtils.DeserializeFromBinaryAsync<T>(decryptedData);
                 });
                 onComplete?.Invoke(data);
             }

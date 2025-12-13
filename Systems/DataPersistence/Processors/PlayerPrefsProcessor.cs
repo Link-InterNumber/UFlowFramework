@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using Newtonsoft.Json;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -32,7 +31,7 @@ namespace PowerCellStudio
         public override bool Save<T>(string saveKey, T data, bool encrypt)
         {
             if (string.IsNullOrEmpty(saveKey)) return false;
-            string json = JsonConvert.SerializeObject(data);
+            string json = SerializeUtils.SerializeToJson(data);
             if (encrypt)
             {
                 var jsonEn = EncryptUtils.Base64Encrypt(json);
@@ -64,11 +63,11 @@ namespace PowerCellStudio
             if (decrypt)
             {
                 var jsonDe = EncryptUtils.Base64Decrypt(json);
-                return JsonConvert.DeserializeObject<T>(jsonDe);
+                return SerializeUtils.DeserializeFromJson<T>(jsonDe);
             }
             else
             {
-                return JsonConvert.DeserializeObject<T>(json);
+                return SerializeUtils.DeserializeFromJson<T>(json);
             }
         }
 

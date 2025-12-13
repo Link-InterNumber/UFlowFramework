@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
-using Newtonsoft.Json;
 using UnityEditor;
 
 namespace PowerCellStudio
@@ -199,22 +197,13 @@ namespace PowerCellStudio
                         .WriteLine($"ConfigLog.Log(\"Config Asset Created => [{_fileName}]\");");
                     break;
                 case ConstSetting.ConfigSaveMode.Json:
-                    _csFile.WriteLine("string json = JsonConvert.SerializeObject(asset);");
+                    _csFile.WriteLine("string json = SerializeUtils.SerializeToJson(asset);");
                     _csFile.WriteLine("json = EncryptUtils.AESEncrypt(json, ConstSetting.FileEncryptionKey);"); // 加密配置文件
                     _csFile.WriteLine($"File.WriteAllText(\"{assetPath}{_fileName}Asset.{extensionName}\", json);");
                     _csFile.WriteLine($"ConfigLog.Log(\"Config Asset Created => [{_fileName}]\");");
                     break;
                 case ConstSetting.ConfigSaveMode.Binary:
-                    _csFile.WriteLine("string json = JsonConvert.SerializeObject(asset);");
-                    _csFile.WriteLine("var bytes = Encoding.UTF8.GetBytes(json);");
-                    _csFile.WriteLine("using (var memoryStream = new MemoryStream())");
-                    _csFile.StartWriteBody();
-                    _csFile.WriteLine("using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress))");
-                    _csFile.StartWriteBody();
-                    _csFile.WriteLine("gzipStream.Write(bytes, 0, bytes.Length);");
-                    _csFile.EndWriteBody();
-                    _csFile.WriteLine("bytes = memoryStream.ToArray();");
-                    _csFile.EndWriteBody();
+                    _csFile.WriteLine("var bytes = SerializeUtils.SerializeToBinary(asset);");
                     _csFile.WriteLine("bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);");
                     _csFile.WriteLine($"File.WriteAllBytes(\"{assetPath}{_fileName}Asset.{extensionName}\", bytes);");
                     _csFile.WriteLine($"ConfigLog.Log(\"Config Asset Created => [{_fileName}]\");");

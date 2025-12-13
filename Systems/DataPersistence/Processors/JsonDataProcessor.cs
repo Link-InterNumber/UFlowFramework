@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using Newtonsoft.Json;
 #if !UNITY_WEBGL
 using System.Threading.Tasks;
 #endif
@@ -21,7 +20,7 @@ namespace PowerCellStudio
             CheckDirectory();
             try
             {
-                string json = JsonConvert.SerializeObject(data);
+                string json = SerializeUtils.SerializeToJson(data);
                 if (encrypt)
                 {
                     var jsonEn = EncryptUtils.AESEncrypt(json, ConstSetting.FileEncryptionKey);
@@ -63,7 +62,7 @@ namespace PowerCellStudio
             {
                 await Task.Run(async () =>
                 {
-                    string json = JsonConvert.SerializeObject(data);
+                    string json = SerializeUtils.SerializeToJson(data);
                     if (encrypt)
                     {
                         var jsonEn = EncryptUtils.AESEncrypt(json, ConstSetting.FileEncryptionKey);
@@ -96,9 +95,9 @@ namespace PowerCellStudio
                 if (decrypt)
                 {
                     var json = EncryptUtils.AESDecrypt(jsonEn, ConstSetting.FileEncryptionKey);
-                    result = JsonConvert.DeserializeObject<T>(json);
+                    result = SerializeUtils.DeserializeFromJson<T>(json);
                 }
-                result = JsonConvert.DeserializeObject<T>(jsonEn);
+                result = SerializeUtils.DeserializeFromJson<T>(jsonEn);
             }
             catch (Exception e)
             {
@@ -145,9 +144,9 @@ namespace PowerCellStudio
                         if (decrypt)
                         {
                             var json = EncryptUtils.AESDecrypt(jsonEn, ConstSetting.FileEncryptionKey);
-                            data = JsonConvert.DeserializeObject<T>(json);
+                            data = SerializeUtils.DeserializeFromJson<T>(json);
                         }
-                        data = JsonConvert.DeserializeObject<T>(jsonEn);
+                        data = SerializeUtils.DeserializeFromJson<T>(jsonEn);
                     }
                     catch (Exception e)
                     {
