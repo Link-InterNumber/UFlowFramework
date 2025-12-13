@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -332,20 +333,31 @@ namespace PowerCellStudio
                         return null;
                     }
                     var textBytes = File.ReadAllBytes(fullPath); // AssetDatabase.LoadAssetAtPath<TextAsset>(path);
-                    if (textBytes == null)
+                    if (textBytes == null || textBytes.Length == 0)
                     {
                         ConfigLog.LogError($"Cannot find asset at path {path}");
                         return null;
                     }
-                    var bytes = EncryptUtils.AESDecrypt(textBytes, ConstSetting.FileEncryptionKey);
-                    using MemoryStream stream = new MemoryStream(bytes);
-                    BinaryFormatter formatter = new BinaryFormatter();
-                    var deserializeObj = formatter.Deserialize(stream);
-                    // var typeName = Path.GetFileNameWithoutExtension(path);
-                    // typeName = typeName.Remove(typeName.Length - 5, 5);
-                    // typeName = typeName + "Data";
-                    // var type = Assembly.GetAssembly(typeof(ConfBaseData)).GetTypes().FirstOrDefault(t => t.Name == typeName);
-                    var data = deserializeObj as ConfBaseData;
+                    var bytes = EncryptUtils.AESDecrypt(textBytes, ConstSetting.FileEncryptionKey); // 解密配置文件
+                    using (var compressedStream = new MemoryStream(bytes))
+                    using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
+                    using (var resultStream = new MemoryStream())
+                    {
+                        gzipStream.CopyTo(resultStream);
+                        bytes = resultStream.ToArray();
+                    }
+                    var json = Encoding.UTF8.GetString(bytes);
+                    var data = JsonConvert.DeserializeObject(json) as ConfBaseData;
+                    
+                    // var bytes = EncryptUtils.AESDecrypt(textBytes, ConstSetting.FileEncryptionKey);
+                    // using MemoryStream stream = new MemoryStream(bytes);
+                    // BinaryFormatter formatter = new BinaryFormatter();
+                    // var deserializeObj = formatter.Deserialize(stream);
+                    // // var typeName = Path.GetFileNameWithoutExtension(path);
+                    // // typeName = typeName.Remove(typeName.Length - 5, 5);
+                    // // typeName = typeName + "Data";
+                    // // var type = Assembly.GetAssembly(typeof(ConfBaseData)).GetTypes().FirstOrDefault(t => t.Name == typeName);
+                    // var data = deserializeObj as ConfBaseData;
                     return data;
                 }
                 default:

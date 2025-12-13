@@ -20,11 +20,13 @@ namespace PowerCellStudio
         public override void Clear(string saveKey)
         {
             PlayerPrefs.DeleteKey(saveKey);
+            base.Clear(saveKey);
         }
 
         public override void ClearAll()
         {
             PlayerPrefs.DeleteAll();
+            base.ClearAll();
         }
 
         public override bool Save<T>(string saveKey, T data, bool encrypt)
@@ -41,6 +43,11 @@ namespace PowerCellStudio
                 PlayerPrefs.SetString(saveKey, json);
             }
             PlayerPrefs.Save();
+            if (TryGetSaveFilePath(saveKey, out var filePath))
+            {
+                CheckDirectory();
+                File.WriteAllText(filePath, "");
+            }
             return true;
         }
 
