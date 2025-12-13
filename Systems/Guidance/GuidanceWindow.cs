@@ -58,7 +58,9 @@ namespace PowerCellStudio
             _conf = guidanceInfo.conf;
             _canSkip = guidanceInfo.conf.touchScreenToSkip ||guidanceInfo.conf.blockInteraction || !_guidanceTag.GetComponent<RectTransform>();
             screenButton.gameObject.SetActive(_canSkip || guidanceInfo.conf.blockInteraction);
-            screenButton.GetComponent<Canvas>().sortingOrder = guidanceInfo.conf.blockInteraction ? 6000 : 4000;
+            var screenButtonCanvas = screenButton.GetComponent<Canvas>();
+            screenButtonCanvas.sortingLayerID = SortingLayer.layers[SortingLayer.layers.Length - 1].id;
+            screenButtonCanvas.sortingOrder = guidanceInfo.conf.blockInteraction ? 6000 : 4000;
             if (!string.IsNullOrEmpty(_currentPrefab) && _currentPrefab.Equals(guidanceInfo.conf.uiPrefab.assetName))
             {
                 var hand = _uiPrefab.GetComponent<GuidanceHand>();

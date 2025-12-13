@@ -26,7 +26,7 @@ namespace PowerCellStudio
         {
             _actions.Enqueue(action);
             if (_coroutine != null) return;
-            _coroutine = ApplicationManager.instance.StartCoroutine(InvokeQueueYieldInstructions());
+            _coroutine = ApplicationManager.RunCoroutine(InvokeQueueYieldInstructions());
         }
 
         private IEnumerator InvokeQueueYieldInstructions()
@@ -57,7 +57,7 @@ namespace PowerCellStudio
         {
             if (_coroutine != null) return;
             _pause = false;
-            _coroutine = ApplicationManager.instance.StartCoroutine(InvokeQueueYieldInstructions());
+            _coroutine = ApplicationManager.RunCoroutine(InvokeQueueYieldInstructions());
         }
 
         public void Clear()

@@ -175,7 +175,7 @@ namespace PowerCellStudio
             if (handler == null) return;
             if (!handler.isDone)
             {
-                ApplicationManager.instance.StartCoroutine(WaitForPrepareDone(handler));
+                ApplicationManager.RunCoroutine(WaitForPrepareDone(handler));
                 return;
             }
             foreach(var asset in handler.successLable)

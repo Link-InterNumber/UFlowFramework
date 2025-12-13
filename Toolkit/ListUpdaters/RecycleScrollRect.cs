@@ -119,7 +119,7 @@ namespace PowerCellStudio
                 _dataList.Add(datas[i]);
             }
             // Init();
-            ApplicationManager.instance.StartCoroutine(DelayInit());
+            ApplicationManager.RunCoroutine(DelayInit());
         }
 
         private IEnumerator DelayInit()
@@ -179,7 +179,7 @@ namespace PowerCellStudio
                 ListPool<GameObject>.Release(toDestroy);
             }
             _previousIndex = -1;
-            ApplicationManager.instance.StartCoroutine(DelayReorderItemsByPos());
+            ApplicationManager.RunCoroutine(DelayReorderItemsByPos());
         }
 
         private IRecycleScrollRectLayout CreateLayoutHandler(Vector2 prefabRectSize)

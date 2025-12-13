@@ -22,7 +22,7 @@ namespace PowerCellStudio
                 canvas = gameObject.AddComponent<Canvas>();
             }
             canvas.overrideSorting = true;
-            canvas.sortingLayerName = "UI";
+            canvas.sortingLayerID = SortingLayer.layers[SortingLayer.layers.Length - 1].id;
             canvas.sortingOrder = 6000;
         }
 

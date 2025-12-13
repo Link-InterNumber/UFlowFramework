@@ -201,7 +201,7 @@ namespace PowerCellStudio
                     transform.GetChild(i).gameObject.SetActive(false);
                 }
             }
-            _updateCoroutine = ApplicationManager.instance.StartCoroutine(UpdateListWithIntervalHandler(data, interval));
+            _updateCoroutine = ApplicationManager.RunCoroutine(UpdateListWithIntervalHandler(data, interval));
         }
 
         private Coroutine _updateCoroutine;

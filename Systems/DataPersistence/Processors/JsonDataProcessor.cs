@@ -113,22 +113,25 @@ namespace PowerCellStudio
             var data = Read<T>(saveKey, decrypt);
             onComplete?.Invoke(data);
 #else
-            if (!TryGetSaveFilePath(saveKey, out var filePath)) return;
-            if (!File.Exists(filePath)) return;
+            if (!TryGetSaveFilePath(saveKey, out var filePath))
+            {
+                onComplete?.Invoke(default);
+                return;
+            }
+            if (!File.Exists(filePath))
+            {
+                onComplete?.Invoke(default);
+                return;
+            }
             _ = ReadDataBinaryHandler(saveKey, onComplete, decrypt);
 #endif
         }
 
         private async Task ReadDataBinaryHandler<T>(string saveKey, Action<T> onComplete, bool decrypt)
         {
-            if (!TryGetSaveFilePath(saveKey, out var filePath))
+            if (!TryGetSaveFilePath(saveKey, out var filePath) || !File.Exists(filePath))
             {
                 onComplete?.Invoke(default);
-                return;
-            }
-            if (!File.Exists(filePath)) 
-            {
-                onComplete?.Invoke(default); // 建议：文件不存在也应回调
                 return;
             }
             try
