@@ -1,8 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
 
 namespace PowerCellStudio
 {
@@ -17,8 +15,14 @@ namespace PowerCellStudio
         {
             return new SparseSet<T>(1);
         }
-        
+
+        /// <summary>
+        /// 存放元素的数组
+        /// </summary>
         private T[] _dense;
+        /// <summary>
+        /// 稀疏数组，存放元素在_dense中的索引
+        /// </summary>
         private long[] _sparse; 
         private int _pageSize = 128;
         private int _count;
@@ -26,33 +30,25 @@ namespace PowerCellStudio
         public SparseSet()
         {
             _count = 0;
-            _dense = new T[_pageSize * 3];
-            _sparse = new long[_pageSize * 3];
+            _dense = new T[_pageSize];
+            _sparse = new long[_pageSize];
         }
 
         public SparseSet(int pageSize)
         {
             _pageSize = pageSize;
             _count = 0;
-            _dense = new T[_pageSize * 3];
-            _sparse = new long[_pageSize * 3];
+            _dense = new T[_pageSize];
+            _sparse = new long[_pageSize];
         }
-
-        // private int GetPage(int index)
-        // {
-        //     return Mathf.FloorToInt(index * 1f / _pageSize);
-        // }
-        //
-        // private int GetPageIndex(int index)
-        // {
-        //     return index % _pageSize;
-        // }
 
         public IEnumerator<T> GetEnumerator()
         {
+            if (_count == 0)
+                yield break;
             for (int i = 0; i < _count; i++)
             {
-                yield return _dense[i];
+                yield return _dense[i+1];
             }
         }
 
@@ -65,27 +61,26 @@ namespace PowerCellStudio
         {
             if (item == null) return;
             var index = item.index;
-            if (index < 0) throw new ArgumentOutOfRangeException();
-            
+            if (index < 0) return;
             if (index >= _sparse.Length)
             {
-                int newSize = Mathf.CeilToInt((index + 1f) / _pageSize) * _pageSize;
+                var newSize = ((int)(index / _pageSize) + 1) * _pageSize;
                 Array.Resize(ref _sparse, newSize);
             }
-            
-            if (_count >= _dense.Length)
-                Array.Resize(ref _dense, _dense.Length + _pageSize);
-            
-            long existing = _sparse[index];
-            if (existing == 0)
+            var realIndex = _sparse[index];
+            if (realIndex == 0)
             {
-                _dense[_count] = item;
-                _sparse[index] = _count + 1; // 存储索引+1
+                if (_count + 1 >= _dense.Length)
+                {
+                    Array.Resize(ref _dense, _dense.Length + _pageSize);
+                }
+                _dense[_count + 1] = item;
+                _sparse[index] = _count + 1;
                 _count++;
             }
             else
             {
-                _dense[existing - 1] = item; // 使用存储的索引-1
+                _dense[realIndex] = item;
             }
         }
 
@@ -98,17 +93,19 @@ namespace PowerCellStudio
 
         public bool Contains(T item)
         {
-            if (item == null || _count == 0) return false;
+            if (item == null ) return false;
             var index = item.index;
             return Contains((int)index);
         }
         
-        public bool Contains(int index)
+        public bool Contains(long index)
         {
             if (index < 0) return false;
-            return index < _sparse.Length && 
-                _sparse[index] != 0 && 
-                _dense[_sparse[index] - 1].index == index;
+            if (index >= _sparse.Length) return false;
+            if (_count == 0) return false;
+            var realIndex = _sparse[index];
+            if (realIndex == 0 || realIndex > _count) return false;
+            return true;// _dense[realIndex] != null && _dense[realIndex].index == index;
         }
 
         public void CopyTo(T[] array, int arrayIndex)
@@ -117,7 +114,7 @@ namespace PowerCellStudio
             if (arrayIndex < 0) throw new ArgumentOutOfRangeException();
             if (array.Length - arrayIndex < _count) throw new ArgumentException();
             
-            Array.Copy(_dense, 0, array, arrayIndex, _count);
+            Array.Copy(_dense, 1, array, arrayIndex, _count);
         }
 
         public bool Remove(T item)
@@ -129,44 +126,38 @@ namespace PowerCellStudio
         {
             if (itemIndex < 0 || _count == 0) return false;
             if (itemIndex >= _sparse.Length) return false;
-            
-            long storedIndex = _sparse[itemIndex];
-            if (storedIndex == 0) return false;
-            // var pageIndex = GetPageIndex(itemIndex);
             var realIndex = _sparse[itemIndex];
-            if (realIndex < 0 || _dense.Length - 1 < realIndex) return false;
-            
-            if (_count == 1)
-            {
-                _dense[0] = default;
-                _sparse[itemIndex] = 0L;
-                _count--;
-                return true;
-            }
-            
-            var last = _dense[_count - 1];
-            _dense[realIndex] = last;
-            _dense[_count - 1] = default;
-            _sparse[itemIndex] = 0L;
-            // var lastPage = GetPage(last.Index);
-            // var lastPageIndex = GetPageIndex(last.Index);
-            _sparse[last.index] = realIndex + 1;
+            if (realIndex == 0) return false;
+            _sparse[itemIndex] = 0;
+
+            var lastItem = _dense[_count];
+            _dense[realIndex] = lastItem;
+
+            _sparse[lastItem.index] = realIndex;
+
+            _dense[_count] = default;
             _count--;
             return true;
         }
 
         public T FindOrDefault(long itemIndex)
         {
-            if (itemIndex < 1) return default;
-            // var page = GetPage(itemIndex);
-            if (_sparse.Length - 1 < itemIndex || _sparse[itemIndex] == 0L) return default;
-            // var pageIndex = GetPageIndex(itemIndex);
+            if (itemIndex < 0 || itemIndex >= _sparse.Length) return default;
             var realIndex = _sparse[itemIndex];
-            return realIndex < 1L ? default : _dense[realIndex];
+            if (realIndex == 0 || realIndex > _count) return default;
+            return _dense[realIndex];
         }
 
-        public T this[int index] => FindOrDefault(index);
-
+        public T this[int index]
+        {
+            get
+            {
+                if (index < 0 || index >= _sparse.Length) throw new ArgumentOutOfRangeException();
+                var realIndex = _sparse[index];
+                if (realIndex == 0 || realIndex > _count) throw new KeyNotFoundException();
+                return _dense[realIndex];
+            }
+        } 
         public int Count => _count;
 
         public bool IsReadOnly => false;
