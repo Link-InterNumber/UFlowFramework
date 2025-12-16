@@ -59,6 +59,7 @@ namespace PowerCellStudio
         {
             _standAlonePage = StandAlonePage.Create(transform, canvasRenderMode);
             _poolPage = UIUtils.CreatePage<PoolWindowPage>(transform, canvasRenderMode);
+            _poolPage.OnOpen(null);
             _poolPage.transform.gameObject.SetActive(false);
         }
 
@@ -74,12 +75,6 @@ namespace PowerCellStudio
             {
                 if (page is T casedPage) return casedPage;
             }
-
-            if (_cachedUIs.TryGetValue(typeof(T), out var cachedPage))
-            {
-                _cachedUIs.Remove(typeof(T));
-                return cachedPage as T;
-            }
             return null;
         }
 
@@ -94,6 +89,11 @@ namespace PowerCellStudio
             var page = GetPage<T>();
             if (page == null || typeof(T) == typeof(TempPage))
             {
+                if (_cachedUIs.TryGetValue(typeof(T), out var cachedPage))
+                {
+                    _cachedUIs.Remove(typeof(T));
+                    return cachedPage as T;
+                }
                 return UIUtils.CreatePage<T>(transform, canvasRenderMode);
             }
             return page as T;
@@ -246,21 +246,19 @@ namespace PowerCellStudio
         private void TryCachePage<T>(T page, bool destroy, Action callback) 
             where T :  IUIParent
         {
-            if (destroy && page is ICacheablePage cacheable)
+            if (destroy && page is ICacheablePage cacheable && !_cachedUIs.ContainsKey(page.GetType()))
             {
-                UIUtils.ClosePageInstance(page, false, callback, _poolPage);
-                var pageType = typeof(T);
-                _cachedUIs.Add(pageType, page);
                 var retainTime = cacheable.retainTime;
                 if (retainTime > 0)
                 {
+                    UIUtils.ClosePageInstance(page, false, callback, _poolPage);
+                    var pageType = page.GetType();
+                    _cachedUIs.Add(pageType, page);
                     ApplicationManager.RunCoroutine(WaitForRemoveCacheUI(pageType, retainTime));
+                    return;
                 }
             }
-            else
-            {
-                UIUtils.ClosePageInstance(page, destroy, callback, _poolPage);
-            }
+            UIUtils.ClosePageInstance(page, destroy, callback, _poolPage);
         }
         
         private IEnumerator WaitForRemoveCacheUI(Type uiType, float time)

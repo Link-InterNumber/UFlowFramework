@@ -7,7 +7,7 @@ namespace PowerCellStudio
     {
         public override void OnOpen(object data)
         {
-            
+            if(_assetsLoader == null) _assetsLoader = AssetUtils.SpawnLoader(gameObject.name);
         }
 
         public void OpenUI<T>(IUIParent page, object data, Action beforeOpen) where T : class, IUIChild

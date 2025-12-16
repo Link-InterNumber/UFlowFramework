@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -121,13 +122,14 @@ namespace PowerCellStudio
             CloseUI(page, null);
             if (destroy)
             {
-                foreach (var keyValuePair in page.children)
+                var keys = page.children.Keys.ToArray();
+                foreach (var key in keys)
                 {
-                    var child = keyValuePair.Value;
+                    var child = page.children[key];
                     CloseUI(child, null, true);
                     if (child is IUIPoolable && poolParent != null
                         && !poolParent.children.ContainsKey(child.GetType()) 
-                        && !poolParent.windowRequests.IsUIGoingToOpen(keyValuePair.Key, out _))
+                        && !poolParent.windowRequests.IsUIGoingToOpen(key, out _))
                     {
                         SetUIChildToParent(child, poolParent);
                     }
