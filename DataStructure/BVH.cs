@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -21,6 +20,10 @@ namespace PowerCellStudio
     {
         public Vector3 Min { get; set; }
         public Vector3 Max { get; set; }
+
+        public Vector3 Size => Max - Min;
+
+        public Vector3 Center => (Min + Max) / 2;
 
         // 计算包围盒的相交检测
         public bool Intersects(BoundingBox other)
@@ -65,21 +68,32 @@ namespace PowerCellStudio
         // 构建BVH树
         public void Build(List<IBVHItem> objects)
         {
-            root = BuildRecursive(objects);
+            if (objects == null || objects.Count == 0)
+            {
+                root = null;
+                return;
+            }
+            root = BuildRecursive(objects, 0, objects.Count);
         }
 
         // 递归构建节点
-        private BVHNode BuildRecursive(List<IBVHItem> objects)
+        private BVHNode BuildRecursive(List<IBVHItem> objects, int start, int count)
         {
             var node = new BVHNode();
-            
+
             // 计算当前所有物体的包围盒
-            node.Bounds = CalculateBoundingBox(objects);
+            var bounds = new BoundingBox();
+            for (int i = start; i < start + count; i++)
+            {
+                var obj = objects[i];
+                bounds.Expand(obj.Bounds);
+            }
+            node.Bounds = bounds;
 
             // 终止条件：物体数量小于阈值
-            if (objects.Count <= 5) // 阈值可根据需求调整
+            if (count <= 5) // 阈值可根据需求调整
             {
-                node.Objects = objects;
+                node.Objects = objects.GetRange(start, count);
                 return node;
             }
 
@@ -87,14 +101,30 @@ namespace PowerCellStudio
             var axis = GetLongestAxis(node.Bounds);
 
             // 按中位数分割物体
-            var sorted = objects.OrderBy(o => o.Position[axis]).ToList();
-            var mid = sorted.Count / 2;
+            // var sorted = objects.OrderBy(o => o.Position[axis]).ToList();
+            objects.Sort(start, count, new AxisComparer(axis));
+            var midOffset = count / 2;
+            var midIndex = start + midOffset;
 
-            // 递归构建子树
-            node.Left = BuildRecursive(sorted.Take(mid).ToList());
-            node.Right = BuildRecursive(sorted.Skip(mid).ToList());
+            // 传递索引和计数，而不是创建新列表
+            node.Left = BuildRecursive(objects, start, midOffset);
+            node.Right = BuildRecursive(objects, midIndex, count - midOffset);
 
             return node;
+        }
+        
+        private class AxisComparer : IComparer<IBVHItem>
+        {
+            private int axis;
+            public AxisComparer(int axis)
+            {
+                this.axis = axis;
+            }
+
+            public int Compare(IBVHItem a, IBVHItem b)
+            {
+                return a.Position[axis].CompareTo(b.Position[axis]);
+            }
         }
 
         // 碰撞检测入口
@@ -111,7 +141,7 @@ namespace PowerCellStudio
             if (!node.Bounds.Intersects(queryBox)) return;
 
             // 叶子节点直接检测物体
-            if (node.Objects != null)
+            if (node.Objects != null && node.Objects.Count > 0)
             {
                 foreach (var obj in node.Objects)
                 {
