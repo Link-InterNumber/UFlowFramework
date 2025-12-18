@@ -31,12 +31,12 @@ namespace PowerCellStudio
             var toolbarText = new Toolbar();
             var savePathField = new TextField("Save Path");
             savePathField.style.minWidth = 400;
-            _currentSavePath = EditorPrefs.GetString("GuidanceGraphSavePath", "Assets/GuidanceGraphAsset");
+            _currentSavePath = EditorSaveUtils.GetEditorPref("GuidanceGraphSavePath", "Assets/GuidanceGraphAsset");
             savePathField.value = _currentSavePath;
             savePathField.RegisterValueChangedCallback(evt =>
             {
                 _currentSavePath = evt.newValue;
-                EditorPrefs.SetString("GuidanceGraphSavePath", _currentSavePath);
+                EditorSaveUtils.SetEditorPref("GuidanceGraphSavePath", _currentSavePath);
             });
             toolbarText.Add(savePathField);
 
@@ -120,7 +120,7 @@ namespace PowerCellStudio
                     if (isOk)
                     {
                         Directory.CreateDirectory(_currentSavePath);
-                        EditorPrefs.SetString("GuidanceGraphSavePath", _currentSavePath);
+                        EditorSaveUtils.SetEditorPref("GuidanceGraphSavePath", _currentSavePath);
                     }
                     else
                         return;

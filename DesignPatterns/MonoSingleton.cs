@@ -25,11 +25,11 @@ namespace PowerCellStudio
                 {
                     ModuleLog.LogError<T>(
                         $"Delete redundant Singleton: {typeof(T).Name} \nGameObject Name: {gameObject.name}.");
-                    Destroy(gameObject);
+                    Destroy(this);
                 }
                 else
                 {
-                    Destroy(_instance.gameObject);
+                    Destroy(_instance);
                     _instance = this as T;
                     ModuleLog.Log<T>($"{typeof(T).Name} Spwaned, GameObject Name: {gameObject.name}.");
                     _isExist = true;

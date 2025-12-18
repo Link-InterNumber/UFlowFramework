@@ -23,8 +23,8 @@ namespace PowerCellStudio
 
         public void InitSave()
         {
-            _fontPath = EditorPrefs.GetString(FontSettingItem.fontPath, FontSettingItem.defaultFontPath);
-            _textMeshProFontPath = EditorPrefs.GetString(FontSettingItem.textMeshProFontPath, FontSettingItem.defaultTextMeshProFontPath);
+            _fontPath = EditorSaveUtils.GetEditorPref(FontSettingItem.fontPath, FontSettingItem.defaultFontPath);
+            _textMeshProFontPath = EditorSaveUtils.GetEditorPref(FontSettingItem.textMeshProFontPath, FontSettingItem.defaultTextMeshProFontPath);
 
             _font = AssetDatabase.LoadAssetAtPath<Font>(_fontPath);
             _textMeshProFont = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(_textMeshProFontPath);
@@ -41,8 +41,8 @@ namespace PowerCellStudio
         public void OnGUI(EditorWindow window)
         {
             GUILayout.Label("itemName");
-            _font = (Font) EditorGUILayout.ObjectField("Text Font: ", _font, typeof(Font));
-            _textMeshProFont = (TMP_FontAsset) EditorGUILayout.ObjectField("TMP Font Asset", _textMeshProFont, typeof(TMP_FontAsset));
+            _font = (Font) EditorGUILayout.ObjectField("Text Font: ", _font, typeof(Font), false);
+            _textMeshProFont = (TMP_FontAsset) EditorGUILayout.ObjectField("TMP Font Asset", _textMeshProFont, typeof(TMP_FontAsset), false);
         }
 
         public void SaveData()
@@ -72,8 +72,8 @@ namespace PowerCellStudio
             {
                 _textMeshProFontPath = defaultTextMeshProFontPath;
             }
-            EditorPrefs.SetString(FontSettingItem.fontPath, _fontPath);
-            EditorPrefs.SetString(FontSettingItem.textMeshProFontPath, _textMeshProFontPath);
+            EditorSaveUtils.SetEditorPref(FontSettingItem.fontPath, _fontPath);
+            EditorSaveUtils.SetEditorPref(FontSettingItem.textMeshProFontPath, _textMeshProFontPath);
         }
     }
 }

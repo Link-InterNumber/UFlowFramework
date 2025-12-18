@@ -42,9 +42,9 @@ namespace PowerCellStudio
         private ObjectField _bindingCsFileField;
         private void OnEnable()
         {
-            _currentSavePath = EditorPrefs.GetString(_savePathSaveKey, _savePath);
-            _currentEnumPath = EditorPrefs.GetString(_enumPathSaveKey, _enumPath);
-            _currentBindingCsPath = EditorPrefs.GetString(_bindingCsPathSaveKey, "");
+            _currentSavePath = EditorSaveUtils.GetEditorPref(_savePathSaveKey, _savePath);
+            _currentEnumPath = EditorSaveUtils.GetEditorPref(_enumPathSaveKey, _enumPath);
+            _currentBindingCsPath = EditorSaveUtils.GetEditorPref(_bindingCsPathSaveKey, "");
 
             _graphView = new NotifyGraphView(this)
             {
@@ -244,9 +244,9 @@ namespace PowerCellStudio
             WriteBindingFile();
             EditorUtility.DisplayDialog("Save Graph", "Graph saved successfully!", "OK");
             // 保存路径到 EditorPrefs
-            EditorPrefs.SetString(_savePathSaveKey, _currentSavePath);
-            EditorPrefs.SetString(_enumPathSaveKey, _currentEnumPath);
-            EditorPrefs.SetString(_bindingCsPathSaveKey, _currentBindingCsPath);
+            EditorSaveUtils.SetEditorPref(_savePathSaveKey, _currentSavePath);
+            EditorSaveUtils.SetEditorPref(_enumPathSaveKey, _currentEnumPath);
+            EditorSaveUtils.SetEditorPref(_bindingCsPathSaveKey, _currentBindingCsPath);
             
             AssetDatabase.Refresh();
         }

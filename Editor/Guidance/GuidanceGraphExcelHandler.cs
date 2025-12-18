@@ -17,7 +17,7 @@ namespace PowerCellStudio
 
         public bool SetUp()
         {
-            var lastSelectedDir = EditorPrefs.GetString("GuidanceGraphLastExcelDir", Application.dataPath);
+            var lastSelectedDir = EditorSaveUtils.GetEditorPref("GuidanceGraphLastExcelDir", Application.dataPath);
             _filePath = EditorUtility.OpenFilePanel("Select Excel File to Save Guidance Data", lastSelectedDir, "xlsx");
             if (string.IsNullOrEmpty(_filePath))
             {
@@ -32,7 +32,7 @@ namespace PowerCellStudio
             }
             if (!string.IsNullOrEmpty(_filePath))
             {
-                EditorPrefs.SetString("GuidanceGraphLastExcelDir", _filePath);
+                EditorSaveUtils.SetEditorPref("GuidanceGraphLastExcelDir", _filePath);
             }
             _package = new OfficeOpenXml.ExcelPackage(fileInfo);
             _sheet = _package.Workbook.Worksheets[0];

@@ -27,7 +27,8 @@ namespace PowerCellStudio
             editorWindow.callback = callback;
             if (string.IsNullOrEmpty(defaultValue))
             {
-                editorWindow.inputContent = EditorPrefs.GetString(_saveKey, "");
+                var saveKey = $"{title}_{_saveKey}";
+                editorWindow.inputContent = EditorSaveUtils.GetEditorPref(saveKey, "");
             }
             else
             {
@@ -57,7 +58,8 @@ namespace PowerCellStudio
             
             if (GUILayout.Button("Confirm", GUILayout.Width(100)))
             {
-                EditorPrefs.SetString(_saveKey, _inputContent);
+                var saveKey = $"{titleContent.text}_{_saveKey}";
+                EditorSaveUtils.SetEditorPref(saveKey, _inputContent);
                 _callback?.Invoke(_inputContent.Trim());
                 Close();
             }
