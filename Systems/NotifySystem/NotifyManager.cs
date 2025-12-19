@@ -257,7 +257,21 @@ namespace PowerCellStudio
             var node = GetNode(nodeType);
             node.isOn = isOn;
             node.notifyValue = notifyValue;
-            node.notifyNumber = isOn ? Mathf.Max(1, node.notifyNumber + 1) : 0;
+            if (node.children.Count > 0 && isOn)
+            {
+                var onNumber = 0;
+                foreach (var nodeChild in node.children)
+                {
+                    var childNode = _nodes[nodeChild];
+                    if (childNode.isOn)
+                        onNumber++;
+                }
+                node.notifyNumber = Mathf.Max(1, onNumber);
+            }
+            else
+            {
+                node.notifyNumber = isOn ? 1 : 0;
+            }
             node.Notify();
             if (node.parent >= 0)
                 ReCalNodeNotify((NotifyType)node.parent);
