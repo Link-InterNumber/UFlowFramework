@@ -20,8 +20,10 @@ Shader "Custom/CartoonUrpLit"
         _DarkIntensity ("DarkIntensity", Range(0.0, 1.0)) = 1.0
         _LightPower ("Light Power", Range(-1, 1)) = 0.5
         _DarkPower ("Dark Power", Range(1.0, 5.0)) = 1.0
+        _SubShadow ("Sub Shadow", Range(0.0, 5.0)) = 1.0
 
         [Toggle(_ReceiveShadows)]_ReceiveShadows ("ReceiveShadows", Float) = 1.0
+        [Toggle(_CalSubShadow)]_CalSubShadow ("CalSubShadow", Float) = 1.0
     }
 
     SubShader
@@ -73,6 +75,7 @@ Shader "Custom/CartoonUrpLit"
             #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma shader_feature_local _ReceiveShadows
+            #pragma shader_feature_local _CalSubShadow
             // #pragma multi_compile _ _ADDITIONAL_LIGHT_CALCULATE_SHADOWS
             // GPU Instance
             #pragma multi_compile_instancing
@@ -98,7 +101,7 @@ Shader "Custom/CartoonUrpLit"
                 float4 TtoW0 : TEXCOORD1; // Tangent to World space rotatio
                 float4 TtoW1 : TEXCOORD2; // Tangent to World space
                 float4 TtoW2 : TEXCOORD3; // Tangent to World space
-                half fogFactor : TEXCOORD4;
+                float2 fogFactor : TEXCOORD4;
                 float4 shadowCoord : TEXCOORD5;	// shadow receive
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -122,6 +125,7 @@ Shader "Custom/CartoonUrpLit"
             float _DarkIntensity;
             float _LightPower;
             float _DarkPower;
+            float _SubShadow;
             CBUFFER_END
 
             v2f vert(a2v v)
@@ -145,7 +149,14 @@ Shader "Custom/CartoonUrpLit"
                 o.TtoW1 = float4(worldTangent.y, worldBinormal.y, worldNormal.y, worldPos.y);
                 o.TtoW2 = float4(worldTangent.z, worldBinormal.z, worldNormal.z, worldPos.z);
 
-                o.fogFactor = ComputeFogFactor(vertexInput.positionCS.z);
+                o.fogFactor.x = ComputeFogFactor(vertexInput.positionCS.z);
+                #ifdef _CalSubShadow
+                // 1. 获取世界空间的主光源方向
+                float3 worldLightDir = GetMainLight().direction;
+                // 2. 将光源方向从世界空间转换到模型空间
+                float3 modelLightDir = TransformWorldToObjectDir(worldLightDir);
+                o.fogFactor.y = dot(v.vertex.xyz, modelLightDir);
+                #endif
                 o.shadowCoord = TransformWorldToShadowCoord(worldPos);
                 return o;
             }
@@ -171,12 +182,18 @@ Shader "Custom/CartoonUrpLit"
                 // 纹理采样
                 float3 albedo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv.xy) * _Color.rgb; // Sample the texture and apply color
                 
+                #ifdef _CalSubShadow
+                float subShadow = saturate(i.fogFactor.y * _SubShadow * 0.5 + 0.5);
+                #else
+                float subShadow = 1.0;
+                #endif
+
                 #ifdef _ReceiveShadows
                 // 主光源阴影
                 float4 shadowCoord = i.shadowCoord;  //TransformWorldToShadowCoord(worldPos);
-                float shadow = MainLightRealtimeShadow(shadowCoord);
+                float shadow = MainLightRealtimeShadow(shadowCoord) * subShadow;
                 #else
-                float shadow = 1;
+                float shadow = subShadow;
                 #endif
 
                 // 光照
@@ -217,7 +234,7 @@ Shader "Custom/CartoonUrpLit"
 #endif
                 float4 col = float4(ambient + diffuse + specular + edgeLight, 1.0);
                 // 雾
-                col.rgb = MixFog(col.rgb, i.fogFactor);
+                col.rgb = MixFog(col.rgb, i.fogFactor.x);
                 return col;
             }
 

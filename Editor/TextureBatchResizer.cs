@@ -25,14 +25,14 @@ namespace PowerCellStudio
 
         void OnEnable()
         {
-            sourceFolder = EditorPrefs.GetString("TextureBatchResizer_SourceFolder", "");
-            targetFolder = EditorPrefs.GetString("TextureBatchResizer_TargetFolder", "Assets/ResizedImages");
+            sourceFolder = EditorSaveUtils.GetEditorPref("TextureBatchResizer_SourceFolder", "");
+            targetFolder = EditorSaveUtils.GetEditorPref("TextureBatchResizer_TargetFolder", "Assets/ResizedImages");
         }
 
         void OnDisable()
         {
-            EditorPrefs.SetString("TextureBatchResizer_SourceFolder", sourceFolder);
-            EditorPrefs.SetString("TextureBatchResizer_TargetFolder", targetFolder);
+            EditorSaveUtils.SetEditorPref("TextureBatchResizer_SourceFolder", sourceFolder);
+            EditorSaveUtils.SetEditorPref("TextureBatchResizer_TargetFolder", targetFolder);
         }
 
         void OnGUI()
