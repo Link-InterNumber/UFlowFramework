@@ -80,7 +80,7 @@ namespace PowerCellStudio
                 canvasScale.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
                 var screenHeight = ConstSetting.DefaultUISize.y;
                 var screenWidth = ConstSetting.DefaultUISize.x;
-                var designRatio = screenHeight / screenWidth;
+                var designRatio = screenHeight * 1f / screenWidth;
                 var currentRatio = Screen.height * 1f / Screen.width;
                 // var newRes = Vector2Int.zero;
                 if (currentRatio < designRatio)

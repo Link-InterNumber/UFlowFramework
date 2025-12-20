@@ -442,8 +442,12 @@ namespace PowerCellStudio
                 }
                 EditorUtility.SetDirty(stringTable);
                 EditorUtility.SetDirty(assetTable);
+                EditorUtility.SetDirty(stringTable.SharedData);
+                EditorUtility.SetDirty(assetTable.SharedData);
                 AssetDatabase.SaveAssetIfDirty(stringTable);
                 AssetDatabase.SaveAssetIfDirty(assetTable);
+                AssetDatabase.SaveAssetIfDirty(stringTable.SharedData);
+                AssetDatabase.SaveAssetIfDirty(assetTable.SharedData);
                 AssetDatabase.SaveAssets();
                 EditorUtility.DisplayProgressBar("Config", "Export csv file", 0f);
                 var date = DateTime.Now;
