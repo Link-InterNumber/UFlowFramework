@@ -143,7 +143,9 @@ Shader "Custom/FastSSS"
                 bump = normalize(half3(dot(i.TtoW0.xyz, bump), dot(i.TtoW1.xyz, bump), dot(i.TtoW2.xyz, bump)));
 
                 // 菲涅尔效果
-                float fresnel = pow(1.0 - saturate(dot(bump, viewDir)), 5.0) * _Fresnel;
+                float fresnelBase = 1.0 - saturate(dot(bump, viewDir));
+                float backFresnel = max(0, dot(-viewDir, lightDir));
+                float fresnel = fresnelBase * fresnelBase * fresnelBase * fresnelBase * fresnelBase * _Fresnel;
 
                 // 纹理采样
                 float3 albedo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv.xy) * _Color.rgb; // Sample the texture and apply color
@@ -156,7 +158,7 @@ Shader "Custom/FastSSS"
                 
                 // 光照
                 float3 ambient = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w).xyz * albedo;
-                float3 diffuse = mainLight.color * albedo * _Diffuse.rgb * max(0, dot(bump, lightDir)) * shadow + fresnel;
+                float3 diffuse = mainLight.color * albedo * _Diffuse.rgb * max(0, dot(bump, lightDir)) * shadow + fresnel * (backFresnel * shadow + 1);
                 // 反射方向
                 float3 halfDir = normalize(lightDir + viewDir);
                 float3 specular = mainLight.color * _Specular.rgb * pow(max(0, dot(bump, halfDir)), _Gloss) * shadow;
@@ -165,6 +167,8 @@ Shader "Custom/FastSSS"
                 half thickness = 1;
                 #ifdef _USE_THICKNESS_MAP
                 thickness = 1 - SAMPLE_TEXTURE2D(_ThicknessMap, sampler_ThicknessMap, i.fogFactor.yz).r;
+                #else
+                thickness = fresnelBase;
                 #endif
                 
                 float3 h = normalize(bump - mainLight.direction);

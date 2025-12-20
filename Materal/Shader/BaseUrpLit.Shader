@@ -135,7 +135,7 @@ Shader "Custom/BaseUrpLit"
             {
                 UNITY_SETUP_INSTANCE_ID(i);
                 float3 worldPos = float3(i.TtoW0.w, i.TtoW1.w, i.TtoW2.w);
-                float3 lightDir = normalize(GetMainLight().direction);
+                float3 lightDir = GetMainLight().direction;
                 float3 viewDir = normalize(_WorldSpaceCameraPos - worldPos);
 
                 // 法线
@@ -145,7 +145,8 @@ Shader "Custom/BaseUrpLit"
                 bump = normalize(half3(dot(i.TtoW0.xyz, bump), dot(i.TtoW1.xyz, bump), dot(i.TtoW2.xyz, bump)));
 
                 // 菲涅尔效果
-                float fresnel = pow(1.0 - saturate(dot(bump, viewDir)), 5.0) * _Fresnel;
+                float fresnelBase = 1.0 - saturate(dot(bump, viewDir));
+                float fresnel = fresnelBase * fresnelBase * fresnelBase * fresnelBase * fresnelBase * _Fresnel;
 
                 // 纹理采样
                 float3 albedo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv.xy) * _Color.rgb; // Sample the texture and apply color

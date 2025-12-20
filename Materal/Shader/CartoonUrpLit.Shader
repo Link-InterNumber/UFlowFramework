@@ -13,7 +13,7 @@ Shader "Custom/CartoonUrpLit"
         _Gloss ("Gloss", Range(2.0, 256)) = 20
         _Fresnel ("Fresnel", Range(0.0, 1.0)) = 0.5
 
-        _LightBoundary ("Light Boundary", Range(-0.5, 1.0)) = 0.0
+        _LightBoundary ("Light Boundary", Range(0, 1.0)) = 0.0
         _EdgeLightSize ("Edge Light Size", Range(0.0, 1.0)) = 0.5
         _EdgeLightScale ("Edge Light Scale", Range(0.0, 5.0)) = 1.0
         _DiffuseScale ("Diffuse Scale", Range(0.0, 5.0)) = 1.0
@@ -165,7 +165,7 @@ Shader "Custom/CartoonUrpLit"
             {
                 UNITY_SETUP_INSTANCE_ID(i);
                 float3 worldPos = float3(i.TtoW0.w, i.TtoW1.w, i.TtoW2.w);
-                float3 lightDir = normalize(GetMainLight().direction);
+                float3 lightDir = GetMainLight().direction;
                 float3 viewDir = normalize(_WorldSpaceCameraPos - worldPos);
 
                 // 法线
@@ -198,13 +198,15 @@ Shader "Custom/CartoonUrpLit"
 
                 // 光照
                 float3 ambient = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w).xyz * albedo;
-                float3 dotProduct = dot(bump, lightDir);
-                float adaptedDot = smoothstep(-_LightBoundary, 1.0 + _LightBoundary, dotProduct);
+                float dotProduct = dot(bump, lightDir);
+                float adaptedDot = smoothstep(- _LightBoundary, _LightBoundary, dotProduct);
 
                 // 边缘光
                 float edgeSize = 1.0 - _EdgeLightSize;
-                float3 edgeLightBase = fresnelP5 * dotProduct;
-                float3 edgeLight = smoothstep(edgeSize, edgeSize, edgeLightBase) * _EdgeLightScale * shadow;
+                // 背光系数
+                float backLight = max(0, dot(-viewDir, lightDir));
+                float3 edgeLightBase = fresnelP5 * (dotProduct + backLight) * shadow;
+                float3 edgeLight = smoothstep(edgeSize, edgeSize, edgeLightBase) * _EdgeLightScale;
 
                 // 计算漫反射，使用颜色替换原本阴影
                 float diffuseShadow = max( 1.0 -_DarkIntensity, adaptedDot) * shadow;
@@ -214,8 +216,8 @@ Shader "Custom/CartoonUrpLit"
                 
                 // 反射方向
                 float3 halfDir = normalize(lightDir + viewDir);
-                // float3 lerpAlbedo = pow(albedo, 0.5);
-                float3 specular = _MainLightColor.rgb * _Specular.rgb * pow(max(0, dot(bump, halfDir)), _Gloss) * shadow * lightColor;
+                float3 lerpAlbedo = (lightColor * 0.75 + 0.25);
+                float3 specular = _MainLightColor.rgb * _Specular.rgb * pow(max(0, dot(bump, halfDir)), _Gloss) * shadow * lerpAlbedo;
                 // specular = smoothstep(0.5, 0.5, specular) * _MainLightColor.rgb * lerpAlbedo;
 #if defined(_ADDITIONAL_LIGHTS)
                 // 获取额外光源处理
