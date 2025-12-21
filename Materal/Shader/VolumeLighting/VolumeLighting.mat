@@ -8,10 +8,12 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: VolumeLighting
-  m_Shader: {fileID: 4800000, guid: a8915c02901aff24aa917e999bc2d117, type: 3}
+  m_Shader: {fileID: 4800000, guid: d53d08d6ecd1da2488e7659023342a0b, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _Noise
+  - _SmoothLinearToExp
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -29,11 +31,23 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _FadeDistance: 100
     - _LightIntensity: 0.25
     - _MaxDistance: 200
+    - _MaxHeight: 1000
     - _MaxStep: 200
+    - _Noise: 1
+    - _NoiseIntensity: 2
+    - _NoiseOctaves: 1
+    - _NoiseScale: 0.5
+    - _NoiseSpeed: 1
+    - _PreciseSteps: 100
     - _ShadowPower: 1
+    - _SmoothLinearToExp: 1
+    - _StepScale: 10
     - _StepSize: 0.1
+    - _TransitionSteps: 50
     m_Colors:
     - _LightColor: {r: 1, g: 1, b: 1, a: 1}
+    - _NoiseDirection: {r: 1, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []

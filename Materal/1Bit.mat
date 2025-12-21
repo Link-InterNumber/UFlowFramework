@@ -21,7 +21,8 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: 1Bit
-  m_Shader: {fileID: -6465566751694194690, guid: a6d5432c8fe4b2d4097a2db3b639650a, type: 3}
+  m_Shader: {fileID: -6465566751694194690, guid: 55e8d0f7b1abec54a86c4413d558159f,
+    type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
@@ -79,4 +80,3 @@ Material:
     m_Colors:
     - _GrayColor: {r: 0.2125, g: 0.7154, b: 0.0721, a: 0}
   m_BuildTextureStacks: []
-  m_AllowLocking: 1

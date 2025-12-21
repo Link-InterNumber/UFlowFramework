@@ -85,10 +85,10 @@ GameObject:
   m_Component:
   - component: {fileID: 5401883779975866996}
   - component: {fileID: 4661020231710339034}
-  - component: {fileID: 5963602665096514913}
   - component: {fileID: 4078835076048205842}
   - component: {fileID: 2622363029305311733}
   - component: {fileID: 4074580636201319629}
+  - component: {fileID: 7572312904968964433}
   m_Layer: 5
   m_Name: screenBtn
   m_TagString: Untagged
@@ -123,26 +123,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5407852738571755396}
   m_CullTransparentMesh: 1
---- !u!114 &5963602665096514913
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5407852738571755396}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62079170cf424385b074f025b2c148f6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &4078835076048205842
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -183,7 +163,7 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 5963602665096514913}
+  m_TargetGraphic: {fileID: 0}
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
@@ -227,6 +207,26 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &7572312904968964433
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5407852738571755396}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a88fdb52119869048b9dd798f7573cc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &8742232318692376585
 GameObject:
   m_ObjectHideFlags: 0
@@ -236,7 +236,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4178003870594502513}
-  - component: {fileID: 931985614449378150}
+  - component: {fileID: 9117032049896917740}
   m_Layer: 5
   m_Name: GuidanceWindow
   m_TagString: Untagged
@@ -265,7 +265,7 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &931985614449378150
+--- !u!114 &9117032049896917740
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -274,10 +274,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 8742232318692376585}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e89354a2fb6f439298507d44648db255, type: 3}
+  m_Script: {fileID: 11500000, guid: d2502b18196704945a3f91cd5a0a87da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   adaptiveRoot: {fileID: 0}
   closeBtn: []
-  graphics: {fileID: 2424743122176085524}
-  screenButton: {fileID: 4078835076048205842}
+  graphics: {fileID: 0}
+  screenButton: {fileID: 0}

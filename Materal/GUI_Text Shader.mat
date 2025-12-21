@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: GUI_Text Shader
-  m_Shader: {fileID: 4800000, guid: 6fda0284428d6174ca2b1b23df311b8f, type: 3}
+  m_Shader: {fileID: 4800000, guid: a2dd5460e966e6d4384d6d31927e3883, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -28,7 +28,9 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
-    m_Floats: []
+    m_Floats:
+    - _Gray: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _GrayMask: {r: 0.29899997, g: 0.58699995, b: 0.11399997, a: 1}
   m_BuildTextureStacks: []

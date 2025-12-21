@@ -8,7 +8,8 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Diamond
-  m_Shader: {fileID: -6465566751694194690, guid: cb2e7ed3162a22545ac13f2ac297654f, type: 3}
+  m_Shader: {fileID: -6465566751694194690, guid: d9202767936ebfa4396fb69fc9fc3175,
+    type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -57,7 +58,6 @@ Material:
     - _Light: {r: 1, g: 1, b: 1, a: 1}
     - _Move: {r: 0.1, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!114 &4301388584278783291
 MonoBehaviour:
   m_ObjectHideFlags: 11
