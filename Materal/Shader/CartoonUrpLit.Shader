@@ -102,7 +102,6 @@ Shader "Custom/CartoonUrpLit"
                 float4 TtoW1 : TEXCOORD2; // Tangent to World space
                 float4 TtoW2 : TEXCOORD3; // Tangent to World space
                 float2 fogFactor : TEXCOORD4;
-                float4 shadowCoord : TEXCOORD5;	// shadow receive
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -157,7 +156,6 @@ Shader "Custom/CartoonUrpLit"
                 float3 modelLightDir = TransformWorldToObjectDir(worldLightDir);
                 o.fogFactor.y = dot(v.vertex.xyz, modelLightDir);
                 #endif
-                o.shadowCoord = TransformWorldToShadowCoord(worldPos);
                 return o;
             }
 
@@ -190,7 +188,7 @@ Shader "Custom/CartoonUrpLit"
 
                 #ifdef _ReceiveShadows
                 // 主光源阴影
-                float4 shadowCoord = i.shadowCoord;  //TransformWorldToShadowCoord(worldPos);
+                float4 shadowCoord = TransformWorldToShadowCoord(worldPos);
                 float shadow = MainLightRealtimeShadow(shadowCoord) * subShadow;
                 #else
                 float shadow = subShadow;
