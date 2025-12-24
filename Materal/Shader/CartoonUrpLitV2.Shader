@@ -18,7 +18,7 @@ Shader "Custom/CartoonUrpLitV2"
         _EdgeLightScale ("Edge Light Scale", Range(0.0, 5.0)) = 1.0
         _DiffuseScale ("Diffuse Scale", Range(0.0, 5.0)) = 1.0
         _DarkIntensity ("DarkIntensity", Range(0.0, 1.0)) = 1.0
-        _LightPower ("Light Power", Range(-1, 1)) = 0.5
+        _LightPower ("Light Power", Range(0.01, 1)) = 0.5
         _DarkPower ("Dark Power", Range(1.0, 5.0)) = 1.0
         _SubShadow ("Sub Shadow", Range(0.0, 5.0)) = 1.0
 
@@ -229,7 +229,8 @@ Shader "Custom/CartoonUrpLitV2"
                     shadow += shaow_al;
 
                     edgeLight += getEdgeLight(dotProduct_al, viewDir, light.direction, light.color * light.distanceAttenuation, fresnelP5, shaow_al, edgeSize);
-                    diffuse += smoothstep(-_LightBoundary, 1.0 + _LightBoundary, dotProduct_al * light.distanceAttenuation) * light.shadowAttenuation * light.color * _Diffuse.rgb;
+                    float3 lightColor = (light.color + albedo) * 0.5;
+                    diffuse += smoothstep(-_LightBoundary, 1.0 + _LightBoundary, dotProduct_al * light.distanceAttenuation) * light.shadowAttenuation * lightColor * _Diffuse.rgb;
                     float3 halfDir_al = normalize(light.direction + viewDir);
                     specular += light.color * _Specular.rgb * pow(max(0, dot(bump, halfDir_al)), _Gloss) * shaow_al;
                 }
@@ -241,20 +242,23 @@ Shader "Custom/CartoonUrpLitV2"
                 // 计算边缘光
                 edgeLight += getEdgeLight(dotProduct, viewDir, lightDir, _MainLightColor.rgb, fresnelP5, shadow, edgeSize);
                 diffuseShadow = smoothstep(-_LightBoundary, 1.0 + _LightBoundary, dotProduct + diffuseShadow);
-                // 计算漫反射，使用颜色替换原本阴影
-                diffuseShadow += max( 1.0 -_DarkIntensity, diffuseShadow * shadow);
                 diffuseShadow = saturate(diffuseShadow);
-                float3 lightColor = pow(albedo, lerp(_DarkPower, _LightPower, diffuseShadow));
+
+                // 计算漫反射，使用颜色替换原本阴影
+                float shadowFinal = shadow * diffuseShadow;
+                shadowFinal = max( 1.0 -_DarkIntensity, shadowFinal);
+                float3 lightColor = pow(albedo, lerp(_DarkPower, _LightPower, shadowFinal));
                 diffuse += _MainLightColor.rgb * _Diffuse.rgb * lightColor + fresnel * albedo;
                 diffuse = saturate(diffuse * _DiffuseScale);
                 
                 // 反射方向
                 float3 halfDir = normalize(lightDir + viewDir);
                 float3 lerpAlbedo = (lightColor * 0.75 + 0.25);
-                specular += _MainLightColor.rgb * _Specular.rgb * pow(max(0, dot(bump, halfDir)), _Gloss) * lerpAlbedo * shadow;
+                specular += _MainLightColor.rgb * _Specular.rgb * pow(max(0, dot(bump, halfDir)), _Gloss) * lerpAlbedo * shadowFinal;
 
                 // 最终颜色合成
-                float4 col = float4(ambient + diffuse + specular + edgeLight, 1.0);
+                float4 col = float4(ambient + diffuse + specular + edgeLight, 1.0); 
+                // float4 col = float4(shadowFinal, shadowFinal, shadowFinal, 1.0);
                 // 雾
                 col.rgb = MixFog(col.rgb, i.fogFactor.x);
                 return col;
