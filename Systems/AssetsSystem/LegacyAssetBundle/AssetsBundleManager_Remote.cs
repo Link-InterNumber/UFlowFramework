@@ -126,6 +126,13 @@ namespace PowerCellStudio
             var url = BuildRemoteUrl(bundleName);
             var webRequest = UnityWebRequestAssetBundle.GetAssetBundle(url);
             yield return webRequest.SendWebRequest();
+            if (webRequest.result != UnityWebRequest.Result.Success)
+            {
+                webRequest.Dispose();
+                if (handler == null) yield break;
+                handler.SetAsset(null);
+                yield break;
+            }
             var bundle = DownloadHandlerAssetBundle.GetContent(webRequest);
             if (!bundle)
             {
@@ -135,8 +142,8 @@ namespace PowerCellStudio
                 yield break;
             }
             var bundleByte = webRequest.downloadHandler.data;
-            webRequest.Dispose();
             yield return SaveBundleOnLocal(bundleName, bundleByte);
+            webRequest.Dispose();
             if (_remoteManifest.TryGetValue(bundleName, out var bundleInfo))
             {
                 _clientManifest[bundleName] = bundleInfo;
