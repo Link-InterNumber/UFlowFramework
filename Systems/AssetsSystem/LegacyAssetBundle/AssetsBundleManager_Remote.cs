@@ -151,6 +151,18 @@ namespace PowerCellStudio
 
         private IEnumerator CheckRemoteBundle()
         {
+#if !UNITY_EDITOR
+            var url = BuildRemoteUrl($"{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}");
+            using (UnityWebRequest request = UnityWebRequest.Get(url))
+            {
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    var encryptData = request.downloadHandler.data;
+                    var savePath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, ConstSetting.BundleAssetConfigName);
+                    File.WriteAllBytes(savePath, encryptData);
+                }
+            }
+#endif
             if (_remoteManifest == null || _clientManifest == null) yield break;
             var loadList = new List<string>();
             foreach (var keyValue in _remoteManifest)
