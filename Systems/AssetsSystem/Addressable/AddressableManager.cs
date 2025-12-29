@@ -124,15 +124,13 @@ namespace PowerCellStudio
                     var resourceList = updateHandle.Result;
                     foreach (var resourceLocator in resourceList)
                     {
-                        var keys = ListPool<object>.Get();
-                        keys.AddRange(resourceLocator.Keys);
-                        var getDownloadSizeAsync = Addressables.GetDownloadSizeAsync(keys);
+                        var getDownloadSizeAsync = Addressables.GetDownloadSizeAsync(resourceLocator.Keys);
                         yield return getDownloadSizeAsync;
                         var percent = 0f;
                         if (getDownloadSizeAsync.Result > 0)
                         {
                             var downloadDependencies =
-                                Addressables.DownloadDependenciesAsync(keys, Addressables.MergeMode.Union, false);
+                                Addressables.DownloadDependenciesAsync(resourceLocator.Keys, Addressables.MergeMode.Union, false);
                             while (downloadDependencies.Status == AsyncOperationStatus.None)
                             {
                                 percent += downloadDependencies.PercentComplete;
@@ -152,7 +150,6 @@ namespace PowerCellStudio
                             Addressables.Release(downloadDependencies);
                         }
                         Addressables.Release(getDownloadSizeAsync);
-                        ListPool<object>.Release(keys);
                     }
 
                     Addressables.Release(updateHandle);
@@ -161,6 +158,7 @@ namespace PowerCellStudio
             }
             Addressables.Release(handle);
             Addressables.Release(checkForCatalogUpdates);
+            yield return Addressables.CleanBundleCache();
             _inited = true;
             initState = AssetInitState.Complete;
             callback?.Invoke();
@@ -385,7 +383,7 @@ namespace PowerCellStudio
             _preloadHandles.Clear();
 
             var prepareHandles = new List<PrepareHandler>(_prepareHandlers);
-            for (var i=0; i < prepareHandles.Count; i++)
+            for (var i = 0; i < prepareHandles.Count; i++)
             {
                 Unprepare(prepareHandles[i]);
             }
