@@ -158,7 +158,9 @@ namespace PowerCellStudio
             }
             Addressables.Release(handle);
             Addressables.Release(checkForCatalogUpdates);
+#if !UNITY_EDITOR
             yield return Addressables.CleanBundleCache();
+#endif
             _inited = true;
             initState = AssetInitState.Complete;
             callback?.Invoke();
