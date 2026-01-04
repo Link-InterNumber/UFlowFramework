@@ -26,10 +26,8 @@ namespace PowerCellStudio
 
         public override void OnDeSpawn()
         {
-            _audioSource.clip = null;
-            _fadePitchCoroutine = null;
-            _fadeCoroutine = null;
-            StopAllCoroutines();
+            onReachEnd = null;
+            Clear();
             gameObject.SetActive(false);
         }
 
@@ -47,7 +45,7 @@ namespace PowerCellStudio
         private Coroutine _fadeCoroutine;
         public void Fade(float targetVolume, float duration, Action onComplete = null)
         {
-            if (duration < 0)
+            if (duration <= 0)
             {
                 _audioSource.volume = targetVolume * setVolume;
                 onComplete?.Invoke();
@@ -78,7 +76,7 @@ namespace PowerCellStudio
         private Coroutine _fadePitchCoroutine;
         public void FadePitch(float targetPitch, float duration, Action onComplete = null)
         {
-            if (duration < 0)
+            if (duration <= 0)
             {
                 _audioSource.pitch = targetPitch * setPitch;
                 onComplete?.Invoke();
@@ -117,6 +115,7 @@ namespace PowerCellStudio
             {
                 _onGoingRequest = request;
                 _audioSource.loop = request.loop;
+                _audioSource.Play();
                 return;
             }
             _canTriggerReachEnd = true;
@@ -141,6 +140,15 @@ namespace PowerCellStudio
                 _audioSource.Play();
             else
                 _audioSource.PlayDelayed(request.delay);
+        }
+
+        public void Clear()
+        {
+            _onGoingRequest = default(AudioRequest);
+            _audioSource.clip = null;
+            _fadePitchCoroutine = null;
+            _fadeCoroutine = null;
+            StopAllCoroutines();
         }
 
         public bool IsReachedEnd()

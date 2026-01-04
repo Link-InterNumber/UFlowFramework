@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
@@ -63,9 +64,14 @@ namespace PowerCellStudio
     //     public void Clear();
     // }
 
-    public interface IAudioPipelineBehavior
+    public interface IUpdatePipelineBehavior
     {
-        public AudioPipeline pipeline { get; set; }
+        void Update();
+    }
+
+    public interface IAudioPipelineBehavior: IDisposable
+    {
+        // public AudioPipeline pipeline { get; set; }
         public void ReceiveRequest(AudioRequest request);
 
         public void ClearRequests();
