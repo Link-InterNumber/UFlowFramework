@@ -146,23 +146,17 @@ namespace PowerCellStudio
                 yield break;
             }
             var bundleByte = webRequest.downloadHandler.data;
-            yield return SaveBundleOnLocal(bundleName, bundleByte);
+            var path = Path.Combine(Application.persistentDataPath, _bundleFoldName, bundleName);
+#if !UNITY_WEBGL
+            yield return File.WriteAllBytesAsync(path, bundleByte).AsCoroutine();
+#else
+            File.WriteAllBytes(path, bundleByte);
+#endif
             if (_remoteManifest.TryGetValue(bundleName, out var bundleInfo))
             {
                 _clientManifest[bundleName] = bundleInfo;
             }
             handler?.SetResult(true);
-        }
-
-        private IEnumerator SaveBundleOnLocal(string bundleName, byte[] data)
-        {
-            var path = Path.Combine(Application.persistentDataPath, _bundleFoldName, bundleName);
-#if !UNITY_WEBGL
-            yield return File.WriteAllBytesAsync(path, data).AsCoroutine();
-#else
-            File.WriteAllBytes(path, data);
-            yield return null;
-#endif
         }
 
         private IEnumerator CheckRemoteBundle()
