@@ -7,14 +7,12 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using Newtonsoft.Json;
 using UnityEditor;
 using UnityEditor.Localization;
 using UnityEditor.Localization.Plugins.CSV;
 using UnityEditor.Localization.Plugins.CSV.Columns;
-using UnityEditor.Localization.Plugins.XLIFF.V20;
 using UnityEngine;
 using UnityEngine.Localization.Settings;
 
@@ -74,8 +72,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                ConfigLog.LogError(e.ToString());
-                throw;
+                ConfigLog.LogError($"{e.Message}\n{e.StackTrace}");
             }
             finally
             {
@@ -96,7 +93,7 @@ namespace PowerCellStudio
                     EditorUtility.DisplayDialog("ConfigMenu", "Excel files path doesn't exist.", "OK");
                     return;
                 }
-                md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
+                using System.Security.Cryptography.MD5CryptoServiceProvider md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
                 Dictionary<string, string> historyMap = LoadHistoryFile(excelPath);
 
                 var assetFilePath = EditorPrefs.GetString(ConfigSettingWindow.SaveKey.assetFilePath, "Assets/ConfigAsset/");
@@ -123,15 +120,13 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                ConfigLog.LogError(e.ToString());
-                throw;
+                ConfigLog.LogError($"{e.Message}\n{e.StackTrace}");
             }
             finally
             {
                 EditorUtility.ClearProgressBar();
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
-                md5.Dispose();
             }
 
         }
@@ -147,7 +142,7 @@ namespace PowerCellStudio
                     EditorUtility.DisplayDialog("ConfigMenu", "Excel files path doesn't exist.", "OK");
                     return;
                 }
-                md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
+                using System.Security.Cryptography.MD5CryptoServiceProvider md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
                 // Dictionary<string, string> historyMap = LoadHistoryFile(excelPath);
 
                 var assetFilePath = EditorPrefs.GetString(ConfigSettingWindow.SaveKey.assetFilePath, "Assets/ConfigAsset/");
@@ -174,15 +169,13 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                ConfigLog.LogError(e.ToString());
-                throw;
+                ConfigLog.LogError($"{e.Message}\n{e.StackTrace}");
             }
             finally
             {
                 EditorUtility.ClearProgressBar();
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
-                md5.Dispose();
             }
 
         }
@@ -257,7 +250,7 @@ namespace PowerCellStudio
             }
             catch (Exception ex)
             {
-                ConfigLog.LogError(ex.ToString());
+                ConfigLog.LogError($"Calc MD5 failed, exception:{ex.Message}\n{ex.StackTrace}");
             }
             return string.Empty;
         }
@@ -442,12 +435,8 @@ namespace PowerCellStudio
                 }
                 EditorUtility.SetDirty(stringTable);
                 EditorUtility.SetDirty(assetTable);
-                EditorUtility.SetDirty(stringTable.SharedData);
-                EditorUtility.SetDirty(assetTable.SharedData);
                 AssetDatabase.SaveAssetIfDirty(stringTable);
                 AssetDatabase.SaveAssetIfDirty(assetTable);
-                AssetDatabase.SaveAssetIfDirty(stringTable.SharedData);
-                AssetDatabase.SaveAssetIfDirty(assetTable.SharedData);
                 AssetDatabase.SaveAssets();
                 EditorUtility.DisplayProgressBar("Config", "Export csv file", 0f);
                 var date = DateTime.Now;

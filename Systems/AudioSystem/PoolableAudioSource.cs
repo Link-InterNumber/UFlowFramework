@@ -68,8 +68,7 @@ namespace PowerCellStudio
 
         public void Dispose()
         {
-            GameObject.Destroy(_audioSource);
-            GameObject.Destroy(this);
+            GameObject.Destroy(gameObject);
         }
 
         private void Update()

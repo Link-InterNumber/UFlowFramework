@@ -5,6 +5,9 @@ using System.IO;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.Networking;
+#if !UNITY_WEBGL
+using Microsoft.Xbox.Services.Client;
+#endif
 
 namespace PowerCellStudio
 {
@@ -13,17 +16,24 @@ namespace PowerCellStudio
         private Dictionary<string, BundleInfo> _remoteManifest;
         private Dictionary<string, BundleInfo> _clientManifest;
         private string _remotePath = "http://localhost:8000/StreamingAssets/";
+        public static bool simulateRemoteBundleInEditor = false;
 
         private string BuildRemoteUrl(string fileName)
         {
             var safeName = Path.GetFileName(fileName);
             // 基础防注入：只允许文件名，不允许路径分隔符
             if (string.IsNullOrEmpty(safeName) || safeName != fileName) return null;
-            return $"{_remotePath.TrimEnd('/')}/{Uri.EscapeUriString(safeName)}";
+            return $"{_remotePath.TrimEnd('/')}/{Uri.EscapeDataString(safeName)}";
         }
 
         private bool IsBundleNeedLoadFromRemote(string bundleName)
         {
+#if UNITY_EDITOR
+            if (!simulateRemoteBundleInEditor)
+            {
+                return false;
+            }
+#endif
             if (_remoteManifest == null || _remoteManifest.Count == 0) return false;
             if (_remoteManifest.TryGetValue(bundleName, out var remote))
             {
@@ -81,7 +91,9 @@ namespace PowerCellStudio
         private IEnumerator GetServerRemoteManifest()
         {
 #if UNITY_EDITOR
-            var url = "file://" + Path.Combine(Application.streamingAssetsPath, "remoteManifest.json");
+            var url = simulateRemoteBundleInEditor 
+                ? BuildRemoteUrl("remoteManifest.json") 
+                : "file://" + Path.Combine(Application.streamingAssetsPath, "remoteManifest.json");
 #else
             var url = BuildRemoteUrl("remoteManifest.json");
 #endif
@@ -96,7 +108,9 @@ namespace PowerCellStudio
             }
             else
             {
+#if !UNITY_EDITOR
                 AssetLog.LogError("下载remoteManifest.json失败: " + request.error);
+#endif
             }
             if (_remoteManifest == null) _remoteManifest = new Dictionary<string, BundleInfo>();
             request.Dispose();
@@ -121,39 +135,34 @@ namespace PowerCellStudio
             File.WriteAllText(savePath, json);
         }
 
-        private IEnumerator LoadRemoteBundle(string bundleName, LoaderYieldInstruction<AssetBundle> handler = null)
+        private IEnumerator LoadRemoteBundle(string bundleName, YieldInstructionCompletionSource<bool> handler = null)
         {
             var url = BuildRemoteUrl(bundleName);
-            var webRequest = UnityWebRequestAssetBundle.GetAssetBundle(url);
+            using UnityWebRequest webRequest = UnityWebRequest.Get(url);
             yield return webRequest.SendWebRequest();
             if (webRequest.result != UnityWebRequest.Result.Success)
             {
-                webRequest.Dispose();
-                if (handler == null) yield break;
-                handler.SetAsset(null);
-                yield break;
-            }
-            var bundle = DownloadHandlerAssetBundle.GetContent(webRequest);
-            if (!bundle)
-            {
-                webRequest.Dispose();
-                if (handler == null) yield break;
-                handler.SetAsset(null);
+                handler?.SetResult(false);
                 yield break;
             }
             var bundleByte = webRequest.downloadHandler.data;
             yield return SaveBundleOnLocal(bundleName, bundleByte);
-            webRequest.Dispose();
             if (_remoteManifest.TryGetValue(bundleName, out var bundleInfo))
             {
                 _clientManifest[bundleName] = bundleInfo;
             }
-            if (handler == null)
-            {
-                yield return bundle.UnloadAsync(false);
-                yield break;
-            }
-            handler.SetAsset(bundle);
+            handler?.SetResult(true);
+        }
+
+        private IEnumerator SaveBundleOnLocal(string bundleName, byte[] data)
+        {
+            var path = Path.Combine(Application.persistentDataPath, _bundleFoldName, bundleName);
+#if !UNITY_WEBGL
+            yield return File.WriteAllBytesAsync(path, data).AsCoroutine();
+#else
+            File.WriteAllBytes(path, data);
+            yield return null;
+#endif
         }
 
         private IEnumerator CheckRemoteBundle()
@@ -162,6 +171,7 @@ namespace PowerCellStudio
             var url = BuildRemoteUrl($"{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}");
             using (UnityWebRequest request = UnityWebRequest.Get(url))
             {
+                yield return request.SendWebRequest();
                 if (request.result == UnityWebRequest.Result.Success)
                 {
                     var encryptData = request.downloadHandler.data;
@@ -169,7 +179,13 @@ namespace PowerCellStudio
                     File.WriteAllBytes(savePath, encryptData);
                 }
             }
+#else
+            if (!simulateRemoteBundleInEditor)
+            {
+                yield break;
+            }
 #endif
+
             if (_remoteManifest == null || _clientManifest == null) yield break;
             var loadList = new List<string>();
             foreach (var keyValue in _remoteManifest)
@@ -186,13 +202,16 @@ namespace PowerCellStudio
             if (loadList.Count == 0) yield break;
             initState = AssetInitState.DownloadTheUpdateFile;
             initProcess = 0f;
-            _clientManifest.Clear();
             for (var i = 0; i < loadList.Count; i++)
             {
                 var bundleName = loadList[i];
-                yield return LoadRemoteBundle(bundleName);
-                Caching.ClearAllCachedVersions(bundleName);
+                var token = new YieldInstructionCompletionSource<bool>();
+                yield return LoadRemoteBundle(bundleName, token);
                 initProcess = i * 1f / loadList.Count;
+                if (!token.Result)
+                {
+                    AssetLog.LogError($"下载远程Bundle失败: {bundleName}");
+                }
             }
             SaveRemoteManifest(_clientManifest);
         }
