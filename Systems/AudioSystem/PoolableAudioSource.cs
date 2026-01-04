@@ -49,8 +49,7 @@ namespace PowerCellStudio
         public void DeSpawn()
         {
             _waitForDespawn = false;
-            if(LinkPool != null) LinkPool.Release(this);
-            else
+            if(LinkPool == null || !LinkPool.Release(this)) 
             {
                 OnDeSpawn();
                 Dispose();

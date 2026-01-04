@@ -11,13 +11,16 @@ namespace PowerCellStudio
 
         public virtual void DeSpawn()
         {
-            LinkPool.Release(this);
+            if (LinkPool != null && !LinkPool.Release(this)) return;
+            OnDeSpawn();
+            Dispose();
         }
 
         public abstract void OnDeSpawn();
 
         public virtual void Dispose()
         {
+            GameObject.Destroy(gameObject);
         }
     }
 }
