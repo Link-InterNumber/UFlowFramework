@@ -5,8 +5,9 @@ namespace PowerCellStudio
 {
     public class PoolSFXAudioPipelineBehavior : IAudioPipelineBehavior, IUpdatePipelineBehavior
     {
-        public PoolSFXAudioPipelineBehavior()
+        public PoolSFXAudioPipelineBehavior(AudioPipeline pipeline)
         {
+            _pipeline = pipeline;
             _assetLoader = AssetUtils.SpawnLoader("PoolSFXAudioPipelineBehavior");
         }
         
@@ -14,9 +15,15 @@ namespace PowerCellStudio
         {
             ClearRequests();
             _SFXCaches.Clear();
+            _SFXCaches = null;
             _onGoingRequestSet.Clear();
+            _onGoingRequestSet = null;
             AssetUtils.DeSpawnLoader(_assetLoader);
+            _assetLoader = null;
         }
+
+        private AudioPipeline _pipeline;
+        public AudioPipeline pipeline { get => _pipeline; set => _pipeline = value; }
         
         private struct SFXCache
         {
@@ -35,6 +42,10 @@ namespace PowerCellStudio
         
         public void ReceiveRequest(AudioRequest request)
         {
+            if (string.IsNullOrEmpty(request.clipPath))
+            {
+                return;
+            }
             _audioRequests.Enqueue(request);  
         }
 
@@ -43,16 +54,16 @@ namespace PowerCellStudio
             _audioRequests.Clear();
         }
 
-        private float _volume;
+        // private float _volume;
         public void SetVolume(float newValue, float transferTime)
         {
-            _volume = newValue;
+            // _volume = newValue;
         }
 
-        private float _pitch = 1;
+        // private float _pitch = 1;
         public void SetPitch(float newValue, float transferTime)
         {
-            _pitch = newValue;
+            // _pitch = newValue;
         }
 
         private bool _isMute;
@@ -77,17 +88,15 @@ namespace PowerCellStudio
             if (_isMute) return;
             _assetLoader.LoadAsync<AudioClip>(audioRequest.clipPath, (clip) =>
             {
-                var audioSourceCtrl = LinkAudioSourceUtils.Get();
+                var audioSourceCtrl = pipeline.GetAudioSource();
                 audioSourceCtrl.autoDespawn = true;
-                audioSourceCtrl.setPitch = _pitch;
-                audioSourceCtrl.setVolume = _volume;
                 audioRequest.loop = false;
                 audioSourceCtrl.Play(audioRequest, clip);
                 audioSourceCtrl.onReachEnd += OnReachEnd;
             });
         }
         
-        private void OnReachEnd(string clipPath)
+        private void OnReachEnd(string clipPath, bool isLoop)
         {
             _assetLoader.Release(clipPath);
         }

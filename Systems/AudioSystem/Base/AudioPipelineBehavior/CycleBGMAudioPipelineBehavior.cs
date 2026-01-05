@@ -5,12 +5,12 @@ namespace PowerCellStudio
 {
     public class CycleBGMAudioPipelineBehavior : IAudioPipelineBehavior
     {
-        public CycleBGMAudioPipelineBehavior() //(AudioPipeline pipeline)
+        public CycleBGMAudioPipelineBehavior(AudioPipeline pipeline)
         {
-            // _pipeline = pipeline;
+            _pipeline = pipeline;
             _requestQueue = new Queue<AudioRequest>();
             _assetLoader = AssetUtils.SpawnLoader("QueueAudioPipelineBehavior");
-            _audioSourceCtrl = LinkAudioSourceUtils.Get();
+            _audioSourceCtrl = _pipeline.GetAudioSource();
             _audioSourceCtrl.autoDespawn = false;
             _audioSourceCtrl.onReachEnd += OnReachEnd;
         }
@@ -19,14 +19,16 @@ namespace PowerCellStudio
         {
             ClearRequests();
             AssetUtils.DeSpawnLoader(_assetLoader);
+            _assetLoader = null;
             _audioSourceCtrl.DeSpawn();
+            _audioSourceCtrl = null;
         }
 
         private LinkAudioSource _audioSourceCtrl;
         private IAssetLoader _assetLoader;
 
-        // private AudioPipeline _pipeline;
-        // public AudioPipeline pipeline { get => _pipeline; set => _pipeline = value; }
+        private AudioPipeline _pipeline;
+        public AudioPipeline pipeline { get => _pipeline; set => _pipeline = value; }
 
         private Queue<AudioRequest> _requestQueue;
 
@@ -44,6 +46,18 @@ namespace PowerCellStudio
         
         public void ReceiveRequest(AudioRequest request)
         {
+            if (string.IsNullOrEmpty(request.clipPath))
+            {
+                if (request.fadeOut > 0)
+                {
+                    _audioSourceCtrl.Fade(0, request.fadeOut);
+                }
+                else if (request.fadeIn > 0)
+                {
+                    _audioSourceCtrl.Fade(_audioSourceCtrl.onGoingRequest.volume, request.fadeIn);
+                }
+                return;
+            }
             _requestQueue.Enqueue(request);
             if (string.IsNullOrEmpty(_audioSourceCtrl.onGoingRequest.clipPath))
             {
@@ -51,7 +65,7 @@ namespace PowerCellStudio
             }
         }
 
-        private void OnReachEnd(string clipPath)
+        private void OnReachEnd(string clipPath, bool isLoop)
         {
             if (_requestQueue.Count <= 0)
             {
@@ -66,15 +80,12 @@ namespace PowerCellStudio
 
         public void ClearRequests()
         {
-            _audioSourceCtrl.Fade(0f, 0.5f, () =>
+            _audioSourceCtrl.Clear();
+            while (_requestQueue.Count > 0)
             {
-                _audioSourceCtrl.Clear();
-                while (_requestQueue.Count > 0)
-                {
-                    var request = _requestQueue.Dequeue();
-                    _assetLoader.Release(request.clipPath);
-                }
-            });
+                var request = _requestQueue.Dequeue();
+                _assetLoader.Release(request.clipPath);
+            }
         }
 
         public void Pause()

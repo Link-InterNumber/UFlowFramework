@@ -1,15 +1,14 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace PowerCellStudio
 {
     public class CutoffAudioPipelineBehavior : IAudioPipelineBehavior
     {
-        public CutoffAudioPipelineBehavior() //(AudioPipeline pipeline)
+        public CutoffAudioPipelineBehavior(AudioPipeline pipeline)
         {
-            // _pipeline = pipeline;
+            _pipeline = pipeline;
             _assetLoader = AssetUtils.SpawnLoader("CutoffAudioPipelineBehavior");
-            _audioSourceCtrl = LinkAudioSourceUtils.Get();
+            _audioSourceCtrl = _pipeline.GetAudioSource();
             _audioSourceCtrl.autoDespawn = false;
             _audioSourceCtrl.onReachEnd += OnReachEnd;
         }
@@ -17,14 +16,31 @@ namespace PowerCellStudio
         public void Dispose()
         {
             AssetUtils.DeSpawnLoader(_assetLoader);
+            _assetLoader = null;
             _audioSourceCtrl.DeSpawn();
+            _audioSourceCtrl = null;
         }
+
+        private AudioPipeline _pipeline;
+        public AudioPipeline pipeline { get => _pipeline; set => _pipeline = value; }
 
         private LinkAudioSource _audioSourceCtrl;
         private IAssetLoader _assetLoader;
         
         public void ReceiveRequest(AudioRequest request)
         {
+            if (string.IsNullOrEmpty(request.clipPath))
+            {
+                if (request.fadeOut > 0)
+                {
+                    _audioSourceCtrl.Fade(0, request.fadeOut);
+                }
+                else if (request.fadeIn > 0)
+                {
+                    _audioSourceCtrl.Fade(_audioSourceCtrl.onGoingRequest.volume, request.fadeIn);
+                }
+                return;
+            }
             if (!string.IsNullOrEmpty(_audioSourceCtrl.onGoingRequest.clipPath))
             {
                 _assetLoader.Release(_audioSourceCtrl.onGoingRequest.clipPath);
@@ -36,8 +52,9 @@ namespace PowerCellStudio
             });
         }
 
-        private void OnReachEnd(string clipPath)
+        private void OnReachEnd(string clipPath, bool isLoop)
         {
+            if (isLoop) return;
             _assetLoader.Release(clipPath);
             _audioSourceCtrl.Clear();
         }
