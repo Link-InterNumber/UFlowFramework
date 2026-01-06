@@ -8,9 +8,9 @@ namespace PowerCellStudio
         public CycleBGMAudioPipelineBehavior(AudioPipeline pipeline)
         {
             _pipeline = pipeline;
-            _requestQueue = new Queue<AudioRequest>();
+            _requestQueue = new LinkedList<AudioRequest>();
             _assetLoader = AssetUtils.SpawnLoader("QueueAudioPipelineBehavior");
-            _audioSourceCtrl = _pipeline.GetAudioSource();
+            _audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
             _audioSourceCtrl.autoDespawn = false;
             _audioSourceCtrl.onReachEnd += OnReachEnd;
         }
@@ -30,20 +30,21 @@ namespace PowerCellStudio
         private AudioPipeline _pipeline;
         public AudioPipeline pipeline { get => _pipeline; set => _pipeline = value; }
 
-        private Queue<AudioRequest> _requestQueue;
+        private LinkedList<AudioRequest> _requestQueue;
 
         private void TryPostRequest()
         {
             if (_requestQueue.Count <= 0) return;
-            var nextRequest = _requestQueue.Dequeue();
+            var nextRequest = _requestQueue.First.Value;
+            _requestQueue.RemoveFirst();
             _assetLoader.LoadAsync<AudioClip>(nextRequest.clipPath, (clip) =>
             {
                 _audioSourceCtrl.Play(nextRequest, clip);
             });
             if (!nextRequest.loop) return;
-            _requestQueue.Enqueue(nextRequest);
+            _requestQueue.AddLast(nextRequest);
         }
-        
+
         public void ReceiveRequest(AudioRequest request)
         {
             if (string.IsNullOrEmpty(request.clipPath))
@@ -58,11 +59,40 @@ namespace PowerCellStudio
                 }
                 return;
             }
-            _requestQueue.Enqueue(request);
+            var node = _requestQueue.First;
+            while (node != null)
+            {
+                var nextNode = node.Next;
+                if (node.Value.clipPath == request.clipPath)
+                {
+                    _requestQueue.Remove(node);
+                }
+                node = nextNode;
+            }
+            _requestQueue.AddLast(request);
             if (string.IsNullOrEmpty(_audioSourceCtrl.onGoingRequest.clipPath))
             {
                 TryPostRequest();
             }
+        }
+        
+        public void RemoveRequest(string clipPath)
+        {
+            var node = _requestQueue.First;
+            while (node != null)
+            {
+                var nextNode = node.Next;
+                if (node.Value.clipPath == clipPath)
+                {
+                    _requestQueue.Remove(node);
+                }
+                node = nextNode;
+            }
+            if (_audioSourceCtrl.onGoingRequest.clipPath != clipPath) return;
+            var currentClipPath = _audioSourceCtrl.onGoingRequest.clipPath;
+            _audioSourceCtrl.Clear();
+            _assetLoader.Release(currentClipPath);
+            TryPostRequest();
         }
 
         private void OnReachEnd(string clipPath, bool isLoop)
@@ -73,7 +103,7 @@ namespace PowerCellStudio
                 _audioSourceCtrl.Clear();
                 return;
             }
-            if (_requestQueue.Peek().clipPath != clipPath)
+            if (_requestQueue.First.Value.clipPath != clipPath)
                 _assetLoader.Release(clipPath);
             TryPostRequest();
         }
@@ -81,11 +111,13 @@ namespace PowerCellStudio
         public void ClearRequests()
         {
             _audioSourceCtrl.Clear();
-            while (_requestQueue.Count > 0)
+            var node = _requestQueue.First;
+            while (node != null)
             {
-                var request = _requestQueue.Dequeue();
-                _assetLoader.Release(request.clipPath);
+                _assetLoader.Release(node.Value.clipPath);
+                node = node.Next;
             }
+            _requestQueue.Clear();
         }
 
         public void Pause()

@@ -51,12 +51,17 @@ namespace PowerCellStudio
             }
             _assetLoader.LoadAsync<AudioClip>(request.clipPath, (clip) =>
             {
-                var audioSource = pipeline.GetAudioSource();
+                var audioSource = LinkAudioSourceUtils.Get(_pipeline);
                 audioSource.autoDespawn = true;
                 audioSource.Play(request, clip);
                 audioSource.onReachEnd += OnReachEnd;
                 if (request.loop) _manageredAudioSource.Add(audioSource);
             });
+        }
+
+        public void RemoveRequest(string clipPath)
+        {
+            
         }
 
         private void OnReachEnd(string clipPath, bool isLoop)
@@ -70,8 +75,9 @@ namespace PowerCellStudio
             for (int i = 0; i < _manageredAudioSource.Count; i++)
             {
                 var audioSource = _manageredAudioSource[i];
-                _assetLoader.Release(audioSource.onGoingRequest.clipPath);
+                var clipPath = audioSource.onGoingRequest.clipPath;
                 audioSource.Clear();
+                _assetLoader.Release(clipPath);
             }
             _manageredAudioSource.Clear();
         }

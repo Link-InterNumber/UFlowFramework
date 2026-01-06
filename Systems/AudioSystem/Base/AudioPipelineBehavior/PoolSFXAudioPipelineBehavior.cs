@@ -39,14 +39,19 @@ namespace PowerCellStudio
         private Queue<AudioRequest> _audioRequests;
         private LinkedList<SFXCache> _SFXCaches;
         private HashSet<string> _onGoingRequestSet;
-        
+
         public void ReceiveRequest(AudioRequest request)
         {
             if (string.IsNullOrEmpty(request.clipPath))
             {
                 return;
             }
-            _audioRequests.Enqueue(request);  
+            _audioRequests.Enqueue(request);
+        }
+        
+        public void RemoveRequest(string clipPath)
+        {
+            
         }
 
         public void ClearRequests()
@@ -88,7 +93,7 @@ namespace PowerCellStudio
             if (_isMute) return;
             _assetLoader.LoadAsync<AudioClip>(audioRequest.clipPath, (clip) =>
             {
-                var audioSourceCtrl = pipeline.GetAudioSource();
+                var audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
                 audioSourceCtrl.autoDespawn = true;
                 audioRequest.loop = false;
                 audioSourceCtrl.Play(audioRequest, clip);

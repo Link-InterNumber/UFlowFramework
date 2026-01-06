@@ -7,11 +7,11 @@ namespace PowerCellStudio
     {
         private IAudioPipelineBehavior _behavior;
 
-        public void Init(AudioSourceType type, IAudioPipelineBehavior behavior)
+        public void Init(int id, IAudioPipelineBehavior behavior)
         {
-            _audioType = type;
+            _pipelineId = id;
             _behavior = behavior;
-            _children = new Dictionary<AudioSourceType, AudioPipeline>();
+            _children = new Dictionary<int, AudioPipeline>();
             _mute = false;
             _realMute = false;
             _volume = 1f;
@@ -22,8 +22,8 @@ namespace PowerCellStudio
         private IAudioMixerGroupCtrl _mixCtrl;
         public IAudioMixerGroupCtrl mixCtrl { get => _mixCtrl; set => _mixCtrl = value; }
 
-        private AudioSourceType _audioType;
-        public AudioSourceType audioType => _audioType;
+        private int _pipelineId;
+        public int pipelineId => _pipelineId;
 
         private float _volume;
         public float volume
@@ -78,27 +78,16 @@ namespace PowerCellStudio
             {
                 _parent = value;
                 if (value != null)
-                    value.children.Add(_audioType, this);
+                    value.children.Add(_pipelineId, this);
                 else
-                    value.children.Remove(_audioType);
+                    value.children.Remove(_pipelineId);
                 UpdateRealProperties();
                 UpdateChildrenProperties();
             }
         }
-        
-        public LinkAudioSource GetAudioSource()
-        {
-            var audioSourceCtrl = LinkAudioSourceUtils.Get();
-            if (_mixCtrl != null)
-                audioSourceCtrl.audioSource.outputAudioMixerGroup = _mixCtrl.audioMixerGroup;
-            audioSourceCtrl.setVolume = _realVolume;
-            audioSourceCtrl.setPitch = _realPitch;
-            audioSourceCtrl.audioSource.mute = _realMute;
-            return audioSourceCtrl;
-        }
 
-        private Dictionary<AudioSourceType, AudioPipeline> _children;
-        public Dictionary<AudioSourceType, AudioPipeline> children => _children;
+        private Dictionary<int, AudioPipeline> _children;
+        public Dictionary<int, AudioPipeline> children => _children;
 
         public void UpdateRealProperties()
         {
@@ -121,12 +110,12 @@ namespace PowerCellStudio
 
         public bool PushRequest(AudioRequest request)
         {
-            if (request.audioType == _audioType && _behavior != null)
+            if (request.pipelineId == _pipelineId && _behavior != null)
             {
                 _behavior.ReceiveRequest(request);
                 return true;
             }
-            if (_children.TryGetValue(request.audioType, out var childPipeline))
+            if (_children.TryGetValue(request.pipelineId, out var childPipeline))
             {
                 return childPipeline.PushRequest(request);
             }
@@ -135,6 +124,27 @@ namespace PowerCellStudio
                 foreach (var child in _children.Values)
                 {
                     if (child.PushRequest(request)) return true;
+                }
+            }
+            return false;
+        }
+
+        public bool RemoveRequest(int pipelineId, string clipPath)
+        {
+            if (pipelineId == _pipelineId && _behavior != null)
+            {
+                _behavior.RemoveRequest(clipPath);
+                return true;
+            }
+            if (_children.TryGetValue(pipelineId, out var childPipeline))
+            {
+                return childPipeline.RemoveRequest(pipelineId, clipPath);
+            }
+            else
+            {
+                foreach (var child in _children.Values)
+                {
+                    if (child.RemoveRequest(pipelineId, clipPath)) return true;
                 }
             }
             return false;

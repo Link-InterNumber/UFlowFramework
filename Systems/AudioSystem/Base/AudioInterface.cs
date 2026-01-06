@@ -16,10 +16,10 @@ namespace PowerCellStudio
 
     public struct AudioRequest
     {
-        public AudioRequest(AudioSourceType audioType, float fadeOut)
+        public AudioRequest(int pipelineId, float fadeOut)
         {
             clipPath = null;
-            this.audioType = audioType;
+            this.pipelineId = pipelineId;
             loop = false;
             position = Vector3.zero;
             volume = 1f;
@@ -27,12 +27,13 @@ namespace PowerCellStudio
             this.fadeOut = fadeOut;
             full3D = false;
             attachGameObject = null;
+            blockage = false;
         }
-        
-        public AudioRequest(string clipPath, AudioSourceType audioType, bool isLoop)
+
+        public AudioRequest(string clipPath, int pipelineId, bool isLoop)
         {
             this.clipPath = clipPath;
-            this.audioType = audioType;
+            this.pipelineId = pipelineId;
             loop = isLoop;
             position = Vector3.zero;
             volume = 1f;
@@ -40,9 +41,11 @@ namespace PowerCellStudio
             fadeOut = 0f;
             full3D = false;
             attachGameObject = null;
+            blockage = false;
         }
+        public bool blockage;
         public string clipPath;
-        public AudioSourceType audioType;
+        public int pipelineId;
         [Range(0, 1)]
         public float volume;
         [Min(0)]
@@ -83,6 +86,8 @@ namespace PowerCellStudio
     {
         public AudioPipeline pipeline { get; set; }
         public void ReceiveRequest(AudioRequest request);
+
+        public void RemoveRequest(string clipPath);
 
         public void ClearRequests();
 

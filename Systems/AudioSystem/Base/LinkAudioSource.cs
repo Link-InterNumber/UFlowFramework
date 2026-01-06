@@ -120,7 +120,8 @@ namespace PowerCellStudio
             if (clip == null) return;
             if (onGoingRequest.fadeOut > 0 && onGoingRequest.loop)
             {
-                Fade(0f, onGoingRequest.fadeOut, () => {
+                var fadeTime = Mathf.Min(onGoingRequest.fadeOut, GetClipLength() - GetCurrentTime());
+                Fade(0f, fadeTime, () => {
                     RunRequest(request, clip);
                 });
                 return;

@@ -8,7 +8,7 @@ namespace PowerCellStudio
         {
             _pipeline = pipeline;
             _assetLoader = AssetUtils.SpawnLoader("CutoffAudioPipelineBehavior");
-            _audioSourceCtrl = _pipeline.GetAudioSource();
+            _audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
             _audioSourceCtrl.autoDespawn = false;
             _audioSourceCtrl.onReachEnd += OnReachEnd;
         }
@@ -26,7 +26,7 @@ namespace PowerCellStudio
 
         private LinkAudioSource _audioSourceCtrl;
         private IAssetLoader _assetLoader;
-        
+
         public void ReceiveRequest(AudioRequest request)
         {
             if (string.IsNullOrEmpty(request.clipPath))
@@ -51,6 +51,17 @@ namespace PowerCellStudio
                 _audioSourceCtrl.Play(request, clip);
             });
         }
+        
+        public void RemoveRequest(string clipPath)
+        {
+            if (_audioSourceCtrl.onGoingRequest.clipPath != clipPath)
+            {
+                return;
+            }
+            var currentClipPath = _audioSourceCtrl.onGoingRequest.clipPath;
+            _audioSourceCtrl.Clear();
+            _assetLoader.Release(currentClipPath);
+        }
 
         private void OnReachEnd(string clipPath, bool isLoop)
         {
@@ -61,7 +72,10 @@ namespace PowerCellStudio
 
         public void ClearRequests()
         {
-            // do nothing...
+            var currentClipPath = _audioSourceCtrl.onGoingRequest.clipPath;
+            if (string.IsNullOrEmpty(currentClipPath)) return;
+            _audioSourceCtrl.Clear();
+            _assetLoader.Release(currentClipPath);
         }
 
         public void Pause()
