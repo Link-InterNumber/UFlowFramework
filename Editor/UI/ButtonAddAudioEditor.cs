@@ -45,7 +45,7 @@ namespace PowerCellStudio
                     trigger.playOnUp = true;
                     trigger.playOnDown = false;
                     trigger.musicGroup = MusicGroup.UI;
-                    trigger.audioType = AudioSourceType.UIEffect;
+                    trigger.audioType = AudioSourceType.SFXUI;
                     trigger.playOnEnable = false;
                 }
                 _hasUpTrigger = true;
@@ -59,7 +59,7 @@ namespace PowerCellStudio
                     trigger.playOnUp = false;
                     trigger.playOnDown = true;
                     trigger.musicGroup = MusicGroup.UI;
-                    trigger.audioType = AudioSourceType.UIEffect;
+                    trigger.audioType = AudioSourceType.SFXUI;
                     trigger.playOnEnable = false;
                 }
                 _hasDownTrigger = true;

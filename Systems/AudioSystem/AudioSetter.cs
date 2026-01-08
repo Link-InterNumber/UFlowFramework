@@ -46,13 +46,13 @@ namespace PowerCellStudio
                 case AudioSourceType.Ambience:
                     AudioManager.instance.PlayAmbience(audioClipRef, musicGroup, fadeoutTime, intervalTime, fadeinTime);
                     break;
-                case AudioSourceType.Effect3D:
+                case AudioSourceType.SFX3D:
                     AudioManager.instance.RequestPlayEffect(audioClipRef, false, attachToGameObject ? gameObject : null, transform.position, true);
                     break;
                 case AudioSourceType.Dialog:
                     AudioManager.instance.PlayDialog(audioClipRef);
                     break;
-                case AudioSourceType.UIEffect:
+                case AudioSourceType.SFXUI:
                     AudioManager.instance.RequestPlayEffect(audioClipRef, true, attachToGameObject ? gameObject : null, transform.position, false);
                     break;
                 default:

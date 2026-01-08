@@ -8,9 +8,6 @@ namespace PowerCellStudio
         {
             _pipeline = pipeline;
             _assetLoader = AssetUtils.SpawnLoader("CutoffAudioPipelineBehavior");
-            _audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
-            _audioSourceCtrl.autoDespawn = false;
-            _audioSourceCtrl.onReachEnd += OnReachEnd;
         }
         
         public void Dispose()
@@ -41,65 +38,64 @@ namespace PowerCellStudio
                 }
                 return;
             }
-            if (!string.IsNullOrEmpty(_audioSourceCtrl.onGoingRequest.clipPath))
-            {
-                _assetLoader.Release(_audioSourceCtrl.onGoingRequest.clipPath);
-            }
-            _audioSourceCtrl.Clear();
             _assetLoader.LoadAsync<AudioClip>(request.clipPath, (clip) =>
             {
+                if (_audioSourceCtrl == null || !_audioSourceCtrl.gameObject.activeInHierarchy)
+                {
+                    _audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
+                    _audioSourceCtrl.autoDespawn = true;
+                    _audioSourceCtrl.onRemoveClip += OnRemoveClip;
+                }
                 _audioSourceCtrl.Play(request, clip);
             });
         }
         
         public void RemoveRequest(string clipPath)
         {
-            if (_audioSourceCtrl.onGoingRequest.clipPath != clipPath)
+            if (_audioSourceCtrl == null || _audioSourceCtrl.onGoingRequest.clipPath != clipPath)
             {
                 return;
             }
-            var currentClipPath = _audioSourceCtrl.onGoingRequest.clipPath;
-            _audioSourceCtrl.Clear();
-            _assetLoader.Release(currentClipPath);
+            ClearRequests();
         }
 
-        private void OnReachEnd(string clipPath, bool isLoop)
+        private void OnRemoveClip(string clipPath, bool onDespawn)
         {
-            if (isLoop) return;
             _assetLoader.Release(clipPath);
-            _audioSourceCtrl.Clear();
+            if (onDespawn) _audioSourceCtrl = null;
         }
 
         public void ClearRequests()
         {
-            var currentClipPath = _audioSourceCtrl.onGoingRequest.clipPath;
-            if (string.IsNullOrEmpty(currentClipPath)) return;
-            _audioSourceCtrl.Clear();
-            _assetLoader.Release(currentClipPath);
+            _audioSourceCtrl?.FadeOutAndDespawn();
+            _audioSourceCtrl = null;
         }
 
         public void Pause()
         {
-            _audioSourceCtrl.Pause();
+            _audioSourceCtrl?.Pause();
         }
         public void Resume()
         {
-            _audioSourceCtrl.Resume();
+            _audioSourceCtrl?.Resume();
         }
 
         public void SetMute(bool mute)
         {
+            if (_audioSourceCtrl == null) return;
             _audioSourceCtrl.audioSource.mute = mute;
         }
 
         public void SetPitch(float newValue, float transferTime)
         {
+            if (_audioSourceCtrl == null) return;
             _audioSourceCtrl.setPitch = newValue;
             _audioSourceCtrl.FadePitch(1f, transferTime);
         }
 
         public void SetVolume(float newValue, float transferTime)
         {
+            if (_audioSourceCtrl == null) return;
             _audioSourceCtrl.setVolume = newValue;
             _audioSourceCtrl.Fade(_audioSourceCtrl.currentVolume, transferTime);
         }

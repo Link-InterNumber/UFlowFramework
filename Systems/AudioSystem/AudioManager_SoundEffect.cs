@@ -81,7 +81,7 @@ namespace PowerCellStudio
             var currentTime = Time.unscaledTime;
             var newQuest = new AudioRequest()
             {
-                audioType = onUI ? AudioSourceType.UIEffect : AudioSourceType.Effect3D,
+                audioType = onUI ? AudioSourceType.SFXUI : AudioSourceType.SFX3D,
                 clipName = clipRef,
                 requestTime = currentTime,
                 removeTime = currentTime + effectIntervalTime,
@@ -115,14 +115,14 @@ namespace PowerCellStudio
                 _onGoingRequestSet.Add(poped.clipName);
                 _onGoingRequests.Add(poped);
 
-                if (poped.audioType == AudioSourceType.Effect3D)
+                if (poped.audioType == AudioSourceType.SFX3D)
                 {
                     if (poped.attachToGameObject)
                         Play3DEffect(poped.clipName, poped.attachGameObject, poped.full3D);
                     else
                         Play3DEffect(poped.clipName, poped.position, poped.full3D);
                 }
-                else if (poped.audioType == AudioSourceType.UIEffect)
+                else if (poped.audioType == AudioSourceType.SFXUI)
                 {
                     if (poped.attachToGameObject)
                         PlayUIEffect(poped.clipName, poped.attachGameObject);

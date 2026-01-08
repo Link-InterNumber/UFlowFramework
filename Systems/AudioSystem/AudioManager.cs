@@ -45,9 +45,9 @@ namespace PowerCellStudio
                     if (_ambiencePlayer != null) break;
                     _ambiencePlayer = MusicAudioSourcePlayer.Create(transform, "AmbiencePlayer");
                     break;
-                case AudioSourceType.UIEffect:
+                case AudioSourceType.SFXUI:
                     break;
-                case AudioSourceType.Effect3D:
+                case AudioSourceType.SFX3D:
                     break;
                 case AudioSourceType.Dialog:
                     if (_dialogPlayer != null) break;
@@ -74,9 +74,9 @@ namespace PowerCellStudio
                     return _musicPlayer.GetVolume(isReal);
                 case AudioSourceType.Ambience:
                     return _ambiencePlayer.GetVolume(isReal);
-                case AudioSourceType.UIEffect:
+                case AudioSourceType.SFXUI:
                     return isReal ? _UIEffectMaxVolume * _UIEffectVolume : _UIEffectVolume;
-                case AudioSourceType.Effect3D:
+                case AudioSourceType.SFX3D:
                     return isReal ? _effectMaxVolume * _effectVolume : _effectVolume;
                 case AudioSourceType.Dialog:
                     return _dialogPlayer.GetVolume(isReal);
@@ -104,10 +104,10 @@ namespace PowerCellStudio
                 case AudioSourceType.Ambience:
                     _ambiencePlayer.SetVolume(v, transferTime);
                     break;
-                case AudioSourceType.UIEffect:
+                case AudioSourceType.SFXUI:
                     _UIEffectVolume = v;
                     break;
-                case AudioSourceType.Effect3D:
+                case AudioSourceType.SFX3D:
                     _effectVolume = v;
                     break;
                 case AudioSourceType.Dialog:
@@ -133,9 +133,9 @@ namespace PowerCellStudio
                     return _musicPlayer.GetMaxVolume();
                 case AudioSourceType.Ambience:
                     return _ambiencePlayer.GetMaxVolume();
-                case AudioSourceType.UIEffect:
+                case AudioSourceType.SFXUI:
                     return _UIEffectMaxVolume;
-                case AudioSourceType.Effect3D:
+                case AudioSourceType.SFX3D:
                     return _effectMaxVolume;
                 case AudioSourceType.Dialog:
                     return _dialogPlayer.GetMaxVolume();
@@ -162,10 +162,10 @@ namespace PowerCellStudio
                 case AudioSourceType.Ambience:
                     _ambiencePlayer.SetMaxVolume(v);
                     break;
-                case AudioSourceType.UIEffect:
+                case AudioSourceType.SFXUI:
                     _UIEffectMaxVolume = v;
                     break;
-                case AudioSourceType.Effect3D:
+                case AudioSourceType.SFX3D:
                     _effectMaxVolume = v;
                     break;
                 case AudioSourceType.Dialog:
@@ -191,9 +191,9 @@ namespace PowerCellStudio
                     return _musicPlayer.IsMute;
                 case AudioSourceType.Ambience:
                     return _ambiencePlayer.IsMute;
-                case AudioSourceType.UIEffect:
+                case AudioSourceType.SFXUI:
                     return _muteUIEffect;
-                case AudioSourceType.Effect3D:
+                case AudioSourceType.SFX3D:
                     return _muteEffect;
                 case AudioSourceType.Dialog:
                     return _dialogPlayer.IsMute;
@@ -219,10 +219,10 @@ namespace PowerCellStudio
                 case AudioSourceType.Ambience:
                     _ambiencePlayer.Mute(transferDuration);
                     break;
-                case AudioSourceType.UIEffect:
+                case AudioSourceType.SFXUI:
                     _muteUIEffect = true;
                     break;
-                case AudioSourceType.Effect3D:
+                case AudioSourceType.SFX3D:
                     _muteEffect = true;
                     break;
                 case AudioSourceType.Dialog:
@@ -250,10 +250,10 @@ namespace PowerCellStudio
                 case AudioSourceType.Ambience:
                     _ambiencePlayer.Unmute(transferDuration);
                     break;
-                case AudioSourceType.UIEffect:
+                case AudioSourceType.SFXUI:
                     _muteUIEffect = false;
                     break;
-                case AudioSourceType.Effect3D:
+                case AudioSourceType.SFX3D:
                     _muteEffect = false;
                     break;
                 case AudioSourceType.Dialog:

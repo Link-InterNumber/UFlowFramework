@@ -10,9 +10,6 @@ namespace PowerCellStudio
             _pipeline = pipeline;
             _requestQueue = new LinkedList<AudioRequest>();
             _assetLoader = AssetUtils.SpawnLoader("QueueAudioPipelineBehavior");
-            _audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
-            _audioSourceCtrl.autoDespawn = false;
-            _audioSourceCtrl.onReachEnd += OnReachEnd;
         }
         
         public void Dispose()
@@ -39,7 +36,15 @@ namespace PowerCellStudio
             _requestQueue.RemoveFirst();
             _assetLoader.LoadAsync<AudioClip>(nextRequest.clipPath, (clip) =>
             {
-                _audioSourceCtrl.Play(nextRequest, clip);
+                var clonedRequest = nextRequest;
+                clonedRequest.loop = false;
+                if (_audioSourceCtrl == null || !_audioSourceCtrl.gameObject.activeInHierarchy)
+                {
+                    _audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
+                    _audioSourceCtrl.autoDespawn = true;
+                    _audioSourceCtrl.onRemoveClip += OnRemoveClip;
+                }
+                _audioSourceCtrl.Play(clonedRequest, clip);
             });
             if (!nextRequest.loop) return;
             _requestQueue.AddLast(nextRequest);
@@ -89,59 +94,57 @@ namespace PowerCellStudio
                 node = nextNode;
             }
             if (_audioSourceCtrl.onGoingRequest.clipPath != clipPath) return;
-            var currentClipPath = _audioSourceCtrl.onGoingRequest.clipPath;
-            _audioSourceCtrl.Clear();
-            _assetLoader.Release(currentClipPath);
-            TryPostRequest();
-        }
-
-        private void OnReachEnd(string clipPath, bool isLoop)
-        {
             if (_requestQueue.Count <= 0)
             {
-                _assetLoader.Release(clipPath);
-                _audioSourceCtrl.Clear();
-                return;
+                _audioSourceCtrl.FadeOutAndDespawn();
+                _audioSourceCtrl = null;
             }
-            if (_requestQueue.First.Value.clipPath != clipPath)
-                _assetLoader.Release(clipPath);
-            TryPostRequest();
+            else 
+                TryPostRequest();
+        }
+
+        private void OnRemoveClip(string clipPath, bool onDespawn)
+        {
+            if (onDespawn)
+            {
+                _audioSourceCtrl = null;
+                TryPostRequest();
+            }
+            _assetLoader.Release(clipPath);
         }
 
         public void ClearRequests()
         {
-            _audioSourceCtrl.Clear();
-            var node = _requestQueue.First;
-            while (node != null)
-            {
-                _assetLoader.Release(node.Value.clipPath);
-                node = node.Next;
-            }
+            _audioSourceCtrl.FadeOutAndDespawn();
+            _audioSourceCtrl = null;
             _requestQueue.Clear();
         }
 
         public void Pause()
         {
-            _audioSourceCtrl.Pause();
+            _audioSourceCtrl?.Pause();
         }
         public void Resume()
         {
-            _audioSourceCtrl.Resume();
+            _audioSourceCtrl?.Resume();
         }
 
         public void SetMute(bool mute)
         {
+            if (_audioSourceCtrl == null) return;
             _audioSourceCtrl.audioSource.mute = mute;
         }
 
         public void SetPitch(float newValue, float transferTime)
         {
+            if (_audioSourceCtrl == null) return;
             _audioSourceCtrl.setPitch = newValue;
             _audioSourceCtrl.FadePitch(1f, transferTime);
         }
 
         public void SetVolume(float newValue, float transferTime)
         {
+            if (_audioSourceCtrl == null) return;
             _audioSourceCtrl.setVolume = newValue;
             _audioSourceCtrl.Fade(_audioSourceCtrl.currentVolume, transferTime);
         }

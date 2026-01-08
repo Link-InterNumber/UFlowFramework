@@ -140,12 +140,9 @@ namespace PowerCellStudio
             {
                 return childPipeline.RemoveRequest(pipelineId, clipPath);
             }
-            else
+            foreach (var child in _children.Values)
             {
-                foreach (var child in _children.Values)
-                {
-                    if (child.RemoveRequest(pipelineId, clipPath)) return true;
-                }
+                if (child.RemoveRequest(pipelineId, clipPath)) return true;
             }
             return false;
         }

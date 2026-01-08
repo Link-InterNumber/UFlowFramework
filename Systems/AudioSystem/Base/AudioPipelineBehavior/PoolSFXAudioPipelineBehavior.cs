@@ -9,11 +9,16 @@ namespace PowerCellStudio
         {
             _pipeline = pipeline;
             _assetLoader = AssetUtils.SpawnLoader("PoolSFXAudioPipelineBehavior");
+            _audioRequests = new LinkedList<AudioRequest>();
+            _SFXCaches = new LinkedList<SFXCache>();
+            _onGoingRequestSet = new HashSet<string>();
+
         }
         
         public void Dispose()
         {
             ClearRequests();
+            _audioRequests = null;
             _SFXCaches.Clear();
             _SFXCaches = null;
             _onGoingRequestSet.Clear();
@@ -31,12 +36,11 @@ namespace PowerCellStudio
             public float removeTime;
         }
         
-        // public AudioPipeline pipeline { get; set; }
         public float effectIntervalTime = 0.1f;
         private IAssetLoader _assetLoader;
         
         // 队列和集合用于管理音频请求
-        private Queue<AudioRequest> _audioRequests;
+        private LinkedList<AudioRequest> _audioRequests;
         private LinkedList<SFXCache> _SFXCaches;
         private HashSet<string> _onGoingRequestSet;
 
@@ -46,12 +50,21 @@ namespace PowerCellStudio
             {
                 return;
             }
-            _audioRequests.Enqueue(request);
+            _audioRequests.AddLast(request);
         }
         
         public void RemoveRequest(string clipPath)
         {
-            
+            var node = _audioRequests.First;
+            while (node != null)
+            {
+                var nextNode = node.Next;
+                if (node.Value.clipPath.Equals(clipPath))
+                {
+                    _audioRequests.Remove(node);
+                }
+                node = nextNode;
+            }
         }
 
         public void ClearRequests()
@@ -97,11 +110,11 @@ namespace PowerCellStudio
                 audioSourceCtrl.autoDespawn = true;
                 audioRequest.loop = false;
                 audioSourceCtrl.Play(audioRequest, clip);
-                audioSourceCtrl.onReachEnd += OnReachEnd;
+                audioSourceCtrl.onRemoveClip += OnRemoveClip;
             });
         }
         
-        private void OnReachEnd(string clipPath, bool isLoop)
+        private void OnRemoveClip(string clipPath, bool onDespawn)
         {
             _assetLoader.Release(clipPath);
         }
@@ -125,15 +138,16 @@ namespace PowerCellStudio
 
             while (_audioRequests.Count > 0)
             {
-                var poped = _audioRequests.Dequeue();
-                if (!_onGoingRequestSet.Add(poped.clipPath)) continue;
+                var next = _audioRequests.First.Value;
+                _audioRequests.RemoveFirst();
+                if (!_onGoingRequestSet.Add(next.clipPath)) continue;
                 var newQuest = new SFXCache()
                 {
-                    clipPath = poped.clipPath,
+                    clipPath = next.clipPath,
                     removeTime = currentTime + effectIntervalTime,
                 };
                 _SFXCaches.AddLast(newQuest);
-                PostRequest(poped);
+                PostRequest(next);
             }
         }
     }

@@ -14,6 +14,9 @@ namespace PowerCellStudio
         public float GetFloat(string name);
     }
 
+    #if UNITY_EDITOR
+    [Serializable]
+    #endif
     public struct AudioRequest
     {
         public AudioRequest(int pipelineId, float fadeOut)
@@ -27,7 +30,6 @@ namespace PowerCellStudio
             this.fadeOut = fadeOut;
             full3D = false;
             attachGameObject = null;
-            blockage = false;
         }
 
         public AudioRequest(string clipPath, int pipelineId, bool isLoop)
@@ -41,9 +43,7 @@ namespace PowerCellStudio
             fadeOut = 0f;
             full3D = false;
             attachGameObject = null;
-            blockage = false;
         }
-        public bool blockage;
         public string clipPath;
         public int pipelineId;
         [Range(0, 1)]

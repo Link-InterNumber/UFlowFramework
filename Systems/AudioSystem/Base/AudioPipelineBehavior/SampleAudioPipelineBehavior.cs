@@ -9,13 +9,13 @@ namespace PowerCellStudio
         {
             _pipeline = pipeline;
             _assetLoader = AssetUtils.SpawnLoader("SampleAudioPipelineBehavior");
-            _manageredAudioSource = new List<LinkAudioSource>();
+            _managedAudioSource = new List<LinkAudioSource>();
         }
 
         public void Dispose()
         {
             ClearRequests();
-            _manageredAudioSource = null;
+            _managedAudioSource = null;
             AssetUtils.DeSpawnLoader(_assetLoader);
             _assetLoader = null;
         }
@@ -25,7 +25,7 @@ namespace PowerCellStudio
 
         private IAssetLoader _assetLoader;
 
-        private List<LinkAudioSource> _manageredAudioSource;
+        private List<LinkAudioSource> _managedAudioSource;
 
         public void ReceiveRequest(AudioRequest request)
         {
@@ -33,17 +33,17 @@ namespace PowerCellStudio
             {
                 if (request.fadeOut > 0)
                 {
-                    for (int i = 0; i < _manageredAudioSource.Count; i++)
+                    for (int i = 0; i < _managedAudioSource.Count; i++)
                     {
-                        var audioSource = _manageredAudioSource[i];
+                        var audioSource = _managedAudioSource[i];
                         audioSource.Fade(0, request.fadeOut);
                     }
                 }
                 else if (request.fadeIn > 0)
                 {
-                    for (int i = 0; i < _manageredAudioSource.Count; i++)
+                    for (int i = 0; i < _managedAudioSource.Count; i++)
                     {
-                        var audioSource = _manageredAudioSource[i];
+                        var audioSource = _managedAudioSource[i];
                         audioSource.Fade(audioSource.onGoingRequest.volume, request.fadeIn);
                     }
                 }
@@ -52,41 +52,51 @@ namespace PowerCellStudio
             _assetLoader.LoadAsync<AudioClip>(request.clipPath, (clip) =>
             {
                 var audioSource = LinkAudioSourceUtils.Get(_pipeline);
-                audioSource.autoDespawn = true;
+                audioSource.autoDespawn = !request.loop;
                 audioSource.Play(request, clip);
-                audioSource.onReachEnd += OnReachEnd;
-                if (request.loop) _manageredAudioSource.Add(audioSource);
+                audioSource.onRemoveClip += OnRemoveClip;
+                if (request.loop) _managedAudioSource.Add(audioSource);
             });
         }
 
         public void RemoveRequest(string clipPath)
         {
-            
+            for (int i = 0; i < _managedAudioSource.Count;)
+            {
+                var audioSource = _managedAudioSource[i];
+                if (audioSource.onGoingRequest.clipPath == clipPath)
+                {
+                    audioSource.DeSpawn();
+                    _assetLoader.Release(clipPath);
+                    _managedAudioSource.RemoveAt(i);
+                }
+                else
+                {
+                    i++;
+                }
+            }
         }
 
-        private void OnReachEnd(string clipPath, bool isLoop)
+        private void OnRemoveClip(string clipPath, bool onDespawn)
         {
-            if (isLoop) return;
             _assetLoader.Release(clipPath);
         }
 
         public void ClearRequests()
         {
-            for (int i = 0; i < _manageredAudioSource.Count; i++)
+            for (var i = 0; i < _managedAudioSource.Count; i++)
             {
-                var audioSource = _manageredAudioSource[i];
-                var clipPath = audioSource.onGoingRequest.clipPath;
-                audioSource.Clear();
-                _assetLoader.Release(clipPath);
+                var audioSource = _managedAudioSource[i];
+                audioSource.FadeOutAndDespawn();
             }
-            _manageredAudioSource.Clear();
+            _managedAudioSource.Clear();
         }
 
         public void SetVolume(float newValue, float transferTime)
         {
-            for (int i = 0; i < _manageredAudioSource.Count; i++)
+            for (var i = 0; i < _managedAudioSource.Count; i++)
             {
-                var audioSource = _manageredAudioSource[i];
+                var audioSource = _managedAudioSource[i];
                 audioSource.setVolume = newValue;
                 audioSource.Fade(audioSource.onGoingRequest.volume, transferTime);
             }
@@ -94,9 +104,9 @@ namespace PowerCellStudio
 
         public void SetPitch(float newValue, float transferTime)
         {
-            for (int i = 0; i < _manageredAudioSource.Count; i++)
+            for (var i = 0; i < _managedAudioSource.Count; i++)
             {
-                var audioSource = _manageredAudioSource[i];
+                var audioSource = _managedAudioSource[i];
                 audioSource.setPitch = newValue;
                 audioSource.Fade(1f, transferTime);
             }
@@ -104,27 +114,27 @@ namespace PowerCellStudio
 
         public void SetMute(bool mute)
         {
-            for (int i = 0; i < _manageredAudioSource.Count; i++)
+            for (var i = 0; i < _managedAudioSource.Count; i++)
             {
-                var audioSource = _manageredAudioSource[i];
+                var audioSource = _managedAudioSource[i];
                 audioSource.audioSource.mute = mute;
             }
         }
 
         public void Pause()
         {
-            for (int i = 0; i < _manageredAudioSource.Count; i++)
+            for (var i = 0; i < _managedAudioSource.Count; i++)
             {
-                var audioSource = _manageredAudioSource[i];
+                var audioSource = _managedAudioSource[i];
                 audioSource.Pause();
             }
         }
 
         public void Resume()
         {
-            for (int i = 0; i < _manageredAudioSource.Count; i++)
+            for (var i = 0; i < _managedAudioSource.Count; i++)
             {
-                var audioSource = _manageredAudioSource[i];
+                var audioSource = _managedAudioSource[i];
                 audioSource.Resume();
             }
         }
