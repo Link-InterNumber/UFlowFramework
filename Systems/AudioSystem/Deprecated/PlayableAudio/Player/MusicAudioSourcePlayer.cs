@@ -10,7 +10,6 @@ namespace PowerCellStudio
     {
         private Coroutine _seq;
         private AudioSource _audioSource;
-        private Transform _parent;
         private MusicGroup _curGroup = MusicGroup.Battle;
         private float _realVolume;
         private float _curVolume;
@@ -31,7 +30,6 @@ namespace PowerCellStudio
 
         private void Init(Transform parent)
         {
-            _parent = parent;
             _audioSource = gameObject.AddComponent<AudioSource>();
             _audioSource.spatialBlend = 0f;
             _audioSource.loop = true;

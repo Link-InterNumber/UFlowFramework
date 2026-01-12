@@ -1,11 +1,12 @@
-using System;
-using UnityEngine;
+using System.Collections.Generic;
+using UnityEngine.Audio;
 
 namespace PowerCellStudio
 {
     public partial class AudioManager
     {
         private AudioPipeline _masterPipeline;
+        private List<IUpdatePipelineBehavior> _updatePipelineBehaviors = new List<IUpdatePipelineBehavior>();
 
         private void BuildPipeLine()
         {
@@ -13,7 +14,7 @@ namespace PowerCellStudio
             _masterPipeline.Init((int)AudioSourceType.Master, null);
 
             var bgmPipeline = new AudioPipeline();
-            bgmPipeline.Init((int)AudioSourceType.Music, new CycleBGMAudioPipelineBehavior(bgmPipeline));
+            bgmPipeline.Init((int)AudioSourceType.Music, null); //new CycleBGMAudioPipelineBehavior(bgmPipeline));
             bgmPipeline.parent = _masterPipeline;
 
             var dialogPipeline = new AudioPipeline();
@@ -27,10 +28,12 @@ namespace PowerCellStudio
             var SFXUiPipeline = new AudioPipeline();
             SFXUiPipeline.Init((int)AudioSourceType.SFXUI, new PoolSFXAudioPipelineBehavior(SFXUiPipeline));
             SFXUiPipeline.parent = SFXPipeline;
+            _updatePipelineBehaviors.Add(SFXUiPipeline.updateBehavior);
 
             var SFX3DPipeline = new AudioPipeline();
             SFX3DPipeline.Init((int)AudioSourceType.SFX3D, new PoolSFXAudioPipelineBehavior(SFX3DPipeline));
             SFX3DPipeline.parent = SFXPipeline;
+            _updatePipelineBehaviors.Add(SFX3DPipeline.updateBehavior);
 
             var ambiencePipeline = new AudioPipeline();
             ambiencePipeline.Init((int)AudioSourceType.Ambience, new SampleAudioPipelineBehavior(ambiencePipeline));
@@ -42,6 +45,7 @@ namespace PowerCellStudio
 
             // TODO CN:加载mixer并用AudioMixerGroupCtrl封装，赋值给AudioPipeline.mixCtrl
             // TODO EN:Load mixer and wrap it with AudioMixerGroupCtrl, assign it to AudioPipeline.mixCtrl
+            // TODO 做成一个配置文件，从配置文件中加载
         }
 
         private AudioPipeline GetPipeline(AudioSourceType type)
@@ -49,19 +53,34 @@ namespace PowerCellStudio
             return FindPipeline((int)type, _masterPipeline);
         }
         
-        private AudioPipeline FindPipeline(int type, AudioPipeline currentPipeline)
+        private AudioPipeline FindPipeline(int id, AudioPipeline currentPipeline)
         {
-            if (currentPipeline.pipelineId == type)
+            if (currentPipeline.pipelineId == id)
                 return currentPipeline;
-            if (currentPipeline.children.TryGetValue(type, out var pipeline))
+            if (currentPipeline.children.TryGetValue(id, out var pipeline))
                 return pipeline;
             foreach (var child in currentPipeline.children.Values)
             {
-                var result = FindPipeline(type, child);
+                var result = FindPipeline(id, child);
                 if (result != null)
                     return result;
             }
             return null;
+        }
+
+        private void PushRequest(AudioRequest request)
+        {
+            if (_masterPipeline == null) return;
+            if (_masterPipeline.PushRequest(request)) return;
+            ModuleLog.LogError<AudioManager>($"Play audio request failed, pipeline id: {request.pipelineId}");
+        }
+
+        private void DisposePipeline(int pipelineId)
+        {
+            var pipeline = FindPipeline(pipelineId, _masterPipeline);
+            if (pipeline == null) return;
+            _updatePipelineBehaviors.Remove(pipeline.updateBehavior);
+            pipeline.Dispose();
         }
     }
 }

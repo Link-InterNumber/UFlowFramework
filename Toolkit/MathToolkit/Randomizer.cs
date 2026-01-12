@@ -593,5 +593,29 @@ namespace PowerCellStudio
             }
             return result;
         }
+        
+        public static void Shuffle<T>(T[] array)
+        {
+            if (array == null || array.Length <= 1) return;
+            for (int i = array.Length - 1; i > 0; i--)
+            {
+                int j = Range(0, i);
+                T tmp = array[i];
+                array[i] = array[j];
+                array[j] = tmp;
+            }
+        }
+
+        public static void Shuffle<T>(IList<T> list)
+        {
+            if (list == null || list.Count <= 1) return;
+            for (int i = list.Count - 1; i > 0; i--)
+            {
+                int j = Range(0, i);
+                T tmp = list[i];
+                list[i] = list[j];
+                list[j] = tmp;
+            }
+        }
     }
 }

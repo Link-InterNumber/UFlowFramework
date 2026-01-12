@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -24,9 +23,11 @@ namespace PowerCellStudio
             clipPath = null;
             this.pipelineId = pipelineId;
             loop = false;
+            loopTimes = 0;
             position = Vector3.zero;
             volume = 1f;
             fadeIn = 0;
+            delay = 0f;
             this.fadeOut = fadeOut;
             full3D = false;
             attachGameObject = null;
@@ -37,10 +38,12 @@ namespace PowerCellStudio
             this.clipPath = clipPath;
             this.pipelineId = pipelineId;
             loop = isLoop;
+            loopTimes = isLoop ? -1 : 0;
             position = Vector3.zero;
             volume = 1f;
             fadeIn = 0f;
             fadeOut = 0f;
+            delay = 0f;
             full3D = false;
             attachGameObject = null;
         }
@@ -52,30 +55,13 @@ namespace PowerCellStudio
         public float fadeIn;
         [Min(0)]
         public float fadeOut;
+        public float delay;
         public bool loop;
+        public int loopTimes;
         public bool full3D;
         public Vector3 position;
         public GameObject attachGameObject;
     }
-
-    // public interface IAudioPipeline
-    // {
-    //     public void Init(AudioSourceType type, IAudioPipelineBehavior behavior);
-    //     public IAudioMixerGroupCtrl mixCtrl { get; set; }
-    //     public AudioSourceType audioType { get; }
-    //     public float volume { get; set; }
-    //     public float pitch { get; set; }
-    //     public bool mute { get; set; }
-    //     public float realVolume { get; }
-    //     public float realPitch { get; }
-    //     public bool realMute { get; }
-    //     public IAudioPipeline parent { get; set; }
-    //     public Dictionary<AudioSourceType, IAudioPipeline> children { get; }
-    //     public void UpdateRealProperties();
-    //     public void UpdateChildrenProperties();
-    //     public bool PushRequest(AudioRequest request);
-    //     public void Clear();
-    // }
 
     public interface IUpdatePipelineBehavior
     {
@@ -90,6 +76,10 @@ namespace PowerCellStudio
         public void RemoveRequest(string clipPath);
 
         public void ClearRequests();
+        
+        public void SetMixGroup(AudioMixerGroup mixGroup);
+        
+        public bool IsPlaying();
 
         public void SetVolume(float newValue, float transferTime);
 

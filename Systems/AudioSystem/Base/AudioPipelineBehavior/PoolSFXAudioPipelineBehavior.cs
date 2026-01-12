@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
 
 namespace PowerCellStudio
 {
@@ -8,7 +9,6 @@ namespace PowerCellStudio
         public PoolSFXAudioPipelineBehavior(AudioPipeline pipeline)
         {
             _pipeline = pipeline;
-            _assetLoader = AssetUtils.SpawnLoader("PoolSFXAudioPipelineBehavior");
             _audioRequests = new LinkedList<AudioRequest>();
             _SFXCaches = new LinkedList<SFXCache>();
             _onGoingRequestSet = new HashSet<string>();
@@ -23,8 +23,6 @@ namespace PowerCellStudio
             _SFXCaches = null;
             _onGoingRequestSet.Clear();
             _onGoingRequestSet = null;
-            AssetUtils.DeSpawnLoader(_assetLoader);
-            _assetLoader = null;
         }
 
         private AudioPipeline _pipeline;
@@ -37,7 +35,6 @@ namespace PowerCellStudio
         }
         
         public float effectIntervalTime = 0.1f;
-        private IAssetLoader _assetLoader;
         
         // 队列和集合用于管理音频请求
         private LinkedList<AudioRequest> _audioRequests;
@@ -71,6 +68,11 @@ namespace PowerCellStudio
         {
             _audioRequests.Clear();
         }
+        
+        public void SetMixGroup(AudioMixerGroup mixGroup)
+        {
+            // do nothing.
+        }
 
         // private float _volume;
         public void SetVolume(float newValue, float transferTime)
@@ -89,6 +91,11 @@ namespace PowerCellStudio
         {
             _isMute = mute;
         }
+
+        public bool IsPlaying()
+        {
+            return _audioRequests.Count > 0;
+        }
         
         private bool _isPaused;
         public void Pause()
@@ -104,19 +111,10 @@ namespace PowerCellStudio
         private void PostRequest(AudioRequest audioRequest)
         {
             if (_isMute) return;
-            _assetLoader.LoadAsync<AudioClip>(audioRequest.clipPath, (clip) =>
-            {
-                var audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
-                audioSourceCtrl.autoDespawn = true;
-                audioRequest.loop = false;
-                audioSourceCtrl.Play(audioRequest, clip);
-                audioSourceCtrl.onRemoveClip += OnRemoveClip;
-            });
-        }
-        
-        private void OnRemoveClip(string clipPath, bool onDespawn)
-        {
-            _assetLoader.Release(clipPath);
+            var audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
+            audioSourceCtrl.autoDespawn = true;
+            audioRequest.loop = false;
+            audioSourceCtrl.Play(audioRequest);
         }
 
         public void Update()

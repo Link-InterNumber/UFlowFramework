@@ -1,5 +1,5 @@
-using System.Collections.Generic;
-using UnityEngine;
+
+using UnityEngine.Audio;
 
 namespace PowerCellStudio
 {
@@ -8,74 +8,48 @@ namespace PowerCellStudio
         public CycleBGMAudioPipelineBehavior(AudioPipeline pipeline)
         {
             _pipeline = pipeline;
-            _requestQueue = new LinkedList<AudioRequest>();
-            _assetLoader = AssetUtils.SpawnLoader("QueueAudioPipelineBehavior");
+            _musicRecord = new MusicRecord();
+            _audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
+            _audioSourceCtrl.autoDespawn = false;
+            _audioSourceCtrl.onFree.AddListener(TryPostRequest);
+            _audioSourceCtrl.gameObject.SetActive(false);                                                
         }
         
         public void Dispose()
         {
             ClearRequests();
-            AssetUtils.DeSpawnLoader(_assetLoader);
-            _assetLoader = null;
             _audioSourceCtrl.DeSpawn();
             _audioSourceCtrl = null;
         }
 
         private LinkAudioSource _audioSourceCtrl;
-        private IAssetLoader _assetLoader;
 
         private AudioPipeline _pipeline;
         public AudioPipeline pipeline { get => _pipeline; set => _pipeline = value; }
 
-        private LinkedList<AudioRequest> _requestQueue;
+        private MusicRecord _musicRecord;
+        public MusicRecord musicRecord => _musicRecord;
 
         private void TryPostRequest()
         {
-            if (_requestQueue.Count <= 0) return;
-            var nextRequest = _requestQueue.First.Value;
-            _requestQueue.RemoveFirst();
-            _assetLoader.LoadAsync<AudioClip>(nextRequest.clipPath, (clip) =>
-            {
-                var clonedRequest = nextRequest;
-                clonedRequest.loop = false;
-                if (_audioSourceCtrl == null || !_audioSourceCtrl.gameObject.activeInHierarchy)
-                {
-                    _audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
-                    _audioSourceCtrl.autoDespawn = true;
-                    _audioSourceCtrl.onRemoveClip += OnRemoveClip;
-                }
-                _audioSourceCtrl.Play(clonedRequest, clip);
-            });
-            if (!nextRequest.loop) return;
-            _requestQueue.AddLast(nextRequest);
+            if (!_audioSourceCtrl) return;
+            _audioSourceCtrl.gameObject.SetActive(_musicRecord.Count > 0);
+            var nextRequest = _musicRecord.GetCurrent();
+            _musicRecord.MoveNext();
+            if (string.IsNullOrEmpty(nextRequest.clipPath)) return;
+            _audioSourceCtrl.gameObject.SetActive(true);
+            _audioSourceCtrl.Play(nextRequest);
         }
 
         public void ReceiveRequest(AudioRequest request)
         {
             if (string.IsNullOrEmpty(request.clipPath))
             {
-                if (request.fadeOut > 0)
-                {
-                    _audioSourceCtrl.Fade(0, request.fadeOut);
-                }
-                else if (request.fadeIn > 0)
-                {
-                    _audioSourceCtrl.Fade(_audioSourceCtrl.onGoingRequest.volume, request.fadeIn);
-                }
+                _audioSourceCtrl.Play(request);
                 return;
             }
-            var node = _requestQueue.First;
-            while (node != null)
-            {
-                var nextNode = node.Next;
-                if (node.Value.clipPath == request.clipPath)
-                {
-                    _requestQueue.Remove(node);
-                }
-                node = nextNode;
-            }
-            _requestQueue.AddLast(request);
-            if (string.IsNullOrEmpty(_audioSourceCtrl.onGoingRequest.clipPath))
+            _musicRecord.AddClip(request, _musicRecord.Count);
+            if (_audioSourceCtrl && string.IsNullOrEmpty(_audioSourceCtrl.onGoingRequest.clipPath))
             {
                 TryPostRequest();
             }
@@ -83,49 +57,48 @@ namespace PowerCellStudio
         
         public void RemoveRequest(string clipPath)
         {
-            var node = _requestQueue.First;
-            while (node != null)
-            {
-                var nextNode = node.Next;
-                if (node.Value.clipPath == clipPath)
-                {
-                    _requestQueue.Remove(node);
-                }
-                node = nextNode;
-            }
+            _musicRecord.RemoveClip(clipPath);
+            if (_audioSourceCtrl == null) return;
             if (_audioSourceCtrl.onGoingRequest.clipPath != clipPath) return;
-            if (_requestQueue.Count <= 0)
+            if (_musicRecord.Count <= 0)
             {
-                _audioSourceCtrl.FadeOutAndDespawn();
-                _audioSourceCtrl = null;
+                _audioSourceCtrl.FadeOutAndClear();
             }
             else 
                 TryPostRequest();
         }
 
-        private void OnRemoveClip(string clipPath, bool onDespawn)
-        {
-            if (onDespawn)
-            {
-                _audioSourceCtrl = null;
-                TryPostRequest();
-            }
-            _assetLoader.Release(clipPath);
-        }
-
         public void ClearRequests()
         {
-            _audioSourceCtrl.FadeOutAndDespawn();
-            _audioSourceCtrl = null;
-            _requestQueue.Clear();
+            if (!IsPlaying()) return;
+            _audioSourceCtrl?.FadeOutAndDespawn();
+            _audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
+            _audioSourceCtrl.autoDespawn = false;
+            _audioSourceCtrl.onFree.AddListener(TryPostRequest);
+            _audioSourceCtrl.gameObject.SetActive(false);
+            _musicRecord.Clear();
+        }
+        
+        public void SetMixGroup(AudioMixerGroup mixGroup)
+        {
+            if (!_audioSourceCtrl) return;
+            _audioSourceCtrl.audioSource.outputAudioMixerGroup = mixGroup;
+        }
+
+        public bool IsPlaying()
+        {
+            return _audioSourceCtrl && !string.IsNullOrEmpty(_audioSourceCtrl.onGoingRequest.clipPath);
         }
 
         public void Pause()
         {
             _audioSourceCtrl?.Pause();
+            _musicRecord.Stop(_audioSourceCtrl.audioSource.time);
         }
         public void Resume()
         {
+            _musicRecord.GetLastMusic(out var lastMusic);
+            if (lastMusic > 0) _audioSourceCtrl.audioSource.time = lastMusic;
             _audioSourceCtrl?.Resume();
         }
 

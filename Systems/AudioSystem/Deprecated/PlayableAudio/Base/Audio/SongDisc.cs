@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace PowerCellStudio
 {
@@ -15,6 +14,7 @@ namespace PowerCellStudio
         public float intervalTime = 1f;
         public float fadeinTime = 1f;
         public bool restart;
+        public float lastPlayTime;
         
         public LinkEvent<SongDisc> onClipLoaded = new LinkEvent<SongDisc>();
         private IAssetLoader _assetLoader;
@@ -48,6 +48,10 @@ namespace PowerCellStudio
                 yield return request;
                 _clips[i] = request.asset;
                 request.Dispose();
+            }
+            if (_isRandom)
+            {
+                Randomizer.Shuffle(_clips);
             }
             onClipLoaded?.Invoke(this);
         }
@@ -94,28 +98,21 @@ namespace PowerCellStudio
         {
             if (_clips == null || _clips.Length == 0) return null;
             if(_clips.Length == 1) return _clips[0];
-            if (_isRandom && _clips.Length > 1)
+            _index++;
+            if (_index >= _clips.Length)
             {
-                var index = Random.Range(0, _clips.Length -1);
-                if(_index >= index)
+                if (_isRandom)
                 {
-                    index++;
-                    if (index >= _clips.Length)
-                    {
-                        index = 0;
-                    }
-                    _index = index;
+                    Randomizer.Shuffle(_clips);
                 }
-            }
-            else
-            {
-                _index++;
-                if (_index >= _clips.Length)
-                {
-                    _index = 0;
-                }
+                _index = 0;
             }
             return _clips[_index];
+        }
+
+        public void Stop(float playedTime)
+        {
+            lastPlayTime = playedTime;
         }
         
         public AudioClip GetCurrentClip()

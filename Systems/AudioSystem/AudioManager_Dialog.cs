@@ -1,5 +1,4 @@
 ﻿using System;
-using UnityEngine;
 
 namespace PowerCellStudio
 {
@@ -10,17 +9,8 @@ namespace PowerCellStudio
         public void PlayDialog(string clipRef, Action callback = null)
         {
             if(string.IsNullOrEmpty(clipRef)) return;
-            CheckPlayer(AudioSourceType.Dialog);
-            _dialogPlayer.PlayDialog(clipRef, callback);
-        }
-
-        public void StopDialog()
-        {
-            if (_dialogPlayer == null)
-            {
-                return;
-            }
-            _dialogPlayer.Clear();
+            var request = new AudioRequest(clipRef, (int)AudioSourceType.Dialog, false);
+            PushRequest(request);
         }
     }
 }

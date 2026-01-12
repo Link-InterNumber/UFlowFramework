@@ -9,6 +9,7 @@ namespace PowerCellStudio
             var obj = new GameObject("LinkAudioSource");
             var poolable = obj.AddComponent<LinkAudioSource>();
             poolable.transform.SetParent(AudioManager.instance.transform);
+            poolable.gameObject.SetActive(false);
             return poolable;
         }
 
@@ -33,7 +34,7 @@ namespace PowerCellStudio
 
         public static void DeinitAudioSourcePool()
         {
-            PoolManager.instance?.UnRegister<PoolableAudioSource>(PoolManager.PoolGroupName.Effect);
+            PoolManager.instance?.UnRegister<LinkAudioSource>(PoolManager.PoolGroupName.Effect);
             _LinkAudioSourcepool = null;
         }
     }

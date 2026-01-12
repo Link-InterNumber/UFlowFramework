@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using UnityEngine;
+using UnityEngine.Audio;
 
 namespace PowerCellStudio
 {
@@ -8,7 +8,6 @@ namespace PowerCellStudio
         public SampleAudioPipelineBehavior(AudioPipeline pipeline)
         {
             _pipeline = pipeline;
-            _assetLoader = AssetUtils.SpawnLoader("SampleAudioPipelineBehavior");
             _managedAudioSource = new List<LinkAudioSource>();
         }
 
@@ -16,14 +15,11 @@ namespace PowerCellStudio
         {
             ClearRequests();
             _managedAudioSource = null;
-            AssetUtils.DeSpawnLoader(_assetLoader);
-            _assetLoader = null;
         }
 
         private AudioPipeline _pipeline;
         public AudioPipeline pipeline { get => _pipeline; set => _pipeline = value; }
 
-        private IAssetLoader _assetLoader;
 
         private List<LinkAudioSource> _managedAudioSource;
 
@@ -31,32 +27,17 @@ namespace PowerCellStudio
         {
             if (string.IsNullOrEmpty(request.clipPath))
             {
-                if (request.fadeOut > 0)
+                for (int i = 0; i < _managedAudioSource.Count; i++)
                 {
-                    for (int i = 0; i < _managedAudioSource.Count; i++)
-                    {
-                        var audioSource = _managedAudioSource[i];
-                        audioSource.Fade(0, request.fadeOut);
-                    }
-                }
-                else if (request.fadeIn > 0)
-                {
-                    for (int i = 0; i < _managedAudioSource.Count; i++)
-                    {
-                        var audioSource = _managedAudioSource[i];
-                        audioSource.Fade(audioSource.onGoingRequest.volume, request.fadeIn);
-                    }
+                    var audioSource = _managedAudioSource[i];
+                    audioSource.Play(request);
                 }
                 return;
             }
-            _assetLoader.LoadAsync<AudioClip>(request.clipPath, (clip) =>
-            {
-                var audioSource = LinkAudioSourceUtils.Get(_pipeline);
-                audioSource.autoDespawn = !request.loop;
-                audioSource.Play(request, clip);
-                audioSource.onRemoveClip += OnRemoveClip;
-                if (request.loop) _managedAudioSource.Add(audioSource);
-            });
+            var pooledAudioSource = LinkAudioSourceUtils.Get(_pipeline);
+            pooledAudioSource.autoDespawn = !request.loop;
+            pooledAudioSource.Play(request);
+            if (request.loop) _managedAudioSource.Add(pooledAudioSource);
         }
 
         public void RemoveRequest(string clipPath)
@@ -66,8 +47,7 @@ namespace PowerCellStudio
                 var audioSource = _managedAudioSource[i];
                 if (audioSource.onGoingRequest.clipPath == clipPath)
                 {
-                    audioSource.DeSpawn();
-                    _assetLoader.Release(clipPath);
+                    audioSource.FadeOutAndDespawn();
                     _managedAudioSource.RemoveAt(i);
                 }
                 else
@@ -75,11 +55,6 @@ namespace PowerCellStudio
                     i++;
                 }
             }
-        }
-
-        private void OnRemoveClip(string clipPath, bool onDespawn)
-        {
-            _assetLoader.Release(clipPath);
         }
 
         public void ClearRequests()
@@ -91,6 +66,20 @@ namespace PowerCellStudio
             }
             _managedAudioSource.Clear();
         }
+        
+        public void SetMixGroup(AudioMixerGroup mixGroup)
+        {
+            for (int i = 0; i < _managedAudioSource.Count;)
+            {
+                var audioSource = _managedAudioSource[i];
+                audioSource.audioSource.outputAudioMixerGroup = mixGroup;
+            }
+        }
+
+        public bool IsPlaying()
+        {
+            return _managedAudioSource.Count > 0;
+        }
 
         public void SetVolume(float newValue, float transferTime)
         {
@@ -98,7 +87,7 @@ namespace PowerCellStudio
             {
                 var audioSource = _managedAudioSource[i];
                 audioSource.setVolume = newValue;
-                audioSource.Fade(audioSource.onGoingRequest.volume, transferTime);
+                audioSource.Fade(audioSource.currentVolume, transferTime);
             }
         }
 
@@ -108,7 +97,7 @@ namespace PowerCellStudio
             {
                 var audioSource = _managedAudioSource[i];
                 audioSource.setPitch = newValue;
-                audioSource.Fade(1f, transferTime);
+                audioSource.FadePitch(1f, transferTime);
             }
         }
 

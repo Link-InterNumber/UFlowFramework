@@ -16,10 +16,9 @@ namespace PowerCellStudio
         private AudioSource _audioSource;
         public AudioSource audioSource => _audioSource;
         
-        public delegate void OnRemoveClip(string clipPath, bool onDespawn);
-        public event OnRemoveClip onRemoveClip;
-        public delegate void OnReachEnd(string clipPath);
-        public event OnReachEnd onReachEnd;
+        public LinkEvent onFree = new LinkEvent();
+        
+        private IAssetLoader _assetLoader;
 
         public float currentVolume => _onGoingRequest.volume <= 0f ? 1 : _onGoingRequest.volume;
 
@@ -31,24 +30,27 @@ namespace PowerCellStudio
                 _audioSource.playOnAwake = false;
             }
             gameObject.SetActive(true);
-            onReachEnd = null;
+            _assetLoader = AssetUtils.SpawnLoader();
         }
 
         public override void OnDeSpawn()
         {
-            onRemoveClip?.Invoke(onGoingRequest.clipPath, true);
-            onRemoveClip = null;
-            onReachEnd = null;
+            AssetUtils.DeSpawnLoader(_assetLoader);
+            _assetLoader = null;
+            if (!string.IsNullOrEmpty(onGoingRequest.clipPath)) onFree?.Invoke();
+            onFree.RemoveAllListeners();
             ClearRequest();
             gameObject.SetActive(false);
         }
 
         void OnDestroy()
         {
+            AssetUtils.DeSpawnLoader(_assetLoader);
+            _assetLoader = null;
             StopAllCoroutines();
             if (string.IsNullOrEmpty(onGoingRequest.clipPath)) return;
-            onRemoveClip?.Invoke(onGoingRequest.clipPath, true);
-            onRemoveClip = null;
+            onFree?.Invoke();
+            onFree = null;
         }
 
         public void Pause()
@@ -129,22 +131,52 @@ namespace PowerCellStudio
 #endif
         private AudioRequest _onGoingRequest;
         public AudioRequest onGoingRequest => _onGoingRequest;
-        public void Play(AudioRequest request, AudioClip clip)
+        public void Play(AudioRequest request)
         {
-            if (clip == null) return;
+            if (string.IsNullOrEmpty(request.clipPath))
+            {
+                if (request.fadeIn > 0)
+                {
+                    Fade(request.volume, request.fadeIn);
+                }
+                else if (request.fadeOut > 0)
+                {
+                    Fade(0, request.fadeOut);
+                }
+                return;
+            }
             if (onGoingRequest.fadeOut > 0 && _onGoingRequest.clipPath != request.clipPath)
             {
                 var fadeTime = Mathf.Min(onGoingRequest.fadeOut, GetClipLength() - GetCurrentTime());
                 Fade(0f, fadeTime, () => {
-                    RunRequest(request, clip);
+                    _assetLoader.LoadAsync<AudioClip>(request.clipPath, clip =>
+                    {
+                        RunRequest(request, clip);
+                    });
                 });
                 return;
             }
-            RunRequest(request, clip);
+            _assetLoader.LoadAsync<AudioClip>(request.clipPath, clip =>
+            {
+                RunRequest(request, clip);
+            });
+        }
+        
+        public void FadeOutAndClear()
+        {
+            if (!gameObject.activeInHierarchy) return;
+            if (onGoingRequest.fadeOut > 0)
+            {
+                var fadeTime = Mathf.Min(onGoingRequest.fadeOut, GetClipLength() - GetCurrentTime());
+                Fade(0, fadeTime, ClearRequest);
+                return;
+            }
+            ClearRequest();
         }
 
         public void FadeOutAndDespawn()
         {
+            if (!gameObject.activeInHierarchy) return;
             if (onGoingRequest.fadeOut > 0)
             {
                 var fadeTime = Mathf.Min(onGoingRequest.fadeOut, GetClipLength() - GetCurrentTime());
@@ -160,13 +192,17 @@ namespace PowerCellStudio
                 && _onGoingRequest.clipPath == request.clipPath)
             {
                 _onGoingRequest = request;
+                if (_audioSource.loop && !request.loop)
+                {
+                    _audioSource.time = GetCurrentTime();
+                    _audioSource.Play();
+                }
                 _audioSource.loop = request.loop;
-                _audioSource.time = GetCurrentTime();
-                _audioSource.Play();
                 return;
             }
+
             if (!string.IsNullOrEmpty(_onGoingRequest.clipPath))
-                onRemoveClip?.Invoke(onGoingRequest.clipPath, false);
+                _assetLoader?.Release(_onGoingRequest.clipPath);
             _onGoingRequest = request;
             _audioSource.loop = request.loop;
             _audioSource.volume = request.fadeIn > 0f ? 0f : setVolume * currentVolume;
@@ -177,17 +213,22 @@ namespace PowerCellStudio
                 transform.SetParent(request.attachGameObject.transform);
                 transform.localPosition = Vector3.zero;
             }
-            if (!request.loop)
-            {
-                _audioSource.PlayOneShot(clip);
-                return;
-            }
             _audioSource.clip = clip;
             _audioSource.time = 0f;
-            _audioSource.Play();
+            if (_onGoingRequest.fadeIn > 0)
+            {
+                if (request.delay > 0f) _audioSource.PlayDelayed(request.delay);
+                else _audioSource.Play();
+                Fade(currentVolume, _onGoingRequest.fadeIn);
+            }
+            else
+            {
+                if (request.delay > 0f) _audioSource.PlayDelayed(request.delay);
+                else _audioSource.Play();
+            }
         }
 
-        private void ClearRequest()
+        public void ClearRequest()
         {
             if(_onGoingRequest.attachGameObject)
             {
@@ -204,6 +245,10 @@ namespace PowerCellStudio
         public bool IsReachedEnd()
         {
             if (!_audioSource.clip) return false;
+            if (_audioSource.loop)
+            {
+                return _audioSource.time + Time.unscaledDeltaTime >= _audioSource.clip.length;
+            }
             return _audioSource.time >= _audioSource.clip.length;
         }
 
@@ -212,6 +257,12 @@ namespace PowerCellStudio
             if (!_audioSource.clip) return 0f;
             return _audioSource.time % _audioSource.clip.length;
         }
+        
+        public float GetPlayedTime()
+        {
+            if (!_audioSource.clip) return 0f;
+            return _audioSource.time;
+        }
 
         public float GetClipLength()
         {
@@ -219,37 +270,31 @@ namespace PowerCellStudio
             return _audioSource.clip.length;
         }
 
-        private void UpdateFade(float clipLength, float currentTime)
+        private void UpdateFadeOut()
         {
-            if (_fadeCoroutine != null) return;
-            if (clipLength <= 0f) return;
-            if (currentTime < _onGoingRequest.fadeIn)
-            {
-                var lerpValue = currentTime / _onGoingRequest.fadeIn;
-                var targetVolume = setVolume * currentVolume * lerpValue;
-                _audioSource.volume = targetVolume;
-            }
-            else if (!onGoingRequest.loop && clipLength - currentTime < _onGoingRequest.fadeOut)
-            {
-                var lerpValue = (clipLength - currentTime) / _onGoingRequest.fadeOut;
-                var targetVolume = setVolume * _onGoingRequest.volume * lerpValue;
-                _audioSource.volume = targetVolume;
-            }
+            if (_onGoingRequest.loop || _onGoingRequest.fadeOut <= 0 || _fadeCoroutine != null) return;
+            var clipLength = GetClipLength();
+            if (clipLength == 0) return;
+            var currentTime = GetCurrentTime();
+            if (currentTime < clipLength - _onGoingRequest.fadeOut) return;
+            var lerp = (clipLength - currentTime) / _onGoingRequest.fadeOut;
+            _audioSource.volume = Mathf.Lerp(setVolume * onGoingRequest.volume, 0f, lerp);
         }
 
         private void Update()
         {
-            if (!_audioSource) return;
-            var clipLength = GetClipLength();
-            var currentTime = GetCurrentTime();
-            UpdateFade(clipLength, currentTime);
-            if (currentTime >= clipLength && onReachEnd?.GetInvocationList().Length > 0)
+            if (!_audioSource || !_audioSource.clip) return;
+            UpdateFadeOut();
+            if (_onGoingRequest.loop || !IsReachedEnd()) return;
+            if (autoDespawn)
+                DeSpawn();
+            else
             {
-                onReachEnd.Invoke(onGoingRequest.clipPath);
-                onReachEnd = null;
+                if (!string.IsNullOrEmpty(_onGoingRequest.clipPath))
+                    _assetLoader.Release(_onGoingRequest.clipPath);
+                ClearRequest();
+                onFree?.Invoke();
             }
-            if (!autoDespawn || !IsReachedEnd() || _onGoingRequest.loop) return;
-            DeSpawn();
         }
     }
 }

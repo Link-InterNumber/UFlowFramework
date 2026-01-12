@@ -30,7 +30,6 @@ namespace PowerCellStudio
         // [Button(ButtonSizes.Large)]
         public void PlayAudio()
         {
-            if (AudioManager.instance.IsMute(audioType)) return;
             if (string.IsNullOrEmpty(audioClip.assetPath)) return;
             PlayClip(audioClip.assetPath);
         }
@@ -44,7 +43,7 @@ namespace PowerCellStudio
                     AudioManager.instance.PlayMusic(audioClipRef, musicGroup,  fadeoutTime, intervalTime, fadeinTime);
                     break;
                 case AudioSourceType.Ambience:
-                    AudioManager.instance.PlayAmbience(audioClipRef, musicGroup, fadeoutTime, intervalTime, fadeinTime);
+                    AudioManager.instance.PlayAmbience(audioClipRef, false, fadeoutTime, intervalTime, fadeinTime);
                     break;
                 case AudioSourceType.SFX3D:
                     AudioManager.instance.RequestPlayEffect(audioClipRef, false, attachToGameObject ? gameObject : null, transform.position, true);

@@ -1,26 +1,42 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace PowerCellStudio
 {
-    public class AudioPipeline 
+    public class AudioPipeline : IDisposable
     {
         private IAudioPipelineBehavior _behavior;
+        public IAudioPipelineBehavior behavior => _behavior;
+        private IUpdatePipelineBehavior _updateBehavior;
+        public IUpdatePipelineBehavior updateBehavior => _updateBehavior;
 
         public void Init(int id, IAudioPipelineBehavior behavior)
         {
             _pipelineId = id;
             _behavior = behavior;
+            _updateBehavior = behavior as IUpdatePipelineBehavior;
             _children = new Dictionary<int, AudioPipeline>();
             _mute = false;
             _realMute = false;
             _volume = 1f;
+            _realVolume = 1f;
             _pitch = 1f;
+            _realPitch = 1f;
             _isPause = new RefCountBool();
         }
         
         private IAudioMixerGroupCtrl _mixCtrl;
-        public IAudioMixerGroupCtrl mixCtrl { get => _mixCtrl; set => _mixCtrl = value; }
+
+        public IAudioMixerGroupCtrl mixCtrl
+        {
+            get => _mixCtrl;
+            set
+            {
+                _mixCtrl = value;
+                _behavior.SetMixGroup(_mixCtrl?.audioMixerGroup);
+            }
+        }
 
         private int _pipelineId;
         public int pipelineId => _pipelineId;
@@ -31,6 +47,7 @@ namespace PowerCellStudio
             get => _volume;
             set
             {
+                if (Mathf.Approximately(_volume, value)) return;
                 _volume = Mathf.Clamp01(value);
                 UpdateRealProperties();
                 UpdateChildrenProperties();
@@ -43,6 +60,7 @@ namespace PowerCellStudio
             get => _pitch;
             set
             {
+                if (Mathf.Approximately(_volume, value)) return;
                 _pitch = Mathf.Clamp(value, -3f, 3f);
                 UpdateRealProperties();
                 UpdateChildrenProperties();
@@ -61,6 +79,7 @@ namespace PowerCellStudio
             get => _mute;
             set
             {
+                if (_mute == value) return;
                 _mute = value;
                 UpdateRealProperties();
                 UpdateChildrenProperties();
@@ -69,6 +88,8 @@ namespace PowerCellStudio
 
         private bool _realMute;
         public bool realMute => _realMute;
+        
+        public bool isPlaying => _behavior?.IsPlaying() ?? false;
 
         private AudioPipeline _parent;
         public AudioPipeline parent
@@ -76,11 +97,10 @@ namespace PowerCellStudio
             get => _parent;
             set
             {
-                _parent = value;
+                _parent?.children.Remove(_pipelineId);
                 if (value != null)
                     value.children.Add(_pipelineId, this);
-                else
-                    value.children.Remove(_pipelineId);
+                _parent = value;
                 UpdateRealProperties();
                 UpdateChildrenProperties();
             }
@@ -196,6 +216,19 @@ namespace PowerCellStudio
             {
                 child.Clear();
             }
+        }
+
+        public void Dispose()
+        {
+            Clear();
+            _mixCtrl = null;
+            _behavior?.Dispose();
+            _behavior = null;
+            foreach (var child in _children.Values)
+            {
+                child.Dispose();
+            }
+            children.Clear();
         }
     }
 }

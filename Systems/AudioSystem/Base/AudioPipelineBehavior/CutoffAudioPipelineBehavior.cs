@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Audio;
 
 namespace PowerCellStudio
 {
@@ -7,14 +8,15 @@ namespace PowerCellStudio
         public CutoffAudioPipelineBehavior(AudioPipeline pipeline)
         {
             _pipeline = pipeline;
-            _assetLoader = AssetUtils.SpawnLoader("CutoffAudioPipelineBehavior");
+            _audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
+            _audioSourceCtrl.autoDespawn = false;
+            _audioSourceCtrl.onFree.AddListener(OnAudioSourceFree);
+            _audioSourceCtrl.gameObject.SetActive(false);
         }
         
         public void Dispose()
         {
-            AssetUtils.DeSpawnLoader(_assetLoader);
-            _assetLoader = null;
-            _audioSourceCtrl.DeSpawn();
+            _audioSourceCtrl?.DeSpawn();
             _audioSourceCtrl = null;
         }
 
@@ -22,32 +24,11 @@ namespace PowerCellStudio
         public AudioPipeline pipeline { get => _pipeline; set => _pipeline = value; }
 
         private LinkAudioSource _audioSourceCtrl;
-        private IAssetLoader _assetLoader;
 
         public void ReceiveRequest(AudioRequest request)
         {
-            if (string.IsNullOrEmpty(request.clipPath))
-            {
-                if (request.fadeOut > 0)
-                {
-                    _audioSourceCtrl.Fade(0, request.fadeOut);
-                }
-                else if (request.fadeIn > 0)
-                {
-                    _audioSourceCtrl.Fade(_audioSourceCtrl.onGoingRequest.volume, request.fadeIn);
-                }
-                return;
-            }
-            _assetLoader.LoadAsync<AudioClip>(request.clipPath, (clip) =>
-            {
-                if (_audioSourceCtrl == null || !_audioSourceCtrl.gameObject.activeInHierarchy)
-                {
-                    _audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
-                    _audioSourceCtrl.autoDespawn = true;
-                    _audioSourceCtrl.onRemoveClip += OnRemoveClip;
-                }
-                _audioSourceCtrl.Play(request, clip);
-            });
+            _audioSourceCtrl.gameObject.SetActive(true);
+            _audioSourceCtrl.Play(request);
         }
         
         public void RemoveRequest(string clipPath)
@@ -59,16 +40,30 @@ namespace PowerCellStudio
             ClearRequests();
         }
 
-        private void OnRemoveClip(string clipPath, bool onDespawn)
+        private void OnAudioSourceFree()
         {
-            _assetLoader.Release(clipPath);
-            if (onDespawn) _audioSourceCtrl = null;
+            _audioSourceCtrl.gameObject.SetActive(false);
         }
 
         public void ClearRequests()
         {
+            if (!IsPlaying()) return;
             _audioSourceCtrl?.FadeOutAndDespawn();
-            _audioSourceCtrl = null;
+            _audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
+            _audioSourceCtrl.autoDespawn = false;
+            _audioSourceCtrl.onFree.AddListener(OnAudioSourceFree);
+            _audioSourceCtrl.gameObject.SetActive(false);   
+        }
+
+        public void SetMixGroup(AudioMixerGroup mixGroup)
+        {
+            if (!_audioSourceCtrl) return;
+            _audioSourceCtrl.audioSource.outputAudioMixerGroup = mixGroup;
+        }
+
+        public bool IsPlaying()
+        {
+            return _audioSourceCtrl.gameObject.activeSelf;
         }
 
         public void Pause()

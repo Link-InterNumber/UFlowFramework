@@ -10,7 +10,7 @@ namespace PowerCellStudio
 
         public virtual void DeSpawn()
         {
-            if (LinkPool != null && !LinkPool.Release(this)) return;
+            if (LinkPool != null && LinkPool.Release(this)) return;
             OnDeSpawn();
             Dispose();
         }
