@@ -18,19 +18,21 @@ namespace PowerCellStudio
             string[] assetBuneleNames = AssetDatabase.GetAllAssetBundleNames();
             //创建数据资源文件
             //泛型是继承自ScriptableObject的类
-            var assetData = ScriptableObject.CreateInstance<ScriptableAssetBundle>();
+            var assetData = new ScriptableAssetBundle();
             GetBundleAssetData(assetBuneleNames, assetData);
             //前一步创建的资源只是存在内存中，现在要把它保存到本地
             //通过编辑器API，创建一个数据资源文件，第二个参数为资源文件在Assets目录下的路径
-            var folder = Path.Combine("Assets", "Resources", ConstSetting.BundleAssetConfigFolder);
+            var folder = Path.Combine(Application.streamingAssetsPath, ConstSetting.BundleAssetConfigFolder);
             if (!Directory.Exists(folder))
             {
                 Directory.CreateDirectory(folder);
             }
 
-            var path = Path.Combine("Assets", "Resources", ConstSetting.BundleAssetConfigFolder,
-                ConstSetting.BundleAssetConfigName);
-            AssetDatabase.CreateAsset(assetData, path);
+            var bytes = SerializeUtils.SerializeToBinary(assetData);
+            var encryptData = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
+            var path = Path.Combine(Application.streamingAssetsPath, ConstSetting.BundleAssetConfigFolder, ConstSetting.BundleAssetConfigName);
+            File.WriteAllBytes(path, encryptData);
+
             //保存创建的资源
             AssetDatabase.SaveAssets();
             //刷新界面

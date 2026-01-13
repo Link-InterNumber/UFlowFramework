@@ -5,8 +5,9 @@ using UnityEngine;
 namespace PowerCellStudio
 {
     [Serializable]
-    public class ScriptableAssetBundle : ScriptableObject
+    public class ScriptableAssetBundle 
     {
+        [SerializeField, SerializeReference]
         public List<ScriptableAssetBundleData> source = new List<ScriptableAssetBundleData>();
     }
 }

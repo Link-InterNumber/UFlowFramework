@@ -2,8 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
@@ -17,11 +17,42 @@ namespace PowerCellStudio
         private IEnumerator InitPathMap()
         {
             initProcess = 0f;
-            initState = AssetInitState.InitModule;
-            var path = Path.Combine(ConstSetting.BundleAssetConfigFolder, Path.GetFileNameWithoutExtension(ConstSetting.BundleAssetConfigName));
-            var resourceRequest = Resources.LoadAsync<ScriptableAssetBundle>(path);
-            yield return resourceRequest;
-            var bundleDatas = resourceRequest.asset as ScriptableAssetBundle;
+            ScriptableAssetBundle bundleDatas = null;
+            // 从本地Application.persistentDataPath目录加载分包配置文件
+            var persistentPath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, ConstSetting.BundleAssetConfigName);
+            if (File.Exists(persistentPath))
+            {
+                using (UnityWebRequest request = UnityWebRequest.Get("file://" + persistentPath))
+                {
+                    yield return request.SendWebRequest();
+
+                    if (request.result == UnityWebRequest.Result.Success)
+                    {
+                        var encryptData = request.downloadHandler.data;
+                        var decryptedData = EncryptUtils.AESDecrypt(encryptData, ConstSetting.FileEncryptionKey);
+                        bundleDatas = SerializeUtils.DeserializeFromBinary<ScriptableAssetBundle>(decryptedData);
+                    }
+                }
+            }
+            if (bundleDatas == null)
+            {
+                // fallBack从本地streamingAssetsPath目录加载分包配置文件
+                var path = Path.Combine(Application.streamingAssetsPath, ConstSetting.BundleAssetConfigFolder, ConstSetting.BundleAssetConfigName);
+                using (UnityWebRequest request = UnityWebRequest.Get("file://" + path))
+                {
+                    yield return request.SendWebRequest();
+
+                    if (request.result != UnityWebRequest.Result.Success)
+                    {
+                        AssetLog.LogError("AssetsBundleManager initialization failed for Path Maping From streamingAssetsPath");
+                        yield break;
+                    }
+                    var encryptData = request.downloadHandler.data;
+                    var decryptedData = EncryptUtils.AESDecrypt(encryptData, ConstSetting.FileEncryptionKey);
+                    bundleDatas = SerializeUtils.DeserializeFromBinary<ScriptableAssetBundle>(decryptedData);
+                }
+            }
+
             if (bundleDatas == null)
             {
                 AssetLog.LogError("AssetsBundleManager initialization failed");

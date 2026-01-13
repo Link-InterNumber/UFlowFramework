@@ -207,7 +207,7 @@ namespace PowerCellStudio
         
         public static bool Parse(string stringValue, string confName, int rowIndex, int colIndex)
         {
-            return !string.IsNullOrEmpty(stringValue);
+            return !string.IsNullOrEmpty(stringValue) && !stringValue.Equals("0");
         }
     }
     
@@ -227,7 +227,7 @@ namespace PowerCellStudio
         {
             if (string.IsNullOrEmpty(stringValue)) return Array.Empty<bool>();
             var stringArray = stringValue.Split(new []{'|', ';', ','});
-            return stringArray.Select(o=>!string.IsNullOrEmpty(o)).ToArray();
+            return stringArray.Select(o=>!string.IsNullOrEmpty(o) && !o.Equals("0")).ToArray();
         }
     }
 }

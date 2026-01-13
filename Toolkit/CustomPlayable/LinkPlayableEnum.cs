@@ -6,10 +6,4 @@ namespace PowerCellStudio
         Battle,
         UI,
     }
-
-    public enum AudioPlayMode
-    {
-        Mix,
-        Replace
-    }
 }

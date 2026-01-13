@@ -62,12 +62,13 @@ namespace PowerCellStudio
         {
             _bundleFoldName = MainBundleName;
             initState = AssetInitState.CheckForResourceUpdates;
-            yield return InitPathMap();
             yield return GetServerRemoteManifest();
             GetClientRemoteManifest();
             yield return CheckRemoteBundle();
+            yield return InitPathMap();
             if (_assetPathMap == null) yield break;
             initProcess = 0.3f;
+            initState = AssetInitState.InitModule;
             yield return GetBundleManifest();
             initProcess = 0.6f;
             GetAssetsBundleAsync("default", null);

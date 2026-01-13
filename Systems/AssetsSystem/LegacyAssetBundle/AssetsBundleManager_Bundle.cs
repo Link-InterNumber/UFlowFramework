@@ -420,12 +420,6 @@ namespace PowerCellStudio
             handler.SetComplete();
         }
 
-        private IEnumerator SaveBundleOnLocal(string bundleName, byte[] data)
-        {
-            var path = Path.Combine(Application.persistentDataPath, _bundleFoldName, bundleName);
-            yield return File.WriteAllBytesAsync(path, data).AsCoroutine();
-        }
-
         #region Async
 
         // 异步加载方案
@@ -517,10 +511,13 @@ namespace PowerCellStudio
                 OnBundleLoaded(bundleName, bundle);
                 yield break;
             }
-            yield return LoadRemoteBundle(bundleName, loaderYieldInstruction);
-            bundle = loaderYieldInstruction.asset;
-            OnBundleLoaded(bundleName, bundle);
-            if (bundle) SaveRemoteManifest(_clientManifest);
+            var waitForLoadFromRemote = new  YieldInstructionCompletionSource<bool>();
+            yield return LoadRemoteBundle(bundleName, waitForLoadFromRemote);
+            if (waitForLoadFromRemote.Result)
+            {
+                SaveRemoteManifest(_clientManifest);
+                yield return AsyncLoadSingleAssetsBundle(bundleName, loaderYieldInstruction);
+            }
         }
 
         #endregion

@@ -39,11 +39,14 @@ namespace PowerCellStudio
     /// </summary>
     public enum AudioSourceType
     {
+        Master,
         Music,
-        Ambience,
-        Effect3D,
         Dialog,
-        UIEffect
+        SFX,
+        Ambience,
+        SFX3D,
+        SFXUI,
+        System
     }
     
     /// <summary>

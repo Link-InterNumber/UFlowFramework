@@ -1,6 +1,3 @@
-using System;
-using UnityEngine;
-
 namespace PowerCellStudio
 {
     /// <summary>
@@ -9,52 +6,28 @@ namespace PowerCellStudio
     /// </summary>
     public partial class AudioManager : MonoSingleton<AudioManager>
     {
+        private IAssetLoader _assetLoader;
+        
         protected override void Awake()
         {
             base.Awake();
             DontDestroyOnLoad(gameObject);
-            InitEffectPlayer();
-        }
-
-        private void Update()
-        {
-            UpdateAudioRequest();
+            _assetLoader = AssetUtils.SpawnLoader("AudioManager");
+            BuildPipeLine();
         }
 
         protected override void Deinit()
         {
-            _musicPlayer?.DeInit();
-            _musicPlayer = null;
-            _ambiencePlayer?.DeInit();
-            _ambiencePlayer = null;
-            _dialogPlayer?.DeInit();
-            _dialogPlayer = null;
-            DeinitEffectPlayer();
+            _masterPipeline?.Dispose();
+            AssetUtils.DeSpawnLoader(_assetLoader);
             base.Deinit();
         }
 
-        private void CheckPlayer(AudioSourceType type)
+        private void Update()
         {
-            switch (type)
+            for (var i = 0; i < _updatePipelineBehaviors.Count; i++)
             {
-                case AudioSourceType.Music:
-                    if (_musicPlayer != null) break;
-                    _musicPlayer = MusicAudioSourcePlayer.Create(transform, "MusicPlayer");
-                    break;
-                case AudioSourceType.Ambience:
-                    if (_ambiencePlayer != null) break;
-                    _ambiencePlayer = MusicAudioSourcePlayer.Create(transform, "AmbiencePlayer");
-                    break;
-                case AudioSourceType.UIEffect:
-                    break;
-                case AudioSourceType.Effect3D:
-                    break;
-                case AudioSourceType.Dialog:
-                    if (_dialogPlayer != null) break;
-                    _dialogPlayer = DialogPlayer.Create(transform, "DialogPlayer");
-                    break;
-                default:
-                    break;
+                _updatePipelineBehaviors[i]?.Update();
             }
         }
 
@@ -67,22 +40,8 @@ namespace PowerCellStudio
         /// <returns>当前音量值 / Current volume value</returns>
         public float GetVolume(AudioSourceType type, bool isReal = false)
         {
-            CheckPlayer(type);
-            switch (type)
-            {
-                case AudioSourceType.Music:
-                    return _musicPlayer.GetVolume(isReal);
-                case AudioSourceType.Ambience:
-                    return _ambiencePlayer.GetVolume(isReal);
-                case AudioSourceType.UIEffect:
-                    return isReal ? _UIEffectMaxVolume * _UIEffectVolume : _UIEffectVolume;
-                case AudioSourceType.Effect3D:
-                    return isReal ? _effectMaxVolume * _effectVolume : _effectVolume;
-                case AudioSourceType.Dialog:
-                    return _dialogPlayer.GetVolume(isReal);
-                default:
-                    return 0f;
-            }
+            if (isReal) return GetPipeline(type)?.realVolume ?? 0;
+            return GetPipeline(type)?.volume ?? 0;
         }
 
         /// <summary>
@@ -94,86 +53,9 @@ namespace PowerCellStudio
         /// <param name="transferTime">过渡时间 / Transition duration</param>
         public void SetVolume(AudioSourceType type, float newValue, float transferTime = 0.3f)
         {
-            CheckPlayer(type);
-            var v = Mathf.Clamp01(newValue);
-            switch (type)
-            {
-                case AudioSourceType.Music:
-                    _musicPlayer.SetVolume(v, transferTime);
-                    break;
-                case AudioSourceType.Ambience:
-                    _ambiencePlayer.SetVolume(v, transferTime);
-                    break;
-                case AudioSourceType.UIEffect:
-                    _UIEffectVolume = v;
-                    break;
-                case AudioSourceType.Effect3D:
-                    _effectVolume = v;
-                    break;
-                case AudioSourceType.Dialog:
-                    _dialogPlayer.SetVolume(v, transferTime);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// 获取指定类型音频的最大音量。
-        /// Get the maximum volume of the specified audio source type.
-        /// </summary>
-        /// <param name="type">音频类型 / Type of audio source</param>
-        /// <returns>最大音量值 / Maximum volume value</returns>
-        public float GetMaxVolume(AudioSourceType type)
-        {
-            CheckPlayer(type);
-            switch (type)
-            {
-                case AudioSourceType.Music:
-                    return _musicPlayer.GetMaxVolume();
-                case AudioSourceType.Ambience:
-                    return _ambiencePlayer.GetMaxVolume();
-                case AudioSourceType.UIEffect:
-                    return _UIEffectMaxVolume;
-                case AudioSourceType.Effect3D:
-                    return _effectMaxVolume;
-                case AudioSourceType.Dialog:
-                    return _dialogPlayer.GetMaxVolume();
-                default:
-                    return 0f;
-            }
-        }
-
-        /// <summary>
-        /// 设置指定类型音频的最大音量。
-        /// Set the maximum volume for the specified audio source type.
-        /// </summary>
-        /// <param name="type">音频类型 / Type of audio source</param>
-        /// <param name="newValue">新的最大音量值 / New maximum volume value</param>
-        public void SetMaxVolume(AudioSourceType type, float newValue)
-        {
-            CheckPlayer(type);
-            var v = Mathf.Clamp01(newValue);
-            switch (type)
-            {
-                case AudioSourceType.Music:
-                    _musicPlayer.SetMaxVolume(v);
-                    break;
-                case AudioSourceType.Ambience:
-                    _ambiencePlayer.SetMaxVolume(v);
-                    break;
-                case AudioSourceType.UIEffect:
-                    _UIEffectMaxVolume = v;
-                    break;
-                case AudioSourceType.Effect3D:
-                    _effectMaxVolume = v;
-                    break;
-                case AudioSourceType.Dialog:
-                    _dialogPlayer.SetMaxVolume(v);
-                    break;
-                default:
-                    break;
-            }
+            var pipeline = GetPipeline(type);
+            if (pipeline == null) return;
+            pipeline.volume = newValue;
         }
 
         /// <summary>
@@ -184,22 +66,7 @@ namespace PowerCellStudio
         /// <returns>是否静音 / Whether it is muted</returns>
         public bool IsMute(AudioSourceType type)
         {
-            CheckPlayer(type);
-            switch (type)
-            {
-                case AudioSourceType.Music:
-                    return _musicPlayer.IsMute;
-                case AudioSourceType.Ambience:
-                    return _ambiencePlayer.IsMute;
-                case AudioSourceType.UIEffect:
-                    return _muteUIEffect;
-                case AudioSourceType.Effect3D:
-                    return _muteEffect;
-                case AudioSourceType.Dialog:
-                    return _dialogPlayer.IsMute;
-                default:
-                    return true;
-            }
+            return GetPipeline(type)?.realMute ?? true;
         }
 
         /// <summary>
@@ -207,30 +74,11 @@ namespace PowerCellStudio
         /// Mute the specified audio source type.
         /// </summary>
         /// <param name="type">音频类型 / Type of audio source</param>
-        /// <param name="transferDuration">静音过渡时间 / Muting transition duration</param>
-        public void Mute(AudioSourceType type, float transferDuration)
+        public void Mute(AudioSourceType type)
         {
-            CheckPlayer(type);
-            switch (type)
-            {
-                case AudioSourceType.Music:
-                    _musicPlayer.Mute(transferDuration);
-                    break;
-                case AudioSourceType.Ambience:
-                    _ambiencePlayer.Mute(transferDuration);
-                    break;
-                case AudioSourceType.UIEffect:
-                    _muteUIEffect = true;
-                    break;
-                case AudioSourceType.Effect3D:
-                    _muteEffect = true;
-                    break;
-                case AudioSourceType.Dialog:
-                    _dialogPlayer.Mute(transferDuration);
-                    break;
-                default:
-                    break;
-            }
+            var pipeline = GetPipeline(type);
+            if (pipeline == null) return;
+            pipeline.mute = true;
         }
 
         /// <summary>
@@ -238,30 +86,66 @@ namespace PowerCellStudio
         /// Unmute the specified audio source type.
         /// </summary>
         /// <param name="type">音频类型 / Type of audio source</param>
-        /// <param name="transferDuration">取消静音过渡时间 / Unmuting transition duration</param>
-        public void Unmute(AudioSourceType type, float transferDuration)
+        public void Unmute(AudioSourceType type)
         {
-            CheckPlayer(type);
-            switch (type)
-            {
-                case AudioSourceType.Music:
-                    _musicPlayer.Unmute(transferDuration);
-                    break;
-                case AudioSourceType.Ambience:
-                    _ambiencePlayer.Unmute(transferDuration);
-                    break;
-                case AudioSourceType.UIEffect:
-                    _muteUIEffect = false;
-                    break;
-                case AudioSourceType.Effect3D:
-                    _muteEffect = false;
-                    break;
-                case AudioSourceType.Dialog:
-                    _dialogPlayer.Unmute(transferDuration);
-                    break;
-                default:
-                    break;
-            }
+            var pipeline = GetPipeline(type);
+            if (pipeline == null) return;
+            pipeline.mute = false;
+        }
+
+        /// <summary>
+        /// 检查指定类型音频是否正在播放。
+        /// Check whether the specified audio source type is currently playing.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
+        /// <returns>如果正在播放则返回 true，否则返回 false / True if playing; otherwise false</returns>
+        public bool IsPlaying(AudioSourceType type)
+        {
+            var pipeline = GetPipeline(type);
+            return pipeline?.isPlaying ?? false;
+        }
+
+        /// <summary>
+        /// 暂停指定类型的音频播放。
+        /// Pause playback for the specified audio source type.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
+        public void Pause(AudioSourceType type)
+        {
+            GetPipeline(type)?.Pause();
+        }
+
+        /// <summary>
+        /// 恢复指定类型的音频播放。
+        /// Resume playback for the specified audio source type.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
+        /// <param name="force">是否强制恢复（忽略内部条件）/ Whether to force resume (ignore internal conditions)</param>
+        public void Resume(AudioSourceType type, bool force = false)
+        {
+            GetPipeline(type)?.Resume(force);
+        }
+
+        /// <summary>
+        /// 清空指定类型音频的播放队列和资源。
+        /// Clear the playback queue and resources for the specified audio source type.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
+        public void ClearAudio(AudioSourceType type)
+        {
+            GetPipeline(type)?.Clear();
+        }
+
+        /// <summary>
+        /// 从指定类型的音频管线中移除指定引用的音频片段。
+        /// Remove a clip by reference from the specified audio source type's pipeline.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
+        /// <param name="clipRef">音频片段引用 / Clip reference</param>
+        /// <returns>移除成功返回 true，否则返回 false / True if removal succeeded; otherwise false</returns>
+        public bool RemoveClip(AudioSourceType type, string clipRef)
+        {
+            return _masterPipeline?.RemoveRequest((int)type, clipRef) ?? false;
         }
     }
 }
