@@ -1,5 +1,3 @@
-using System;
-
 namespace PowerCellStudio
 {
     /// <summary>
@@ -95,27 +93,56 @@ namespace PowerCellStudio
             pipeline.mute = false;
         }
 
+        /// <summary>
+        /// 检查指定类型音频是否正在播放。
+        /// Check whether the specified audio source type is currently playing.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
+        /// <returns>如果正在播放则返回 true，否则返回 false / True if playing; otherwise false</returns>
         public bool IsPlaying(AudioSourceType type)
         {
             var pipeline = GetPipeline(type);
             return pipeline?.isPlaying ?? false;
         }
 
+        /// <summary>
+        /// 暂停指定类型的音频播放。
+        /// Pause playback for the specified audio source type.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
         public void Pause(AudioSourceType type)
         {
             GetPipeline(type)?.Pause();
         }
 
+        /// <summary>
+        /// 恢复指定类型的音频播放。
+        /// Resume playback for the specified audio source type.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
+        /// <param name="force">是否强制恢复（忽略内部条件）/ Whether to force resume (ignore internal conditions)</param>
         public void Resume(AudioSourceType type, bool force = false)
         {
             GetPipeline(type)?.Resume(force);
         }
 
+        /// <summary>
+        /// 清空指定类型音频的播放队列和资源。
+        /// Clear the playback queue and resources for the specified audio source type.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
         public void ClearAudio(AudioSourceType type)
         {
             GetPipeline(type)?.Clear();
         }
-        
+
+        /// <summary>
+        /// 从指定类型的音频管线中移除指定引用的音频片段。
+        /// Remove a clip by reference from the specified audio source type's pipeline.
+        /// </summary>
+        /// <param name="type">音频类型 / Type of audio source</param>
+        /// <param name="clipRef">音频片段引用 / Clip reference</param>
+        /// <returns>移除成功返回 true，否则返回 false / True if removal succeeded; otherwise false</returns>
         public bool RemoveClip(AudioSourceType type, string clipRef)
         {
             return _masterPipeline?.RemoveRequest((int)type, clipRef) ?? false;

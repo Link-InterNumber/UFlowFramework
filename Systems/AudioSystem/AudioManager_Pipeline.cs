@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine.Audio;
 
 namespace PowerCellStudio
 {
@@ -45,7 +44,6 @@ namespace PowerCellStudio
 
             // TODO CN:加载mixer并用AudioMixerGroupCtrl封装，赋值给AudioPipeline.mixCtrl
             // TODO EN:Load mixer and wrap it with AudioMixerGroupCtrl, assign it to AudioPipeline.mixCtrl
-            // TODO 做成一个配置文件，从配置文件中加载
         }
 
         private AudioPipeline GetPipeline(AudioSourceType type)

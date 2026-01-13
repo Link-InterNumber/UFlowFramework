@@ -1,4 +1,3 @@
-using UnityEngine;
 using UnityEngine.Audio;
 
 namespace PowerCellStudio
@@ -40,9 +39,11 @@ namespace PowerCellStudio
             ClearRequests();
         }
 
+        public LinkEvent onCompleted = new LinkEvent();
         private void OnAudioSourceFree()
         {
             _audioSourceCtrl.gameObject.SetActive(false);
+            onCompleted?.Invoke();
         }
 
         public void ClearRequests()

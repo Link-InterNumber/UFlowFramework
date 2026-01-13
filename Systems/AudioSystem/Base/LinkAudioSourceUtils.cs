@@ -13,19 +13,21 @@ namespace PowerCellStudio
             return poolable;
         }
 
-        private static PoolableObjectPool _LinkAudioSourcepool;
+        private static PoolableObjectPool _linkAudioSourcePool;
 
         private static void InitAudioSourcePool()
         {
-            _LinkAudioSourcepool = PoolManager.instance?.Register(Create, 20, 5, PoolManager.PoolGroupName.Effect);
+            _linkAudioSourcePool = PoolManager.instance?.Register(Create, 20, 5, PoolManager.PoolGroupName.Effect);
         }
 
         public static LinkAudioSource Get(AudioPipeline pipeline)
         {
-            if (_LinkAudioSourcepool == null) InitAudioSourcePool();
-            var audioSourceCtrl = _LinkAudioSourcepool.Get() as LinkAudioSource;
+            if (_linkAudioSourcePool == null) InitAudioSourcePool();
+            var audioSourceCtrl = _linkAudioSourcePool.Get() as LinkAudioSource;
             if (pipeline.mixCtrl != null)
                 audioSourceCtrl.audioSource.outputAudioMixerGroup = pipeline.mixCtrl.audioMixerGroup;
+            else
+                audioSourceCtrl.audioSource.outputAudioMixerGroup = null;
             audioSourceCtrl.setVolume = pipeline.realVolume;
             audioSourceCtrl.setPitch = pipeline.realPitch;
             audioSourceCtrl.audioSource.mute = pipeline.realMute;
@@ -35,7 +37,7 @@ namespace PowerCellStudio
         public static void DeinitAudioSourcePool()
         {
             PoolManager.instance?.UnRegister<LinkAudioSource>(PoolManager.PoolGroupName.Effect);
-            _LinkAudioSourcepool = null;
+            _linkAudioSourcePool = null;
         }
     }
 }
