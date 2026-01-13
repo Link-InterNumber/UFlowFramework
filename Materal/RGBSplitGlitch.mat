@@ -8,8 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: RGBSplitGlitch
-  m_Shader: {fileID: -6465566751694194690, guid: c495230d09b105447b94b2ac290ebf9b,
-    type: 3}
+  m_Shader: {fileID: -6465566751694194690, guid: 1dc006a49eaa59948b1d4719f72211ad, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -51,6 +50,7 @@ Material:
     - _SplitAmount: 0.148
     m_Colors: []
   m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!114 &4896763724607370806
 MonoBehaviour:
   m_ObjectHideFlags: 11

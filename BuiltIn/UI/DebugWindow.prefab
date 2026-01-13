@@ -701,8 +701,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -10, y: -364.11038}
-  m_SizeDelta: {x: -60, y: -728.2209}
+  m_AnchoredPosition: {x: -10, y: -449.99994}
+  m_SizeDelta: {x: -60, y: -900}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8345859097779611386
 CanvasRenderer:
@@ -1266,7 +1266,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 8505068113741908002}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.99992967
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -2040,7 +2040,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.0000047683716}
+  m_AnchoredPosition: {x: 0, y: 0.0007897277}
   m_SizeDelta: {x: 1003, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &6366717565698702663
@@ -2729,7 +2729,7 @@ GameObject:
   - component: {fileID: 3306755796195188497}
   - component: {fileID: 4544666749201637218}
   - component: {fileID: 6541445887217969982}
-  - component: {fileID: 3103796377022150719}
+  - component: {fileID: 8125811709579079822}
   m_Layer: 5
   m_Name: Scroll View
   m_TagString: Untagged
@@ -2826,7 +2826,7 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &3103796377022150719
+--- !u!114 &8125811709579079822
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2835,7 +2835,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 3323995009465293487}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 42b2e726827c3704caa80f2f568fb774, type: 3}
+  m_Script: {fileID: 11500000, guid: bf007c3ad7d3a4343810da184f6bfe81, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   layoutGroup: {fileID: 6366717565698702663}
@@ -2853,7 +2853,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2101383592140754436}
-  - component: {fileID: 6999871022659036484}
+  - component: {fileID: 7253482774942718180}
   m_Layer: 5
   m_Name: DebugWindow
   m_TagString: Untagged
@@ -2881,7 +2881,7 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &6999871022659036484
+--- !u!114 &7253482774942718180
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2890,10 +2890,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 3361104732920878831}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3589b49d2b50b0a40b8fb93a2093cbeb, type: 3}
+  m_Script: {fileID: 11500000, guid: 2cdc86a646db4442820d7ecd98370a03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  adaptiveRoot: {fileID: 0}
+  adaptiveRoot: {fileID: 117371458484691792}
   closeBtn:
   - {fileID: 2535184342614412692}
   txtDeltaTime: {fileID: 6248013391984978820}
@@ -2918,7 +2918,7 @@ MonoBehaviour:
   tglWarning: {fileID: 9214918502254270950}
   tglError: {fileID: 1629191518865839710}
   btnClearLog: {fileID: 4994717236000755126}
-  listLog: {fileID: 3103796377022150719}
+  listLog: {fileID: 8125811709579079822}
 --- !u!1 &3363752129666117606
 GameObject:
   m_ObjectHideFlags: 0
@@ -5082,7 +5082,7 @@ GameObject:
   - component: {fileID: 8686208898451171068}
   - component: {fileID: 6783437989393767958}
   - component: {fileID: 7312902982953439185}
-  - component: {fileID: 6387487581495345745}
+  - component: {fileID: 4419034087184072068}
   m_Layer: 5
   m_Name: Text (Legacy) (2)
   m_TagString: Untagged
@@ -5166,7 +5166,7 @@ MonoBehaviour:
   m_EffectColor: {r: 0, g: 0, b: 0, a: 0.5}
   m_EffectDistance: {x: 1, y: -1}
   m_UseGraphicAlpha: 1
---- !u!114 &6387487581495345745
+--- !u!114 &4419034087184072068
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5175,7 +5175,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 5440586303906742202}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f42b8037e8c7ede46bddcf242ac89b1a, type: 3}
+  m_Script: {fileID: 11500000, guid: cd81347bf738491093160ec037e066fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   SliderNode: {fileID: 5156482753804684631}
@@ -7992,7 +7992,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4008841524899916392}
-  - component: {fileID: 4937987366216941267}
+  - component: {fileID: 326825694475049767}
   m_Layer: 5
   m_Name: DebugWindowLogItem
   m_TagString: Untagged
@@ -8022,7 +8022,7 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 994.1, y: 220}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &4937987366216941267
+--- !u!114 &326825694475049767
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8031,7 +8031,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 9204219056621086658}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: db5a61b0f8dc9654aa4b0e558bc7b13d, type: 3}
+  m_Script: {fileID: 11500000, guid: 87ab664e4f0649249394e4599936a033, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   typeImg: {fileID: 7835599987715756096}

@@ -8,8 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: MetaBall
-  m_Shader: {fileID: -6465566751694194690, guid: 077ac0f672a41e24c8f5c8bb5a244a7b,
-    type: 3}
+  m_Shader: {fileID: -6465566751694194690, guid: b234fe231b1606544925d78b9fc2784a, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -52,6 +51,7 @@ Material:
     - _EdgeColor: {r: 1, g: 0.036886867, b: 0, a: 1}
     - _MidColor: {r: 1, g: 0.44182846, b: 0.06132078, a: 1}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!114 &707274725455556776
 MonoBehaviour:
   m_ObjectHideFlags: 11
