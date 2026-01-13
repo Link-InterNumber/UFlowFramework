@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine.Audio;
 
 namespace PowerCellStudio
 {
@@ -44,6 +45,33 @@ namespace PowerCellStudio
 
             // TODO CN:加载mixer并用AudioMixerGroupCtrl封装，赋值给AudioPipeline.mixCtrl
             // TODO EN:Load mixer and wrap it with AudioMixerGroupCtrl, assign it to AudioPipeline.mixCtrl
+        }
+
+        public void AddAudioMixerGroupToPipeline(int pipelineId, string mixerPath, string groupPath)
+        {
+            _assetLoader.LoadAsync<AudioMixer>(mixerPath, audioMixer =>
+            {
+                var group = audioMixer.FindMatchingGroups(groupPath);
+                if (group.Length == 0) return;
+                var pipeline = FindPipeline(pipelineId, _masterPipeline);
+                if (pipeline == null) return;
+                var mixCtrl = new AudioMixerGroupCtrl(audioMixer, group[0]);
+                pipeline.mixCtrl = mixCtrl;
+            });
+        }
+
+        public bool RemoveAudioMixerGroupFromPipeline(int pipelineId)
+        {
+            var pipeline = FindPipeline(pipelineId, _masterPipeline);
+            if (pipeline == null) return false;
+            pipeline.mixCtrl = null;
+            return true;
+        }
+
+        public IAudioMixerGroupCtrl GetPipelineMixerCtrl(int pipelineId)
+        {
+            var pipeline = FindPipeline(pipelineId, _masterPipeline);
+            return pipeline?.mixCtrl ?? null;
         }
 
         private AudioPipeline GetPipeline(AudioSourceType type)
