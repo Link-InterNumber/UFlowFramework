@@ -29,7 +29,7 @@ namespace PowerCellStudio
                 obj.Dispose();
                 return false;
             }
-            _stack.Push(obj);
+            _stack.Enqueue(obj);
             _set.Add(obj);
             return true;
         }

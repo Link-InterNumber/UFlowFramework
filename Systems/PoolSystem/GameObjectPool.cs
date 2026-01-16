@@ -27,7 +27,7 @@ namespace PowerCellStudio
                 var go = InstantiateFromPrefab();
                 go.SetActive(false);
                 go.transform.SetParent(_root);
-                _stack.Push(go);
+                _stack.Enqueue(go);
             }
             _loadStatus = AssetLoadStatus.Loaded;
         }
@@ -71,7 +71,7 @@ namespace PowerCellStudio
                 var go = InstantiateFromPrefab();
                 go.SetActive(false);
                 go.transform.SetParent(_root);
-                _stack.Push(go);
+                _stack.Enqueue(go);
             }
 
             _loadStatus = AssetLoadStatus.Loaded;
@@ -109,7 +109,7 @@ namespace PowerCellStudio
                 if (autoDestroy) GameObject.Destroy(obj);
                 return true;
             }
-            _stack.Push(obj);
+            _stack.Enqueue(obj);
             _set.Add(obj);
             obj.gameObject.SetActive(false);
             obj.transform.SetParent(_root);
@@ -130,7 +130,7 @@ namespace PowerCellStudio
                 if (autoDestroy) GameObject.Destroy(obj);
                 return;
             }
-            _stack.Push(obj);
+            _stack.Enqueue(obj);
             _set.Add(obj);
             obj.gameObject.SetActive(false);
             obj.transform.SetParent(_root);

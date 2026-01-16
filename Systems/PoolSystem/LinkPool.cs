@@ -5,7 +5,7 @@ namespace PowerCellStudio
 {
     public class LinkPool<T> : IDisposable where T : class
     {
-        protected Stack<T> _stack = new Stack<T>();
+        protected Queue<T> _stack = new Queue<T>();
         protected HashSet<T> _set = new HashSet<T>();
         protected Func<T> _createFun;
         protected int _maxSize = 10;
@@ -45,7 +45,7 @@ namespace PowerCellStudio
             _maxSize = maxSize;
             for (int i = 0; i < initSize; i++)
             {
-                _stack.Push(_createFun());
+                _stack.Enqueue(_createFun());
             }
         }
 
@@ -63,7 +63,7 @@ namespace PowerCellStudio
                 var obj = _createFun();
                 return obj;
             }
-            var poped = _stack.Pop();
+            var poped = _stack.Dequeue();
             _set.Remove(poped);
             return poped;
         }
@@ -79,7 +79,7 @@ namespace PowerCellStudio
             if (_stack == null) return false;
             if (IsInPool(obj)) return true;
             if (count >= _maxSize) return false;
-            _stack.Push(obj);
+            _stack.Enqueue(obj);
             _set.Add(obj);
             return true;
         }
