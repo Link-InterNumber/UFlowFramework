@@ -258,9 +258,14 @@ namespace PowerCellStudio
             return _sb.ToString();
         }
 
-        public void Dispose()
+        public void Clear()
         {
             _sb.Clear();
+        }
+
+        public void Dispose()
+        {
+            Clear();
             _sb = null;
             _tab = null;
         }

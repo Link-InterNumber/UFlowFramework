@@ -3,6 +3,7 @@ using UnityEngine.UI;
 
 namespace PowerCellStudio
 {
+    [DisallowMultipleComponent]
     public abstract class SelectableInteractor : MonoBehaviour
     {
         private Selectable _target;

@@ -44,11 +44,11 @@ namespace PowerCellStudio
             var defaultCsPath = "Assets/ConfigScript/";
             var defaultAssetPath = "Assets/Resources/";
             var defaultLocalCsvPath = Path.Combine(defaultExcelPath, "Localization");
-            _save.excelPath = EditorPrefs.GetString(SaveKey.excelPath, defaultExcelPath);
-            _save.csFilePath = EditorPrefs.GetString(SaveKey.csFilePath, defaultCsPath);
-            _save.assetFilePath = EditorPrefs.GetString(SaveKey.assetFilePath, defaultAssetPath);
-            _save.UIPrefabPath = EditorPrefs.GetString(SaveKey.UIPrefabPath, string.Empty);
-            _save.localizationCSVPath = EditorPrefs.GetString(SaveKey.localizationCSVPath, defaultLocalCsvPath);
+            _save.excelPath = EditorSaveUtils.GetEditorPref(SaveKey.excelPath, defaultExcelPath);
+            _save.csFilePath = EditorSaveUtils.GetEditorPref(SaveKey.csFilePath, defaultCsPath);
+            _save.assetFilePath = EditorSaveUtils.GetEditorPref(SaveKey.assetFilePath, defaultAssetPath);
+            _save.UIPrefabPath = EditorSaveUtils.GetEditorPref(SaveKey.UIPrefabPath, string.Empty);
+            _save.localizationCSVPath = EditorSaveUtils.GetEditorPref(SaveKey.localizationCSVPath, defaultLocalCsvPath);
             //设置绘制按钮的格式
             // InitGuiStyle();
         }
@@ -86,7 +86,7 @@ namespace PowerCellStudio
             {
                 SaveSettings();
                 ConfigMenu.CreateCsFiles();
-                _save.excelPath = EditorPrefs.GetString(SaveKey.excelPath);
+                _save.excelPath = EditorSaveUtils.GetEditorPref(SaveKey.excelPath, "");
             }
             GUILayout.Space(10);
             if (GUILayout.Button("Create Config Assets"))
@@ -189,7 +189,7 @@ namespace PowerCellStudio
                     EditorUtility.OpenFolderPanel("Select the folder of excel files", Environment.CurrentDirectory, "");
             }
 
-            EditorPrefs.SetString(SaveKey.excelPath, _save.excelPath);
+            EditorSaveUtils.SetEditorPref(SaveKey.excelPath, _save.excelPath);
             if (string.IsNullOrEmpty(_save.csFilePath) || !Directory.Exists(_save.csFilePath))
             {
                 _save.csFilePath = "Assets/ConfigScript/";
@@ -200,10 +200,10 @@ namespace PowerCellStudio
                 _save.assetFilePath = "Assets/Resources/";
             }
 
-            EditorPrefs.SetString(SaveKey.csFilePath, _save.csFilePath);
-            EditorPrefs.SetString(SaveKey.assetFilePath, _save.assetFilePath);
-            EditorPrefs.SetString(SaveKey.UIPrefabPath, _save.UIPrefabPath);
-            EditorPrefs.SetString(SaveKey.localizationCSVPath, _save.localizationCSVPath);
+            EditorSaveUtils.SetEditorPref(SaveKey.csFilePath, _save.csFilePath);
+            EditorSaveUtils.SetEditorPref(SaveKey.assetFilePath, _save.assetFilePath);
+            EditorSaveUtils.SetEditorPref(SaveKey.UIPrefabPath, _save.UIPrefabPath);
+            EditorSaveUtils.SetEditorPref(SaveKey.localizationCSVPath, _save.localizationCSVPath);
         }
     }
 }
