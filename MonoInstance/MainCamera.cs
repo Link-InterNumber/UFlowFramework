@@ -52,7 +52,7 @@ namespace PowerCellStudio
         private Vector3 _targetPosition;
         private bool _inMoveTween = false;
 
-        private float _tweenSpeed;
+        private float _tweenSpeed = 5f;
         public float tweenSpeed 
         {
             get => _tweenSpeed;
@@ -78,7 +78,7 @@ namespace PowerCellStudio
         private void CheckTween(float dt)
         {
             if (!_inMoveTween) return;
-            if(_targetPosition.ManhattanDistance(_cameraRoot.position) < 0.1f)
+            if(_targetPosition.ManhattanDistance(_cameraRoot.position) < 0.01f)
             {
                 _cameraRoot.position = _targetPosition + _offsetPosition;
                 _inMoveTween = false;
