@@ -168,10 +168,10 @@ namespace PowerCellStudio
                 {
                     Directory.CreateDirectory(assetFilePath);
                 }
-                var types = Assembly.GetAssembly(typeof(ConfBaseData)).GetTypes().Where(t => 
+                var types = Assembly.GetAssembly(typeof(ConfCreator)).GetTypes().Where(t => 
                     !t.IsAbstract &&
                     t.IsClass &&
-                    t.IsSubclassOf(typeof(ConfBaseData))).ToArray();
+                    t.IsSubclassOf(typeof(ConfCreator))).ToArray();
                 EditorUtility.DisplayProgressBar("Create Config Assets", "Start Running", 0f);
                 for (var i = 0; i < types.Length; i++)
                 {
