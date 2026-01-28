@@ -187,7 +187,10 @@ namespace PowerCellStudio
             {
                 _save.assetFilePath = "Assets/Resources/";
             }
-
+            if (_save.assetFilePath[_save.assetFilePath.Length - 1] != '/')
+                _save.assetFilePath += '/';
+            if (_save.csFilePath[_save.csFilePath.Length - 1] != '/')
+                _save.csFilePath += '/';
             EditorSaveUtils.SetEditorPref(SaveKey.csFilePath, _save.csFilePath);
             EditorSaveUtils.SetEditorPref(SaveKey.assetFilePath, _save.assetFilePath);
             EditorSaveUtils.SetEditorPref(SaveKey.UIPrefabPath, _save.UIPrefabPath);

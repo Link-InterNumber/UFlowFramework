@@ -14,12 +14,13 @@ namespace PowerCellStudio
         /// 运行时数据容器
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        private class RuntimeData<T> : IRuntimeData where T : ICloneT<T>
+        public class RuntimeData<T> : IRuntimeData
+            where T : struct, ICloneT<T>
         {
             public RuntimeData(T data) { _rawData = data; }
+            public Type dataType { get { return typeof(T); } }
 
             private T _rawData;
-            private IRuntimeData _runtimeDataImplementation;
             public event OnRuntimeDataChange<T> onRuntimeDataChange;
 
             public T GetData() { return _rawData.Clone(); }
@@ -46,7 +47,7 @@ namespace PowerCellStudio
         // /// 列表格式存储的运行时数据容器
         // /// </summary>
         // /// <typeparam name="T"></typeparam>
-        // private class RuntimeDataList<T> : IRuntimeData where T : class
+        // internal class RuntimeDataList<T> : IRuntimeData where T : class
         // {
         //     public RuntimeDataList() { _rawData = new List<T>(); }
         //     public RuntimeDataList(IEnumerable<T> initDatas) { _rawData = new List<T>(initDatas); }
@@ -97,7 +98,8 @@ namespace PowerCellStudio
         /// </summary>
         /// <typeparam name="K">key</typeparam>
         /// <typeparam name="T">value</typeparam>
-        private class RuntimeDataDic<K,T> : IRuntimeData, IEnumerable<T> where T : ICloneT<T>
+        public class RuntimeDataDic<K,T> : IRuntimeData, IEnumerable<T> 
+            where T : struct, ICloneT<T>
         {
             // ReSharper disable once UnusedMember.Local
             public RuntimeDataDic() { _rawData = new Dictionary<K, T>(); }
@@ -106,6 +108,8 @@ namespace PowerCellStudio
             
             private Dictionary<K,T> _rawData;
             public event OnRuntimeDataChange<T> onRuntimeDataChange;
+            
+            public Type dataType { get { return typeof(T); } }
 
             public T GetData(K key)
             {
@@ -176,11 +180,17 @@ namespace PowerCellStudio
                 _datas[typeof(T)] = data;
             }
 
-            // public T GetData<T>() where T : class, IRuntimeData
-            // {
-            //     var key = typeof(T);
-            //     return _datas[key] as T;
-            // }
+            public IRuntimeData GetDataByElementType<T>() where T : struct, ICloneT<T>
+            {
+                var key = typeof(T);
+                var datas = _datas.Values;
+                foreach (var runtimeData in datas)
+                {
+                    var datasType = runtimeData.dataType;
+                    if (datasType == key) return runtimeData;
+                }
+                return null;
+            }
         
             public bool TryGetData<T>(out T data) where T : class, IRuntimeData
             {
@@ -218,6 +228,8 @@ namespace PowerCellStudio
         /// </summary>
         private RuntimeDataStorage _doNotClearStorage;
         
+        private Dictionary<Type, IRuntimeDataHandler> _handlers;
+        
         public void OnGameStart()
         {
             ModuleLog.Log<RuntimeDataManager>("Module Init!");
@@ -232,17 +244,28 @@ namespace PowerCellStudio
         public void RegisterEvent()
         {
             EventManager.instance.onStartGame.AddListener(OnStartGame);
-            EventManager.instance.onResetGame.AddListener(ClearRuntimeData);
+            EventManager.instance.onResetGame.AddListener(ClearRuntimeStorage);
         }
 
         public void UnRegisterEvent()
         {
             EventManager.instance?.onStartGame.RemoveListener(OnStartGame);
-            EventManager.instance?.onResetGame.RemoveListener(ClearRuntimeData);
+            EventManager.instance?.onResetGame.RemoveListener(ClearRuntimeStorage);
         }
         
         private void OnStartGame()
         {
+            _handlers = new Dictionary<Type, IRuntimeDataHandler>();
+            // 反射查找所可以实例化的IRuntimeDataHandler
+            var instantiableHandler = ReflectionUtils.GetInstantiableSubclasses(typeof(IRuntimeDataHandler));
+            for (var i = 0; i < instantiableHandler.Count; i++)
+            {
+                var handlerType = instantiableHandler[i];
+                var handler = ReflectionUtils.CreateInstance(handlerType) as IRuntimeDataHandler;
+                if (handler == null) continue;
+                handler.InitData();
+                _handlers.Add(handlerType, handler);
+            }
             InitRuntimeData();
         }
 
@@ -254,7 +277,7 @@ namespace PowerCellStudio
         /// <param name="data">数据实例</param>
         /// <param name="doNotClear">设定是否不会随游戏重启而清除</param>
         /// <typeparam name="T">数据类</typeparam>
-        private void AddRuntimeData<T>(T data, bool doNotClear = false) where T : class, IRuntimeData
+        public void AddRuntimeStorage<T>(T data, bool doNotClear = false) where T : class, IRuntimeData
         {
             if (doNotClear)
             {
@@ -272,7 +295,7 @@ namespace PowerCellStudio
         /// </summary>
         /// <typeparam name="T">数据类</typeparam>
         /// <returns></returns>
-        private T GetRuntimeData<T>() where T : class, IRuntimeData
+        public T GetRuntimeStorage<T>() where T : class, IRuntimeData
         {
             if (_storage.TryGetData<T>(out var data))
             {
@@ -286,17 +309,141 @@ namespace PowerCellStudio
         /// 删除运行时数据
         /// </summary>
         /// <typeparam name="T">数据类</typeparam>
-        private void RemoveRuntimeData<T>() where T : class, IRuntimeData
+        public void RemoveRuntimeStorage<T>() where T : class, IRuntimeData
         {
-            if (_storage.Remove<T>())
+            if (!_storage.Remove<T>())
             {
                 _doNotClearStorage.Remove<T>();
             }
         }
 
-        private void ClearRuntimeData()
+        private void ClearRuntimeStorage()
         {
             _storage.Clear();
+        }
+
+        public T GetData<T>(int key) where T : struct, ICloneT<T>
+        {
+            var t = typeof(T);
+            if (_handlers.TryGetValue(t, out var handler) && handler is IRuntimeDataHandler<T> handlerData)
+            {
+                return handlerData.GetData(key);
+            }
+            var datas = _storage.GetDataByElementType<T>();
+            if (datas == null)
+            {
+                datas = _doNotClearStorage.GetDataByElementType<T>();
+            }
+            if (datas == null) return default(T);
+            if (datas is RuntimeDataDic<int, T> dic) return dic.GetData(key);
+            if (datas is RuntimeData<T> rd) return rd.GetData();
+            return default(T);
+        }
+
+        public void AddData<T>(T data) where T : struct, ICloneT<T>
+        {
+            var t = typeof(T);
+            if (_handlers.TryGetValue(t, out var handler) && handler is IRuntimeDataHandler<T> handlerData)
+            {
+                handlerData.AddData(data);
+                return;
+            }
+            var datas = _storage.GetDataByElementType<T>();
+            if (datas == null)
+            {
+                datas = _doNotClearStorage.GetDataByElementType<T>();
+            }
+            if (datas == null) return;
+            if (datas is RuntimeDataDic<int, T> dic)
+            {
+                dic.ReplaceData(data.GetHashCode(), data);
+                return;
+            }
+
+            if (datas is RuntimeData<T> rd)
+            {
+                rd.GetData();
+            }
+        }
+        
+        public void RemoveData<T>(T data) where T : struct, ICloneT<T>
+        {
+            var t = typeof(T);
+            if (_handlers.TryGetValue(t, out var handler) && handler is IRuntimeDataHandler<T> handlerData)
+            {
+                handlerData.RemoveData(data);
+                return;
+            }
+            var datas = _storage.GetDataByElementType<T>();
+            if (datas == null)
+            {
+                datas = _doNotClearStorage.GetDataByElementType<T>();
+            }
+            if (datas == null) return;
+            if (datas is RuntimeDataDic<int, T> dic)
+            {
+                dic.Remove(data.GetHashCode());
+                return;
+            }
+
+            if (datas is RuntimeData<T> rd)
+            {
+                rd.ReplaceData(default(T));
+            }
+        }
+
+        public void AddChangeListener<T>(OnRuntimeDataChange<T> action)
+            where T : struct, ICloneT<T>
+        {
+            var t = typeof(T);
+            if (_handlers.TryGetValue(t, out var handler) && handler is IRuntimeDataHandler<T> handlerData)
+            {
+                handlerData.AddListener(action);
+                return;
+            }
+            var datas = _storage.GetDataByElementType<T>();
+            if (datas == null)
+            {
+                datas = _doNotClearStorage.GetDataByElementType<T>();
+            }
+            if (datas == null) return;
+            if (datas is RuntimeDataDic<int, T> dic)
+            {
+                dic.AddListener(action);
+                return;
+            }
+
+            if (datas is RuntimeData<T> rd)
+            {
+                rd.AddListener(action);
+            }
+        }
+        
+        public void RemoveChangeListener<T>(OnRuntimeDataChange<T> action)
+            where T : struct, ICloneT<T>
+        {
+            var t = typeof(T);
+            if (_handlers.TryGetValue(t, out var handler) && handler is IRuntimeDataHandler<T> handlerData)
+            {
+                handlerData.RemoveListener(action);
+                return;
+            }
+            var datas = _storage.GetDataByElementType<T>();
+            if (datas == null)
+            {
+                datas = _doNotClearStorage.GetDataByElementType<T>();
+            }
+            if (datas == null) return;
+            if (datas is RuntimeDataDic<int, T> dic)
+            {
+                dic.RemoveListener(action);
+                return;
+            }
+
+            if (datas is RuntimeData<T> rd)
+            {
+                rd.RemoveListener(action);
+            }
         }
     }
 }

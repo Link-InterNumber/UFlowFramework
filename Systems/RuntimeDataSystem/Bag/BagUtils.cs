@@ -6,16 +6,17 @@ namespace PowerCellStudio
     {
         public static int GetItemNum(int id)
         {
-            return RuntimeDataManager.instance.GetItemNumber(id);
+            var itemData = RuntimeDataManager.instance.GetData<RItem>(id);
+            return itemData.num;
         }
 
         public static void AddItem(RItem item, params RItem[] items)
         {
-            RuntimeDataManager.instance.AddItem(item);
+            RuntimeDataManager.instance.AddData(item);
             if (items == null) return;
             foreach (var rItem in items)
             {
-                RuntimeDataManager.instance.AddItem(rItem);
+                RuntimeDataManager.instance.AddData(rItem);
             }
         }
 
@@ -26,16 +27,16 @@ namespace PowerCellStudio
                 id = id,
                 num = num
             };
-            RuntimeDataManager.instance.AddItem(item);
+            RuntimeDataManager.instance.AddData(item);
         }
 
         public static void RemoveItem(RItem item, params RItem[] items)
         {
-            RuntimeDataManager.instance.RemoveItem(item);
+            RuntimeDataManager.instance.RemoveData(item);
             if (items == null) return;
             foreach (var rItem in items)
             {
-                RuntimeDataManager.instance.RemoveItem(rItem);
+                RuntimeDataManager.instance.RemoveData(rItem);
             }
         }
 
@@ -46,22 +47,22 @@ namespace PowerCellStudio
                 id = id,
                 num = num
             };
-            RuntimeDataManager.instance.RemoveItem(item);
+            RuntimeDataManager.instance.RemoveData(item);
         }
 
         public static void AddBagListener(OnRuntimeDataChange<RItem> action)
         {
-            RuntimeDataManager.instance.AddBagListener(action);
+            RuntimeDataManager.instance.AddChangeListener(action);
         }
 
         public static void RemoveBagListener(OnRuntimeDataChange<RItem> action)
         {
-            RuntimeDataManager.instance.RemoveBagListener(action);
+            RuntimeDataManager.instance.RemoveChangeListener(action);
         }
 
         public static bool IsItemEnough(int id, int needNum)
         {
-            var current = RuntimeDataManager.instance.GetItemNumber(id);
+            var current = GetItemNum(id);
             return current >= needNum;
         }
 
