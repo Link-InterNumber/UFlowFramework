@@ -54,6 +54,18 @@ namespace PowerCellStudio
             } 
         }
 
+        public void SetVolume(float target, float transferTime)
+        {
+            if (Mathf.Approximately(_volume, target)) return;
+            _volume = Mathf.Clamp01(target);
+            _realVolume = _volume * (parent != null ? parent.realVolume : 1f);
+            _behavior?.SetVolume(_realVolume, transferTime);
+            foreach (var child in _children.Values)
+            {
+                child.SetVolume(target, transferTime);
+            }
+        }
+
         private float _pitch;
         public float pitch
         {

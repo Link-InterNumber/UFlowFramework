@@ -55,7 +55,11 @@ namespace PowerCellStudio
         {
             var pipeline = GetPipeline(type);
             if (pipeline == null) return;
-            pipeline.volume = newValue;
+            if (transferTime <= 0)
+                pipeline.volume = newValue;
+            else
+                pipeline.SetVolume(newValue, transferTime);
+
         }
 
         /// <summary>

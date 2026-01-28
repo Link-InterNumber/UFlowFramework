@@ -4,6 +4,9 @@ namespace PowerCellStudio
 {
     public partial class AudioManager
     {
+        private MusicGroup _currentMusicGroup = MusicGroup.MainScene;
+        public MusicGroup currentMusicMusicGroup => _currentMusicGroup;
+        
         /// <summary>
         /// 检查指定音乐分组是否已注册。
         /// Check whether the specified music group is registered.
@@ -76,6 +79,10 @@ namespace PowerCellStudio
                     PushRequest(request);
                 }
             }
+
+            if (_currentMusicGroup == group) return;
+            SwitchMusicGroup(group);
+            _currentMusicGroup = group;
         }
 
         /// <summary>
@@ -88,9 +95,9 @@ namespace PowerCellStudio
         {
             var musicRoot = GetPipeline(AudioSourceType.Music);
             var result = false;
+            var pipelineId = (int)AudioSourceType.Music * 1000 + (int)group;
             foreach (var childrenValue in musicRoot.children.Values)
             {
-                var pipelineId = (int)AudioSourceType.Music * 1000 + (int)group;
                 if (childrenValue.pipelineId == pipelineId)
                 {
                     childrenValue.Resume(true);

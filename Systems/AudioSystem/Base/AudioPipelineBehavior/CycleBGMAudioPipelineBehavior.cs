@@ -98,7 +98,7 @@ namespace PowerCellStudio
         public void Resume()
         {
             _musicRecord.GetLastMusic(out var lastMusic);
-            if (lastMusic > 0) _audioSourceCtrl.audioSource.time = lastMusic;
+            if (lastMusic > 0 && _audioSourceCtrl) _audioSourceCtrl.audioSource.time = lastMusic;
             _audioSourceCtrl?.Resume();
         }
 
