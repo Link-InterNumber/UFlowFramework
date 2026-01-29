@@ -1,9 +1,7 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.UI;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
@@ -140,14 +138,27 @@ namespace PowerCellStudio
         }
 
 #if UNITY_EDITOR
-        private T EditorSimulateLoad<T>(string address, float delay, OnLoadSuccess<T> callback, OnLoadFailed onLoadFailed = null) where T : Object
+        private T EditorSimulateLoad<T>(string address, float delay, OnLoadSuccess<T> callback, OnLoadFailed onLoadFailed = null) 
+            where T : Object
         {
             if (_waitForLoaded.TryGetValue(address, out var handler))
             {
                 handler.Dispose();
                 _waitForLoaded.Remove(address);
             }
-            var asset = AssetDatabase.LoadAssetAtPath<T>(address);
+            T asset = null;
+            // 检查address是否最后有[xxx]
+            if (AssetUtils.TryGetSubAssetName(address, out var mainPath, out var subAsset))
+            {
+                var allAssets = AssetDatabase.LoadAllAssetsAtPath(mainPath);
+                asset = allAssets.OfType<T>()
+                    .FirstOrDefault(sprite => sprite.name == subAsset);
+            }
+            else
+            {
+                asset = AssetDatabase.LoadAssetAtPath<T>(address);
+            }
+            
             if(!asset)
             {
                 AssetLog.LogError($"Can not Find Asset, path:<{address}>");

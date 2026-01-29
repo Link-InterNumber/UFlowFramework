@@ -181,5 +181,24 @@ namespace PowerCellStudio
             _assetManager?.ClearUnusedAsset();
             Resources.UnloadUnusedAssets();
         }
+
+        public static bool TryGetSubAssetName(string path, out string mainPath, out string subAssetName)
+        {
+            mainPath = null;
+            subAssetName = null;
+            if (string.IsNullOrEmpty(path) || !path[path.Length - 1].Equals(']')) return false;
+            var length = path.Length;
+            var open = -1;
+            for (int i = length - 1; i >= 0; i--)
+            {
+                if (path[i] != '[') continue;
+                open = i;
+                break;
+            }
+            if (open < 0) return false;
+            mainPath = path.Substring(0, open);
+            subAssetName = path.Substring(open + 1, path.Length - open - 1);
+            return !string.IsNullOrEmpty(subAssetName);
+        }
     }
 }

@@ -83,21 +83,36 @@ namespace PowerCellStudio
             if (_preloadHandles.TryGetValue(assetPath, out var handle) && handle.isDone)
             {
                 _preloadHandles.Remove(assetPath);
-                var asset = handle.asset as T;
+                var preloadAsset = handle.asset as T;
                 AssetUtils.ReleaseLoadHandler<T>(handle);
-                return asset;
+                return preloadAsset;
             }
 
-            if (GetAssetBundle(bundleName, out var bundle))
+            if (!GetAssetBundle(bundleName, out var bundle)) 
+                return null;
+            if (bundle == null)
             {
-                if (bundle == null)
-                {
-                    return null;
-                }
-                var asset = bundle.LoadAsset<T>(assetPath);
-                return asset;
+                return null;
             }
-            return null;
+
+            if (AssetUtils.TryGetSubAssetName(assetPath, out var mainPath, out var subAssetName))
+            {
+                var assets = bundle.LoadAssetWithSubAssets<T>(mainPath);
+                if (assets == null)
+                    return null;
+
+                foreach (var a in assets)
+                {
+                    if (a == null || a.name != subAssetName || a is not T matched) 
+                        continue;
+                    return matched;
+                }
+
+                return null;
+            }
+
+            var asset = bundle.LoadAsset<T>(assetPath);
+            return asset;
         }
 
         public void LoadAssetAsync<T>(string bundleName, string assetPath, LoaderYieldInstruction<T> loadAssetRequest)
@@ -137,18 +152,53 @@ namespace PowerCellStudio
                 loadAssetRequest.SetAsset(null);
                 return;
             }
-            var assetRequest = bundle.LoadAssetAsync<T>(assetPath);
-            assetRequest.completed += (operation) =>
+
+            if (AssetUtils.TryGetSubAssetName(assetPath, out var mainPath, out var subAssetName))
             {
-                var operationHandle = operation as AssetBundleRequest;
-                if(operationHandle == null)
+                var assetRequest = bundle.LoadAssetWithSubAssetsAsync<T>(mainPath);
+                assetRequest.completed += operation =>
                 {
+                    var operationHandle = operation as AssetBundleRequest;
+                    if (operationHandle == null)
+                    {
+                        loadAssetRequest.SetAsset(null);
+                        return;
+                    }
+
+                    var assets = operationHandle.allAssets as T[];
+                    if (assets == null)
+                    {
+                        loadAssetRequest.SetAsset(null);
+                        return;
+                    }
+                    foreach (var a in assets)
+                    {
+                        if (a == null) continue;
+                        if (a.name == subAssetName && a is T matched)
+                        {
+                            loadAssetRequest.SetAsset(matched);
+                            return;
+                        }
+                    }
+
                     loadAssetRequest.SetAsset(null);
-                    return;
-                }
-                var asset = operationHandle.asset as T;
-                loadAssetRequest.SetAsset(asset);
-            };
+                };
+            }
+            else
+            {
+                var assetRequest = bundle.LoadAssetAsync<T>(assetPath);
+                assetRequest.completed += (operation) =>
+                {
+                    var operationHandle = operation as AssetBundleRequest;
+                    if(operationHandle == null)
+                    {
+                        loadAssetRequest.SetAsset(null);
+                        return;
+                    }
+                    var asset = operationHandle.asset as T;
+                    loadAssetRequest.SetAsset(asset);
+                };
+            }
         }
 
         public void LoadScene(string sceneName, Action onComplete, bool unLoadOtherScene = false)
