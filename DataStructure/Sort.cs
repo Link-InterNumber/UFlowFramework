@@ -75,18 +75,22 @@ namespace UFlowFramework.DataStructure
             {
                 for (int i = 0; i < length; i++)
                 {
-                    var swaped = false;
+                    var swapped = false;
+                    var preValue = valueMethod(list[startIndex]);
                     for (int j = startIndex; j < end - i; j++)
                     {
-                        var aValue = valueMethod(list[j]);
                         var bValue = valueMethod(list[j + 1]);
-                        if (aValue > bValue)
+                        if (preValue > bValue)
                         {
                             Swap(list, j, j + 1);
-                            swaped = true;
+                            swapped = true;
+                        }
+                        else
+                        {
+                            preValue = bValue;
                         }
                     }
-                    if (!swaped) break;
+                    if (!swapped) break;
                 }
                 return;
             }
@@ -95,18 +99,22 @@ namespace UFlowFramework.DataStructure
             if (operationCount <= 0) return;
             for (int i = 0; i < operationCount; i++)
             {
-                var swaped = false;
+                var swapped = false;
+                var preValue = valueMethod(list[end]);
                 for (int j = end; j > startIndex + i; j--)
                 {
-                    var aValue = valueMethod(list[j]);
                     var bValue = valueMethod(list[j - 1]);
-                    if (aValue < bValue)
+                    if (preValue < bValue)
                     {
                         Swap(list, j, j - 1);
-                        swaped = true;
+                        swapped = true;
+                    }
+                    else
+                    {
+                        preValue = bValue;
                     }
                 }
-                if (!swaped) break;
+                if (!swapped) break;
             }
         }
 
@@ -339,33 +347,41 @@ namespace UFlowFramework.DataStructure
         private static void SiftDownMin<T>(IList<T> list, int endIndex, int start, int key, ValueMethod<T> valueMethod)
         {
             var root = key;
-            var temp = endIndex - key;
-            var left = endIndex - temp * 2 - 1;
-            var right = endIndex - temp * 2 - 2;
-            var rootKey = valueMethod(list[root]);
-            if (left >= start)
-            {
-                var leftKey = valueMethod(list[left]);
-                if (leftKey < rootKey)
-                {
-                    root = left;
-                    rootKey = leftKey;
-                }
-            }
-            
-            if (right >= start)
-            {
-                var rightKey = valueMethod(list[right]);
-                if (rightKey < rootKey)
-                {
-                    root = right;
-                }
-            }
 
-            if (root != key)
+            while (true)
             {
-                Swap(list, key, root);
-                SiftDownMin(list, endIndex, start, root, valueMethod);
+                var smallest = root;
+                var temp = endIndex - root;
+                var left = endIndex - temp * 2 - 1;
+                var right = endIndex - temp * 2 - 2;
+                var smallValue = valueMethod(list[root]);
+                if (left >= start)
+                {
+                    var leftKey = valueMethod(list[left]);
+                    if (leftKey < smallValue)
+                    {
+                        smallest = left;
+                        smallValue = leftKey;
+                    }
+                }
+            
+                if (right >= start)
+                {
+                    var rightKey = valueMethod(list[right]);
+                    if (rightKey < smallValue)
+                    {
+                        smallest = right;
+                    }
+                }
+                if (root != smallest)
+                {
+                    Swap(list, smallest, root);
+                    root = smallest;
+                }
+                else
+                {
+                    break;
+                }
             }
         }
 

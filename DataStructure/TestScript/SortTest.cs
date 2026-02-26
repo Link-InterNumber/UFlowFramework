@@ -24,11 +24,16 @@ namespace PowerCellStudio
 
         private void TestAllSorts()
         {
-            RunTest("BubbleSort", TestBubbleSort);
-            RunTest("SelectionSort", TestSelectionSort);
-            RunTest("InsertionSort", TestInsertionSort);
-            RunTest("QuickSort", TestQuickSort);
+            // RunTest("BubbleSort", TestBubbleSort);
+            // RunTest("SelectionSort", TestSelectionSort);
+            // RunTest("InsertionSort", TestInsertionSort);
+            // RunTest("QuickSort", TestQuickSort);
             RunTest("HeapSort", TestHeapSort);
+            RunPerformanceTest("BubbleSort", TestBubbleSort);
+            RunPerformanceTest("SelectionSort", TestSelectionSort);
+            RunPerformanceTest("InsertionSort", TestInsertionSort);
+            RunPerformanceTest("QuickSort", TestQuickSort);
+            RunPerformanceTest("HeapSort", TestHeapSort);
         }
 
         private List<TestItem> CreateRandomList(int count)
@@ -65,22 +70,22 @@ namespace PowerCellStudio
             Assert(singleList.Count == 1 && singleList[0].Value == 5, $"{sortName} - Single element list");
 
             // Test with random list
-            var randomList = CreateRandomList(50);
+            var randomList = CreateRandomList(5000);
             sortAction(randomList, _valueMethod, 0, -1, -1);
             AssertSorted(randomList, $"{sortName} - Random list");
 
             // Test with already sorted list
-            var sortedList = Enumerable.Range(0, 50).Select(i => new TestItem(i)).ToList();
+            var sortedList = Enumerable.Range(0, 5000).Select(i => new TestItem(i)).ToList();
             sortAction(sortedList, _valueMethod, 0, -1, -1);
             AssertSorted(sortedList, $"{sortName} - Already sorted list");
 
             // Test with reverse sorted list
-            var reverseList = Enumerable.Range(0, 50).Select(i => new TestItem(49 - i)).ToList();
+            var reverseList = Enumerable.Range(0, 5000).Select(i => new TestItem(49 - i)).ToList();
             sortAction(reverseList, _valueMethod, 0, -1, -1);
             AssertSorted(reverseList, $"{sortName} - Reverse sorted list");
             
             // Test with startIndex and length
-            var partialSortList = CreateRandomList(50);
+            var partialSortList = CreateRandomList(5000);
             var originalPartial = partialSortList.Select(i => i.Value).ToArray();
             int startIndex = 10;
             int length = 20;
@@ -98,7 +103,7 @@ namespace PowerCellStudio
             // Test with takeCount (for BubbleSort, SelectionSort, HeapSort)
             if (sortName != "InsertionSort" && sortName != "QuickSort")
             {
-                var takeCountList = CreateRandomList(50);
+                var takeCountList = CreateRandomList(5000);
                 int takeCount = 10;
                 sortAction(takeCountList, _valueMethod, 0, -1, takeCount);
                 // Only checks if the first 'takeCount' elements are the smallest, not necessarily sorted among themselves depending on the algorithm
