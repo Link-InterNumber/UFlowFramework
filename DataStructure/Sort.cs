@@ -67,10 +67,10 @@ namespace UFlowFramework.DataStructure
         {
             if (!NeedSort(list, valueMethod)) return;
             if (!CheckParameters(list, startIndex, ref length)) return;
-            
+
             bool startToEnd = takeCount <= 0;
             var end = startIndex + length - 1;
-            
+
             if (startToEnd)
             {
                 for (int i = 0; i < length; i++)
@@ -189,14 +189,47 @@ namespace UFlowFramework.DataStructure
             {
                 T keyItem = list[i];
                 int keyValue = valueMethod(keyItem);
-                int j = i - 1;
-                while (j >= startIndex && valueMethod(list[j]) > keyValue)
+                int right = i - 1;
+                var left = startIndex;
+                var insertIndex = right;
+                if (valueMethod(list[left]) >= keyValue)
                 {
-                    list[j + 1] = list[j];
-                    j--;
+                    insertIndex = left;
+                }
+                else if (valueMethod(list[right]) <= keyValue)
+                {
+                    continue;
+                }
+                else
+                {
+                    // 二分查找插入位置
+                    while (left < right)
+                    {
+                        var middle = left + ((right - left) >> 1);
+                        var middleValue = valueMethod(list[middle]);
+                        if (middleValue == keyValue)
+                        {
+                            insertIndex = middle;
+                            break;
+                        }
+                        if (middleValue > keyValue)
+                        {
+                            right = middle;
+                            insertIndex = middle;
+                        }
+                        else
+                        {
+                            left = middle + 1;
+                        }
+                    }
                 }
 
-                list[j + 1] = keyItem;
+                for (int j = i; j > insertIndex; j--)
+                {
+                    list[j] = list[j - 1];
+                }
+
+                list[insertIndex] = keyItem;
             }
         }
 
@@ -310,7 +343,7 @@ namespace UFlowFramework.DataStructure
                 SiftDownMin(list, lastIndex, startIndex + i + 1, lastIndex, valueMethod);
             }
         }
-        
+
         // 最大堆的下滤
         private static void SiftDown<T>(IList<T> list, int startIndex, int key, int end, ValueMethod<T> valueMethod)
         {
@@ -364,7 +397,7 @@ namespace UFlowFramework.DataStructure
                         smallValue = leftKey;
                     }
                 }
-            
+
                 if (right >= start)
                 {
                     var rightKey = valueMethod(list[right]);

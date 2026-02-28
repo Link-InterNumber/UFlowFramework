@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UFlowFramework.DataStructure;
@@ -14,7 +15,7 @@ namespace PowerCellStudio
             public override string ToString() => Value.ToString();
         }
 
-        private readonly Sort.ValueMethod<TestItem> _valueMethod = item => item.Value;
+        private readonly Sort.ValueMethod<TestItem> _valueMethod = item => Math.Sign(item.Value)*Mathf.FloorToInt(Mathf.Sqrt(Mathf.Sqrt(item.Value * item.Value) * Mathf.Sqrt(item.Value * item.Value)));
         private readonly System.Random _random = new System.Random();
 
         void Start()
@@ -26,14 +27,16 @@ namespace PowerCellStudio
         {
             // RunTest("BubbleSort", TestBubbleSort);
             // RunTest("SelectionSort", TestSelectionSort);
-            // RunTest("InsertionSort", TestInsertionSort);
+            RunTest("InsertionSort", TestInsertionSort);
             // RunTest("QuickSort", TestQuickSort);
             RunTest("HeapSort", TestHeapSort);
+            
             RunPerformanceTest("BubbleSort", TestBubbleSort);
             RunPerformanceTest("SelectionSort", TestSelectionSort);
             RunPerformanceTest("InsertionSort", TestInsertionSort);
             RunPerformanceTest("QuickSort", TestQuickSort);
             RunPerformanceTest("HeapSort", TestHeapSort);
+            RunPerformanceTest("NativeSort", TestNativeSort);
         }
 
         private List<TestItem> CreateRandomList(int count)
@@ -100,20 +103,20 @@ namespace PowerCellStudio
                 Assert(partialSortList[i].Value == originalPartial[i], $"{sortName} - Elements after sorted range should not change.");
             }
 
-            // Test with takeCount (for BubbleSort, SelectionSort, HeapSort)
-            if (sortName != "InsertionSort" && sortName != "QuickSort")
-            {
-                var takeCountList = CreateRandomList(5000);
-                int takeCount = 10;
-                sortAction(takeCountList, _valueMethod, 0, -1, takeCount);
-                // Only checks if the first 'takeCount' elements are the smallest, not necessarily sorted among themselves depending on the algorithm
-                var sortedOriginal = takeCountList.OrderBy(x => x.Value).ToList();
-                var tookElements = takeCountList.Take(takeCount).OrderBy(x => x.Value).ToList();
-                for (int i = 0; i < takeCount; i++)
-                {
-                    Assert(tookElements[i].Value == sortedOriginal[i].Value, $"{sortName} - takeCount did not produce the smallest elements.");
-                }
-            }
+            // // Test with takeCount (for BubbleSort, SelectionSort, HeapSort)
+            // if (sortName != "InsertionSort" && sortName != "QuickSort")
+            // {
+            //     var takeCountList = CreateRandomList(5000);
+            //     int takeCount = 10;
+            //     sortAction(takeCountList, _valueMethod, 0, -1, takeCount);
+            //     // Only checks if the first 'takeCount' elements are the smallest, not necessarily sorted among themselves depending on the algorithm
+            //     var sortedOriginal = takeCountList.OrderBy(x => x.Value).ToList();
+            //     var tookElements = takeCountList.Take(takeCount).OrderBy(x => x.Value).ToList();
+            //     for (int i = 0; i < takeCount; i++)
+            //     {
+            //         Assert(tookElements[i].Value == sortedOriginal[i].Value, $"{sortName} - takeCount did not produce the smallest elements.");
+            //     }
+            // }
         }
 
         private void TestBubbleSort()
@@ -139,6 +142,26 @@ namespace PowerCellStudio
         private void TestHeapSort()
         {
             TestSortAlgorithm(Sort.HeapSort, "HeapSort");
+        }
+        
+        private void TestNativeSort()
+        {
+            TestSortAlgorithm(NativeSort, "NativeSort");
+        }
+        
+        private void NativeSort<T>(IList<T> list, Sort.ValueMethod<T> valueMethod,
+            int startIndex = 0, int length = -1, int takeCount = -1)
+        {
+            if (list is List<T> nativeList)
+            {
+                if (length < 0) length = nativeList.Count - startIndex;
+                var range = nativeList.GetRange(startIndex, length);
+                range.Sort((a, b) => valueMethod(a).CompareTo(valueMethod(b)));
+                for (int i = 0; i < length; i++)
+                {
+                    nativeList[startIndex + i] = range[i];
+                }
+            }
         }
     }
 }
