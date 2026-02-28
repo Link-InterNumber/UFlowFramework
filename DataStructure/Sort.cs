@@ -27,6 +27,20 @@ namespace UFlowFramework.DataStructure
             if (n < 2) return false;
             return true;
         }
+        
+        private static bool NeedSort<T>(IList<T> list)
+            where T : IComparable<T>
+        {
+            if (list == null)
+            {
+                Debug.LogError("list is null");
+                return false;
+            }
+
+            int n = list.Count;
+            if (n < 2) return false;
+            return true;
+        }
 
         private static void Swap<T>(IList<T> list, int i, int j)
         {
@@ -242,6 +256,68 @@ namespace UFlowFramework.DataStructure
             InsertionSort(array, valueMethod, startIndex, length);
             return array;
         }
+        
+        public static void InsertionSort<T>(IList<T> list, int startIndex = 0, int length = -1)
+            where T : IComparable<T>
+        {
+            if (!NeedSort(list)) return;
+            if (!CheckParameters(list, startIndex, ref length)) return;
+            int n = startIndex + length;
+            for (int i = startIndex + 1; i < n; i++)
+            {
+                T keyItem = list[i];
+                int right = i - 1;
+                var left = startIndex;
+                var insertIndex = right;
+                if (list[left].CompareTo(keyItem) >= 0)
+                {
+                    insertIndex = left;
+                }
+                else if (list[right].CompareTo(keyItem) <= 0)
+                {
+                    continue;
+                }
+                else
+                {
+                    // 二分查找插入位置
+                    while (left < right)
+                    {
+                        var middle = left + ((right - left) >> 1);
+                        var compareValue = list[middle].CompareTo(keyItem);
+                        if (compareValue == 0)
+                        {
+                            insertIndex = middle;
+                            break;
+                        }
+                        if (compareValue > 0)
+                        {
+                            right = middle;
+                            insertIndex = middle;
+                        }
+                        else
+                        {
+                            left = middle + 1;
+                        }
+                    }
+                }
+
+                for (int j = i; j > insertIndex; j--)
+                {
+                    list[j] = list[j - 1];
+                }
+
+                list[insertIndex] = keyItem;
+            }
+        }
+
+        public static T[] InsertionSort<T>(IEnumerable<T> list, int startIndex = 0, int length = -1)
+            where T : IComparable<T>
+        {
+            if (list == null) throw new ArgumentNullException(nameof(list));
+            var array = list.ToArray();
+            InsertionSort(array, startIndex, length);
+            return array;
+        }
 
         #endregion
 
@@ -310,6 +386,73 @@ namespace UFlowFramework.DataStructure
             if (valueMethod == null) throw new ArgumentNullException(nameof(valueMethod));
             var array = list.ToArray();
             QuickSortRange(array, valueMethod, 0, array.Length - 1);
+            return array;
+        }
+        
+        public static void QuickSort<T>(IList<T> list, int startIndex = 0, int length = -1)
+            where T : IComparable<T>
+        {
+            if (!NeedSort(list)) return;
+            if (!CheckParameters(list, startIndex, ref length)) return;
+            QuickSortRange(list, startIndex, startIndex + length - 1);
+        }
+
+        private static void QuickSortRange<T>(IList<T> list, int left, int right)
+            where T : IComparable<T>
+        {
+            if (left >= right) return;
+            // 选择中间元素作为枢轴，并将其值与最左边的元素交换
+            // 这样枢轴元素就被移出了分区过程
+            int pivotIndex = left + ((right - left) >> 1);
+            var pivotValue = list[pivotIndex];
+
+            Swap(list, pivotIndex, left);
+
+            int i = left + 1;
+            int j = right;
+
+            // 分区过程
+            while (i <= j)
+            {
+                // 从左向右找到第一个大于等于 pivotValue 的元素
+                while (i <= j && list[i].CompareTo(pivotValue) < 0)
+                {
+                    i++;
+                }
+                // 从右向左找到第一个小于等于 pivotValue 的元素
+                while (i <= j && list[j].CompareTo(pivotValue) > 0)
+                {
+                    j--;
+                }
+
+                if (i <= j)
+                {
+                    Swap(list, i, j);
+                    i++;
+                    j--;
+                }
+            }
+
+            // 将枢轴元素放回正确的位置
+            Swap(list, left, j);
+
+            // 递归地对左右两个子分区进行排序
+            if (left < j - 1)
+            {
+                QuickSortRange(list, left, j - 1);
+            }
+            if (i < right)
+            {
+                QuickSortRange(list, i, right);
+            }
+        }
+
+        public static T[] QuickSort<T>(IEnumerable<T> list)
+            where T : IComparable<T>
+        {
+            if (list == null) throw new ArgumentNullException(nameof(list));
+            var array = list.ToArray();
+            QuickSortRange(array, 0, array.Length - 1);
             return array;
         }
 
