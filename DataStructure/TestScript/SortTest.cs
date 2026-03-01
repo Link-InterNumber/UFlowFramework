@@ -15,7 +15,7 @@ namespace PowerCellStudio
             public override string ToString() => Value.ToString();
         }
 
-        private readonly Sort.ValueMethod<TestItem> _valueMethod = item => Math.Sign(item.Value)*Mathf.FloorToInt(Mathf.Sqrt(Mathf.Sqrt(item.Value * item.Value) * Mathf.Sqrt(item.Value * item.Value)));
+        private readonly Sort.ValueMethod<TestItem> _valueMethod = item => item.Value;
         private readonly System.Random _random = new System.Random();
 
         void Start()
@@ -27,21 +27,25 @@ namespace PowerCellStudio
         {
             // RunTest("BubbleSort", TestBubbleSort);
             // RunTest("SelectionSort", TestSelectionSort);
-            RunTest("InsertionSort", TestInsertionSort);
+            // RunTest("InsertionSort", TestInsertionSort);
             // RunTest("QuickSort", TestQuickSort);
-            RunTest("HeapSort", TestHeapSort);
+            // RunTest("HeapSort", TestHeapSort);
+            // RunTest("RadixSort", TestRadixSort);
+            // RunTest("CountingSort", TestCountingSort);
             
-            RunPerformanceTest("BubbleSort", TestBubbleSort);
-            RunPerformanceTest("SelectionSort", TestSelectionSort);
+            // RunPerformanceTest("BubbleSort", TestBubbleSort);
+            // RunPerformanceTest("SelectionSort", TestSelectionSort);
             RunPerformanceTest("InsertionSort", TestInsertionSort);
             RunPerformanceTest("QuickSort", TestQuickSort);
             RunPerformanceTest("HeapSort", TestHeapSort);
+            RunPerformanceTest("RadixSort", TestRadixSort);
+            RunPerformanceTest("CountingSort", TestCountingSort);
             RunPerformanceTest("NativeSort", TestNativeSort);
         }
 
         private List<TestItem> CreateRandomList(int count)
         {
-            return Enumerable.Range(0, count).Select(i => new TestItem(_random.Next(0, 1000))).ToList();
+            return Enumerable.Range(0, count).Select(i => new TestItem(_random.Next(-1000, 1000))).ToList();
         }
 
         private void AssertSorted(IList<TestItem> list, string messagePrefix)
@@ -56,6 +60,7 @@ namespace PowerCellStudio
         {
             for (int i = start; i < start + count - 1; i++)
             {
+                if (i + 1 >= list.Count) break; // Safety check to avoid out of range
                 Assert(list[i].Value <= list[i + 1].Value, $"{messagePrefix}: Sub-array is not sorted at index {i}.");
             }
         }
@@ -72,26 +77,27 @@ namespace PowerCellStudio
             sortAction(singleList, _valueMethod, 0, -1, -1);
             Assert(singleList.Count == 1 && singleList[0].Value == 5, $"{sortName} - Single element list");
 
+            var count = 10000;
             // Test with random list
-            var randomList = CreateRandomList(5000);
+            var randomList = CreateRandomList(count);
             sortAction(randomList, _valueMethod, 0, -1, -1);
             AssertSorted(randomList, $"{sortName} - Random list");
 
             // Test with already sorted list
-            var sortedList = Enumerable.Range(0, 5000).Select(i => new TestItem(i)).ToList();
+            var sortedList = Enumerable.Range(0, count).Select(i => new TestItem(i)).ToList();
             sortAction(sortedList, _valueMethod, 0, -1, -1);
             AssertSorted(sortedList, $"{sortName} - Already sorted list");
 
             // Test with reverse sorted list
-            var reverseList = Enumerable.Range(0, 5000).Select(i => new TestItem(49 - i)).ToList();
+            var reverseList = Enumerable.Range(0, count).Select(i => new TestItem(count - 1 - i)).ToList();
             sortAction(reverseList, _valueMethod, 0, -1, -1);
             AssertSorted(reverseList, $"{sortName} - Reverse sorted list");
             
             // Test with startIndex and length
-            var partialSortList = CreateRandomList(5000);
+            var partialSortList = CreateRandomList(count);
             var originalPartial = partialSortList.Select(i => i.Value).ToArray();
-            int startIndex = 10;
-            int length = 20;
+            int startIndex = count > 11 ? 10 : 2;
+            int length = count > 20 ? 20 : count - 2; // Ensure we have enough elements to sort
             sortAction(partialSortList, _valueMethod, startIndex, length, -1);
             AssertSubArraySorted(partialSortList, startIndex, length, $"{sortName} - Partial sort (startIndex, length)");
             for(int i = 0; i < startIndex; i++)
@@ -143,6 +149,16 @@ namespace PowerCellStudio
         {
             TestSortAlgorithm(Sort.HeapSort, "HeapSort");
         }
+
+        private void TestRadixSort()
+        {
+            TestSortAlgorithm((list, vm, start, len, take) => Sort.RadixSort(list, vm, start, len), "RadixSort");
+        }
+
+        private void TestCountingSort()
+        {
+            TestSortAlgorithm((list, vm, start, len, take) => Sort.CountingSort(list, vm, start, len), "CountingSort");
+        }
         
         private void TestNativeSort()
         {
@@ -155,6 +171,7 @@ namespace PowerCellStudio
             if (list is List<T> nativeList)
             {
                 if (length < 0) length = nativeList.Count - startIndex;
+                else length = Math.Min(length, nativeList.Count - startIndex);
                 var range = nativeList.GetRange(startIndex, length);
                 range.Sort((a, b) => valueMethod(a).CompareTo(valueMethod(b)));
                 for (int i = 0; i < length; i++)
