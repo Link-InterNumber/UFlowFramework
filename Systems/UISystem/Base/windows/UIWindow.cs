@@ -121,5 +121,11 @@ namespace PowerCellStudio
         {
             _parent.CloseUI(this, afterClosed);
         }
+
+        protected void SetRaycastEnable(bool enable)
+        {
+            var canvasGroup = gameObject.TryAddComponent<CanvasGroup>();
+            canvasGroup.blocksRaycasts = enable;
+        }
     }
 }
