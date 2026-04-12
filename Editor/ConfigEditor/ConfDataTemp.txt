@@ -1,0 +1,137 @@
+//------------------------------------------------------------------------------
+// <auto generated>
+//	Should not be edited manually!
+// </auto generated>
+//------------------------------------------------------------------------------
+
+using UnityEngine;
+using System.Linq;
+using System.Collections.Generic;
+using System;
+
+namespace PowerCellStudio
+{
+	[Serializable]
+	public partial class {{ConfName}} : ConfBase
+	{
+		public  {{ConfName}}({{InputParameter}})
+		{
+#for {{InitCode}}
+			this._{{FieldName}} = {{FieldName}};
+#forend
+		}
+
+#for {{FieldDefine}}
+        [{{FieldAttribute}}]
+        private {{FieldType}} _{{FieldName}};
+        public {{FieldType}} {{FieldName}} => _{{FieldName}};
+#forend
+	}
+
+	public partial class {{ConfName}}Collections : ConfBaseCollections
+	{
+		public  {{ConfName}}Collections()
+		{
+			_assetPath = "Assets/ConfigAsset/{{ConfName}}Asset.bytes";
+		}
+
+		public List<{{ConfName}}> rawData = new List<{{ConfName}}>();
+		private ConfAsyncLoadHandle _loadHandle;
+
+		partial void OnLoaded();
+
+		public override void LoadConfAsync<T>(T handle)
+		{
+			if (_loadStatus == AssetLoadStatus.Loaded)
+			{
+				_refCount++;
+				handle.Release();
+				return;
+			}
+			_loadHandle = handle;
+			_loadHandle.Completed += LoadHandler;
+			_loadStatus = AssetLoadStatus.Loading;
+			_loadHandle.LoadAsync<{{ConfName}}Data>(_assetPath);
+		}
+
+		private void LoadHandler(ConfBaseData configData)
+		{
+			if (configData == null)
+			{
+				_loadStatus = AssetLoadStatus.Unload;
+				return;
+			}
+			_refCount = 1;
+			rawData = (configData as {{ConfName}}Data)?.source;
+			MapData();
+			_loadStatus = AssetLoadStatus.Loaded;
+			OnLoaded();
+			_loadHandle.Release();
+			_loadHandle = null;
+		}
+
+		public override void Release()
+		{
+			if(_loadStatus != AssetLoadStatus.Loaded) return;
+			_refCount--;
+			if (_refCount > 0)
+			{
+				return;
+			}
+			rawData.Clear();
+			_dictionary.Clear();
+			_loadStatus = AssetLoadStatus.Unload;
+		}
+
+		private Dictionary<{{KeyType}}, {{ConfName}}> _dictionary = new Dictionary<{{KeyType}}, {{ConfName}}>();
+
+		private void MapData()
+		{
+			_dictionary.Clear();
+			if (rawData == null) return;
+			for (var i = 0; i < rawData.Count; i++)
+			{
+				var keyValue = rawData[i].{{KeyName}};
+				if (_dictionary.ContainsKey(keyValue))
+				{
+					ConfigLog.LogError($"{{ConfName}} {{KeyName}} 重复，重复值=[{keyValue}]");
+					continue;
+				}
+				_dictionary[keyValue] = rawData[i];
+			}
+			
+#for {{LookupCode}}
+            _{{lookupName}} = rawData.ToLookup(conf => ({{LookupKey}}));
+#forend
+		}
+
+		public {{ConfName}} Get({{KeyType}} {{KeyName}})
+		{
+			if (_loadStatus != AssetLoadStatus.Loaded)
+			{
+				ConfigLog.LogError("{{ConfName}} is not loaded yet");
+				return null;
+			}
+			return _dictionary.TryGetValue({{KeyName}}, out var conf) ? conf : null;
+		}
+
+#for {{LookupCode}}
+		private ILookup<{{LookupKey}}, {{ConfName}}> _{{lookupName}};
+		
+        public IEnumerable<{{ConfName}}> Get({{LookupParameter}})
+        {
+            if (_loadStatus != AssetLoadStatus.Loaded) return Enumerable.Empty<{{ConfName}}>();
+            // ILookup 的索引器如果找不到键，会返回空集合而不是抛出异常
+            return _{{lookupName}}[{{LookupKey}}]; 
+        }
+#forend
+	}
+
+	[Serializable]
+	public class {{ConfName}}Data : ConfBaseData
+	{
+		public List<{{ConfName}}> source = new List<{{ConfName}}>();
+	}
+	
+	{{EnumDefine}}
+}

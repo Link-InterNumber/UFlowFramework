@@ -65,12 +65,12 @@ namespace PowerCellStudio
                     using var reader = new ExcelReader(filePath);
                     if(reader.fieldMap.Count == 0) continue;
                     
-                    var writer = new ConfigWriter(reader.path, reader.fileName, reader.fieldMap);
-                    writer.GenerateCSString();
+                    var writer = new ConfigWriter();
+                    writer.GenerateRuntimeCsString(reader);
                     var code = writer.GetCSFileString();
                     
                     writer.Clear();
-                    writer.GenerateEditorCsFile();
+                    writer.GenerateEditorCsString(reader);
                     var editorCode = writer.GetCSFileString();
                     
                     collectionList.Add($"{reader.fileName}Collections");

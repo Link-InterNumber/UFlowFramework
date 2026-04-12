@@ -1,0 +1,58 @@
+//------------------------------------------------------------------------------
+// <auto generated>
+//	Should not be edited manually!
+// </auto generated>
+//------------------------------------------------------------------------------
+
+using System.Collections.Generic;
+using System.IO;
+using System;
+
+namespace PowerCellStudio
+{
+	public class {{ConfName}}Creator : ConfCreator
+	{
+#if UNITY_EDITOR
+		public static string CreatAsset(string oldMd5)
+		{
+			var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.excelPath, "");
+			string path = excelPath + "/{{ExcelName}}.xlsx";
+			if (!File.Exists(path))
+			{
+				ConfigLog.LogError("Cannot find file " + path);
+				return string.Empty;
+			}
+			var md5 = ConfigMenu.CalFileMD5(path);
+			if (md5 == oldMd5 && File.Exists("Assets/ConfigAsset/{{ConfName}}Asset.bytes"))
+			{
+				return md5;
+			}
+			var asset = new {{ConfName}}Data();
+			using (var reader = new ExcelReader(path))
+			{
+				var ws = reader.workbook.Worksheets[1];
+				var rowCount = ws.Dimension.Rows;
+				for (int raw = 4; raw <= rowCount; raw++)
+				{
+					var firstCell = ws.Cells[raw, 1].Value;
+					if (firstCell == null || string.IsNullOrEmpty(firstCell.ToString())) continue;
+					var fileName = "{{ConfName}}";
+#for ｛｛InitData｝}
+                    {{parameterAssignment}};
+#forend
+					var data = new {{ConfName}}({{InputParameterValue}});
+					asset.source.Add(data);
+				}
+			}
+			var bytes = SerializeUtils.SerializeToBinary(asset);
+			bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
+			File.WriteAllBytes("Assets/ConfigAsset/{{ConfName}}Asset.bytes", bytes);
+			ConfigLog.Log("Config Asset Created => [{{ConfName}}]");
+			return md5;
+		}
+
+#endif
+	}
+
+}
+

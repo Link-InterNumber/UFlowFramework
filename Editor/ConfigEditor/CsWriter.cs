@@ -253,6 +253,12 @@ namespace PowerCellStudio
             return this;
         }
 
+        public CsWriter Backspace(int length)
+        {
+            _sb.Remove(_sb.Length - length, length);
+            return this;
+        }
+
         public override string ToString()
         {
             return _sb.ToString();
