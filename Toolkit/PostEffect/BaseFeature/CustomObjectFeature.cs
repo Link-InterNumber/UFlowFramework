@@ -242,7 +242,11 @@ namespace PowerCellStudio
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
         {
             if (renderingData.cameraData.cameraType == CameraType.Preview
+#if UNITY_6000_0_OR_NEWER
+                || UniversalRenderer.IsOffscreenDepthTexture(ref renderingData.cameraData))
+#else
                 || UniversalRenderer.IsOffscreenDepthTexture(in renderingData.cameraData))
+#endif
                 return;
             renderer.EnqueuePass(renderObjectsPass);
         }
