@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental.GraphView;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace PowerCellStudio
 {
@@ -29,13 +30,6 @@ namespace PowerCellStudio
                     _owner.CheckNodeDuplicate();
                 });
                 mainContainer.Add(_nodeNameField);
-
-                var removeButton = new Button(() =>
-                {
-                    RemoveFromHierarchy();
-                    _owner.CheckNodeDuplicate();
-                }){ text = "Remove Node" };
-                mainContainer.Add(removeButton);
                 var inputPort = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Single, typeof(bool));
                 inputPort.portName = "Parent";
                 inputPort.portColor = Color.green;

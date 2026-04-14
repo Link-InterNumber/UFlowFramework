@@ -7,6 +7,7 @@ using System.Linq;
 using System.IO;
 using Unity.VisualScripting;
 using System;
+using UFlowFramework.DataStructure;
 
 namespace PowerCellStudio
 {
@@ -205,55 +206,160 @@ namespace PowerCellStudio
         /// 简单树形自动布局（按层、等间距排列）。
         /// horizontalSpacing / verticalSpacing 调整间距，startOffset 为起始偏移。
         /// </summary>
-        public void AutoLayout(float horizontalSpacing = 220f, float verticalSpacing = 150f, Vector2 startOffset = default)
+        public void AutoLayout(float horizontalSpacing = 220f, float verticalSpacing = 80f, Vector2 startOffset = default)
         {
             if (startOffset == default) startOffset = new Vector2(100, 100);
 
-            List<List<Node>> levels = new List<List<Node>>();
-            var layer1 = new List<Node>();
-            var nodesWithNoInput = nodes.Where(n =>
-            {
-                if ((n as PowerCellStudio.NotifyNodeView)?.GetNodeName() == "Root") return true;
-                var inputPorts = n.inputContainer.Query<Port>().AtIndex(0);
-                return !inputPorts.connected;
-            }).ToList();
-            layer1.AddRange(nodesWithNoInput);
+            var allNodes = nodes.ToList();
+            if (allNodes.Count == 0) return;
 
-            levels.Add(layer1);
-            var buffer = new List<Node>();
-            var index = 0;
-            while (true)
+            Vector2 GetNodeSize(Node node)
             {
-                foreach (var l in levels[index])
-                {
-                    var node = l;
-                    var connects = node.outputContainer.Query<Port>().AtIndex(0).connections;
-                    foreach (var item in connects)
-                    {
-                        buffer.Add(item.input.node);
-                    }
-                }
-                if (buffer.Count == 0) break;
-                levels.Add(buffer);
-                buffer = new List<Node>();
-                index++;
+                var size = node.GetPosition().size;
+                return size == Vector2.zero ? new Vector2(180, 120) : size;
             }
 
-            for (int i = 0; i < levels.Count; i++)
+            Port GetInputPort(Node node)
             {
-                int depth = i;
-                var list = levels[i];
-                int count = list.Count;
-                float totalHeight = (count - 1) * verticalSpacing;
-                for (int j = 0; j < count; j++)
+                return node.inputContainer.Query<Port>().ToList().FirstOrDefault();
+            }
+
+            Port GetOutputPort(Node node)
+            {
+                return node.outputContainer.Query<Port>().ToList().FirstOrDefault();
+            }
+
+            bool HasConnectedInput(Node node)
+            {
+                var inputPort = GetInputPort(node);
+                return inputPort != null && inputPort.connected;
+            }
+
+            bool IsRootNode(Node node)
+            {
+                return (node as NotifyNodeView)?.GetNodeName() == "Root";
+            }
+
+            List<Node> GetChildren(Node node)
+            {
+                var outputPort = GetOutputPort(node);
+                if (outputPort == null) return new List<Node>();
+
+                return outputPort.connections
+                    .Select(connection => connection.input?.node)
+                    .Where(child => child != null)
+                    .Distinct()
+                    .OrderBy(child => child.GetPosition().y)
+                    .ThenBy(child => child.title)
+                    .ToList();
+            }
+
+            var orderedNodes = allNodes
+                .OrderBy(node => IsRootNode(node) ? 0 : 1)
+                .ThenBy(node => node.GetPosition().y)
+                .ThenBy(node => node.title)
+                .ToList();
+
+            var rootNodes = orderedNodes
+                .Where(node => IsRootNode(node) || !HasConnectedInput(node))
+                .Distinct()
+                .ToList();
+
+            if (rootNodes.Count == 0)
+            {
+                rootNodes = orderedNodes;
+            }
+
+            var defaultNodeSize = orderedNodes
+                .Select(GetNodeSize)
+                .Aggregate(new Vector2(180f, 120f), (current, size) =>
+                    new Vector2(Mathf.Max(current.x, size.x), Mathf.Max(current.y, size.y)));
+
+            var nodeLookup = orderedNodes.ToDictionary(node => node, node => new TreeNode<Node>(node));
+            var forestRoots = new List<TreeNode<Node>>();
+
+            void BuildSubtree(TreeNode<Node> current, HashSet<Node> visiting)
+            {
+                if (!visiting.Add(current.Value))
                 {
-                    float x = startOffset.x + (i * horizontalSpacing);
-                    float y = startOffset.y + j * verticalSpacing - totalHeight / 2f;
-                    // 使用节点当前大小（如果为 0 则使用默认）
-                    var size = list[j].GetPosition().size;
-                    if (size == Vector2.zero) size = new Vector2(180, 120);
-                    list[j].SetPosition(new Rect(new Vector2(x, y), size));
+                    return;
                 }
+
+                var children = GetChildren(current.Value);
+                for (int i = 0; i < children.Count; i++)
+                {
+                    var child = children[i];
+                    if (!nodeLookup.TryGetValue(child, out var childNode))
+                    {
+                        continue;
+                    }
+
+                    if (visiting.Contains(child) || childNode.Parent != null)
+                    {
+                        continue;
+                    }
+
+                    if (!current.AddChild(childNode))
+                    {
+                        continue;
+                    }
+
+                    BuildSubtree(childNode, visiting);
+                }
+
+                visiting.Remove(current.Value);
+            }
+
+            var layoutRoots = rootNodes.Concat(orderedNodes).Distinct().ToList();
+            for (int i = 0; i < layoutRoots.Count; i++)
+            {
+                var root = nodeLookup[layoutRoots[i]];
+                if (root.Parent != null || forestRoots.Contains(root))
+                {
+                    continue;
+                }
+
+                forestRoots.Add(root);
+                BuildSubtree(root, new HashSet<Node>());
+            }
+
+            float ApplyLayout(TreeNode<Node> current, HashSet<TreeNode<Node>> visiting)
+            {
+                if (!visiting.Add(current))
+                {
+                    return float.MinValue;
+                }
+
+                var node = current.Value;
+                var size = GetNodeSize(node);
+                node.SetPosition(new Rect(current.Position, size));
+                var maxBottom = current.Position.y + size.y;
+
+                for (int i = 0; i < current.Child.Count; i++)
+                {
+                    maxBottom = Mathf.Max(maxBottom, ApplyLayout(current.Child[i], visiting));
+                }
+
+                visiting.Remove(current);
+                return maxBottom;
+            }
+
+            var currentTop = startOffset.y;
+            for (int i = 0; i < forestRoots.Count; i++)
+            {
+                var root = forestRoots[i];
+                var layoutSettings = new TreeLayoutUtility.LayoutSettings
+                {
+                    horizontalSpacing = horizontalSpacing,
+                    verticalSpacing = verticalSpacing,
+                    startOffset = new Vector2(startOffset.x, currentTop),
+                    defaultNodeSize = defaultNodeSize,
+                    Direction = TreeLayoutUtility.LayoutDirection.Horizontal
+                };
+
+                TreeLayoutUtility.CalculateLayout(root, layoutSettings);
+                var subtreeBottom = ApplyLayout(root, new HashSet<TreeNode<Node>>());
+                currentTop = subtreeBottom + verticalSpacing;
             }
 
             FrameAll();

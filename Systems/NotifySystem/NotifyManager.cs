@@ -62,7 +62,18 @@ namespace PowerCellStudio
         //     ClearAll();
         // }
 
-        private partial void BindNodes();
+        private void BindNodes()
+        {
+            var allPresets =  ReflectionUtils.GetInstantiableSubclasses(typeof(INotifyBindPreset));
+            if (allPresets == null || allPresets.Count == 0) return;
+            for (var i = 0; i < allPresets.Count; i++)
+            {
+                var preset = allPresets[i];
+                var presetInstance = ReflectionUtils.CreateInstance(preset) as INotifyBindPreset;
+                if (presetInstance == null) continue;
+                presetInstance.BindNodes(this);
+            }
+        }
 
         private NotifyNode GetNode(NotifyType type)
         {

@@ -88,9 +88,9 @@ namespace PowerCellStudio
             {
                 var path = AssetDatabase.GetAssetPath(evt.newValue);
                 var fileName = Path.GetFileNameWithoutExtension(path);
-                if (!fileName.StartsWith("NotifyManager_"))
+                if (!fileName.StartsWith("NotifyPreset_"))
                 {
-                    EditorUtility.DisplayDialog("Binding Cs File", "Binding Cs file name must start with 'NotifyManager_'.", "OK");
+                    EditorUtility.DisplayDialog("Binding Cs File", "Binding Cs file name must start with 'NotifyPreset_'.", "OK");
                     _bindingCsFileField.SetValueWithoutNotify(evt.previousValue);
                     return;
                 }
@@ -146,7 +146,7 @@ namespace PowerCellStudio
 
         private void ReadBindingCs(string path)
         {
-            // 读取 NotifyManager_Binding.cs 中的节点关系
+            // 读取 NotifyPreset_Binding.cs 中的节点关系
             var nodeRelations = new List<(string child, string parent)>();
             var bindFilePath = path;
             if (File.Exists(bindFilePath))
@@ -154,9 +154,9 @@ namespace PowerCellStudio
                 var csLines = File.ReadAllLines(bindFilePath);
                 foreach (var line in csLines)
                 {
-                    if (line.Contains("SetNodeParent"))
+                    if (line.Contains("manager.SetNodeParent"))
                     {
-                        var parts = line.Trim().Replace("SetNodeParent(", "").Replace(");", "").Split(',');
+                        var parts = line.Trim().Replace("manager.SetNodeParent(", "").Replace(");", "").Split(',');
                         if (parts.Length == 2)
                         {
                             var child = parts[0].Trim().Replace("NotifyType.", "");
@@ -196,7 +196,7 @@ namespace PowerCellStudio
                 }
             }
             // 自动布局
-            _graphView.AutoLayout();
+            rootVisualElement.schedule.Execute(() => _graphView.AutoLayout()).StartingIn(300);
         }
 
         private void OnKeyDown(KeyDownEvent evt)
@@ -241,7 +241,6 @@ namespace PowerCellStudio
 
             if (!SaveBinding(relationships)) return;
             SaveEnum(nodeNames);
-            WriteBindingFile();
             EditorUtility.DisplayDialog("Save Graph", "Graph saved successfully!", "OK");
             // 保存路径到 EditorPrefs
             EditorSaveUtils.SetEditorPref(_savePathSaveKey, _currentSavePath);
@@ -297,8 +296,8 @@ namespace PowerCellStudio
         {
             if (string.IsNullOrEmpty(_currentBindingCsPath))
             {
-                var defaultPath = "NotifyManager_NewFile";
-                _currentBindingCsPath = EditorUtility.SaveFilePanel("Save Binding Cs, The filename must start with \"NotifyManager_\"", _currentSavePath, defaultPath, "cs");
+                var defaultPath = "NotifyPreset_NewFile";
+                _currentBindingCsPath = EditorUtility.SaveFilePanel("Save Binding Cs, The filename must start with \"NotifyPreset_\"", _currentSavePath, defaultPath, "cs");
                 if (string.IsNullOrEmpty(_currentBindingCsPath)) return false;
                 // 处理为项目内路径, 去掉Application.dataPath
                 _currentBindingCsPath = Path.GetRelativePath(Application.dataPath, _currentBindingCsPath);
@@ -307,18 +306,13 @@ namespace PowerCellStudio
             }
             var fileName = Path.GetFileNameWithoutExtension(_currentBindingCsPath);
             string partialName = null;
-            if (fileName.StartsWith("NotifyManager_"))
+            if (fileName.StartsWith("NotifyPreset_"))
             {
-                partialName = fileName.Substring("NotifyManager_".Length);
+                partialName = fileName.Substring("NotifyPreset_".Length);
             }
             if (string.IsNullOrEmpty(partialName))
             {
-                EditorUtility.DisplayDialog("Save Binding Cs", "Binding Cs file name must start with 'NotifyManager_'.", "OK");
-                return false;
-            }
-            if (partialName == "Binding")
-            {
-                EditorUtility.DisplayDialog("Save Binding Cs", "Binding Cs file name cannot be 'NotifyManager_Binding'. Please use a different name.", "OK");
+                EditorUtility.DisplayDialog("Save Binding Cs", "Binding Cs file name must start with 'NotifyPreset_'.", "OK");
                 return false;
             }
             using CsWriter csWriter = new CsWriter();
@@ -326,9 +320,9 @@ namespace PowerCellStudio
             csWriter.Space(2);
             csWriter.WriteLine("namespace PowerCellStudio");
             csWriter.StartWriteBody();
-            csWriter.WriteLine("public sealed partial class NotifyManager");
+            csWriter.WriteLine($"public sealed class NotifyPreset_{partialName} : INotifyBindPreset");
             csWriter.StartWriteBody();
-            csWriter.WriteLine($"private void Bind{partialName}Nodes()");
+            csWriter.WriteLine($"public void BindNodes(NotifyManager manager)");
             csWriter.StartWriteBody();
             relationships.Sort((a, b) =>
             {
@@ -341,49 +335,13 @@ namespace PowerCellStudio
             });
             foreach (var (child, parent) in relationships)
             {
-                csWriter.WriteLine($"SetNodeParent(NotifyType.{child}, NotifyType.{parent});");
+                csWriter.WriteLine($"manager.SetNodeParent(NotifyType.{child}, NotifyType.{parent});");
             }
             csWriter.EndWriteBody();
             csWriter.EndWriteBody();
             csWriter.EndWriteBody();
             File.WriteAllText(_currentBindingCsPath, csWriter.ToString());
             return true;
-        }
-
-        private void WriteBindingFile()
-        {
-            var bindingFilePath = Path.Combine(_currentSavePath, "NotifyManager_Binding.cs");
-            var bindingPartialNames = new HashSet<string>();
-            var files = Directory.GetFiles(_currentSavePath, "NotifyManager_*.cs");
-            foreach (var file in files)
-            {
-                var fileName = Path.GetFileNameWithoutExtension(file);
-                if (fileName.StartsWith("NotifyManager_"))
-                {
-                    var partialName = fileName.Substring("NotifyManager_".Length);
-                    if (partialName != "Binding")
-                    {
-                        bindingPartialNames.Add(partialName);
-                    }
-                }
-            }
-            using CsWriter csWriter = new CsWriter();
-            csWriter.WriteUsing("System");
-            csWriter.Space();
-            csWriter.WriteLine("namespace PowerCellStudio");
-            csWriter.StartWriteBody();
-            csWriter.WriteLine("public sealed partial class NotifyManager");
-            csWriter.StartWriteBody();
-            csWriter.WriteLine("private partial void BindNodes()");
-            csWriter.StartWriteBody();
-            foreach (var partialName in bindingPartialNames)
-            {
-                csWriter.WriteLine($"Bind{partialName}Nodes();");
-            }
-            csWriter.EndWriteBody();
-            csWriter.EndWriteBody();
-            csWriter.EndWriteBody();
-            File.WriteAllText(bindingFilePath, csWriter.ToString());
         }
     }
 }
