@@ -5,14 +5,14 @@ namespace PowerCellStudio
 {
     public class IndexGetter : SingletonBase<IndexGetter>
     {
-        private Dictionary<Type, long> _cache = new Dictionary<Type, long>();
+        private Dictionary<Type, int> _cache = new Dictionary<Type, int>();
 
-        public long Get<T>()
+        public int Get<T>()
         {
             var t = typeof(T);
             if (_cache.TryGetValue(t, out var cur))
             {
-                if (cur == long.MaxValue) cur = 0;
+                if (cur == int.MaxValue) cur = 0;
                 cur++;
                 _cache[t] = cur;
                 return cur;
@@ -21,11 +21,11 @@ namespace PowerCellStudio
             return 1;
         }
         
-        public long Get(Type t)
+        public int Get(Type t)
         {
             if (_cache.TryGetValue(t, out var cur))
             {
-                if (cur == long.MaxValue) cur = 0;
+                if (cur == int.MaxValue) cur = 0;
                 cur++;
                 _cache[t] = cur;
                 return cur;

@@ -1,11 +1,9 @@
 using System;
-// using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
-// using UnityEngine.Serialization;
 using Object = UnityEngine.Object;
 
 namespace PowerCellStudio
@@ -17,8 +15,8 @@ namespace PowerCellStudio
         
         public string tag { get; set; }
         
-        private long _index;
-        public long index => _index;
+        private int _index;
+        public int index => _index;
         public AddressableAssetLoader()
         {
             _index = IndexGetter.instance.Get<AddressableAssetLoader>();

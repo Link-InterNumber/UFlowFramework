@@ -6,7 +6,7 @@ namespace PowerCellStudio
 {
     public interface IAssetLoader 
     {
-        public long index { get;}
+        public int index { get;}
         public bool spawned { get; }
         public string tag { get; set; }
 

@@ -8,12 +8,13 @@ using System.Linq;
 /// </summary>
 public class TestItem : IIndex
 {
-    public long index { get; private set; }
+    private int _index;
+    public int index { get => _index; private set => _index = value; }
     public string data;
 
-    public TestItem(long id, string payload)
+    public TestItem(int id, string payload)
     {
-        index = id;
+        _index = id;
         data = payload;
     }
 

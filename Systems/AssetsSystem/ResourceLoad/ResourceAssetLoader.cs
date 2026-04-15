@@ -21,8 +21,8 @@ namespace PowerCellStudio
             _disposed = false;
         }
 
-        private long _index;
-        public long index => _index;
+        private int _index;
+        public int index => _index;
         private bool _spawned = false;
         public bool spawned => _spawned;
         public string tag { get; set; }

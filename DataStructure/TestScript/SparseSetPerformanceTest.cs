@@ -19,8 +19,8 @@ public class SparseSetPerformanceTest : RunTestMono
 
         // 准备测试数据
         var itemsToAdd = new TestItem[NUM_ITEMS];
-        var indicesToAccess = new long[NUM_OPERATIONS];
-        var indicesToRemove = new long[NUM_ITEMS];
+        var indicesToAccess = new int[NUM_OPERATIONS];
+        var indicesToRemove = new int[NUM_ITEMS];
 
         var random = new System.Random();
         for (int i = 0; i < NUM_ITEMS; i++)
@@ -46,7 +46,7 @@ public class SparseSetPerformanceTest : RunTestMono
         RunAllTests(itemsToAdd, indicesToAccess, indicesToRemove);
     }
 
-    private void RunAllTests(TestItem[] itemsToAdd, long[] indicesToAccess, long[] indicesToRemove)
+    private void RunAllTests(TestItem[] itemsToAdd, int[] indicesToAccess, int[] indicesToRemove)
     {
         // --- SparseSet Tests ---
         UnityEngine.Debug.Log("--- Testing SparseSet<T> ---");

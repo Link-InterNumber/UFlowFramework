@@ -13,8 +13,8 @@ namespace PowerCellStudio
 {
     public class BundleAssetLoader : IAssetLoader
     {
-        private long _index;
-        public long index => _index;
+        private int _index;
+        public int index => _index;
 
         public string tag { get; set; }
         

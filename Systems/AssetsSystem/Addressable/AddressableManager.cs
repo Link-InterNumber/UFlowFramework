@@ -16,7 +16,7 @@ namespace PowerCellStudio
     public class AddressableManager: IAssetManager //<AddressableAssetLoader>
     {
         private ObjectPool<AddressableAssetLoader> _pool;
-        private Dictionary<long, AddressableAssetLoader> _activeLoader;
+        private Dictionary<int, AddressableAssetLoader> _activeLoader;
 
         private bool _inited = false;
         public bool inited => _inited;
@@ -33,7 +33,7 @@ namespace PowerCellStudio
                 loader => loader.Init(),
                 loader => loader.Deinit(),
                 loader => loader.Deinit(), true, 10, 30);
-            _activeLoader = new Dictionary<long, AddressableAssetLoader>();
+            _activeLoader = new Dictionary<int, AddressableAssetLoader>();
             var handle = Addressables.InitializeAsync(false);
             coroutineRunner.StartCoroutine(InitHandle(handle, callBack));
         }
