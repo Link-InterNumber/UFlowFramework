@@ -66,19 +66,19 @@
                 using var dataFile = new FileStream("Assets/ConfigAsset/{{ConfName}}Asset.bytes}", FileMode.Create, FileAccess.Write, FileShare.Read);
                 foreach (var chunkData in chunkDataYieldInstruction)
                 {
-                    chunkData.Info.offset = dataFile.Position;
-                    chunkData.Info.length = chunkData.binaryData.Length;
-                    var indexBytes = SerializeUtils.SerializeToBinary(chunkData.Info);
-                    indexBytes = EncryptUtils.AESEncrypt(indexBytes, ConstSetting.FileEncryptionKey);
+                	var dataBytes = EncryptUtils.AESEncrypt(chunkData.binaryData, ConstSetting.FileEncryptionKey);
+					dataFile.Write(dataBytes, 0, dataBytes.Length);
+					
+					chunkData.Info.offset = dataFile.Position;
+					chunkData.Info.length = dataBytes.Length;
+					var indexBytes = SerializeUtils.SerializeToBinary(chunkData.Info);
+					indexBytes = EncryptUtils.AESEncrypt(indexBytes, ConstSetting.FileEncryptionKey);
 					// 用int值保存这块chunkData.info的长度
 					var infoLength = indexBytes.Length;
 					// 先写入长度信息，方便读取时知道需要读多少字节来获取完整的ChunkInfo
 					var lengthBytes = BitConverter.GetBytes(infoLength);
-                    indexFile.Write(lengthBytes, 0, lengthBytes.Length);
-                    indexFile.Write(indexBytes, 0, indexBytes.Length);
-
-                    var dataBytes = EncryptUtils.AESEncrypt(chunkData.binaryData, ConstSetting.FileEncryptionKey);
-                    dataFile.Write(dataBytes, 0, dataBytes.Length);
+					indexFile.Write(lengthBytes, 0, lengthBytes.Length);
+					indexFile.Write(indexBytes, 0, indexBytes.Length);
                 }
                 indexFile.Flush();
                 dataFile.Flush();
@@ -196,8 +196,24 @@ namespace PowerCellStudio
                 .WriteLine("using var dataFile = new FileStream(dataAssetPath, FileMode.Create, FileAccess.Write, FileShare.Read);")
                 .WriteLine("foreach (var chunkData in chunkDataYieldInstruction)");
 
+            // var dataBytes = EncryptUtils.AESEncrypt(chunkData.binaryData, ConstSetting.FileEncryptionKey);
+            // dataFile.Write(dataBytes, 0, dataBytes.Length);
+					       //
+            // chunkData.Info.offset = dataFile.Position;
+            // chunkData.Info.length = dataBytes.Length;
+            // var indexBytes = SerializeUtils.SerializeToBinary(chunkData.Info);
+            // indexBytes = EncryptUtils.AESEncrypt(indexBytes, ConstSetting.FileEncryptionKey);
+            // // 用int值保存这块chunkData.info的长度
+            // var infoLength = indexBytes.Length;
+            // // 先写入长度信息，方便读取时知道需要读多少字节来获取完整的ChunkInfo
+            // var lengthBytes = BitConverter.GetBytes(infoLength);
+            // indexFile.Write(lengthBytes, 0, lengthBytes.Length);
+            // indexFile.Write(indexBytes, 0, indexBytes.Length);
             csWriter.StartWriteBody();
             csWriter
+                .WriteLine("var dataBytes = EncryptUtils.AESEncrypt(chunkData.binaryData, ConstSetting.FileEncryptionKey);")
+                .WriteLine("dataFile.Write(dataBytes, 0, dataBytes.Length);")
+                .Space()
                 .WriteLine("chunkData.Info.offset = dataFile.Position;")
                 .WriteLine("chunkData.Info.length = dataBytes.Length;")
                 .WriteLine("var indexBytes = SerializeUtils.SerializeToBinary(chunkData.Info);")
@@ -205,9 +221,7 @@ namespace PowerCellStudio
 				.WriteLine("var infoLength = indexBytes.Length;")
 				.WriteLine("var lengthBytes = BitConverter.GetBytes(infoLength);")
 				.WriteLine("indexFile.Write(lengthBytes, 0, lengthBytes.Length);")
-				.WriteLine("indexFile.Write(indexBytes, 0, indexBytes.Length);")
-                .WriteLine("var dataBytes = EncryptUtils.AESEncrypt(chunkData.binaryData, ConstSetting.FileEncryptionKey);")
-                .WriteLine("dataFile.Write(dataBytes, 0, dataBytes.Length);");
+				.WriteLine("indexFile.Write(indexBytes, 0, indexBytes.Length);");
             csWriter.EndWriteBody();
 
             csWriter.WriteLine("indexFile.Flush();")

@@ -197,8 +197,9 @@ namespace PowerCellStudio
                 
             // ILookup<(int id, string name), string> 
 
-            if (keys.Count > 0)
+            if (keys.Count > 1)
             {
+                csWriter.WriteField(CsWriter.FieldSign.Private, $"ILookup<{keys[0].typeName}, {confName}>", $"_lookupBy1Key");
                 var lookupKeyTypeTemp = new StringBuilder();
                 lookupKeyTypeTemp.Append($"{keys[0].typeName} {keys[0].fieldName}");
                 for (var i = 1; i < keys.Count - 1; i++)
@@ -299,13 +300,14 @@ namespace PowerCellStudio
 
             if (isMultiKey)
             {
+                csWriter.WriteLine($"_lookupBy1Key = rawData.ToLookup(conf => conf.{keys[0].fieldName});");
                 var lookupKeyTuple = new StringBuilder();
                 lookupKeyTuple.Append($"{keys[0].fieldName}:conf.{keys[0].fieldName}");
                 for (var i = 1; i < keys.Count - 1; i++)
                 {
                     var key = keys[i];
                     lookupKeyTuple.Append($", {key.fieldName}:conf.{key.fieldName}");
-                    csWriter.WriteVar($"_lookupBy{i + 1}Key", $"rawData.ToLookup(conf => ({lookupKeyTuple}))");
+                    csWriter.WriteLine($"_lookupBy{i + 1}Key = rawData.ToLookup(conf => ({lookupKeyTuple}));");
                 }
                 lookupKeyTuple.Clear();
                 csWriter.Space();
@@ -331,8 +333,19 @@ namespace PowerCellStudio
                 .WriteLine($"return _dictionary.TryGetValue({keyName}, out var conf) ? conf : null;")
                 .EndWriteMethod();
 
-            if (keys.Count > 0)
+            if (keys.Count > 1)
             {
+                csWriter.StartWriteMethod(CsWriter.MethodSign.Public,
+                    CsWriter.MethodSign.None,
+                    $"IEnumerable<{confName}>",
+                    $"Get",
+                    $"{keys[0].typeName} {keys[0].fieldName}");
+                csWriter.StartWriteIf("_loadStatus != AssetLoadStatus.Loaded")
+                    .WriteLine($"return Enumerable.Empty<{confName}>();")
+                    .EndWriteIf()
+                    .WriteLine($"return _lookupBy1Key[{keys[0].fieldName}];")
+                    .EndWriteMethod();
+                
                 var lookupKeyTypeTemp = new StringBuilder();
                 lookupKeyTypeTemp.Append($"{keys[0].typeName} {keys[0].fieldName}");
                 for (var i = 1; i < keys.Count - 1; i++)
