@@ -64,18 +64,13 @@ namespace PowerCellStudio
 
         private void CreateSingletonModule()
         {
-            var singletonBase = typeof(SingletonBase<>);
-            var res = singletonBase.Assembly
-                .GetTypes()
-                .Where(type => type.IsClass && !type.IsAbstract && type.BaseType != null && type.BaseType.IsGenericType &&
-                               type.BaseType.GetGenericTypeDefinition() == typeof(SingletonBase<>))
-                // 根据ModuleInitOrder特性排序
-                .OrderBy(type =>
+            var res = ReflectionUtils.GetInstantiableSubtype(typeof(SingletonBase<>));
+            res.Sort((x, y) =>
                 {
-                    var attr = type.GetCustomAttribute<ModuleInitOrder>();
-                    return attr?.order ?? 99999;
-                })
-                .ToList();
+                    var xOrder = x.GetCustomAttribute<ModuleInitOrder>()?.order ?? 99999;
+                    var yOrder = y.GetCustomAttribute<ModuleInitOrder>()?.order ?? 99999;
+                    return xOrder.CompareTo(yOrder);
+                });
             foreach (var type in res)
             {
                 var property = type.GetProperty("instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
@@ -111,17 +106,13 @@ namespace PowerCellStudio
         
         private void CreateMonoSingletonModule()
         {
-            var monoSingleton = typeof(MonoSingleton<>);
-            var res = monoSingleton.Assembly
-                .GetTypes()
-                .Where(type => type.IsClass && !type.IsAbstract && type.BaseType != null && type.BaseType.IsGenericType &&
-                               type.BaseType.GetGenericTypeDefinition() == typeof(MonoSingleton<>))
-                .OrderBy(type =>
-                {
-                    var attr = type.GetCustomAttribute<ModuleInitOrder>();
-                    return attr?.order ?? 99999;
-                })
-                .ToList();
+            var res = ReflectionUtils.GetInstantiableSubtype(typeof(MonoSingleton<>));
+            res.Sort((x, y) =>
+            {
+                var xOrder = x.GetCustomAttribute<ModuleInitOrder>()?.order ?? 99999;
+                var yOrder = y.GetCustomAttribute<ModuleInitOrder>()?.order ?? 99999;
+                return xOrder.CompareTo(yOrder);
+            });
             foreach (var type in res)
             {
                 // 判断是否已经实例化

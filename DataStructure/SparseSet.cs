@@ -6,7 +6,7 @@ namespace PowerCellStudio
 {
     public interface IIndex
     {
-        public long index { get;  }
+        public int index { get;  }
     }
 
     public class SparseSet<T> : ICollection<T> where T : IIndex
@@ -23,23 +23,23 @@ namespace PowerCellStudio
         /// <summary>
         /// 稀疏数组，存放元素在_dense中的索引
         /// </summary>
-        private long[] _sparse; 
+        private int[] _sparse; 
         private int _pageSize = 128;
         private int _count;
 
         public SparseSet()
         {
             _count = 0;
-            _dense = new T[_pageSize];
-            _sparse = new long[_pageSize];
+            _dense = new T[4];
+            _sparse = new int[_pageSize];
         }
 
         public SparseSet(int pageSize)
         {
             _pageSize = pageSize;
             _count = 0;
-            _dense = new T[_pageSize];
-            _sparse = new long[_pageSize];
+            _dense = new T[4];
+            _sparse = new int[_pageSize];
         }
 
         public IEnumerator<T> GetEnumerator()
@@ -72,7 +72,7 @@ namespace PowerCellStudio
             {
                 if (_count + 1 >= _dense.Length)
                 {
-                    Array.Resize(ref _dense, _dense.Length + _pageSize);
+                    Array.Resize(ref _dense, _dense.Length * 2);
                 }
                 _dense[_count + 1] = item;
                 _sparse[index] = _count + 1;
@@ -98,7 +98,7 @@ namespace PowerCellStudio
             return Contains((int)index);
         }
         
-        public bool Contains(long index)
+        public bool Contains(int index)
         {
             if (index < 0) return false;
             if (index >= _sparse.Length) return false;
@@ -122,7 +122,7 @@ namespace PowerCellStudio
             return item != null && Remove(item.index);
         }
 
-        public bool Remove(long itemIndex)
+        public bool Remove(int itemIndex)
         {
             if (itemIndex < 0 || _count == 0) return false;
             if (itemIndex >= _sparse.Length) return false;
@@ -140,7 +140,7 @@ namespace PowerCellStudio
             return true;
         }
 
-        public T FindOrDefault(long itemIndex)
+        public T FindOrDefault(int itemIndex)
         {
             if (itemIndex < 0 || itemIndex >= _sparse.Length) return default;
             var realIndex = _sparse[itemIndex];

@@ -94,7 +94,7 @@ namespace PowerCellStudio
 
             var saveBtn = new Button(() =>
             {
-                var handlerTypes = ReflectionUtils.GetInstantiableSubclasses(typeof(IGuidanceGraphWriteHandler), typeof(GuidanceGraphWindow).Assembly);
+                var handlerTypes = ReflectionUtils.GetInstantiableSubtype(typeof(IGuidanceGraphWriteHandler), typeof(GuidanceGraphWindow).Assembly);
                 if (handlerTypes.Count == 0)
                 {
                     Debug.LogError("No GuidanceGraphWriteHandler found.");

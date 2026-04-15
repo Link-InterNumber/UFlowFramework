@@ -39,7 +39,7 @@ namespace PowerCellStudio
                 AddNode("NewNode", finalPos);
             };
 
-            var providerTypes = ReflectionUtils.GetInstantiableSubclasses(typeof(IGuidanceGraphConfigProvider), typeof(GuidanceGraphWindow).Assembly);
+            var providerTypes = ReflectionUtils.GetInstantiableSubtype(typeof(IGuidanceGraphConfigProvider), typeof(GuidanceGraphWindow).Assembly);
             if (providerTypes.Count == 0)
             {
                 Debug.LogError("No GuidanceGraphConfigProvider found.");

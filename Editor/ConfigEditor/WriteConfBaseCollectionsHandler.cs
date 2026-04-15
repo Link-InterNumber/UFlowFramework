@@ -6,8 +6,8 @@
             _assetPath = "Assets/ConfigAsset/{{ConfName}}Asset.bytes";
         }
 
+        private Dictionary<{{KeyType}}, {{ConfName}}> _dictionary = new Dictionary<{{KeyType}}, {{ConfName}}>();
         public List<{{ConfName}}> rawData = new List<{{ConfName}}>();
-        private ConfAsyncLoadHandle _loadHandle;
 
         partial void OnLoaded();
 
@@ -53,8 +53,6 @@
             _dictionary.Clear();
             _loadStatus = AssetLoadStatus.Unload;
         }
-
-        private Dictionary<{{KeyType}}, {{ConfName}}> _dictionary = new Dictionary<{{KeyType}}, {{ConfName}}>();
 
         private void MapData()
         {
@@ -195,7 +193,6 @@ namespace PowerCellStudio
         private static void WriteField(CsWriter csWriter, string confName, string keyType, List<ConfigTypeInfo> keys)
         {
             csWriter.WriteField(CsWriter.FieldSign.Public, $"List<{confName}>", "rawData", $"new List<{confName}>()")
-                .WriteField(CsWriter.FieldSign.Private, "ConfAsyncLoadHandle", "_loadHandle")
                 .WriteField(CsWriter.FieldSign.Private, $"Dictionary<{keyType}, {confName}>", "_dictionary", $"new Dictionary<{keyType},{confName}>()");
                 
             // ILookup<(int id, string name), string> 
@@ -333,6 +330,29 @@ namespace PowerCellStudio
                 .EndWriteIf()
                 .WriteLine($"return _dictionary.TryGetValue({keyName}, out var conf) ? conf : null;")
                 .EndWriteMethod();
+
+            if (keys.Count > 0)
+            {
+                var lookupKeyTypeTemp = new StringBuilder();
+                lookupKeyTypeTemp.Append($"{keys[0].typeName} {keys[0].fieldName}");
+                for (var i = 1; i < keys.Count - 1; i++)
+                {
+                    var key = keys[i];
+                    lookupKeyTypeTemp.Append($", {key.typeName} {key.fieldName}");
+                    var lookupKeyType = $"({lookupKeyTypeTemp})";
+                    csWriter.StartWriteMethod(CsWriter.MethodSign.Public,
+                            CsWriter.MethodSign.None,
+                            $"IEnumerable<{confName}>",
+                            $"Get",
+                            $"{lookupKeyType} keys")
+                        .StartWriteIf("_loadStatus != AssetLoadStatus.Loaded")
+                        .WriteLine($"return Enumerable.Empty<{confName}>();")
+                        .EndWriteIf()
+                        .WriteLine($"return _lookupBy{i + 1}Key[keys];")
+                        .EndWriteMethod();
+                }
+                lookupKeyTypeTemp.Clear();
+            }
         }
 
         private static void WriteConfEnumKeys(CsWriter csWriter, ExcelReader excelReader, ConfigTypeInfo keyInfo, string confName)

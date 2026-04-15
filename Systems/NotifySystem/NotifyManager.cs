@@ -64,14 +64,12 @@ namespace PowerCellStudio
 
         private void BindNodes()
         {
-            var allPresets =  ReflectionUtils.GetInstantiableSubclasses(typeof(INotifyBindPreset));
+            var allPresets =  ReflectionUtils.GetInstantiableSubtypeInstance<INotifyBindPreset>();
             if (allPresets == null || allPresets.Count == 0) return;
             for (var i = 0; i < allPresets.Count; i++)
             {
                 var preset = allPresets[i];
-                var presetInstance = ReflectionUtils.CreateInstance(preset) as INotifyBindPreset;
-                if (presetInstance == null) continue;
-                presetInstance.BindNodes(this);
+                preset.BindNodes(this);
             }
         }
 

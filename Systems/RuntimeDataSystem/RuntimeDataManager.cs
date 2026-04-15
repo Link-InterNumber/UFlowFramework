@@ -257,7 +257,7 @@ namespace PowerCellStudio
         {
             _handlers = new Dictionary<Type, IRuntimeDataHandler>();
             // 反射查找所可以实例化的IRuntimeDataHandler
-            var instantiableHandler = ReflectionUtils.GetInstantiableSubclasses(typeof(IRuntimeDataHandler));
+            var instantiableHandler = ReflectionUtils.GetInstantiableSubtype(typeof(IRuntimeDataHandler));
             for (var i = 0; i < instantiableHandler.Count; i++)
             {
                 var handlerType = instantiableHandler[i];

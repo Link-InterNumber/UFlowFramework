@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace PowerCellStudio
 {
@@ -12,18 +13,161 @@ namespace PowerCellStudio
     public static class ReflectionUtils
     {
         #region Create Instance
-
-        public static T Create<T>(params object[] parameters)
+        
+        /// <summary>
+        /// Creates an instance of the specified type.
+        /// 创建指定类型的实例。
+        /// </summary>
+        /// <param name="type">The type to instantiate. 要实例化的类型。</param>
+        /// <param name="parameters">Constructor arguments. 构造函数参数。</param>
+        /// <returns>The created instance. 创建的实例。</returns>
+        public static object CreateInstance(Type type, params object[] parameters)
         {
-            var type = typeof(T);
-            return Create<T>(type, parameters);
+            if (!CanInstantiate(type, parameters, out var reason))
+                throw new InvalidOperationException($"Cannot create an instance of '{type.FullName}'. {reason}");
+            return Activator.CreateInstance(type, parameters);
         }
 
-        public static T Create<T>(Type baseType, params object[] parameters)
+        /// <summary>
+        /// Creates an instance of the specified type.
+        /// 创建指定类型的实例。
+        /// </summary>
+        /// <param name="parameters">Constructor arguments. 构造函数参数。</param>
+        /// <typeparam name="T">The type to instantiate. 要实例化的类型。</typeparam>
+        /// <returns>The created instance. 创建的实例。</returns>
+        public static T CreateInstance<T>(params object[] parameters)
         {
-            if (baseType.IsAbstract || baseType.IsInterface)
-                throw new InvalidOperationException($"Cannot create an instance of abstract class or interface '{baseType.FullName}'.");
-            return (T)Activator.CreateInstance(baseType, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, parameters, null);
+            var type = typeof(T);
+            return (T)CreateInstance(type, parameters);
+        }
+
+        /// <summary>
+        /// Determines whether an instance of the specified type can be created with the given parameters.
+        /// 判断是否可以使用给定参数创建指定类型的实例。
+        /// </summary>
+        /// <param name="type">The type to check. 要检查的类型。</param>
+        /// <returns>True if the type can be instantiated; otherwise, false. 如果类型可以实例化，则为 true；否则为 false。</returns>
+        public static bool CanInstantiate(Type type)
+        {
+            return CanInstantiate(type, Array.Empty<object>(), out _);
+        }
+
+        /// <summary>
+        /// Determines whether an instance of the specified type can be created with the given parameters.
+        /// 判断是否可以使用给定参数创建指定类型的实例。
+        /// </summary>
+        /// <param name="type">The type to check. 要检查的类型。</param>
+        /// <param name="parameters">Constructor arguments. 构造函数参数。</param>
+        /// <returns>True if the type can be instantiated; otherwise, false. 如果类型可以实例化，则为 true；否则为 false。</returns>
+        public static bool CanInstantiate(Type type, params object[] parameters)
+        {
+            return CanInstantiate(type, parameters, out _);
+        }
+
+        /// <summary>
+        /// Determines whether an instance of the specified type can be created with the given parameters, and
+        /// provides a reason if it cannot be instantiated.
+        /// 判断是否可以使用给定参数创建指定类型的实例，并在无法实例化时提供原因。
+        /// </summary> <param name="type">The type to check. 要检查的类型。</param>
+        /// <param name="parameters">Constructor arguments. 构造函数参数。</param>
+        /// <param name="reason">The reason why the type cannot be instantiated, if applicable. 如果类型无法实例化，提供原因。</param>
+        /// <returns>True if the type can be instantiated; otherwise, false. 如果类型可以实例化，则为 true；否则为 false。</returns> 
+        public static bool CanInstantiate(Type type, object[] parameters, out string reason)
+        {
+            if (type == null)
+            {
+                reason = "Type is null.";
+                return false;
+            }
+
+            if (type.IsAbstract)
+            {
+                reason = "Abstract types cannot be instantiated.";
+                return false;
+            }
+
+            if (type.IsInterface)
+            {
+                reason = "Interfaces cannot be instantiated.";
+                return false;
+            }
+
+            if (type == typeof(void))
+            {
+                reason = "System.Void cannot be instantiated.";
+                return false;
+            }
+
+            if (type.ContainsGenericParameters)
+            {
+                reason = "Open generic types cannot be instantiated.";
+                return false;
+            }
+
+            // if (typeof(MonoBehaviour).IsAssignableFrom(type))
+            // {
+            //     reason = "MonoBehaviour types must be created with GameObject.AddComponent.";
+            //     return false;
+            // }
+            //
+            // if (typeof(ScriptableObject).IsAssignableFrom(type))
+            // {
+            //     reason = "ScriptableObject types must be created with ScriptableObject.CreateInstance.";
+            //     return false;
+            // }
+
+            if (!HasMatchingConstructor(type, parameters))
+            {
+                reason = "No matching instance constructor was found for the provided arguments.";
+                return false;
+            }
+
+            reason = null;
+            return true;
+        }
+
+        private static bool HasMatchingConstructor(Type type, object[] parameters)
+        {
+            parameters ??= Array.Empty<object>();
+
+            return type.GetConstructor(
+                       BindingFlags.Public | BindingFlags.Instance,
+                       null,
+                       parameters.Select(parameter => parameter?.GetType() ?? typeof(object)).ToArray(),
+                       null) != null
+                   || type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                       .Any(constructor => ParametersMatch(constructor.GetParameters(), parameters));
+        }
+
+        private static bool ParametersMatch(ParameterInfo[] ctorParameters, object[] providedParameters)
+        {
+            if (ctorParameters.Length != providedParameters.Length)
+            {
+                return false;
+            }
+
+            for (var index = 0; index < ctorParameters.Length; index++)
+            {
+                var providedParameter = providedParameters[index];
+                var targetType = ctorParameters[index].ParameterType;
+
+                if (providedParameter == null)
+                {
+                    if (targetType.IsValueType && Nullable.GetUnderlyingType(targetType) == null)
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                if (!targetType.IsInstanceOfType(providedParameter))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         #endregion
@@ -101,19 +245,6 @@ namespace PowerCellStudio
             return method?.Invoke(obj, parameters);
         }
 
-        /// <summary>
-        /// Creates an instance of the specified type.
-        /// 创建指定类型的实例。
-        /// </summary>
-        /// <param name="type">The type to instantiate. 要实例化的类型。</param>
-        /// <param name="args">Constructor arguments. 构造函数参数。</param>
-        /// <returns>The created instance. 创建的实例。</returns>
-        public static object CreateInstance(Type type, params object[] args)
-        {
-            if (type == null) throw new ArgumentNullException(nameof(type));
-            return Activator.CreateInstance(type, args);
-        }
-
         #endregion
 
         #region Generic
@@ -130,7 +261,13 @@ namespace PowerCellStudio
         {
             if (genericType == null) throw new ArgumentNullException(nameof(genericType));
             if (typeArgs == null) throw new ArgumentNullException(nameof(typeArgs));
+            if (!genericType.IsGenericTypeDefinition)
+                throw new ArgumentException("The provided type must be a generic type definition.", nameof(genericType));
+            if (typeArgs.Length != genericType.GetGenericArguments().Length)
+                throw new ArgumentException("The number of type arguments does not match the generic type definition.", nameof(typeArgs));
             var constructedType = genericType.MakeGenericType(typeArgs);
+            if (!CanInstantiate(constructedType, ctorArgs, out var reason))
+                throw new InvalidOperationException($"Cannot create an instance of '{genericType.FullName}' with the specified type arguments. {reason}");
             return Activator.CreateInstance(constructedType, ctorArgs);
         }
 
@@ -237,6 +374,10 @@ namespace PowerCellStudio
 
         #endregion
 
+        private static Dictionary<Type, List<Type>> _subtypeCache = new Dictionary<Type, List<Type>>();
+
+        public static bool needRefresh = true;
+        
         /// <summary>
         /// Gets all instantiable subclasses (including generic subclasses) of a given type in the specified assembly.
         /// 获取指定类型（包括泛型类型）在指定程序集中的所有可实例化子类。
@@ -244,41 +385,75 @@ namespace PowerCellStudio
         /// <param name="baseType">The base type or generic type definition. 基类或泛型类型定义。</param>
         /// <param name="assembly">The assembly to search. 要搜索的程序集。</param>
         /// <returns>List of instantiable subclasses. 可实例化子类的列表。</returns>
-        public static List<Type> GetInstantiableSubclasses(Type baseType, Assembly assembly = null)
+        public static List<Type> GetInstantiableSubtype(Type baseType, params Assembly[] assemblise)
         {
             if (baseType == null) throw new ArgumentNullException(nameof(baseType));
-            assembly ??= Assembly.GetAssembly(baseType);
-            return assembly.GetTypes()
-                .Where(t =>
-                    t != baseType &&
-                    baseType.IsAssignableFrom(t) &&
-                    !t.IsAbstract &&
-                    !t.IsInterface &&
-                    (!baseType.IsGenericTypeDefinition || (t.IsGenericType && t.GetGenericTypeDefinition() == baseType))
-                )
-                .ToList();
+            if (needRefresh)
+            {
+                _subtypeCache.Clear();
+                needRefresh = false;
+            }
+            if (_subtypeCache.TryGetValue(baseType, out var list)) return list;
+            if (assemblise == null || assemblise.Length == 0) assemblise = AppDomain.CurrentDomain.GetAssemblies();
+            var types = new List<Type>();
+            foreach (var assembly in assemblise)
+            {
+                types.AddRange(
+                    assembly.GetTypes()
+                        .Where(t =>
+                            IsSubTypeOf(baseType, t) &&
+                            CanInstantiate(t)
+                        )
+                );
+            }
+            _subtypeCache[baseType] =  types;
+            return types;
         }
 
         /// <summary>
-        /// Determines whether a type is a subclass of a specified base type or generic type definition.
-        /// 判断一个类型是否是指定基类或泛型类型定义的子类。
+        /// Gets instances of all instantiable subclasses (including generic subclasses) of a given type in the specified assembly.
+        /// 获取指定类型（包括泛型类型）在指定程序集中的所有可实例化子类的实例。
+        /// </summary>
+        /// <param name="assemblise">The assemblies to search. 要搜索的程序集。</param>
+        /// <typeparam name="T">The base type. 基类类型。</typeparam>
+        /// <returns>List of instances of the instantiable subclasses. 可实例化子类的实例列表。</returns>
+        public static List<T> GetInstantiableSubtypeInstance<T>(params Assembly[] assemblise)
+        {
+            var baseType = typeof(T);
+            if (baseType.ContainsGenericParameters)
+                throw new ArgumentException("The provided type must be a generic type definition.", nameof(baseType));
+            var types = GetInstantiableSubtype(baseType, assemblise);
+            var instances = new List<T>();
+            foreach (var type in types)
+            {
+                instances.Add((T)Activator.CreateInstance(type));
+            }
+            return instances;
+        }
+        
+        /// <summary>
+        /// Determines whether a type is a subtype of a specified base type or generic type definition.
+        /// 判断一个类型是否是指定基类或泛型类型定义的子类型。
         /// </summary>
         /// <param name="baseType">The base type or generic type definition. 基类或泛型类型定义。</param>
         /// <param name="toCheck">The type to check. 要检查的类型。</ param>
-        public static bool IsSubclassOf(Type baseType, Type toCheck)
+        public static bool IsSubTypeOf(Type baseType, Type toCheck)
         {
+            if (baseType == null) throw new ArgumentNullException(nameof(baseType));
+            if (toCheck == null) throw new ArgumentNullException(nameof(toCheck));
+            
             if (baseType.IsAssignableFrom(toCheck) && baseType != toCheck)
             {
                 return true;
             }
-            else if (IsSubclassOfRawGeneric(baseType, toCheck))
+            if (IsSubTypeOfRawGeneric(baseType, toCheck))
             {
                 return true;
             }
             return false;
         }
 
-        private static bool IsSubclassOfRawGeneric(Type generic, Type toCheck)
+        private static bool IsSubTypeOfRawGeneric(Type generic, Type toCheck)
         {
             while (toCheck != null && toCheck != typeof(object))
             {

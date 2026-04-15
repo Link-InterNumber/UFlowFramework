@@ -6,11 +6,12 @@ namespace PowerCellStudio
 {
     public static class ChunkMaker
     {
-        public static List<ChunkData<TData>> Slice<TData, TKey>(IEnumerable<TData> dataSource, int chunkSize, Func<TData, TKey> keySelector)
+        public static IEnumerable<ChunkData<TData>> Slice<TData, TKey>(IEnumerable<TData> dataSource, int chunkSize, Func<TData, TKey> keySelector)
         {
             if (dataSource == null)
-                return new List<ChunkData<TData>>();
+                yield break;
             var count = 0;
+            var index = 0;
             var chunkDataList = new List<ChunkData<TData>>();
 
             var tempList = new List<TData>(chunkSize);
@@ -20,36 +21,35 @@ namespace PowerCellStudio
                 tempList.Add(data);
                 count++;
                 if (count % chunkSize != 0) continue;
-                var chunkData = GetChunkData(tempList, chunkDataList.Count, offset, keySelector);
-                chunkDataList.Add(chunkData);
+                var chunkData = GetChunkData(tempList, index, offset, keySelector);
+                yield return chunkData;
+                index++;
                 offset += chunkData.binaryData.Length;
-                tempList = new List<TData>(chunkSize);
+                tempList.Clear();
             }
 
             if (tempList.Count > 0)
             {
                 var chunkData = GetChunkData(tempList, chunkDataList.Count, offset, keySelector);
-                chunkDataList.Add(chunkData);
+                yield return chunkData;
             }
-
-            return chunkDataList;
         }
 
         private static ChunkData<TData> GetChunkData<TData, TKey>(List<TData> dataList, int index, long offset,  Func<TData, TKey> keySelector)
         {
-            var binaryData = SerializeUtils.SerializeToBinary(dataList);
+            var sourceData = dataList.ToArray();
+            var binaryData = SerializeUtils.SerializeToBinary(sourceData);
             var keyData = SerializeUtils.SerializeToBinary(dataList.Select(keySelector).ToArray());
             var chunkData = new ChunkData<TData>
             {
-                data = new List<TData>(dataList),
                 Info = new ChunkInfo
                 {
                     index = index,
                     offset = offset,
-                    length = binaryData.Length
+                    length = binaryData.Length,
+                    keyData = keyData
                 },
                 binaryData = binaryData,
-                keyData = keyData
             };
             return chunkData;
         }
@@ -61,13 +61,22 @@ namespace PowerCellStudio
         public int index;
         public long offset;
         public int length;
+        /// <summary>
+        /// 原始数据为TKey[]
+        /// The original data is TKey[]
+        /// </summary>
+        public byte[] keyData;
     }
 
+    [Serializable]
     public class ChunkData<T>
     {
         public ChunkInfo Info;
-        public List<T> data;
+        /// <summary>
+        /// 原始数据为TData[]
+        /// The original data is TData[]
+        /// </summary>
         public byte[] binaryData;
-        public byte[] keyData;
+
     }
 }
