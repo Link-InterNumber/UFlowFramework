@@ -34,8 +34,7 @@ namespace PowerCellStudio
         private static void Init()
         {
             // 旧数据转换器列表初始化
-            var dataTranslators = new List<DataTranslatorBase>();
-            var dataTranslatorType = typeof(DataTranslatorBase);
+            var dataTranslators = ReflectionUtils.GetInstantiableSubtypeInstance<DataTranslatorBase>();
             // 存储处理器数组初始化
             var enumValues = Enum.GetValues(typeof(PlayerDataType));
             _persistenceDataProcessors = new PersistenceDataProcessor[enumValues.Length];
@@ -47,17 +46,8 @@ namespace PowerCellStudio
             {
                 if (type.IsAbstract)
                     continue;
-
-                if (dataTranslatorType.IsAssignableFrom(type))
-                {
-                    var instance = (DataTranslatorBase)Activator.CreateInstance(type);
-                    dataTranslators.Add(instance);
-                    continue;
-                }
-
                 if (!persistenceDataProcessorType.IsAssignableFrom(type))
                     continue;
-
                 // 获取自定义特性
                 var attribute = type.GetCustomAttribute<DataProcessorAttribute>();
                 if (attribute != null)
@@ -66,7 +56,6 @@ namespace PowerCellStudio
                     {
                         // 4. 创建实例
                         var instance = (PersistenceDataProcessor)Activator.CreateInstance(type);
-
                         // 5. 根据枚举值放入数组对应的索引位置
                         int index = (int)attribute.DataType;
                         if (index < _persistenceDataProcessors.Length)
@@ -79,7 +68,7 @@ namespace PowerCellStudio
                     }
                     catch (Exception e)
                     {
-                        LinkLog.LogError($"[PlayerDataUtils] Failed to instantiate processor for {attribute.DataType}: {e.Message}");
+                        LinkLog.LogError($"[PlayerDataUtils] Failed to instantiate processor for {attribute.DataType}: {e.Message}\n{e.StackTrace}");
                     }
                 }
             }

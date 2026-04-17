@@ -1,10 +1,12 @@
 using System;
 using System.Buffers;
+using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace PowerCellStudio
 {
@@ -53,12 +55,7 @@ namespace PowerCellStudio
             }
             try
             {
-                var json = JsonConvert.SerializeObject(data, Formatting.None, new JsonSerializerSettings
-                {
-                    // TypeNameHandling = TypeNameHandling.Auto,
-                    PreserveReferencesHandling = PreserveReferencesHandling.Objects
-                });
-                var bytes = Encoding.UTF8.GetBytes(json);
+                var bytes = AnySerializer.Serializer.Serialize(data);
                 // 2. GZip 压缩
                 using (var memoryStream = new MemoryStream())
                 {
@@ -94,12 +91,13 @@ namespace PowerCellStudio
                     result = resultStream.ToArray();
                 }
 
-                var json = Encoding.UTF8.GetString(result);
-                T data = JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings
-                {
-                    // TypeNameHandling = TypeNameHandling.Auto,
-                    PreserveReferencesHandling = PreserveReferencesHandling.Objects
-                });
+                var data = AnySerializer.Serializer.Deserialize<T>(result, AnySerializer.SerializerOptions.None);
+                // var json = Encoding.UTF8.GetString(result);
+                // T data = JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings
+                // {
+                //     // TypeNameHandling = TypeNameHandling.Auto,
+                //     PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                // });
                 return data;
             }
             catch (Exception e)
@@ -117,12 +115,7 @@ namespace PowerCellStudio
             }
             try
             {
-                var json = JsonConvert.SerializeObject(data, Formatting.None, new JsonSerializerSettings
-                {
-                    // TypeNameHandling = TypeNameHandling.Auto,
-                    PreserveReferencesHandling = PreserveReferencesHandling.Objects
-                });
-                var bytes = Encoding.UTF8.GetBytes(json);
+                var bytes = AnySerializer.Serializer.Serialize(data);
 
                 // 2. GZip 压缩
                 using (var memoryStream = new MemoryStream())
@@ -157,13 +150,13 @@ namespace PowerCellStudio
                     await gzipStream.CopyToAsync(resultStream);
                     result = resultStream.ToArray();
                 }
-                
-                var json = Encoding.UTF8.GetString(result);
-                var data = JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings
-                {
-                    // TypeNameHandling = TypeNameHandling.Auto,
-                    PreserveReferencesHandling = PreserveReferencesHandling.Objects
-                });
+                var data = AnySerializer.Serializer.Deserialize<T>(result, AnySerializer.SerializerOptions.None);
+                // var json = Encoding.UTF8.GetString(result);
+                // var data = JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings
+                // {
+                //     // TypeNameHandling = TypeNameHandling.Auto,
+                //     PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                // });
                 return data;
             }
             catch (Exception e)

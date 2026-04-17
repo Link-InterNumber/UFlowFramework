@@ -14,8 +14,8 @@ namespace PowerCellStudio
         private static ApplicationState _applicationState;
         public static ApplicationState appState => _applicationState;
         private ResolutionLv _curResolutionLv = ResolutionLv.Mid;
-        public static bool enableLog;
-        public static bool enableWarning;
+        public static bool enableLog = true;
+        public static bool enableWarning = true;
         public static bool enableError = true;
 
         public ResolutionLv curResolutionLv

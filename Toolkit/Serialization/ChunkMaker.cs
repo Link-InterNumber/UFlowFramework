@@ -2,64 +2,45 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEngine.Pool;
 
 namespace PowerCellStudio
 {
     public static class ChunkMaker
     {
         /// <summary>
-        /// Writes data to a file in chunked format: each record is stored as a 4-byte length prefix followed by payload bytes.
-        /// 以分块格式将数据写入文件：每条记录由4字节长度前缀和数据字节组成。
+        /// Writes records as [4-byte length + payload] chunks, ending each chunk with 0.
+        /// 以[4字节长度+数据]分块写入记录，并以0结束每个块。
         /// </summary>
-        /// <param name="fileDirectory">
-        /// Target directory to save the file.
-        /// 要保存文件的目标目录。
-        /// </param>
-        /// <param name="fileName">
-        /// Name of the file to write. 
-        /// 要写入的文件名
-        /// </param>
-        /// <param name="data">
-        /// Source sequence to serialize and write.
-        /// 需要序列化并写入的数据序列。
-        /// </param>
-        /// <param name="keySelector">
-        /// A function to extract the key used for chunking from each data item.
-        /// 从每个数据项中提取分块使用的键的函数。
-        /// </param>
-        /// <param name="chunkSize">
-        /// Number of records to include in each chunk. If the total number of records is not divisible by this chunk size, the last chunk will contain the remaining records.
-        /// 每个数据块包含的记录数。如果记录总数不能被该块大小整除，则最后一个块将包含剩余的记录。
-        /// </param>
-        /// <param name="deEncrypt">
-        /// Whether serialized bytes should be encrypted before writing.
-        /// 是否在写入前对序列化字节执行加密处理。
-        /// </param>
-        /// <typeparam name="TData">
-        /// Element type of the source sequence.
-        /// 源数据序列元素类型。
-        /// </typeparam>
-        /// <typeparam name="TKey">
-        /// Type of the key used for chunking.
-        /// 分块使用的键类型。
-        /// </typeparam>
-        /// <returns>
-        /// An enumerable of <see cref="ChunkInfo"/> objects, each representing a chunk of data written to the file. The <see cref="ChunkInfo.keyData"/> field contains the serialized keys for the corresponding chunk.
-        /// 一个 <see cref="ChunkInfo"/> 对象的枚举，每个对象表示写入文件的一块数据。<see cref="ChunkInfo.keyData"/> 字段包含对应数据块的序列化键。
-        /// </returns>
-        public static IEnumerable<ChunkInfo> WriteYieldInstruction<TData, TKey>(string fileDirectory, string fileName, IEnumerable<TData> data,
+        /// <param name="filePath">Output file path. 输出文件路径。</param>
+        /// <param name="data">Source records to serialize and write. 待序列化并写入的源记录。</param>
+        /// <param name="keySelector">Extracts per-record chunk key. 提取每条记录的分块键。</param>
+        /// <param name="chunkSize">Maximum records per chunk. 每个分块的最大记录数。</param>
+        /// <param name="deEncrypt">Encrypts bytes before writing when true. 为true时写入前加密字节。</param>
+        /// <typeparam name="TData">Record type. 记录类型。</typeparam>
+        /// <typeparam name="TKey">Chunk key type. 分块键类型。</typeparam>
+        /// <returns>Chunk metadata sequence; <see cref="ChunkInfo.keyData"/> stores serialized <c>TKey[]</c>. 分块元数据序列；<see cref="ChunkInfo.keyData"/>保存序列化<c>TKey[]</c>。</returns>
+        public static void StreamWrite<TData, TKey>(string fileDirectory, string fileName, IEnumerable<TData> data,
+            Func<TData, TKey> keySelector, int chunkSize, bool deEncrypt = true)
+        {
+            if (!Directory.Exists(fileDirectory)) Directory.CreateDirectory(fileDirectory);
+            var dataFilePath = Path.Combine(fileDirectory, $"{fileName}Data.bytes");
+            var chunkInfos = WriteYieldInstruction(dataFilePath, data, keySelector, chunkSize, deEncrypt);
+            var indexFilePath = Path.Combine(fileDirectory, $"{fileName}Index.bytes");
+            StreamWriteChunkInfo(indexFilePath, chunkInfos, deEncrypt);
+        }
+        
+        private static IEnumerable<ChunkInfo> WriteYieldInstruction<TData, TKey>(string filePath, IEnumerable<TData> data,
             Func<TData, TKey> keySelector, int chunkSize, bool deEncrypt = false)
         {
-            var dataFilePath = Path.Combine(fileDirectory, $"{fileName}Data.bytes");
-            var indexFilePath = Path.Combine(fileDirectory, $"{fileName}Index.bytes");
-            using var dataFile = new FileStream(dataFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            using var dataFile = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
             if (chunkSize <= 0)
             {
                 chunkSize = 256;
             }
             var offset = 0L;
             var offsetCounter = 0L;
-            var keys = new List<TKey>();
+            var keys = ListPool<TKey>.Get();
             var index = 0;
             foreach (var item in data)
             {
@@ -74,7 +55,6 @@ namespace PowerCellStudio
                 // Write the length of the data
                 var lengthBytes = System.BitConverter.GetBytes(dataBytes.Length);
                 dataFile.Write(lengthBytes, 0, lengthBytes.Length);
-                
                 dataFile.Write(dataBytes, 0, dataBytes.Length);
                 offsetCounter += lengthBytes.Length + dataBytes.Length;
                 if (keys.Count == chunkSize)
@@ -88,7 +68,7 @@ namespace PowerCellStudio
                     {
                         index = index,
                         offset = offset,
-                        keyData = SerializeUtils.SerializeToBinary(keys.ToArray())
+                        keyData = keys.Count > 0 ? SerializeUtils.SerializeToBinary(keys.ToArray()) : Array.Empty<byte>(),
                     };
                     keys.Clear();
                     yield return chunkInfo;
@@ -111,19 +91,25 @@ namespace PowerCellStudio
                 keys.Clear();
                 yield return chunkInfo;
             }
+            ListPool<TKey>.Release(keys);
+            dataFile.Flush();
         }
-    }
-    
-    [Serializable]
-    public class ChunkInfo
-    {
-        public int index;
-        public long offset;
-        public int length;
-        /// <summary>
-        /// 原始数据为TKey[]
-        /// The original data is TKey[]
-        /// </summary>
-        public byte[] keyData;
+        
+        private static void StreamWriteChunkInfo(string filePath, IEnumerable<ChunkInfo> chunkInfos, bool deEncrypt)
+        {
+            using var idxFile = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            foreach (var chunkInfo in chunkInfos)
+            {
+                var dataBytes = SerializeUtils.SerializeToBinary(chunkInfo);
+                if (deEncrypt)
+                {
+                    dataBytes = EncryptUtils.AESEncrypt(dataBytes, ConstSetting.FileEncryptionKey);
+                }
+                var lengthBytes = System.BitConverter.GetBytes(dataBytes.Length);
+                idxFile.Write(lengthBytes, 0, lengthBytes.Length);
+                idxFile.Write(dataBytes, 0, dataBytes.Length);
+            }
+            idxFile.Flush();
+        }
     }
 }

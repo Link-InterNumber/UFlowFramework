@@ -414,6 +414,29 @@ namespace PowerCellStudio
         /// Gets instances of all instantiable subclasses (including generic subclasses) of a given type in the specified assembly.
         /// 获取指定类型（包括泛型类型）在指定程序集中的所有可实例化子类的实例。
         /// </summary>
+        /// <param name="match">Optional filter to select specific types. 可选的过滤器，用于选择特定类型。</param>
+        /// <param name="assemblise">The assemblies to search. 要搜索的程序集。</param>
+        /// <typeparam name="T">The base type. 基类类型。</typeparam>
+        /// <returns>List of instances of the instantiable subclasses. 可实例化子类的实例列表。</returns>
+        public static List<T> GetInstantiableSubtypeInstance<T>(Func<Type, bool> match, params Assembly[] assemblise)
+        {
+            var baseType = typeof(T);
+            if (baseType.ContainsGenericParameters)
+                throw new ArgumentException("The provided type must be a generic type definition.", nameof(baseType));
+            var types = GetInstantiableSubtype(baseType, assemblise);
+            var instances = new List<T>();
+            foreach (var type in types)
+            {
+                if (match != null && !match(type)) continue;
+                instances.Add((T)Activator.CreateInstance(type));
+            }
+            return instances;
+        }
+        
+        /// <summary>
+        /// Gets instances of all instantiable subclasses (including generic subclasses) of a given type in the specified assembly.
+        /// 获取指定类型（包括泛型类型）在指定程序集中的所有可实例化子类的实例。
+        /// </summary>
         /// <param name="assemblise">The assemblies to search. 要搜索的程序集。</param>
         /// <typeparam name="T">The base type. 基类类型。</typeparam>
         /// <returns>List of instances of the instantiable subclasses. 可实例化子类的实例列表。</returns>

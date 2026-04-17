@@ -22,30 +22,15 @@ namespace PowerCellStudio
     public static class ChunkReader
     {
         /// <summary>
-        /// Reads chunked binary records from a file and yields deserialized objects one by one.
-        /// 从文件中按分块格式读取二进制记录，并逐条反序列化后返回。
+        /// Reads chunked records from a file and yields deserialized objects sequentially.
+        /// 从文件中按分块格式顺序读取并以迭代形式返回反序列化后的对象。
         /// </summary>
-        /// <param name="filePath">
-        /// The target file path to read from.
-        /// 要读取的目标文件路径。
-        /// </param>
-        /// <param name="offset">
-        /// Byte offset where reading starts. If greater than 0, the stream seeks to this position first.
-        /// 读取起始字节偏移量；当大于0时，会先将流定位到该位置再开始读取。
-        /// </param>
-        /// <param name="deEncrypt">
-        /// Whether payload bytes should be processed by AES before deserialization.
-        /// 是否在反序列化前对数据字节执行 AES 处理。
-        /// </param>
-        /// <typeparam name="TData">
-        /// The target object type to deserialize.
-        /// 反序列化目标对象类型。
-        /// </typeparam>
-        /// <returns>
-        /// An enumerable sequence of deserialized objects; stops when the file ends, data is incomplete, or terminal zero-length chunk is encountered.
-        /// 反序列化后的对象序列；当文件结束、数据不完整或遇到0长度结束块时停止。
-        /// </returns>
-        public static IEnumerable<TData> ReadYieldInstruction<TData>(string filePath, long offset, bool deEncrypt = false)
+        /// <param name="filePath">Target file path to read. 要读取的目标文件路径。</param>
+        /// <param name="offset">Starting byte offset for reading. 读取的起始字节偏移量。</param>
+        /// <param name="deEncrypt">Decrypt before deserialization if true. 为true时在反序列化前解密。</param>
+        /// <typeparam name="TData">Target type to deserialize. 反序列化的目标类型。</typeparam>
+        /// <returns>Sequence of deserialized records. 反序列化后的记录序列。</returns>
+        public static IEnumerable<TData> ReadYieldInstruction<TData>(string filePath, long offset, bool deEncrypt = true)
         {
             if (!File.Exists(filePath)) yield break;
             using var dataFile = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -78,6 +63,45 @@ namespace PowerCellStudio
                 }
                 var data = SerializeUtils.DeserializeFromBinary<TData>(dataBytes);
                 yield return data;
+            }
+        }
+
+        /// <summary>
+        /// Reads chunk index info and associated keys from the index file.
+        /// 从索引文件中读取分块索引信息及关联键数组。
+        /// </summary>
+        /// <param name="filePath">Index file path to read. 要读取的索引文件路径。</param>
+        /// <param name="deEncrypt">Decrypt before deserialization if true. 为true时在反序列化前解密。</param>
+        /// <typeparam name="TKey">Chunk key type. 分块的键类型。</typeparam>
+        /// <returns>Sequence of chunk index, file offset, and keys. 包含分块索引、偏移量和键数组的元组序列。</returns>
+        public static IEnumerable<(int index, long offset, TKey[] keys)> ReadChunks<TKey>(string filePath, bool deEncrypt = true)
+        {
+            if (!File.Exists(filePath)) yield break;
+            using var idxFile = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var lengthBuffer = new byte[4];
+            while (idxFile.CanRead)
+            {
+                var headCount = idxFile.Read(lengthBuffer, 0, 4);
+                if (headCount != 4) yield break;
+                
+                var dataLength = System.BitConverter.ToInt32(lengthBuffer, 0);
+                if (dataLength == 0) yield break;
+                
+                var dataBytes = new byte[dataLength];
+                var readDataLength = idxFile.Read(dataBytes, 0, dataLength);
+                if (readDataLength != dataLength) yield break;
+                
+                if (deEncrypt)
+                {
+                    dataBytes = EncryptUtils.AESEncrypt(dataBytes, ConstSetting.FileEncryptionKey);
+                }
+                
+                var chunkInfo = SerializeUtils.DeserializeFromBinary<ChunkInfo>(dataBytes);
+                var keys = (chunkInfo.keyData != null && chunkInfo.keyData.Length > 0) 
+                    ? SerializeUtils.DeserializeFromBinary<TKey[]>(chunkInfo.keyData) 
+                    : Array.Empty<TKey>();
+                    
+                yield return (chunkInfo.index, chunkInfo.offset, keys);
             }
         }
     }
