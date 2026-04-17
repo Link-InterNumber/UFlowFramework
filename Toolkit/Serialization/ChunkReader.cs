@@ -37,7 +37,7 @@ namespace PowerCellStudio
         /// Whether payload bytes should be processed by AES before deserialization.
         /// 是否在反序列化前对数据字节执行 AES 处理。
         /// </param>
-        /// <typeparam name="T">
+        /// <typeparam name="TData">
         /// The target object type to deserialize.
         /// 反序列化目标对象类型。
         /// </typeparam>
@@ -45,7 +45,7 @@ namespace PowerCellStudio
         /// An enumerable sequence of deserialized objects; stops when the file ends, data is incomplete, or terminal zero-length chunk is encountered.
         /// 反序列化后的对象序列；当文件结束、数据不完整或遇到0长度结束块时停止。
         /// </returns>
-        public static IEnumerable<T> ReadYieldInstruction<T>(string filePath, long offset, bool deEncrypt = false)
+        public static IEnumerable<TData> ReadYieldInstruction<TData>(string filePath, long offset, bool deEncrypt = false)
         {
             if (!File.Exists(filePath)) yield break;
             using var dataFile = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -76,7 +76,7 @@ namespace PowerCellStudio
                 {
                     dataBytes = EncryptUtils.AESEncrypt(dataBytes, ConstSetting.FileEncryptionKey);
                 }
-                var data = SerializeUtils.DeserializeFromBinary<T>(dataBytes);
+                var data = SerializeUtils.DeserializeFromBinary<TData>(dataBytes);
                 yield return data;
             }
         }

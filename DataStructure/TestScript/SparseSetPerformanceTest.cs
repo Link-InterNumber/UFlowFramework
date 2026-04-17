@@ -8,7 +8,7 @@ public class SparseSetPerformanceTest : RunTestMono
 {
     // --- 测试参数 ---
     // 增加此值以进行更重量级的测试
-    private const int NUM_ITEMS = 200000; 
+    private const int NUM_ITEMS = 500000; 
     // 在随机访问和移除测试中执行的操作次数
     private const int NUM_OPERATIONS = 500000;
 
@@ -55,7 +55,7 @@ public class SparseSetPerformanceTest : RunTestMono
             foreach (var item in itemsToAdd) sparseSet.Add(item);
         });
         RunPerformanceTest("Random Access (Contains)", () => {
-            foreach (var index in indicesToAccess) sparseSet.Contains(index);
+            foreach (var index in indicesToAccess) sparseSet.FindOrDefault(index);
         });
         RunPerformanceTest("Iteration (foreach)", () => {
             int count = 0;

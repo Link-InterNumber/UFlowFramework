@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace PowerCellStudio
 {
@@ -184,15 +185,11 @@ namespace PowerCellStudio
             if (_updateCoroutine != null) ApplicationManager.instance.StopCoroutine(_updateCoroutine);
             if (destroyUnused)
             {
-                var toDestroy = new List<GameObject>();
-                for (var i = data.Count; i < transform.childCount; i++)
+                for (var i = 0; i < data.Count; i++)
                 {
-                    toDestroy.Add(transform.GetChild(i).gameObject);
+                    transform.GetChild(i).gameObject.SetActive(false);
                 }
-                foreach (var go in toDestroy)
-                {
-                    GameObject.Destroy(go);
-                }
+                RemoveUnusedItems(data.Count);
             }
             else
             {
@@ -215,8 +212,10 @@ namespace PowerCellStudio
                     var go = Instantiate(_prefab, transform);
                     go.SetActive(true);
                 }
-                var item = transform.GetChild(i).GetComponent<IListItem>();
+                var child = transform.GetChild(i);
+                var item = child.GetComponent<IListItem>();
                 if (item == null) continue;
+                child.gameObject.SetActive(true);
                 var o = data[i];
                 item.UpdateContent(i, o, this);
                 yield return new WaitForSeconds(interval);
@@ -247,15 +246,7 @@ namespace PowerCellStudio
 
             if (destroyUnused)
             {
-                var toDestroy = new List<GameObject>();
-                for (var i = data.Count; i < transform.childCount; i++)
-                {
-                    toDestroy.Add(transform.GetChild(i).gameObject);
-                }
-                foreach (var go in toDestroy)
-                {
-                    GameObject.Destroy(go);
-                }
+                RemoveUnusedItems(data.Count);
             }
             else
             {
@@ -414,15 +405,21 @@ namespace PowerCellStudio
         /// Removes unused items from the list of child items.
         /// 删除无用节点。
         /// </summary>
-        public void RemoveUnusedItems()
+        public void RemoveUnusedItems(int startIndex = 0)
         {
-            for (var i = transform.childCount - 1; i > 0; i--)
+            if (startIndex < 0 || startIndex >= transform.childCount) return;
+            var toDestroy = ListPool<GameObject>.Get();
+            for (var i = startIndex; i < transform.childCount; i++)
             {
-                if (!transform.GetChild(i).gameObject.activeSelf)
-                {
-                    Destroy(transform.GetChild(i).gameObject);
-                }
+                var go = transform.GetChild(i).gameObject;
+                if (go.activeSelf) continue;
+                toDestroy.Add(go);
             }
+            foreach (var go in toDestroy)
+            {
+                GameObject.Destroy(go);
+            }
+            ListPool<GameObject>.Release(toDestroy);
         }
     }
 }

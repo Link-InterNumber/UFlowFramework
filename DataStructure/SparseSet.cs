@@ -9,6 +9,9 @@ namespace PowerCellStudio
         public int index { get;  }
     }
 
+    /// <summary>
+    /// 依赖于int索引的集合，对比字典，查找/遍历性能更优，但插入较差，移除性能略差
+    /// </summary>
     public class SparseSet<T> : ICollection<T> where T : IIndex
     {
         public static SparseSet<T> Empty()
@@ -30,7 +33,7 @@ namespace PowerCellStudio
         public SparseSet()
         {
             _count = 0;
-            _dense = new T[4];
+            _dense = new T[Math.Max(4, _pageSize / 2)];
             _sparse = new int[_pageSize];
         }
 
@@ -38,8 +41,20 @@ namespace PowerCellStudio
         {
             _pageSize = pageSize;
             _count = 0;
-            _dense = new T[4];
+            _dense = new T[Math.Max(4, _pageSize / 2)];
             _sparse = new int[_pageSize];
+        }
+        
+        /// <summary>
+        /// 需要极限控制内存时，可以设置密实数组长度，例如 最大Id范围 / 3 来初始化密实数组
+        /// 这种方式会比直接使用 T[最大Id范围] 要节省内存
+        /// </summary>
+        public SparseSet(int denseSize, int sparseSize, int pageSize)
+        {
+            _pageSize = pageSize;
+            _count = 0;
+            _dense = new T[denseSize];
+            _sparse = new int[sparseSize];
         }
 
         public IEnumerator<T> GetEnumerator()
@@ -129,10 +144,16 @@ namespace PowerCellStudio
             var realIndex = _sparse[itemIndex];
             if (realIndex == 0) return false;
             _sparse[itemIndex] = 0;
-
+            // 末尾元素可以直接移除，不要操作数据移动
+            if (realIndex == _count)
+            {
+                _dense[_count] = default;
+                _count--;
+                return true;
+            }
+            // 使用末尾元素填充空位，并消除末尾元素引用
             var lastItem = _dense[_count];
             _dense[realIndex] = lastItem;
-
             _sparse[lastItem.index] = realIndex;
 
             _dense[_count] = default;
