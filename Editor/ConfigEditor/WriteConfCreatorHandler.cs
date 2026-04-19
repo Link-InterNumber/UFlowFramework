@@ -14,18 +14,18 @@
             }
 
             var md5 = ConfigMenu.CalFileMD5(path);
-            if (md5 == oldMd5 && File.Exists("Assets/ConfigAsset/{{ConfName}}Asset.{{ExtensionName}}"))
+            if (md5 == oldMd5 && File.Exists("Assets/ConfigAsset/{{ConfName}}Data.bytes"))
             {
                 return md5;
             }
 
-            var asset = new {{ConfName}}Data();
             using (var reader = new ExcelReader(path))
             {
                 var ws = reader.workbook.Worksheets[1];
                 var rowCount = ws.Dimension.Rows;
                 IEnumerable<{{ConfName}}> readYieldInstruction = (Worksheet ws, int rowCount) => 
                 {
+                    var fileName = "{{ConfName}}";
                     for (int raw = 4; raw <= rowCount; raw++)
                     {
                         var firstCell = ws.Cells[raw, {{MiniColumn}}].Value;
@@ -43,45 +43,19 @@
                         yield return data;
                     }
                 }
-                var chunkDataYieldInstruction = ChunkMaker.Slice<{{ConfName}}, {{KeyType}}>(readYieldInstruction, 128, 
-                    (conf) => 
-                    {
+        
 #if isEnumKey
-                        var keyValue = Enum.TryParse<RolePropConfKey>(conf.id, out var enumKey) ? enumKey : 0;
+                var keySelector = new Func<{{ConfName}}, {{KeyType}}>(conf => Enum.TryParse<{{ConfName}}Key>(conf.{{keyName}}, out var enumKey) ? enumKey : 0;
 #else if MultiKey
-                        var keyValue = (
+                var keySelector = new Func<{{ConfName}}, {{KeyType}}>(conf =>(
 #for {{KeyList}}
-                            {{keyName}}: conf.{{keyName}}
+                    {{keyName}}: conf.{{keyName}},
 #forend
-                            );
+                        ));
 #else
-                        var keyValue = conf.{{KeyName}};
+                var keySelector = new Func<{{ConfName}}, {{KeyType}}>(conf => conf.{{keyName}});
 #endif
-                        return keyValue;
-                    });
-                // 
-
-                // 使用流式写入，避免一次性将整个数据加载到内存中
-                using var indexFile = new FileStream("Assets/ConfigAsset/{{ConfName}}Idx.bytes}", FileMode.Create, FileAccess.Write, FileShare.Read);
-                using var dataFile = new FileStream("Assets/ConfigAsset/{{ConfName}}Asset.bytes}", FileMode.Create, FileAccess.Write, FileShare.Read);
-                foreach (var chunkData in chunkDataYieldInstruction)
-                {
-                	var dataBytes = EncryptUtils.AESEncrypt(chunkData.binaryData, ConstSetting.FileEncryptionKey);
-					dataFile.Write(dataBytes, 0, dataBytes.Length);
-					
-					chunkData.Info.offset = dataFile.Position;
-					chunkData.Info.length = dataBytes.Length;
-					var indexBytes = SerializeUtils.SerializeToBinary(chunkData.Info);
-					indexBytes = EncryptUtils.AESEncrypt(indexBytes, ConstSetting.FileEncryptionKey);
-					// 用int值保存这块chunkData.info的长度
-					var infoLength = indexBytes.Length;
-					// 先写入长度信息，方便读取时知道需要读多少字节来获取完整的ChunkInfo
-					var lengthBytes = BitConverter.GetBytes(infoLength);
-					indexFile.Write(lengthBytes, 0, lengthBytes.Length);
-					indexFile.Write(indexBytes, 0, indexBytes.Length);
-                }
-                indexFile.Flush();
-                dataFile.Flush();
+				ChunkMaker.StreamWriteSync("Assets/ConfigAsset/", {{ConfName}}, ReadYieldInstruction(), keySelector, 256);
             }
             ConfigLog.Log("Config Asset Created => [{{ConfName}}]");
             return md5;
@@ -153,8 +127,9 @@ namespace PowerCellStudio
             csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "string", "CreatAsset", "string oldMd5")
                 .WriteLine("var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.excelPath, \"\");")
                 .WriteLine($"string path = excelPath + \"/{excelFileName}\";")
-                .WriteLine($"var indexAssetPath = \"{assetPath}{confName}Idx.bytes\";")
-                .WriteLine($"var dataAssetPath = \"{assetPath}{confName}Asset.bytes\";");
+                .WriteLine($"var assetPath = \"{assetPath}\";")
+                .WriteLine($"var dataAssetPath = $\"{{assetPath}}{confName}Data.bytes\";")
+                .WriteLine($"var indexAssetPath = $\"{{assetPath}}{confName}Index.bytes\";");
 
             csWriter.StartWriteIf("!File.Exists(path)")
                 .WriteLine("ConfigLog.LogError(\"Cannot find file \" + path);")
@@ -167,8 +142,7 @@ namespace PowerCellStudio
                 .WriteLine("return md5;")
                 .EndWriteIf();
 
-            csWriter.WriteLine("Directory.CreateDirectory(Path.GetDirectoryName(indexAssetPath) ?? \"Assets\");")
-                .WriteLine("using (var reader = new ExcelReader(path))");
+            csWriter.WriteLine("using (var reader = new ExcelReader(path))");
                 
             csWriter.StartWriteBody();
 
@@ -177,12 +151,12 @@ namespace PowerCellStudio
                 .WriteLine($"IEnumerable<{confName}> ReadYieldInstruction()");
             
             csWriter.StartWriteBody();
+            csWriter.WriteVar("fileName", $"\"{confName}\"");
             csWriter.WriteLine("for (int raw = 4; raw <= rowCount; raw++)");
             csWriter.StartWriteBody();
 
             csWriter.WriteVar("firstCell", $"ws.Cells[raw, {miniColumn}].Value")
-                .WriteLine("if (firstCell == null || string.IsNullOrEmpty(firstCell.ToString())) continue;")
-                .WriteVar("fileName", $"\"{confName}\"");
+                .WriteLine("if (firstCell == null || string.IsNullOrEmpty(firstCell.ToString())) continue;");
 
             WriteParseStatements(csWriter, configTypeInfoList);
             WriteCreateDataStatement(csWriter, confName, configTypeInfoList);
@@ -191,45 +165,12 @@ namespace PowerCellStudio
             csWriter.EndWriteBody();
             csWriter.EndWriteBody();
 
-            csWriter.WriteLine($"var chunkDataYieldInstruction = ChunkMaker.Slice<{confName}, {keyType}>(ReadYieldInstruction(), 128, conf => {keySelector});")
-                .WriteLine("using var indexFile = new FileStream(indexAssetPath, FileMode.Create, FileAccess.Write, FileShare.Read);")
-                .WriteLine("using var dataFile = new FileStream(dataAssetPath, FileMode.Create, FileAccess.Write, FileShare.Read);")
-                .WriteLine("foreach (var chunkData in chunkDataYieldInstruction)");
-
-            // var dataBytes = EncryptUtils.AESEncrypt(chunkData.binaryData, ConstSetting.FileEncryptionKey);
-            // dataFile.Write(dataBytes, 0, dataBytes.Length);
-					       //
-            // chunkData.Info.offset = dataFile.Position;
-            // chunkData.Info.length = dataBytes.Length;
-            // var indexBytes = SerializeUtils.SerializeToBinary(chunkData.Info);
-            // indexBytes = EncryptUtils.AESEncrypt(indexBytes, ConstSetting.FileEncryptionKey);
-            // // 用int值保存这块chunkData.info的长度
-            // var infoLength = indexBytes.Length;
-            // // 先写入长度信息，方便读取时知道需要读多少字节来获取完整的ChunkInfo
-            // var lengthBytes = BitConverter.GetBytes(infoLength);
-            // indexFile.Write(lengthBytes, 0, lengthBytes.Length);
-            // indexFile.Write(indexBytes, 0, indexBytes.Length);
-            csWriter.StartWriteBody();
-            csWriter
-                .WriteLine("var dataBytes = EncryptUtils.AESEncrypt(chunkData.binaryData, ConstSetting.FileEncryptionKey);")
-                .WriteLine("dataFile.Write(dataBytes, 0, dataBytes.Length);")
-                .Space()
-                .WriteLine("chunkData.Info.offset = dataFile.Position;")
-                .WriteLine("chunkData.Info.length = dataBytes.Length;")
-                .WriteLine("var indexBytes = SerializeUtils.SerializeToBinary(chunkData.Info);")
-                .WriteLine("indexBytes = EncryptUtils.AESEncrypt(indexBytes, ConstSetting.FileEncryptionKey);")
-				.WriteLine("var infoLength = indexBytes.Length;")
-				.WriteLine("var lengthBytes = BitConverter.GetBytes(infoLength);")
-				.WriteLine("indexFile.Write(lengthBytes, 0, lengthBytes.Length);")
-				.WriteLine("indexFile.Write(indexBytes, 0, indexBytes.Length);");
-            csWriter.EndWriteBody();
-
-            csWriter.WriteLine("indexFile.Flush();")
-                .WriteLine("dataFile.Flush();");
-            csWriter.EndWriteBody();
+            csWriter.WriteLine($"var keySelector = new Func<{confName}, {keyType}>(conf => {keySelector});")
+                .WriteLine($"ChunkMaker.StreamWriteSync(assetPath, \"{confName}\", ReadYieldInstruction(), keySelector, 256);");
 
             csWriter.WriteLine($"ConfigLog.Log(\"Config Asset Created => [{confName}]\");")
                 .WriteLine("return md5;")
+                .EndWriteBody()
                 .EndWriteMethod();
         }
 

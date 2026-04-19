@@ -3,7 +3,7 @@ using System;
 namespace PowerCellStudio
 {
     [Serializable]
-    public class ChunkInfo
+    public struct ChunkInfo
     {
         public int index;
         public long offset;

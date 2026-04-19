@@ -298,164 +298,17 @@ namespace PowerCellStudio
             AssetDatabase.Refresh();
         }
         
-        private static ConfBaseData GetConfData(string path)
-        {
-            switch (ConstSetting.ConfigConfigSaveMode)
-            {
-                case ConstSetting.ConfigSaveMode.ScriptableObject:
-                {
-                    var data = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
-                    if (data == null)
-                    {
-                        ConfigLog.LogError($"Cannot find asset at path {path}");
-                        return null;
-                    }
-
-                    return null;
-                }
-                case ConstSetting.ConfigSaveMode.Json:
-                {
-                    var fullPath = Path.GetFullPath(path);
-                    if (!File.Exists(fullPath))
-                    {
-                        ConfigLog.LogError($"Cannot find asset at path {path}");
-                        return null;
-                    }
-                    var textAsset = File.ReadAllText(fullPath, Encoding.UTF8);
-                    if (textAsset == null)
-                    {
-                        ConfigLog.LogError($"Cannot find asset at path {path}");
-                        return null;
-                    }
-                    var json = EncryptUtils.AESDecrypt(textAsset, ConstSetting.FileEncryptionKey);
-                    var typeName = Path.GetFileNameWithoutExtension(path);
-                    // typeName = typeName.Replace("Assets/ConfigAsset/", "");
-                    typeName = typeName.Remove(typeName.Length - 5, 5);
-                    typeName = typeName + "Data";
-                    var type = Assembly.GetAssembly(typeof(ConfBaseData)).GetTypes().FirstOrDefault(t => t.Name == typeName);
-                    var data = JsonConvert.DeserializeObject(json, type) as ConfBaseData;
-                    return data;
-                }
-                case ConstSetting.ConfigSaveMode.Binary:
-                {
-                    var fullPath = Path.GetFullPath(path);
-                    if (!File.Exists(fullPath))
-                    {
-                        ConfigLog.LogError($"Cannot find asset at path {path}");
-                        return null;
-                    }
-                    var textBytes = File.ReadAllBytes(fullPath); // AssetDatabase.LoadAssetAtPath<TextAsset>(path);
-                    if (textBytes == null || textBytes.Length == 0)
-                    {
-                        ConfigLog.LogError($"Cannot find asset at path {path}");
-                        return null;
-                    }
-                    var bytes = EncryptUtils.AESDecrypt(textBytes, ConstSetting.FileEncryptionKey); // 解密配置文件
-                    using (var compressedStream = new MemoryStream(bytes))
-                    using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
-                    using (var resultStream = new MemoryStream())
-                    {
-                        gzipStream.CopyTo(resultStream);
-                        bytes = resultStream.ToArray();
-                    }
-                    var json = Encoding.UTF8.GetString(bytes);
-                    var data = JsonConvert.DeserializeObject(json) as ConfBaseData;
-                    
-                    // var bytes = EncryptUtils.AESDecrypt(textBytes, ConstSetting.FileEncryptionKey);
-                    // using MemoryStream stream = new MemoryStream(bytes);
-                    // BinaryFormatter formatter = new BinaryFormatter();
-                    // var deserializeObj = formatter.Deserialize(stream);
-                    // // var typeName = Path.GetFileNameWithoutExtension(path);
-                    // // typeName = typeName.Remove(typeName.Length - 5, 5);
-                    // // typeName = typeName + "Data";
-                    // // var type = Assembly.GetAssembly(typeof(ConfBaseData)).GetTypes().FirstOrDefault(t => t.Name == typeName);
-                    // var data = deserializeObj as ConfBaseData;
-                    return data;
-                }
-                default:
-                    break;
-            }
-            return null;
-        }
-        
         [MenuItem("Tools/Config/Create Localization csv", false, 103)]
         public static void CreateLocalizationCsv()
         {
             try
             {
-                var assetPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.assetFilePath, "Assets/ConfigAsset/");
-                var extension = ".asset";
-                switch (ConstSetting.ConfigConfigSaveMode)
-                {
-                    case ConstSetting.ConfigSaveMode.ScriptableObject:
-                        break;
-                    case ConstSetting.ConfigSaveMode.Binary:
-                        extension = ".bytes";
-                        break;
-                    case ConstSetting.ConfigSaveMode.Json:
-                        extension = ".json";
-                        break;
-                    default:
-                        break;
-                }
-                // 通过扩展名在文件夹内查找文件并获得文件路径列表
-                var fullFolder = Path.GetFullPath(assetPath);
-                var assetPaths = new List<string>();
-
-                if (Directory.Exists(fullFolder))
-                {
-                    var files = Directory.GetFiles(fullFolder, $"*{extension}", SearchOption.TopDirectoryOnly);
-                    assetPaths.AddRange(files.Select(f => Path.Combine(assetPath, Path.GetFileName(f))));
-                }
-
-                var stringTable = LocalizationSettings.StringDatabase.GetTable(ConstSetting.LocalizationStringTable);
-                var assetTable = LocalizationSettings.AssetDatabase.GetTable(ConstSetting.LocalizationAssetTable);
-                if(!stringTable && !assetTable) return;
-                for (var i = 0; i < assetPaths.Count; i++)
-                {
-                    var path = assetPaths[i];
-                    var conf = GetConfData(path);
-                    if (conf == null) continue;
-                    var sourceField =  conf.GetType().GetField("source", BindingFlags.Public | BindingFlags.Instance);
-                    if (sourceField == null) continue;
-                    var source = (IList) sourceField.GetValue(conf);
-                    var dataCount = source.Count;
-                    var confName = conf.GetType().Name;
-                    for (var j = 0; j < dataCount; j++)
-                    {
-                        var data = source[j];
-                        var fields = data.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
-                        foreach (var fieldInfo in fields)
-                        {
-                            if (fieldInfo.FieldType == typeof(LocalizationStringRef) && stringTable)
-                            {
-                                var localString = fieldInfo.GetValue(data) as LocalizationStringRef;
-                                if (localString == null || string.IsNullOrEmpty(localString.localizationKey)) continue;
-                                var entry = stringTable.AddEntry(localString.localizationKey, localString.rawString);
-                                stringTable.SharedData.AddKey(entry.Key, entry.KeyId);
-                            }
-                            else if (fieldInfo.FieldType == typeof(LocalizationAssetRef) && assetTable)
-                            {
-                                var localAsset = fieldInfo.GetValue(data) as LocalizationAssetRef;
-                                if (localAsset == null || string.IsNullOrEmpty(localAsset.localizationKey)) continue;
-                                var entry = assetTable.AddEntry(localAsset.localizationKey, AssetDatabase.AssetPathToGUID(localAsset.rawString));
-                                assetTable.SharedData.AddKey(entry.Key, entry.KeyId);
-                            }
-                            EditorUtility.DisplayProgressBar("Config", $"{confName} to Localization", 1f * j / dataCount);
-                        }
-                    }
-                }
-                
                 // var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.excelPath);
                 var csvPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.localizationCSVPath, Path.Combine(Environment.CurrentDirectory, "ExcelFiles/Localization")); //Path.Combine(excelPath, "Localization");
                 if (!Directory.Exists(csvPath))
                 {
                     Directory.CreateDirectory(csvPath);
                 }
-                EditorUtility.SetDirty(stringTable);
-                EditorUtility.SetDirty(assetTable);
-                AssetDatabase.SaveAssetIfDirty(stringTable);
-                AssetDatabase.SaveAssetIfDirty(assetTable);
                 AssetDatabase.SaveAssets();
                 EditorUtility.DisplayProgressBar("Config", "Export csv file", 0f);
                 var date = DateTime.Now;
@@ -482,7 +335,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                ConfigLog.LogError($"{e}\n{e.StackTrace}");
+                ConfigLog.LogError($"{e.Message}\n{e.StackTrace}");
             }
             finally
             {

@@ -1,12 +1,9 @@
 using System;
-using System.Buffers;
-using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace PowerCellStudio
 {
@@ -55,17 +52,21 @@ namespace PowerCellStudio
             }
             try
             {
-                var bytes = AnySerializer.Serializer.Serialize(data);
-                // 2. GZip 压缩
                 using (var memoryStream = new MemoryStream())
                 {
-                    using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress))
+                    using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress, true))
+                    using (var streamWriter = new StreamWriter(gzipStream, new UTF8Encoding(false)))
+                    using (var jsonWriter = new JsonTextWriter(streamWriter))
                     {
-                        gzipStream.Write(bytes, 0, bytes.Length);
+                        var serializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
+                        {
+                            // TypeNameHandling = TypeNameHandling.Auto,
+                            PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                        });
+                        serializer.Serialize(jsonWriter, data);
                     }
-                    bytes = memoryStream.ToArray();
+                    return memoryStream.ToArray();
                 }
-                return bytes;
             }
             catch (Exception e)
             {
@@ -82,23 +83,18 @@ namespace PowerCellStudio
             }
             try
             {
-                byte[] result = null;
                 using (var compressedStream = new MemoryStream(bytes))
                 using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
-                using (var resultStream = new MemoryStream())
+                using (var streamReader = new StreamReader(gzipStream, new UTF8Encoding(false)))
+                using (var jsonReader = new JsonTextReader(streamReader))
                 {
-                    gzipStream.CopyTo(resultStream);
-                    result = resultStream.ToArray();
+                    var serializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
+                    {
+                        // TypeNameHandling = TypeNameHandling.Auto,
+                        PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                    });
+                    return serializer.Deserialize<T>(jsonReader);
                 }
-
-                var data = AnySerializer.Serializer.Deserialize<T>(result, AnySerializer.SerializerOptions.None);
-                // var json = Encoding.UTF8.GetString(result);
-                // T data = JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings
-                // {
-                //     // TypeNameHandling = TypeNameHandling.Auto,
-                //     PreserveReferencesHandling = PreserveReferencesHandling.Objects
-                // });
-                return data;
             }
             catch (Exception e)
             {
@@ -113,25 +109,7 @@ namespace PowerCellStudio
             {
                 return Array.Empty<byte>();
             }
-            try
-            {
-                var bytes = AnySerializer.Serializer.Serialize(data);
-
-                // 2. GZip 压缩
-                using (var memoryStream = new MemoryStream())
-                using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress))
-                {
-                    await gzipStream.WriteAsync(bytes, 0, bytes.Length);
-                    bytes = memoryStream.ToArray();
-                }
-
-                return bytes;
-            }
-            catch (Exception e)
-            {
-                LinkLog.LogError($"SerializeToBinary failed: {e.Message}");
-                return Array.Empty<byte>();
-            }
+            return await Task.Run(() => SerializeToBinary(data));
         }
 
         public static async Task<T> DeserializeFromBinaryAsync<T>(byte[] bytes)
@@ -140,30 +118,7 @@ namespace PowerCellStudio
             {
                 return default;
             }
-            try
-            {
-                byte[] result = null;
-                using (var compressedStream = new MemoryStream(bytes))
-                using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
-                using (var resultStream = new MemoryStream())
-                {
-                    await gzipStream.CopyToAsync(resultStream);
-                    result = resultStream.ToArray();
-                }
-                var data = AnySerializer.Serializer.Deserialize<T>(result, AnySerializer.SerializerOptions.None);
-                // var json = Encoding.UTF8.GetString(result);
-                // var data = JsonConvert.DeserializeObject<T>(json, new JsonSerializerSettings
-                // {
-                //     // TypeNameHandling = TypeNameHandling.Auto,
-                //     PreserveReferencesHandling = PreserveReferencesHandling.Objects
-                // });
-                return data;
-            }
-            catch (Exception e)
-            {
-                LinkLog.LogError($"DeserializeFromBinary failed: {e.Message}");
-                return default;
-            }
+            return await Task.Run(() => DeserializeFromBinary<T>(bytes));
         }
     }
 }

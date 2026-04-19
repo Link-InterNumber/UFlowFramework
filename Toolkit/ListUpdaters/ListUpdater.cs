@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
@@ -59,7 +60,7 @@ namespace PowerCellStudio
         /// 刷新的列表数据。</param>
         /// <param name="destroyUnused">If true, destroy unused items, otherwise hide them.
         /// 是否删除多余节点。</param>
-        public void UpdateList(IList data, bool destroyUnused = false);
+        public void UpdateList(IEnumerable data, int startIndex = 0, bool destroyUnused = false);
 
         /// <summary>
         /// Updates a specific item at a given index.
@@ -173,38 +174,30 @@ namespace PowerCellStudio
         /// 更新之间的时间间隔。</param>
         /// <param name="destroyUnused">If true, destroy unused items, otherwise hide them.
         /// 若为真则删除多余节点。</param>
-        public void UpdateListWithInterval(IList data, float interval, bool destroyUnused = false)
+        public void UpdateListWithInterval(IEnumerable<object> data, float interval, int startIndex = 0, bool destroyUnused = false)
         {
+            startIndex = Mathf.Max(0, startIndex);
             if (interval <= 0)
             {
-                UpdateList(data, destroyUnused);
+                UpdateList(data, startIndex, destroyUnused);
                 return;
             }
             if (data == null || !GetPrefab()) return;
             if (_updateCoroutine != null) ApplicationManager.instance.StopCoroutine(_updateCoroutine);
-            if (destroyUnused)
+            for (var i = 0; i < transform.childCount; i++)
             {
-                for (var i = 0; i < data.Count; i++)
-                {
-                    transform.GetChild(i).gameObject.SetActive(false);
-                }
-                RemoveUnusedItems(data.Count);
+                transform.GetChild(i).gameObject.SetActive(false);
             }
-            else
-            {
-                for (var i = 0; i < transform.childCount; i++)
-                {
-                    transform.GetChild(i).gameObject.SetActive(false);
-                }
-            }
-            _updateCoroutine = ApplicationManager.RunCoroutine(UpdateListWithIntervalHandler(data, interval));
+            _updateCoroutine = ApplicationManager.RunCoroutine(UpdateListWithIntervalHandler(data, interval, startIndex, destroyUnused));
         }
 
         private Coroutine _updateCoroutine;
 
-        private IEnumerator UpdateListWithIntervalHandler(IList data, float interval)
+        private IEnumerator UpdateListWithIntervalHandler(IEnumerable<object> data, float interval, int startIndex, bool destroyUnused)
         {
-            for (var i = 0; i < data.Count; i++)
+            startIndex = Mathf.Max(0, startIndex);
+            var i = startIndex;
+            foreach (var o in data)
             {
                 if (transform.childCount <= i)
                 {
@@ -215,41 +208,46 @@ namespace PowerCellStudio
                 var item = child.GetComponent<IListItem>();
                 if (item == null) continue;
                 child.gameObject.SetActive(true);
-                var o = data[i];
                 item.UpdateContent(i, o, this);
+                i++;
                 yield return new WaitForSeconds(interval);
+            }
+            if (destroyUnused)
+            {
+                RemoveUnusedItems(i);
             }
             _updateCoroutine = null;
         }
 
-        public void UpdateList(IList data, bool destroyUnused = false)
+        public void UpdateList(IEnumerable data, int startIndex = 0, bool destroyUnused = false)
         {
             if (data == null || !GetPrefab()) return;
-            for (var i = 0; i < data.Count; i++)
+            startIndex = Mathf.Max(0, startIndex);
+            var index = startIndex;
+            foreach (var o in data)
             {
                 GameObject go;
-                if (transform.childCount <= i)
+                if (transform.childCount <= index)
                 {
                     go = Instantiate(_prefab, transform);
                 }
                 else
                 {
-                    go = transform.GetChild(i).gameObject;
+                    go = transform.GetChild(index).gameObject;
                 }
                 go.SetActive(true);
                 var item = go.GetComponent<IListItem>();
                 if (item == null) continue;
-                var o = data[i];
-                item.UpdateContent(i, o, this);
+                item.UpdateContent(index, o, this);
+                index++;
             }
-
             if (destroyUnused)
             {
-                RemoveUnusedItems(data.Count);
+                RemoveUnusedItems(index);
             }
             else
             {
-                for (var i = data.Count; i < transform.childCount; i++)
+                for (var i = index; i < transform.childCount; i++)
                 {
                     transform.GetChild(i).gameObject.SetActive(false);
                 }
@@ -291,7 +289,7 @@ namespace PowerCellStudio
 
         public void AddItem(int index, object data)
         {
-            if (index < 0) return;
+            index = Mathf.Max(0, index);
 
             // Find the first unused node
             var usedIndex = -1;
@@ -305,6 +303,7 @@ namespace PowerCellStudio
             // If no unused node is found, create a new node
             if (usedIndex == -1)
             {
+                if (!GetPrefab()) return;
                 var go = Instantiate(_prefab, transform);
                 var realIndex = Mathf.Min(index, transform.childCount - 1);
                 go.transform.SetSiblingIndex(realIndex);
@@ -407,6 +406,8 @@ namespace PowerCellStudio
         public void RemoveUnusedItems(int startIndex = 0)
         {
             if (startIndex < 0 || startIndex >= transform.childCount) return;
+            // 至少保留一个节点作为预制体
+            startIndex = Mathf.Max(1, startIndex);
             var toDestroy = ListPool<GameObject>.Get();
             for (var i = startIndex; i < transform.childCount; i++)
             {

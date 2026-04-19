@@ -30,7 +30,7 @@ namespace PowerCellStudio
         /// <param name="deEncrypt">Decrypt before deserialization if true. 为true时在反序列化前解密。</param>
         /// <typeparam name="TData">Target type to deserialize. 反序列化的目标类型。</typeparam>
         /// <returns>Sequence of deserialized records. 反序列化后的记录序列。</returns>
-        public static IEnumerable<TData> ReadYieldInstruction<TData>(string filePath, long offset, bool deEncrypt = true)
+        public static IEnumerable<TData> ReadChunkData<TData>(string filePath, long offset, bool deEncrypt = true)
         {
             if (!File.Exists(filePath)) yield break;
             using var dataFile = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -59,7 +59,7 @@ namespace PowerCellStudio
                 // 反序列化数据
                 if (deEncrypt)
                 {
-                    dataBytes = EncryptUtils.AESEncrypt(dataBytes, ConstSetting.FileEncryptionKey);
+                    dataBytes = EncryptUtils.AESDecrypt(dataBytes, ConstSetting.FileEncryptionKey);
                 }
                 var data = SerializeUtils.DeserializeFromBinary<TData>(dataBytes);
                 yield return data;
@@ -74,7 +74,7 @@ namespace PowerCellStudio
         /// <param name="deEncrypt">Decrypt before deserialization if true. 为true时在反序列化前解密。</param>
         /// <typeparam name="TKey">Chunk key type. 分块的键类型。</typeparam>
         /// <returns>Sequence of chunk index, file offset, and keys. 包含分块索引、偏移量和键数组的元组序列。</returns>
-        public static IEnumerable<(int index, long offset, TKey[] keys)> ReadChunks<TKey>(string filePath, bool deEncrypt = true)
+        public static IEnumerable<(int index, long offset, TKey[] keys)> ReadIndexFile<TKey>(string filePath, bool deEncrypt = true)
         {
             if (!File.Exists(filePath)) yield break;
             using var idxFile = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -93,7 +93,7 @@ namespace PowerCellStudio
                 
                 if (deEncrypt)
                 {
-                    dataBytes = EncryptUtils.AESEncrypt(dataBytes, ConstSetting.FileEncryptionKey);
+                    dataBytes = EncryptUtils.AESDecrypt(dataBytes, ConstSetting.FileEncryptionKey);
                 }
                 
                 var chunkInfo = SerializeUtils.DeserializeFromBinary<ChunkInfo>(dataBytes);

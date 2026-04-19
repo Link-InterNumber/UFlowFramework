@@ -6,9 +6,9 @@
         public {{CollectionName}} {{fieldName}} => _{{fieldName}};
 
 #forend
-        public ConfigGroup<CommonConfigLoader> GetGroupOfAllConfig()
+        public ConfigGroup GetGroupOfAllConfig()
         {
-            var configGroup = new ConfigGroup<CommonConfigLoader>();
+            var configGroup = new ConfigGroup();
 #for {{ConfigCollections}}
             configGroup.Append(_{{fieldName}});
 #forend
@@ -47,8 +47,8 @@ namespace PowerCellStudio
 
         private static void WriteGetGroupMethod(CsWriter csWriter, List<string> confCollections)
         {
-            csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.None, "ConfigGroup<CommonConfigLoader>", "GetGroupOfAllConfig");
-            csWriter.WriteVar("configGroup", "new ConfigGroup<CommonConfigLoader>()");
+            csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.None, "ConfigGroup", "GetGroupOfAllConfig");
+            csWriter.WriteVar("configGroup", "new ConfigGroup()");
 
             for (var i = 0; i < confCollections.Count; i++)
             {

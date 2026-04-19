@@ -2,17 +2,15 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-
 using UnityEngine;
 
 namespace PowerCellStudio
 {
     public delegate void OnLoadCompleted(AssetLoadStatus status);
     
-    public class ConfigGroup<T> : IDisposable
-        where T : ConfAsyncLoadHandle, new ()
+    public class ConfigGroup : IDisposable
     {
-        private List<ConfBaseCollections> _configs;
+        private List<IConfBaseCollections> _configs;
         private AssetLoadStatus _loadStatus;
         public AssetLoadStatus loadStatus => _loadStatus;
         
@@ -26,10 +24,10 @@ namespace PowerCellStudio
             }
         }
 
-        public ConfigGroup(params ConfBaseCollections[] configs)
+        public ConfigGroup(params IConfBaseCollections[] configs)
         {
             _loadStatus = AssetLoadStatus.Unload;
-            _configs = new List<ConfBaseCollections>();
+            _configs = new List<IConfBaseCollections>();
             if (configs == null || configs.Length == 0) return;
             foreach (var confBaseCollections in configs)
             {
@@ -37,7 +35,7 @@ namespace PowerCellStudio
             }
         }
 
-        public void Append(ConfBaseCollections confBaseCollections)
+        public void Append(IConfBaseCollections confBaseCollections)
         {
             _configs.Add(confBaseCollections);
         }
@@ -55,8 +53,7 @@ namespace PowerCellStudio
             foreach (var confBaseCollections in _configs)
             {
                 // if (confBaseCollections.loadStatus == AssetLoadStatus.Loaded) continue;
-                var handle = new T();
-                confBaseCollections.LoadConfAsync(handle);
+                ApplicationManager.RunCoroutine(confBaseCollections.PrepareAsync());
             }
 
             return ApplicationManager.RunCoroutine(MonitoringLoadStatus());
@@ -67,7 +64,7 @@ namespace PowerCellStudio
             if (_loadStatus == AssetLoadStatus.Loading) return false;
             foreach (var confBaseCollections in _configs)
             {
-                confBaseCollections.Release();
+                confBaseCollections.Release(false);
             }
             return true;
         }
@@ -86,6 +83,7 @@ namespace PowerCellStudio
 
         public void Dispose()
         {
+            ReleaseAll();
             _configs.Clear();
             onLoadCompleted = null;
             _loadStatus = AssetLoadStatus.Unload;

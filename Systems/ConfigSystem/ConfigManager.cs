@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Text;
+using UnityEngine;
 
 namespace PowerCellStudio
 {
@@ -10,10 +11,20 @@ namespace PowerCellStudio
         /// 初始化需要的配置表
         /// configData for Init.
         /// </summary>
-        private ConfigGroup<CommonConfigLoader> _initConfig;
+        private ConfigGroup _initConfig;
 
         public IEnumerator Init(OnLoadCompleted onInitCompleted)
         {
+            // TODO 从资源中加载所有的配置表二进制文件存放在$"{Application.persistentDataPath}/ConfigAsset/"目录下
+            var saveKey = "ConfigFirstLoadComplete";
+            var complete = PlayerPrefs.GetInt(saveKey, 0);
+            if (complete == 0)
+            {
+                // TODO 首次加载
+                
+                PlayerPrefs.SetInt(saveKey, 1);
+            }
+            
             // // 你可以使用 ConfigGroup 加载多个配置数据；
             // // You can use ConfigGroup to load multiple configuration data;
             // _initConfig = new ConfigGroup<CommonConfigLoader>(_guidanceConf, _rolePropConf); //(_baseTypeSampleConf, _customTypeSampleConf);

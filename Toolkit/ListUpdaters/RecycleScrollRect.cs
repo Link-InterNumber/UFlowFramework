@@ -101,24 +101,32 @@ namespace PowerCellStudio
         /// </summary>
         /// <param name="datas">数据列表 - The list of data.</param>
         /// <param name="destroyUnused">是否销毁未使用的对象 - Whether to destroy unused objects.</param>
-        public void UpdateList(IList datas, bool destroyUnused = false)
+        public void UpdateList(IEnumerable datas, int startIndex = 0, bool destroyUnused = false)
         {
             if (datas == null) return;
-            _count = datas.Count;
+            
             _itemDict.Clear();
+            
             if (_dataList == null) _dataList = new List<object>();
-            else _dataList.Clear();
+            else if (startIndex <= 0) _dataList.Clear();
+            else if (startIndex < _dataList.Count) _dataList.RemoveRange(startIndex, _dataList.Count - startIndex);
+            
+            foreach (var data in datas)
+            {
+                _dataList.Add(data);
+            }
+            _count = _dataList.Count;
             if (_count < 1)
             {
                 _container.gameObject.SetActive(false);
                 return;
             }
             _container.gameObject.SetActive(true);
-            for (var i = 0; i < datas.Count; i++)
-            {
-                _dataList.Add(datas[i]);
-            }
             // Init();
+            if (!prefab && transform.childCount > 0)
+            {
+                prefab = transform.GetChild(0) as RectTransform;
+            }
             ApplicationManager.RunCoroutine(DelayInit());
         }
 

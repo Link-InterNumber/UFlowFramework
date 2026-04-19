@@ -20,7 +20,7 @@ namespace PowerCellStudio
         /// <typeparam name="TData">Record type. 记录类型。</typeparam>
         /// <typeparam name="TKey">Chunk key type. 分块键类型。</typeparam>
         /// <returns>Chunk metadata sequence; <see cref="ChunkInfo.keyData"/> stores serialized <c>TKey[]</c>. 分块元数据序列；<see cref="ChunkInfo.keyData"/>保存序列化<c>TKey[]</c>。</returns>
-        public static void StreamWrite<TData, TKey>(string fileDirectory, string fileName, IEnumerable<TData> data,
+        public static void StreamWriteSync<TData, TKey>(string fileDirectory, string fileName, IEnumerable<TData> data,
             Func<TData, TKey> keySelector, int chunkSize, bool deEncrypt = true)
         {
             if (!Directory.Exists(fileDirectory)) Directory.CreateDirectory(fileDirectory);
@@ -47,6 +47,12 @@ namespace PowerCellStudio
                 if (item == null) continue;
                 if (keySelector != null) keys.Add(keySelector(item));
                 var dataBytes = SerializeUtils.SerializeToBinary(item);
+                if (dataBytes == null || dataBytes.Length == 0)
+                {
+                    UnityEngine.Debug.LogError($"[ChunkMaker] 序列化失败或数据为空，跳过当前数据。类型: {item?.GetType()}");
+                    continue; // 发生序列化错误时跳过，避免写入 byte[0]
+                }
+                
                 if (deEncrypt)
                 {
                     dataBytes = EncryptUtils.AESEncrypt(dataBytes, ConstSetting.FileEncryptionKey);

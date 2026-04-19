@@ -1,4 +1,8 @@
 using System;
+#if UNITY_EDITOR
+using UnityEngine.Localization.Settings;
+using UnityEngine.Localization.Tables;
+#endif
 
 namespace PowerCellStudio
 {
@@ -27,13 +31,31 @@ namespace PowerCellStudio
             return "LocalizationAssetRef";
         }
 
+#if UNITY_EDITOR
+        private static AssetTable assetTable;
+        public static void ClearCache()
+        {
+            assetTable = null;
+        }
+#endif
+        
         public static LocalizationAssetRef Parse(string stringValue, string confName, int rowIndex, int colIndex)
         {
-            return new LocalizationAssetRef()
+            var result = new LocalizationAssetRef()
             {
                 rawString = stringValue,
                 localizationKey = $"{confName}_{rowIndex}_{colIndex}"
             };
+#if UNITY_EDITOR
+            if (assetTable == null)
+            {
+                assetTable = LocalizationSettings.AssetDatabase.GetTable(ConstSetting.LocalizationAssetTable);
+            }
+            var entry = assetTable?.AddEntry(result.localizationKey, UnityEditor.AssetDatabase.AssetPathToGUID(result.rawString));
+            assetTable?.SharedData.AddKey(entry.Key, entry.KeyId);
+            UnityEditor.EditorUtility.SetDirty(assetTable);
+#endif
+            return result;
         }
     }
 }

@@ -210,10 +210,16 @@ namespace PowerCellStudio
                         aes.IV = iv;
                         using (CryptoStream cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Read))
                         {
-                            byte[] plainBytes = new byte[encryptData.Length - iv.Length];
-                            int decryptedCount = cs.Read(plainBytes, 0, plainBytes.Length);
-                            Array.Resize(ref plainBytes, decryptedCount);
-                            return plainBytes;
+                            using (MemoryStream outputMs = new MemoryStream())
+                            {
+                                byte[] buffer = new byte[2048];
+                                int read;
+                                while ((read = cs.Read(buffer, 0, buffer.Length)) > 0)
+                                {
+                                    outputMs.Write(buffer, 0, read);
+                                }
+                                return outputMs.ToArray();
+                            }
                         }
                     }
                 }
@@ -266,9 +272,18 @@ namespace PowerCellStudio
                     aes.IV = iv;
                     using (CryptoStream cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Read))
                     {
-                        byte[] plainBytes = new byte[cipherBytes.Length - iv.Length];
-                        int decryptedCount = cs.Read(plainBytes, 0, plainBytes.Length);
-                        return Encoding.UTF8.GetString(plainBytes, 0, decryptedCount);
+                        using (MemoryStream outputMs = new MemoryStream())
+                        {
+                            byte[] buffer = new byte[2048];
+                            int read;
+                            while ((read = cs.Read(buffer, 0, buffer.Length)) > 0)
+                            {
+                                outputMs.Write(buffer, 0, read);
+                            }
+
+                            byte[] resultBytes = outputMs.ToArray();
+                            return Encoding.UTF8.GetString(resultBytes, 0, resultBytes.Length);
+                        }
                     }
                 }
             }

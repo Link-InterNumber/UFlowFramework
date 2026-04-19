@@ -42,6 +42,7 @@ namespace PowerCellStudio
                 "UnityEngine",
                 "System.Linq",
                 "System.Collections.Generic",
+                "System.IO",
                 "System");
 
             _csFile.Space(1);
@@ -52,7 +53,7 @@ namespace PowerCellStudio
             // ConfBaseCollections类
             WriteConfBaseCollectionsHandler.Write(_csFile, reader, configTypeInfoList, confName);
             // ConfBaseData类
-            WriteConfBaseDataHandler.Write(_csFile, reader, configTypeInfoList, confName);
+            // WriteConfBaseDataHandler.Write(_csFile, reader, configTypeInfoList, confName);
             _csFile.EndWriteBody();
         }
         
@@ -62,7 +63,7 @@ namespace PowerCellStudio
             var configTypeInfoList = reader.fieldMap.Values.ToArray();
             
             WriteHeadLines(_csFile);
-            _csFile.WriteUsing("System", "System.IO", "System.Collections.Generic");
+            _csFile.WriteUsing("System", "System.IO", "System.Collections.Generic", "UnityEngine");
             _csFile.Space(1);
             _csFile.WriteLine("namespace PowerCellStudio");
             _csFile.StartWriteBody();

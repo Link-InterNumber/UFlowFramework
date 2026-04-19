@@ -1,4 +1,8 @@
 using System;
+#if UNITY_EDITOR
+using UnityEngine.Localization.Settings;
+using UnityEngine.Localization.Tables;
+#endif
 
 namespace PowerCellStudio
 {
@@ -33,14 +37,31 @@ namespace PowerCellStudio
         {
             return "LocalizationStringRef";
         }
-
+        
+#if UNITY_EDITOR
+        private static StringTable stringTable;
+        public static void ClearCache()
+        {
+            stringTable = null;
+        }
+#endif
         public static LocalizationStringRef Parse(string stringValue, string confName, int rowIndex, int colIndex)
         {
-            return new LocalizationStringRef()
+            var result = new LocalizationStringRef()
             {
                 rawString = stringValue,
                 localizationKey = $"{confName}_{rowIndex}_{colIndex}"
             };
+#if UNITY_EDITOR
+            if (stringTable == null)
+            {
+                stringTable = LocalizationSettings.StringDatabase.GetTable(ConstSetting.LocalizationStringTable);
+            }
+            var entry = stringTable?.AddEntry(result.localizationKey, result.rawString);
+            stringTable?.SharedData.AddKey(entry.Key, entry.KeyId);
+            UnityEditor.EditorUtility.SetDirty(stringTable);
+#endif
+            return result;
         }
     }
 }
