@@ -1,8 +1,6 @@
 using UnityEngine;
 using PowerCellStudio;
 using System.Collections.Generic;
-using System.Diagnostics; // Required for Stopwatch
-using System.Linq;
 
 public class SparseSetPerformanceTest : RunTestMono
 {
@@ -50,7 +48,7 @@ public class SparseSetPerformanceTest : RunTestMono
     {
         // --- SparseSet Tests ---
         UnityEngine.Debug.Log("--- Testing SparseSet<T> ---");
-        var sparseSet = new SparseSet<TestItem>(1024);
+        var sparseSet = new SparseSet<TestItem>(500000, 500000, 1024);
         RunPerformanceTest("Bulk Add", () => {
             foreach (var item in itemsToAdd) sparseSet.Add(item);
         });
@@ -80,6 +78,32 @@ public class SparseSetPerformanceTest : RunTestMono
         });
         RunPerformanceTest("Random Remove", () => {
             foreach (var index in indicesToRemove) dictionary.Remove(index);
+        });
+
+        // --- Array Tests (For Comparison) ---
+        UnityEngine.Debug.Log("--- Testing TestItem[] (Comparison) ---");
+        var array = new TestItem[NUM_ITEMS];
+        RunPerformanceTest("Bulk Add", () => {
+            foreach (var item in itemsToAdd) array[item.index] = item;
+        });
+        RunPerformanceTest("Random Access (Bounds Check)", () => {
+            foreach (var index in indicesToAccess)
+            {
+                if ((uint)index < (uint)array.Length)
+                {
+                    _ = array[index];
+                }
+            }
+        });
+        RunPerformanceTest("Iteration (foreach)", () => {
+            int count = 0;
+            foreach (var item in array)
+            {
+                if (item != null) count++;
+            }
+        });
+        RunPerformanceTest("Random Remove", () => {
+            foreach (var index in indicesToRemove) array[index] = null;
         });
     }
 }
