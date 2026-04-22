@@ -94,12 +94,13 @@ namespace PowerCellStudio
         public string GetBundleNameByAsset(string path)
         {
             if (!_inited) throw new Exception("AssetsBundleManager do not inited!!!");
-            if (!_assetPathMap.TryGetValue(path, out var matched))
+            var assetData = _assetPathMap.Get(path, null);
+            if (assetData == default)
             {
                 AssetLog.LogError($"Can not find Bundle Name of [{path}]");
                 return string.Empty;
             }
-            return matched.assetBundle;
+            return assetData.assetBundle;
             // if (!CheckWithID) return matched.assetBundle;
             // var id = lowerPath.GenHashCode();
             // return matched.hashCode.Equals(id) ? matched.assetBundle : string.Empty;

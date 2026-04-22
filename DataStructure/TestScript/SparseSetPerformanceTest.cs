@@ -44,11 +44,35 @@ public class SparseSetPerformanceTest : RunTestMono
         RunAllTests(itemsToAdd, indicesToAccess, indicesToRemove);
     }
 
+    private static long MeasureManagedAlloc(System.Func<object> factory)
+    {
+        System.GC.Collect();
+        System.GC.WaitForPendingFinalizers();
+        System.GC.Collect();
+
+        long before = System.GC.GetTotalMemory(true);
+        object obj = factory();
+        long after = System.GC.GetTotalMemory(true);
+
+        // 防止被优化掉
+        UnityEngine.Debug.Log(obj.GetType().Name);
+        return after - before;
+    }
+
     private void RunAllTests(TestItem[] itemsToAdd, int[] indicesToAccess, int[] indicesToRemove)
     {
         // --- SparseSet Tests ---
         UnityEngine.Debug.Log("--- Testing SparseSet<T> ---");
-        var sparseSet = new SparseSet<TestItem>(500000, 500000, 1024);
+        var sparseSet = new SparseSet<TestItem>(NUM_ITEMS / 3, NUM_ITEMS, 1024);
+        var array = new TestItem[NUM_ITEMS];
+        // 测试sparseSet和array的内存大小
+        long sparseSetMemory = MeasureManagedAlloc(() => new SparseSet<TestItem>(NUM_ITEMS / 3, NUM_ITEMS, 1024));
+        long arrayMemory = MeasureManagedAlloc(() => new TestItem[NUM_ITEMS]);
+
+        UnityEngine.Debug.Log(
+            $"SparseSet Alloc: {sparseSetMemory / 1024f / 1024f:F2} MB, " +
+            $"Array Alloc: {arrayMemory / 1024f / 1024f:F2} MB");  
+        
         RunPerformanceTest("Bulk Add", () => {
             foreach (var item in itemsToAdd) sparseSet.Add(item);
         });
@@ -82,7 +106,6 @@ public class SparseSetPerformanceTest : RunTestMono
 
         // --- Array Tests (For Comparison) ---
         UnityEngine.Debug.Log("--- Testing TestItem[] (Comparison) ---");
-        var array = new TestItem[NUM_ITEMS];
         RunPerformanceTest("Bulk Add", () => {
             foreach (var item in itemsToAdd) array[item.index] = item;
         });

@@ -12,15 +12,14 @@ namespace PowerCellStudio
         void Release(bool force);
     }
     
-    public abstract class ConfBaseCollections<TData, TKey> : IConfBaseCollections
+    public abstract class ConfBaseCollections<TKey, TData> : IConfBaseCollections
         where TData : ConfBase
     {
         public AssetLoadStatus loadStatus => _loadStatus;
         protected AssetLoadStatus _loadStatus = AssetLoadStatus.Unload;
         protected string _assetPath;
         protected string _idxFilePath;
-        protected ConfChunkIndexer<TKey> _chunkIndexer = new();
-        protected ConfRef<TData, TKey> _confRef = new();
+        protected ChunkDataQueryer<TKey, TData> _confQueryer;
         protected int _refCount = 0;
 
         protected abstract TKey GetKey(TData data);
@@ -50,9 +49,8 @@ namespace PowerCellStudio
                 _refCount++;
                 return;
             }
-            var reader = ChunkReader.ReadIndexFile<TKey>(_idxFilePath);
-            _chunkIndexer.Init(reader);
-            _confRef.Init(_chunkIndexer.chunkCount);
+            _confQueryer = new ChunkDataQueryer<TKey, TData>();
+            _confQueryer.Prepare(_idxFilePath,  _assetPath, GetKey);
             _refCount = 1;
             _loadStatus = AssetLoadStatus.Loaded;
         }
@@ -64,10 +62,9 @@ namespace PowerCellStudio
                 _refCount++;
                 yield break;
             }
-            var reader = ChunkReader.ReadIndexFile<TKey>(_idxFilePath);
             _loadStatus = AssetLoadStatus.Loading;
-            yield return _chunkIndexer.InitAsync(reader);
-            _confRef.Init(_chunkIndexer.chunkCount);
+            _confQueryer = new ChunkDataQueryer<TKey, TData>();
+            yield return _confQueryer.PrepareYieldInstruction(_idxFilePath,  _assetPath, GetKey);
             _refCount = 1;
             _loadStatus = AssetLoadStatus.Loaded;
         }
@@ -78,81 +75,45 @@ namespace PowerCellStudio
             _refCount--;
             if (_refCount > 0)
             {
-                _confRef.TryClearUnused();
+                _confQueryer.TryClearUnused();
                 return;
             }
-            _confRef.ClearAll();
-            _chunkIndexer.Clear();
+            _confQueryer.Clear();
             _loadStatus = AssetLoadStatus.Unload;
-        }
-        
-        protected void LoadChunk(int chunkIndex)
-        {
-            var offset = _chunkIndexer.GetChunkOffset(chunkIndex);
-            if (offset < 0) return;
-            var confProvider = ChunkReader.ReadChunkData<TData>(_assetPath, offset);
-            _confRef.AddChunk(chunkIndex, confProvider, GetKey, OnAddData);
         }
 
         public TData Get(TKey key)
         {
             if (!CheckLoadStatus()) return null;
-            var chunkIndex = _chunkIndexer.GerChunkIndex(key);
-            if (chunkIndex < 0) return null;
-            if (!_confRef.IsChunkLoaded(chunkIndex))
-            {
-                LoadChunk(chunkIndex);
-            }
-            return _confRef.GetConfData(chunkIndex, key);
+            return _confQueryer.Get(key, OnAddData);
         }
         
         public IEnumerable<TData> GetByKey(Func<TKey, bool> keyPredicate)
         {
             if (!CheckLoadStatus()) yield break;
-            if (keyPredicate == null) yield break;
-            var chunkIndexes = _chunkIndexer.GetChunkIndexByKey(keyPredicate);
-            foreach (var chunkIndex in chunkIndexes)
+            var confMatched = _confQueryer.GetByKey(keyPredicate, OnAddData);
+            foreach (var confBase in confMatched)
             {
-                if (!_confRef.IsChunkLoaded(chunkIndex))
-                {
-                    LoadChunk(chunkIndex);
-                }
-                foreach (var confBase in _confRef.GetAllConfData(chunkIndex))
-                {
-                    if (!keyPredicate.Invoke(GetKey(confBase))) continue;
-                    yield return confBase;
-                }
+                yield return confBase;
             }
         }
 
         public IEnumerable<TData> GetAll()
         {
             if (!CheckLoadStatus()) yield break;
-            for (var i = 0; i < _chunkIndexer.chunkCount; i++)
+            var dataSource = _confQueryer.GetAll();
+            foreach (var conf in dataSource)
             {
-                if (_confRef.IsChunkLoaded(i))
-                {
-                    foreach (var confBase in _confRef.GetAllConfData(i))
-                        yield return confBase;
-                    continue;
-
-                }
-
-                var offset = _chunkIndexer.GetChunkOffset(i);
-                if (offset < 0) continue;
-                var confs = ChunkReader.ReadChunkData<TData>(_assetPath, offset);
-                foreach (var confBase in confs)
-                    yield return confBase;
+                yield return conf;
             }
         }
         
         public IEnumerable<TData> Find(Func<TData, bool> predicate)
         {
-            if (predicate == null) yield break;
-            var allConfs = GetAll();
-            foreach (var conf in allConfs)
+            if (!CheckLoadStatus()) yield break;
+            var dataSource = _confQueryer.Find(predicate);
+            foreach (var conf in dataSource)
             {
-                if (!predicate.Invoke(conf)) continue;
                 yield return conf;
             }
         }

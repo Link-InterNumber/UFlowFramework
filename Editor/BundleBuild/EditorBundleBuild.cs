@@ -24,7 +24,7 @@ namespace PowerCellStudio
             BuildPipeline.BuildAssetBundles(buildPath, 
                 BuildAssetBundleOptions.ChunkBasedCompression | BuildAssetBundleOptions.ForceRebuildAssetBundle, 
                 EditorUserBuildSettings.activeBuildTarget);
-            AssetBundleConfigTool.CreateAssetBundleConfig();
+            AssetBundleMapTool.CreateAssetBundleMap();
             GenerateRemoteManifestWindow.ShowWindowWithHandle(()=> Debug.Log("Build AsserBundle Successfully!"));
         }
 
@@ -41,7 +41,7 @@ namespace PowerCellStudio
             BuildPipeline.BuildAssetBundles(buildPath, 
                 BuildAssetBundleOptions.ChunkBasedCompression | BuildAssetBundleOptions.ForceRebuildAssetBundle, 
                 EditorUserBuildSettings.activeBuildTarget);
-            AssetBundleConfigTool.CreateAssetBundleConfig();
+            AssetBundleMapTool.CreateAssetBundleMap();
             if (resetRemoteManifest) 
                 GenerateRemoteManifestWindow.ShowWindowWithHandle(onRemoteManifestGenerated);
             else 
@@ -62,7 +62,7 @@ namespace PowerCellStudio
             BuildPipeline.BuildAssetBundles(buildPath,
                 BuildAssetBundleOptions.ChunkBasedCompression,
                 EditorUserBuildSettings.activeBuildTarget);
-            AssetBundleConfigTool.CreateAssetBundleConfig();
+            AssetBundleMapTool.CreateAssetBundleMap();
             GenerateRemoteManifestWindow.ShowWindowWithHandle(()=> Debug.Log("Build AsserBundle Successfully!"));
         }
 

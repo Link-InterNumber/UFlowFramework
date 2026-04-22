@@ -12,58 +12,55 @@ namespace PowerCellStudio
     public partial class AssetsBundleManager
     {
         private static Dictionary<string, LoaderYieldInstruction<Object>> _preloadHandles;
-        private Dictionary<string, ScriptableAssetBundleData> _assetPathMap;
+        private ChunkDataQueryer<string, ScriptableAssetBundleData> _assetPathMap;
 
+        private static readonly string _hasAssetBundleMapMovedKey = "hasAssetBundleMapMoved";
         private IEnumerator InitPathMap()
         {
             initProcess = 0f;
-            ScriptableAssetBundle bundleDatas = null;
-            // 从本地Application.persistentDataPath目录加载分包配置文件
-            var persistentPath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, ConstSetting.BundleAssetConfigName);
-            if (File.Exists(persistentPath))
+            var indexFilePath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Index.bytes" );
+            var dataFilePath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Data.bytes" );
+            // 创建目录
+            var folder = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder);
+            if (!Directory.Exists(folder))
             {
-                using (UnityWebRequest request = UnityWebRequest.Get("file://" + persistentPath))
-                {
-                    yield return request.SendWebRequest();
-
-                    if (request.result == UnityWebRequest.Result.Success)
-                    {
-                        var encryptData = request.downloadHandler.data;
-                        var decryptedData = EncryptUtils.AESDecrypt(encryptData, ConstSetting.FileEncryptionKey);
-                        bundleDatas = SerializeUtils.DeserializeFromBinary<ScriptableAssetBundle>(decryptedData);
-                    }
-                }
+                Directory.CreateDirectory(folder);
             }
-            if (bundleDatas == null)
+            // 初次启动，将streamingAssetsPath下的AssetBundleMap文件保存在Application.persistentDataPath
+            var hasAssetBundleMapMoved = PlayerPrefs.GetInt(_hasAssetBundleMapMovedKey, 0) > 0;
+            if (!hasAssetBundleMapMoved)
             {
-                // fallBack从本地streamingAssetsPath目录加载分包配置文件
-                var path = Path.Combine(Application.streamingAssetsPath, ConstSetting.BundleAssetConfigFolder, ConstSetting.BundleAssetConfigName);
-                using (UnityWebRequest request = UnityWebRequest.Get("file://" + path))
+                var indexFilePathV0 = Path.Combine(Application.streamingAssetsPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Index.bytes" );
+                var dataFilePathV0 = Path.Combine(Application.streamingAssetsPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Data.bytes" );
+                using (UnityWebRequest request = UnityWebRequest.Get("file://" + indexFilePathV0))
                 {
+                    request.downloadHandler = new DownloadHandlerFile(indexFilePath);
                     yield return request.SendWebRequest();
-
                     if (request.result != UnityWebRequest.Result.Success)
                     {
-                        AssetLog.LogError("AssetsBundleManager initialization failed for Path Maping From streamingAssetsPath");
+                        AssetLog.LogError(
+                            "AssetsBundleManager initialization failed for coping AssetBundleMap file to persistentDataPath");
                         yield break;
                     }
-                    var encryptData = request.downloadHandler.data;
-                    var decryptedData = EncryptUtils.AESDecrypt(encryptData, ConstSetting.FileEncryptionKey);
-                    bundleDatas = SerializeUtils.DeserializeFromBinary<ScriptableAssetBundle>(decryptedData);
                 }
+                using (UnityWebRequest request = UnityWebRequest.Get("file://" + dataFilePathV0))
+                {
+                    request.downloadHandler = new DownloadHandlerFile(dataFilePath);
+                    yield return request.SendWebRequest();
+                    if (request.result != UnityWebRequest.Result.Success)
+                    {
+                        AssetLog.LogError(
+                            "AssetsBundleManager initialization failed for coping AssetBundleMap file to persistentDataPath");
+                        yield break;
+                    }
+                }
+                PlayerPrefs.SetInt(_hasAssetBundleMapMovedKey, 1);
+                PlayerPrefs.Save();
             }
-
-            if (bundleDatas == null)
-            {
-                AssetLog.LogError("AssetsBundleManager initialization failed");
-                yield break;
-            }
-            _assetPathMap = new Dictionary<string, ScriptableAssetBundleData>();
-            foreach (var scriptableAssetBundleData in bundleDatas.source)
-            {
-                if(scriptableAssetBundleData == null || string.IsNullOrEmpty(scriptableAssetBundleData.assetName)) continue;
-                _assetPathMap.Add(scriptableAssetBundleData.assetName, scriptableAssetBundleData);
-            }
+            
+            // 从本地Application.persistentDataPath目录加载分包配置文件
+            _assetPathMap = new ChunkDataQueryer<string, ScriptableAssetBundleData>();
+            yield return _assetPathMap.PrepareYieldInstruction(indexFilePath, dataFilePath, data => data.assetName);
             initProcess = 1f;
         }
 

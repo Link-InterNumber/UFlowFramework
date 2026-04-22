@@ -1,5 +1,5 @@
 /****************************************************
-    public partial class {{ConfName}}Collections : ConfBaseCollections<{{ConfName}}, {{KeyType}}>
+    public partial class {{ConfName}}Collections : ConfBaseCollections<{{KeyType}}, {{ConfName}}>
     {
     
     	public {{ConfName}}Collections()
@@ -79,7 +79,7 @@ namespace PowerCellStudio
                 keyType = tempSb.ToString();
             }
             
-            csWriter.WriteLine("public partial class " + confName + $"Collections : ConfBaseCollections<{confName}, {keyType}>");
+            csWriter.WriteLine("public partial class " + confName + $"Collections : ConfBaseCollections<{keyType}, {confName}>");
             csWriter.StartWriteBody();
             
             WriteConstructor(csWriter, confName);

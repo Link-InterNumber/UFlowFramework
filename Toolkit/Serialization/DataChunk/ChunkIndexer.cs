@@ -1,17 +1,19 @@
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Pool;
 
 namespace PowerCellStudio
 {
-    public class ConfChunkIndexer<TKey>
+    public class ChunkIndexer<TKey>
     {
         private Dictionary<TKey, int> _keyMap;
         private Dictionary<int, long> _offsetMap;
         
         public int chunkCount => _offsetMap.Count;
 
-        public ConfChunkIndexer()
+        public ChunkIndexer()
         {
             _keyMap = new Dictionary<TKey, int>();
             _offsetMap = new Dictionary<int, long>();
@@ -30,10 +32,9 @@ namespace PowerCellStudio
             }
         }
         
-        public IEnumerator InitAsync(IEnumerable<(int index, long offset, TKey[] keys)> chunks)
+        public IEnumerator InitAsync(IEnumerable<(int index, long offset, TKey[] keys)> chunks, int operationUnit = 512)
         {
             if (chunks == null) yield break;
-            var operationUnit = 512;
             var count = 0;
             foreach (var chunk in chunks)
             {
@@ -66,11 +67,16 @@ namespace PowerCellStudio
         public IEnumerable<int> GetChunkIndexByKey(Func<TKey, bool> keyPredicate)
         {
             if (keyPredicate == null) yield break;
+            var set = ArrayPool<bool>.Shared.Rent(_offsetMap.Count);
+            Array.Clear(set, 0, _offsetMap.Count);
             foreach (var kvp in _keyMap)
             {
+                if (set[kvp.Value]) continue;
                 if (!keyPredicate.Invoke(kvp.Key)) continue;
                 yield return kvp.Value;
+                set[kvp.Value] = true;
             }
+            ArrayPool<bool>.Shared.Return(set);
         }
 
         public long GetChunkOffset(int chunkIndex)

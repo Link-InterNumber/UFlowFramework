@@ -5,7 +5,7 @@ using UnityEngine.Pool;
 
 namespace PowerCellStudio
 {
-    public class ConfRef<TData, TKey> where TData : ConfBase
+    public class ChunkDataMap<TKey, TData>
     {
         /// <summary>
         /// 根据chunk的index放置引用计数
@@ -40,16 +40,16 @@ namespace PowerCellStudio
             _loadedChunkRefCount[chunkIndex] = currentRefCount + 1;
         }
         
-        public void AddChunk(int chunkIndex, IEnumerable<TData> confs, Func<TData, TKey> keySelector, Action<TData> onAdd)
+        public void AddChunk(int chunkIndex, IEnumerable<TData> dataSource, Func<TData, TKey> keySelector, Action<TData> onAdd)
         {
             if (!_isInited) return;
             if (chunkIndex < 0 || chunkIndex >= _chunkDataMap.Length) return;
-            var confMap = _chunkDataMap[chunkIndex];
-            foreach (var conf in confs)
+            var dataMap = _chunkDataMap[chunkIndex];
+            foreach (var data in dataSource)
             {
-                var key = keySelector(conf);
-                confMap[key] = conf;
-                onAdd?.Invoke(conf);
+                var key = keySelector(data);
+                dataMap[key] = data;
+                onAdd?.Invoke(data);
             }
             AddRef(chunkIndex);
         }
@@ -104,14 +104,14 @@ namespace PowerCellStudio
             return _loadedChunkRefCount[chunkIndex] > 0;
         }
 
-        public TData GetConfData(int chunkIndex, TKey key)
+        public TData GetData(int chunkIndex, TKey key)
         {
-            if (!IsChunkLoaded(chunkIndex)) return null;
+            if (!IsChunkLoaded(chunkIndex)) return default;
             AddRef(chunkIndex);
             return _chunkDataMap[chunkIndex].GetValueOrDefault(key);
         }
 
-        public IEnumerable<TData> GetAllConfData(int chunkIndex)
+        public IEnumerable<TData> GetAllData(int chunkIndex)
         {
             if (!IsChunkLoaded(chunkIndex)) yield break;
             AddRef(chunkIndex);

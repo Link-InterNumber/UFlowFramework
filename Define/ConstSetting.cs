@@ -22,7 +22,7 @@ namespace PowerCellStudio
         /// 分包配置文件名
         /// <para>Subpackage configuration file name</para>
         /// </summary>
-        public static readonly string BundleAssetConfigName = "AssetBundleData.bytes";
+        public static readonly string BundleAssetConfigName = "AssetBundleData";
 
         /// <summary>
         /// 设计分辨率范围

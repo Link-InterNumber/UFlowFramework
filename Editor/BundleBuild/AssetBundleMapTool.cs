@@ -1,45 +1,33 @@
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
 namespace PowerCellStudio
 {
-    public class AssetBundleConfigTool
+    public class AssetBundleMapTool
     {
         [MenuItem("Build/AssetBundle/AssetBundleMap", false, 1)]
-        public static void CreateAssetBundleConfig()
+        public static void CreateAssetBundleMap()
         {
-            var buildPath = Path.Combine(Application.streamingAssetsPath,
-                AssetsBundleBuildUtils.GetBuildFoldName(EditorUserBuildSettings.activeBuildTarget));
-            if (!Directory.Exists(buildPath))
-                return;
             string[] assetBuneleNames = AssetDatabase.GetAllAssetBundleNames();
-            //创建数据资源文件
-            //泛型是继承自ScriptableObject的类
-            var assetData = new ScriptableAssetBundle();
-            GetBundleAssetData(assetBuneleNames, assetData);
-            //前一步创建的资源只是存在内存中，现在要把它保存到本地
-            //通过编辑器API，创建一个数据资源文件，第二个参数为资源文件在Assets目录下的路径
+            // 获取资源路径和bundle映射数据
+            var mapDataSource = GetBundleAssetData(assetBuneleNames);
+            // 检查文件夹
             var folder = Path.Combine(Application.streamingAssetsPath, ConstSetting.BundleAssetConfigFolder);
             if (!Directory.Exists(folder))
             {
                 Directory.CreateDirectory(folder);
             }
-
-            var bytes = SerializeUtils.SerializeToBinary(assetData);
-            var encryptData = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
-            var path = Path.Combine(Application.streamingAssetsPath, ConstSetting.BundleAssetConfigFolder, ConstSetting.BundleAssetConfigName);
-            File.WriteAllBytes(path, encryptData);
-
+            // Chunk化保存
+            ChunkMaker.StreamWriteSync(folder, ConstSetting.BundleAssetConfigName, mapDataSource, data => data.assetName, 256);
             //保存创建的资源
             AssetDatabase.SaveAssets();
             //刷新界面
             AssetDatabase.Refresh();
         }
 
-        private static void GetBundleAssetData(string[] bundleNames, ScriptableAssetBundle assetData)
+        private static IEnumerable<ScriptableAssetBundleData> GetBundleAssetData(string[] bundleNames)
         {
             AssetBundle.UnloadAllAssetBundles(true);
             var allAssets = new HashSet<string>();
@@ -68,15 +56,6 @@ namespace PowerCellStudio
                         }
                     }
                 }
-                
-                // var bundle = AssetBundle.LoadFromFile(Path.Combine(foldPath, item));
-                // if (string.IsNullOrEmpty(bundle.name))
-                // {
-                //     bundle.Unload(true);
-                //     continue;
-                // }
-                //
-                // var assets = bundle.GetAllAssetNames();
                 foreach (var name in allAssetPaths)
                 {
                     if (Path.GetExtension(name) == "shader") continue;
@@ -85,13 +64,14 @@ namespace PowerCellStudio
                         AssetLog.LogError($"Duplicate packaged assets: {name}");
                         continue;
                     }
-                    assetData.source.Add(new ScriptableAssetBundleData()
+                    allAssets.Add(name);
+
+                    yield return new ScriptableAssetBundleData()
                     {
                         // hashCode = name.GenHashCode(),
                         assetName = name,
                         assetBundle = bundleName
-                    });
-                    allAssets.Add(name);
+                    };
                 }
                 // bundle.Unload(true);
             }

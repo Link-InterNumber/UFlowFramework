@@ -160,7 +160,6 @@ namespace PowerCellStudio
         public static void InitUI<T>(T ui, bool ignoreRaycaster, bool standaloneCanvas, RenderMode renderMode) where T : IUIComponent
         {
             InitCanvas(ui, ignoreRaycaster, standaloneCanvas, renderMode);
-            ui.RegisterEvent();
         }
         
         public static void OpenUI<T>(T ui, object data) where T : IUIComponent
@@ -168,6 +167,7 @@ namespace PowerCellStudio
             if (ui == null) return;
             ui.transform.SetAsLastSibling();
             ui.transform.gameObject.SetActive(true);
+            ui.RegisterEvent();
             if(ui is IUIChild child)
             {
                 child.parent.openedUIs.Push(child);
@@ -199,6 +199,7 @@ namespace PowerCellStudio
             {
                 return false;
             }
+            ui.DeregisterEvent();
             ui.transform.gameObject.SetActive(false);
             if(ui is IUIParent parent)
             {

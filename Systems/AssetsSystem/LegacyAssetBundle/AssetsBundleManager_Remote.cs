@@ -97,7 +97,7 @@ namespace PowerCellStudio
 #else
             var url = BuildRemoteUrl("remoteManifest.json");
 #endif
-            UnityWebRequest request = UnityWebRequest.Get(url);
+            using UnityWebRequest request = UnityWebRequest.Get(url);
             request.timeout = 30;
             yield return request.SendWebRequest();
             if (request.result == UnityWebRequest.Result.Success)
@@ -113,7 +113,6 @@ namespace PowerCellStudio
 #endif
             }
             if (_remoteManifest == null) _remoteManifest = new Dictionary<string, BundleInfo>();
-            request.Dispose();
         }
 
         private void SaveRemoteManifest(Dictionary<string, BundleInfo> data)
@@ -138,20 +137,17 @@ namespace PowerCellStudio
         private IEnumerator LoadRemoteBundle(string bundleName, YieldInstructionCompletionSource<bool> handler = null)
         {
             var url = BuildRemoteUrl(bundleName);
-            using UnityWebRequest webRequest = UnityWebRequest.Get(url);
-            yield return webRequest.SendWebRequest();
-            if (webRequest.result != UnityWebRequest.Result.Success)
-            {
-                handler?.SetResult(false);
-                yield break;
-            }
-            var bundleByte = webRequest.downloadHandler.data;
             var path = Path.Combine(Application.persistentDataPath, _bundleFoldName, bundleName);
-#if !UNITY_WEBGL
-            yield return File.WriteAllBytesAsync(path, bundleByte).AsCoroutine();
-#else
-            File.WriteAllBytes(path, bundleByte);
-#endif
+            using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
+            {
+                webRequest.downloadHandler = new DownloadHandlerFile(path);
+                yield return webRequest.SendWebRequest();
+                if (webRequest.result != UnityWebRequest.Result.Success)
+                {
+                    handler?.SetResult(false);
+                    yield break;
+                }
+            }
             if (_remoteManifest.TryGetValue(bundleName, out var bundleInfo))
             {
                 _clientManifest[bundleName] = bundleInfo;
@@ -161,19 +157,7 @@ namespace PowerCellStudio
 
         private IEnumerator CheckRemoteBundle()
         {
-#if !UNITY_EDITOR
-            var url = BuildRemoteUrl($"{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}");
-            using (UnityWebRequest request = UnityWebRequest.Get(url))
-            {
-                yield return request.SendWebRequest();
-                if (request.result == UnityWebRequest.Result.Success)
-                {
-                    var encryptData = request.downloadHandler.data;
-                    var savePath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, ConstSetting.BundleAssetConfigName);
-                    File.WriteAllBytes(savePath, encryptData);
-                }
-            }
-#else
+#if UNITY_EDITOR
             if (!simulateRemoteBundleInEditor)
             {
                 yield break;
@@ -196,16 +180,49 @@ namespace PowerCellStudio
             if (loadList.Count == 0) yield break;
             initState = AssetInitState.DownloadTheUpdateFile;
             initProcess = 0f;
+            
+            // 下载新的AssetMap文件
+            var indexFileUrl = BuildRemoteUrl(Path.Combine(ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Index.bytes" ));
+            var dataFileUrl = BuildRemoteUrl(Path.Combine(ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Data.bytes" ));
+            var indexFilePath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Index.bytes" );
+            var dataFilePath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Data.bytes" );
+            var folder = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder);
+            if (!Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
+            var assetMapLoaded = true;
+            using (UnityWebRequest webRequest = UnityWebRequest.Get(indexFileUrl))
+            {
+                webRequest.downloadHandler = new DownloadHandlerFile(indexFilePath);
+                yield return webRequest.SendWebRequest();
+                if (webRequest.result != UnityWebRequest.Result.Success)
+                    assetMapLoaded = false;
+            }
+            using (UnityWebRequest webRequest = UnityWebRequest.Get(dataFileUrl))
+            {
+                webRequest.downloadHandler = new DownloadHandlerFile(dataFilePath);
+                yield return webRequest.SendWebRequest();
+                if (webRequest.result != UnityWebRequest.Result.Success)
+                    assetMapLoaded = false;
+            }
+            if (assetMapLoaded)
+            {
+                PlayerPrefs.SetInt(_hasAssetBundleMapMovedKey, 1);
+                PlayerPrefs.Save();
+            }
+            
+            var token = new YieldInstructionCompletionSource<bool>();
             for (var i = 0; i < loadList.Count; i++)
             {
                 var bundleName = loadList[i];
-                var token = new YieldInstructionCompletionSource<bool>();
                 yield return LoadRemoteBundle(bundleName, token);
                 initProcess = i * 1f / loadList.Count;
                 if (!token.Result)
                 {
                     AssetLog.LogError($"下载远程Bundle失败: {bundleName}");
                 }
+                token.Reset();
             }
             SaveRemoteManifest(_clientManifest);
         }

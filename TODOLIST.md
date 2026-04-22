@@ -12,7 +12,7 @@
 - [x] 可视化红点结构编辑窗口。
 - [x] 可视化引导编辑窗口。
 - [x] 实现配置表资源chunk化。
-- [ ] AssetBundle加载模式中的【资源路径-bundle名】映射文件chunk化。
+- [x] AssetBundle加载模式中的【资源路径-bundle名】映射文件chunk化。
 - [ ] AssetBundle加载模式中，将bundle加载、asset加载、引用计数管理和缓存清理逻辑分离。
 - [ ] 资源加载系统新增批量加载接口。
 - [ ] 加载模式新增资源链式加载模式。

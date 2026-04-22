@@ -18,6 +18,13 @@ namespace PowerCellStudio
             Result = result;
         }
 
+        public override void Reset()
+        {
+            base.Reset();
+            IsCompleted = false;
+            Result = default(T);
+        }
+
         public override bool keepWaiting => !IsCompleted;
     }
     
