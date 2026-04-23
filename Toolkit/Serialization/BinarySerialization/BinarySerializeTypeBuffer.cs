@@ -159,7 +159,7 @@ namespace PowerCellStudio
             return info;
         }
 
-        public static void RegisterCustomSelector(IBinarySerializerTypeSelector selector)
+        internal static void RegisterCustomSelector(IBinarySerializerTypeSelector selector)
         {
             if (selector == null)
                 throw new ArgumentNullException(nameof(selector));
