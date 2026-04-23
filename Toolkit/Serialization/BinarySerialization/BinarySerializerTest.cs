@@ -9,7 +9,7 @@ namespace PowerCellStudio
 {
     public class BinarySerializerTest : RunTestMono
     {
-        private void Start()
+        private void OnEnable()
         {
             Debug.Log("========== BinarySerializer Test Suite Started ==========");
 

@@ -16,7 +16,7 @@ namespace PowerCellStudio
         private byte[] _binarySerializerBytes;
         private byte[] _serializeUtilsBytes;
 
-        private void Start()
+        private void OnEnable()
         {
             Debug.Log($"========== BinarySerializer Performance Test Started (Items: {ItemCount}) ==========");
 

@@ -8,7 +8,7 @@ using System.Text;
 
 namespace PowerCellStudio
 {
-    public class BinaryDeserializeHandler
+    internal class BinaryDeserializeHandler
     {
         #region 读取核心逻辑
 
@@ -33,21 +33,6 @@ namespace PowerCellStudio
                 object underlyingValue = ReadValue(reader, underlyingType, encoding);
                 return Enum.ToObject(type, underlyingValue);
             }
-
-            if (type == typeof(IntPtr))
-                return new IntPtr(reader.ReadInt64());
-
-            if (type == typeof(UIntPtr))
-                return new UIntPtr(reader.ReadUInt64());
-
-            if (type == typeof(Guid))
-                return new Guid(reader.ReadBytes(16));
-
-            if (type == typeof(TimeSpan))
-                return new TimeSpan(reader.ReadInt64());
-
-            if (type == typeof(DateTimeOffset))
-                return new DateTimeOffset(reader.ReadInt64(), new TimeSpan(reader.ReadInt64()));
 
             TypeCode typeCode = Type.GetTypeCode(type);
             switch (typeCode)
@@ -89,23 +74,24 @@ namespace PowerCellStudio
             if (type.IsArray)
                 return ReadArray(reader, type, encoding);
 
-            if (TryResolveCollectionType(type, typeof(IList<>), typeof(List<>), out Type listConcreteType, out Type[] listArgs))
-                return ReadList(reader, listConcreteType, listArgs[0], encoding);
-
-            if (TryResolveCollectionType(type, typeof(IDictionary<,>), typeof(Dictionary<,>), out Type dictionaryConcreteType, out Type[] dictionaryArgs))
-                return ReadDictionary(reader, dictionaryConcreteType, dictionaryArgs, encoding);
-
-            if (TryResolveCollectionType(type, typeof(ISet<>), typeof(HashSet<>), out Type setConcreteType, out Type[] setArgs))
-                return ReadSet(reader, setConcreteType, setArgs[0], encoding);
-
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Queue<>))
-                return ReadQueue(reader, type, encoding);
-
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Stack<>))
-                return ReadStack(reader, type, encoding);
-
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
                 return ReadKeyValuePair(reader, type, encoding);
+
+            var collectionTypeInfo = BinarySerializeTypeBuffer.GetCollectionGenericTypeInfo(type);
+            if (collectionTypeInfo.genericDefinition == typeof(IList<>))
+                return ReadList(reader, collectionTypeInfo.resolvedType, collectionTypeInfo.genericArguments[0], encoding);
+
+            if (collectionTypeInfo.genericDefinition == typeof(IDictionary<,>))
+                return ReadDictionary(reader, collectionTypeInfo.resolvedType, collectionTypeInfo.genericArguments, encoding);
+
+            if (collectionTypeInfo.genericDefinition == typeof(ISet<>))
+                return ReadSet(reader, collectionTypeInfo.resolvedType, collectionTypeInfo.genericArguments[0], encoding);
+
+            if (collectionTypeInfo.genericDefinition == typeof(Queue<>))
+                return ReadQueue(reader, collectionTypeInfo.resolvedType, collectionTypeInfo.genericArguments[0], encoding);
+
+            if (collectionTypeInfo.genericDefinition == typeof(Stack<>))
+                return ReadStack(reader, collectionTypeInfo.resolvedType, collectionTypeInfo.genericArguments[0], encoding);
             
 
             // 普通对象
@@ -128,7 +114,12 @@ namespace PowerCellStudio
         private static object ReadList(BinaryReader reader, Type listType, Type elementType, Encoding encoding)
         {
             int count = reader.ReadInt32();
-            IList list = CreateObjectInstance(listType) as IList;
+            var instanceType = listType;
+            if (listType.IsInterface)
+            {
+                instanceType = typeof(List<>).MakeGenericType(elementType);
+            }
+            IList list = CreateObjectInstance(instanceType) as IList;
             if (list == null)
                 throw new NotSupportedException($"[BinaryDeserializeHandler] 类型未实现 IList，无法作为列表反序列化。类型: {listType}");
 
@@ -145,7 +136,12 @@ namespace PowerCellStudio
             int count = reader.ReadInt32();
             Type keyType = args[0];
             Type valueType = args[1];
-            IDictionary dict = CreateObjectInstance(dictType) as IDictionary;
+            var instanceType = dictType;
+            if (dictType.IsInterface)
+            {
+                instanceType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+            }
+            IDictionary dict = CreateObjectInstance(instanceType) as IDictionary;
             if (dict == null)
                 throw new NotSupportedException($"[BinaryDeserializeHandler] 类型未实现 IDictionary，无法作为字典反序列化。类型: {dictType}");
 
@@ -175,10 +171,9 @@ namespace PowerCellStudio
             return set;
         }
 
-        private static object ReadQueue(BinaryReader reader, Type queueType, Encoding encoding)
+        private static object ReadQueue(BinaryReader reader, Type queueType, Type elementType, Encoding encoding)
         {
             int count = reader.ReadInt32();
-            Type elementType = queueType.GetGenericArguments()[0];
             object queue = CreateObjectInstance(queueType);
             MethodInfo enqueueMethod = queueType.GetMethod("Enqueue", new[] { elementType });
             if (enqueueMethod == null)
@@ -192,10 +187,9 @@ namespace PowerCellStudio
             return queue;
         }
 
-        private static object ReadStack(BinaryReader reader, Type stackType, Encoding encoding)
+        private static object ReadStack(BinaryReader reader, Type stackType, Type elementType, Encoding encoding)
         {
             int count = reader.ReadInt32();
-            Type elementType = stackType.GetGenericArguments()[0];
             object stack = CreateObjectInstance(stackType);
             MethodInfo pushMethod = stackType.GetMethod("Push", new[] { elementType });
             if (pushMethod == null)
@@ -253,39 +247,6 @@ namespace PowerCellStudio
 
             throw new NotSupportedException(
                 $"[BinaryDeserializeHandler] 类型缺少可调用的无参构造函数，且未显式标记为 [Serializable]，拒绝使用未初始化对象回退。类型: {type}");
-        }
-
-        private static bool TryResolveCollectionType(Type type, Type interfaceTypeDefinition, Type defaultConcreteTypeDefinition, out Type concreteType, out Type[] genericArgs)
-        {
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == interfaceTypeDefinition)
-            {
-                genericArgs = type.GetGenericArguments();
-                concreteType = defaultConcreteTypeDefinition.MakeGenericType(genericArgs);
-                return true;
-            }
-
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == defaultConcreteTypeDefinition)
-            {
-                genericArgs = type.GetGenericArguments();
-                concreteType = type;
-                return true;
-            }
-
-            Type[] interfaces = type.GetInterfaces();
-            for (int i = 0; i < interfaces.Length; i++)
-            {
-                Type interfaceType = interfaces[i];
-                if (!interfaceType.IsGenericType || interfaceType.GetGenericTypeDefinition() != interfaceTypeDefinition)
-                    continue;
-
-                genericArgs = interfaceType.GetGenericArguments();
-                concreteType = type.IsInterface ? defaultConcreteTypeDefinition.MakeGenericType(genericArgs) : type;
-                return true;
-            }
-
-            concreteType = null;
-            genericArgs = null;
-            return false;
         }
 
         #endregion

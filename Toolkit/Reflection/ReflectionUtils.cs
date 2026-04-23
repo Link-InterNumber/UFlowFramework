@@ -402,7 +402,7 @@ namespace PowerCellStudio
                 types.AddRange(
                     assembly.GetTypes()
                         .Where(t =>
-                            IsSubTypeOf(baseType, t) &&
+                            IsSubTypeOf(t, baseType) &&
                             CanInstantiate(t)
                         )
                 );
@@ -461,7 +461,7 @@ namespace PowerCellStudio
         /// </summary>
         /// <param name="baseType">The base type or generic type definition. 基类或泛型类型定义。</param>
         /// <param name="toCheck">The type to check. 要检查的类型。</ param>
-        public static bool IsSubTypeOf(Type baseType, Type toCheck)
+        public static bool IsSubTypeOf(Type toCheck, Type baseType)
         {
             if (baseType == null) throw new ArgumentNullException(nameof(baseType));
             if (toCheck == null) throw new ArgumentNullException(nameof(toCheck));
@@ -470,20 +470,37 @@ namespace PowerCellStudio
             {
                 return true;
             }
-            if (IsSubTypeOfRawGeneric(baseType, toCheck))
+            if (IsSubTypeOfRawGeneric(toCheck, baseType))
             {
                 return true;
             }
             return false;
         }
 
-        private static bool IsSubTypeOfRawGeneric(Type generic, Type toCheck)
+        private static bool IsSubTypeOfRawGeneric(Type toCheck, Type generic)
         {
-            while (toCheck != null && toCheck != typeof(object))
+            if (!generic.IsGenericType) return false;
+            if (generic.IsInterface)
             {
-                if (toCheck.IsGenericType && toCheck.GetGenericTypeDefinition() == generic)
-                    return true;
-                toCheck = toCheck.BaseType;
+                Type[] interfaces = toCheck.GetInterfaces();
+                for (int i = 0; i < interfaces.Length; i++)
+                {
+                    Type interfaceType = interfaces[i];
+                    if (interfaceType.IsGenericType && interfaceType.GetGenericTypeDefinition() == generic)
+                    {
+                        return true;
+                    }
+                }
+            }
+            else
+            {
+                var tempType = toCheck;
+                while (tempType != null && tempType != typeof(object))
+                {
+                    if (tempType.IsGenericType && tempType.GetGenericTypeDefinition() == generic)
+                        return true;
+                    tempType = tempType.BaseType;
+                }
             }
             return false;
         }

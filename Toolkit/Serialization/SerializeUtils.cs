@@ -52,22 +52,22 @@ namespace PowerCellStudio
             }
             try
             {
-                // using (var memoryStream = new MemoryStream())
-                // {
-                //     using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress, true))
-                //     using (var streamWriter = new StreamWriter(gzipStream, new UTF8Encoding(false)))
-                //     using (var jsonWriter = new JsonTextWriter(streamWriter))
-                //     {
-                //         var serializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
-                //         {
-                //             // TypeNameHandling = TypeNameHandling.Auto,
-                //             PreserveReferencesHandling = PreserveReferencesHandling.Objects
-                //         });
-                //         serializer.Serialize(jsonWriter, data);
-                //     }
-                //     return memoryStream.ToArray();
-                // }
-                return BinarySerializer.Serialize<T>(data);
+                using (var memoryStream = new MemoryStream())
+                {
+                    using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress, true))
+                    using (var streamWriter = new StreamWriter(gzipStream, new UTF8Encoding(false)))
+                    using (var jsonWriter = new JsonTextWriter(streamWriter))
+                    {
+                        var serializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
+                        {
+                            // TypeNameHandling = TypeNameHandling.Auto,
+                            PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                        });
+                        serializer.Serialize(jsonWriter, data);
+                    }
+                    return memoryStream.ToArray();
+                }
+                // return BinarySerializer.Serialize<T>(data);
             }
             catch (Exception e)
             {
@@ -84,19 +84,19 @@ namespace PowerCellStudio
             }
             try
             {
-                // using (var compressedStream = new MemoryStream(bytes))
-                // using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
-                // using (var streamReader = new StreamReader(gzipStream, new UTF8Encoding(false)))
-                // using (var jsonReader = new JsonTextReader(streamReader))
-                // {
-                //     var serializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
-                //     {
-                //         // TypeNameHandling = TypeNameHandling.Auto,
-                //         PreserveReferencesHandling = PreserveReferencesHandling.Objects
-                //     });
-                //     return serializer.Deserialize<T>(jsonReader);
-                // }
-                return BinarySerializer.Deserialize<T>(bytes);
+                using (var compressedStream = new MemoryStream(bytes))
+                using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
+                using (var streamReader = new StreamReader(gzipStream, new UTF8Encoding(false)))
+                using (var jsonReader = new JsonTextReader(streamReader))
+                {
+                    var serializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
+                    {
+                        // TypeNameHandling = TypeNameHandling.Auto,
+                        PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                    });
+                    return serializer.Deserialize<T>(jsonReader);
+                }
+                // return BinarySerializer.Deserialize<T>(bytes);
             }
             catch (Exception e)
             {

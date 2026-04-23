@@ -7,7 +7,7 @@ using System.Text;
 
 namespace PowerCellStudio
 {
-    public class BinarySerializeHandler
+    internal class BinarySerializeHandler
     {
         #region 写入核心逻辑
 
@@ -38,38 +38,6 @@ namespace PowerCellStudio
             {
                 Type underlyingType = Enum.GetUnderlyingType(type);
                 WriteValue(writer, Convert.ChangeType(value, underlyingType), underlyingType, encoding);
-                return;
-            }
-
-            if (type == typeof(IntPtr))
-            {
-                writer.Write(((IntPtr)value).ToInt64());
-                return;
-            }
-
-            if (type == typeof(UIntPtr))
-            {
-                writer.Write(((UIntPtr)value).ToUInt64());
-                return;
-            }
-
-            if (type == typeof(Guid))
-            {
-                writer.Write(((Guid)value).ToByteArray());
-                return;
-            }
-
-            if (type == typeof(TimeSpan))
-            {
-                writer.Write(((TimeSpan)value).Ticks);
-                return;
-            }
-
-            if (type == typeof(DateTimeOffset))
-            {
-                DateTimeOffset dateTimeOffset = (DateTimeOffset)value;
-                writer.Write(dateTimeOffset.Ticks);
-                writer.Write(dateTimeOffset.Offset.Ticks);
                 return;
             }
 
@@ -120,47 +88,48 @@ namespace PowerCellStudio
 
         private static void WriteObject(BinaryWriter writer, object obj, Type type, Encoding encoding)
         {
-            if (TryGetGenericTypeArguments(type, typeof(IList<>), out Type[] listArgs))
-            {
-                WriteList(writer, (IList)obj, listArgs[0], encoding);
-                return;
-            }
-
-            if (TryGetGenericTypeArguments(type, typeof(IDictionary<,>), out Type[] dictionaryArgs))
-            {
-                WriteDictionary(writer, (IDictionary)obj, dictionaryArgs, encoding);
-                return;
-            }
-
-            if (TryGetGenericTypeArguments(type, typeof(ISet<>), out Type[] setArgs))
-            {
-                WriteEnumerable(writer, (IEnumerable)obj, type, setArgs[0], encoding);
-                return;
-            }
-
             // 处理数组
             if (type.IsArray)
             {
                 WriteArray(writer, (Array)obj, type.GetElementType(), encoding);
                 return;
             }
-
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Queue<>))
-            {
-                WriteEnumerable(writer, (IEnumerable)obj, type, type.GetGenericArguments()[0], encoding);
-                return;
-            }
-
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Stack<>))
-            {
-                WriteStack(writer, (IEnumerable)obj, type.GetGenericArguments()[0], encoding);
-                return;
-            }
-
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
             {
                 WriteKeyValuePair(writer, obj, type.GetGenericArguments(), encoding);
                 return;
+            }
+
+            var collectionTypeInfo = BinarySerializeTypeBuffer.GetCollectionGenericTypeInfo(type);
+            if (collectionTypeInfo.genericDefinition != null)
+            {
+                if (collectionTypeInfo.genericDefinition == typeof(IList<>))
+                {
+                    WriteList(writer, (IList)obj, collectionTypeInfo.genericArguments[0], encoding);
+                    return;
+                }
+                if (collectionTypeInfo.genericDefinition == typeof(IDictionary<,>))
+                {
+                    WriteDictionary(writer, (IDictionary)obj, collectionTypeInfo.genericArguments, encoding);
+                    return;
+                }
+                if (collectionTypeInfo.genericDefinition == typeof(ISet<>))
+                {
+                    WriteEnumerable(writer, (IEnumerable)obj, type, collectionTypeInfo.genericArguments[0], encoding);
+                    return;
+                }
+
+                if (collectionTypeInfo.genericDefinition == typeof(Queue<>))
+                {
+                    WriteEnumerable(writer, (IEnumerable)obj, type, collectionTypeInfo.genericArguments[0], encoding);
+                    return;
+                }
+
+                if (collectionTypeInfo.genericDefinition == typeof(Stack<>))
+                {
+                    WriteStack(writer, (IEnumerable)obj, collectionTypeInfo.genericArguments[0], encoding);
+                    return;
+                }
             }
 
             // 处理普通类/结构体：遍历所有字段
@@ -253,30 +222,6 @@ namespace PowerCellStudio
                 WriteValue(writer, fieldValue, field.FieldType, encoding);
             }
         }
-
-        private static bool TryGetGenericTypeArguments(Type type, Type genericTypeDefinition, out Type[] genericArgs)
-        {
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == genericTypeDefinition)
-            {
-                genericArgs = type.GetGenericArguments();
-                return true;
-            }
-
-            Type[] interfaces = type.GetInterfaces();
-            for (int i = 0; i < interfaces.Length; i++)
-            {
-                Type interfaceType = interfaces[i];
-                if (interfaceType.IsGenericType && interfaceType.GetGenericTypeDefinition() == genericTypeDefinition)
-                {
-                    genericArgs = interfaceType.GetGenericArguments();
-                    return true;
-                }
-            }
-
-            genericArgs = null;
-            return false;
-        }
-
         #endregion
     }
 }
