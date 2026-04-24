@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Text;
+using Newtonsoft.Json;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -15,6 +19,69 @@ namespace PowerCellStudio
         private PerformancePayload _payload;
         private byte[] _binarySerializerBytes;
         private byte[] _serializeUtilsBytes;
+
+        // 测试使用二进制方法（JSON + GZip）与 BinarySerializer 进行性能对比
+        private static byte[] SerializeToBinary<T>(T data)
+        {
+            if (data == null)
+            {
+                return Array.Empty<byte>();
+            }
+            try
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress, true))
+                    using (var streamWriter = new StreamWriter(gzipStream, new UTF8Encoding(false)))
+                    using (var jsonWriter = new JsonTextWriter(streamWriter))
+                    {
+                        var serializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
+                        {
+                            // TypeNameHandling = TypeNameHandling.Auto,
+                            PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                        });
+                        serializer.Serialize(jsonWriter, data);
+                    }
+                    return memoryStream.ToArray();
+                }
+                // return BinarySerializer.Serialize<T>(data);
+            }
+            catch (Exception e)
+            {
+                LinkLog.LogError($"SerializeToBinary failed: {e.Message}");
+                return Array.Empty<byte>();
+            }
+        }
+
+        // 测试使用二进制方法（JSON + GZip）与 BinarySerializer 进行性能对比
+        private static T DeserializeFromBinary<T>(byte[] bytes)
+        {
+            if (bytes == null || bytes.Length == 0)
+            {
+                return default;
+            }
+            try
+            {
+                using (var compressedStream = new MemoryStream(bytes))
+                using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
+                using (var streamReader = new StreamReader(gzipStream, new UTF8Encoding(false)))
+                using (var jsonReader = new JsonTextReader(streamReader))
+                {
+                    var serializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
+                    {
+                        // TypeNameHandling = TypeNameHandling.Auto,
+                        PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                    });
+                    return serializer.Deserialize<T>(jsonReader);
+                }
+                // return BinarySerializer.Deserialize<T>(bytes);
+            }
+            catch (Exception e)
+            {
+                LinkLog.LogError($"DeserializeFromBinary failed: {e.Message}");
+                return default;
+            }
+        }
 
         private void OnEnable()
         {
@@ -38,7 +105,7 @@ namespace PowerCellStudio
         private void WarmUp()
         {
             BinarySerializer.Serialize(_payload);
-            SerializeUtils.SerializeToBinary(_payload);
+            SerializeToBinary(_payload);
         }
 
         private void ValidateBinarySerializerRoundTrip()
@@ -54,7 +121,7 @@ namespace PowerCellStudio
         {
             RunTest("SerializeUtils RoundTrip Validation", () =>
             {
-                PerformancePayload clone = SerializeUtils.DeserializeFromBinary<PerformancePayload>(SerializeUtils.SerializeToBinary(_payload));
+                PerformancePayload clone = DeserializeFromBinary<PerformancePayload>(SerializeToBinary(_payload));
                 AssertPayloadEquivalent(_payload, clone, "SerializeUtils");
             });
         }
@@ -62,13 +129,13 @@ namespace PowerCellStudio
         private void CacheSerializedBytes()
         {
             _binarySerializerBytes = BinarySerializer.Serialize(_payload);
-            _serializeUtilsBytes = SerializeUtils.SerializeToBinary(_payload);
+            _serializeUtilsBytes = SerializeToBinary(_payload);
         }
 
         private void LogSerializedSizes()
         {
             Debug.Log($"[Size] BinarySerializer: {_binarySerializerBytes.Length} bytes");
-            Debug.Log($"[Size] SerializeUtils.SerializeToBinary: {_serializeUtilsBytes.Length} bytes");
+            Debug.Log($"[Size] SerializeToBinary: {_serializeUtilsBytes.Length} bytes");
         }
 
         private void RunSerializeBenchmarks()
@@ -85,7 +152,7 @@ namespace PowerCellStudio
             {
                 for (int i = 0; i < SerializeIterations; i++)
                 {
-                    SerializeUtils.SerializeToBinary(_payload);
+                    SerializeToBinary(_payload);
                 }
             });
         }
@@ -104,7 +171,7 @@ namespace PowerCellStudio
             {
                 for (int i = 0; i < DeserializeIterations; i++)
                 {
-                    SerializeUtils.DeserializeFromBinary<PerformancePayload>(_serializeUtilsBytes);
+                    DeserializeFromBinary<PerformancePayload>(_serializeUtilsBytes);
                 }
             });
         }
@@ -124,8 +191,8 @@ namespace PowerCellStudio
             {
                 for (int i = 0; i < RoundTripIterations; i++)
                 {
-                    byte[] bytes = SerializeUtils.SerializeToBinary(_payload);
-                    SerializeUtils.DeserializeFromBinary<PerformancePayload>(bytes);
+                    byte[] bytes = SerializeToBinary(_payload);
+                    DeserializeFromBinary<PerformancePayload>(bytes);
                 }
             });
         }

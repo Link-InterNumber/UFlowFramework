@@ -14,19 +14,6 @@ namespace PowerCellStudio
 
         public static object ReadValue(BinaryReader reader, Type type, Encoding encoding)
         {
-            byte notNullFlag = reader.ReadByte();
-            if (notNullFlag == 0)
-                return null;
-
-            var customSelector = BinarySerializeTypeBuffer.GetCustomSelector(type);
-            if (customSelector != null)
-                return customSelector.Read(reader, encoding);
-
-#if UNITY_5_3_OR_NEWER
-            if (typeof(UnityEngine.Object).IsAssignableFrom(type))
-                throw new NotSupportedException($"[BinaryDeserializeHandler] UnityEngine.Object 类型不支持直接反序列化。类型: {type}");
-#endif
-
             if (type.IsEnum)
             {
                 Type underlyingType = Enum.GetUnderlyingType(type);
@@ -71,30 +58,49 @@ namespace PowerCellStudio
 
         private static object ReadObject(BinaryReader reader, Type type, Encoding encoding)
         {
+            byte notNullFlag = reader.ReadByte();
+            if (notNullFlag == 0)
+                return null;
+
+            var customSelector = BinarySerializeTypeBuffer.GetCustomSelector(type);
+            if (customSelector != null)
+                return customSelector.Read(reader, encoding);
+            
+#if UNITY_5_3_OR_NEWER
+            if (typeof(UnityEngine.Object).IsAssignableFrom(type))
+                throw new NotSupportedException($"[BinaryDeserializeHandler] UnityEngine.Object 类型不支持直接反序列化。类型: {type}");
+#endif
+
             if (type.IsArray)
                 return ReadArray(reader, type, encoding);
+
+            if (!BinarySerializeTypeBuffer.IsSupportedType(type))
+                throw new NotSupportedException($"[BinaryDeserializeHandler] 不支持的类型，无法反序列化。类型: {type}");
 
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
                 return ReadKeyValuePair(reader, type, encoding);
 
             var collectionTypeInfo = BinarySerializeTypeBuffer.GetCollectionGenericTypeInfo(type);
-            if (collectionTypeInfo.genericDefinition == typeof(IList<>))
-                return ReadList(reader, collectionTypeInfo.resolvedType, collectionTypeInfo.genericArguments[0], encoding);
+            if (collectionTypeInfo.genericDefinition != null)
+            {
+                var obj = ReadFields(reader, collectionTypeInfo.resolvedType, encoding);
+                
+                if (collectionTypeInfo.genericDefinition == typeof(IList<>))
+                    return ReadList(reader, obj as IList, collectionTypeInfo.genericArguments[0], encoding);
 
-            if (collectionTypeInfo.genericDefinition == typeof(IDictionary<,>))
-                return ReadDictionary(reader, collectionTypeInfo.resolvedType, collectionTypeInfo.genericArguments, encoding);
+                if (collectionTypeInfo.genericDefinition == typeof(IDictionary<,>))
+                    return ReadDictionary(reader, obj as IDictionary, collectionTypeInfo.genericArguments, encoding);
 
-            if (collectionTypeInfo.genericDefinition == typeof(ISet<>))
-                return ReadSet(reader, collectionTypeInfo.resolvedType, collectionTypeInfo.genericArguments[0], encoding);
+                if (collectionTypeInfo.genericDefinition == typeof(ISet<>))
+                    return ReadSet(reader, obj, collectionTypeInfo.resolvedType, collectionTypeInfo.genericArguments[0], encoding);
 
-            if (collectionTypeInfo.genericDefinition == typeof(Queue<>))
-                return ReadQueue(reader, collectionTypeInfo.resolvedType, collectionTypeInfo.genericArguments[0], encoding);
+                if (collectionTypeInfo.genericDefinition == typeof(Queue<>))
+                    return ReadQueue(reader, obj, collectionTypeInfo.resolvedType, collectionTypeInfo.genericArguments[0], encoding);
 
-            if (collectionTypeInfo.genericDefinition == typeof(Stack<>))
-                return ReadStack(reader, collectionTypeInfo.resolvedType, collectionTypeInfo.genericArguments[0], encoding);
-            
-
-            // 普通对象
+                if (collectionTypeInfo.genericDefinition == typeof(Stack<>))
+                    return ReadStack(reader, obj, collectionTypeInfo.resolvedType, collectionTypeInfo.genericArguments[0], encoding);
+                return obj;
+            }
             return ReadFields(reader, type, encoding);
         }
 
@@ -111,18 +117,9 @@ namespace PowerCellStudio
             return array;
         }
 
-        private static object ReadList(BinaryReader reader, Type listType, Type elementType, Encoding encoding)
+        private static object ReadList(BinaryReader reader, IList list, Type elementType, Encoding encoding)
         {
             int count = reader.ReadInt32();
-            var instanceType = listType;
-            if (listType.IsInterface)
-            {
-                instanceType = typeof(List<>).MakeGenericType(elementType);
-            }
-            IList list = CreateObjectInstance(instanceType) as IList;
-            if (list == null)
-                throw new NotSupportedException($"[BinaryDeserializeHandler] 类型未实现 IList，无法作为列表反序列化。类型: {listType}");
-
             for (int i = 0; i < count; i++)
             {
                 list.Add(ReadValue(reader, elementType, encoding));
@@ -131,20 +128,11 @@ namespace PowerCellStudio
             return list;
         }
 
-        private static object ReadDictionary(BinaryReader reader, Type dictType, Type[] args, Encoding encoding)
+        private static object ReadDictionary(BinaryReader reader, IDictionary dict, Type[] args, Encoding encoding)
         {
             int count = reader.ReadInt32();
             Type keyType = args[0];
             Type valueType = args[1];
-            var instanceType = dictType;
-            if (dictType.IsInterface)
-            {
-                instanceType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
-            }
-            IDictionary dict = CreateObjectInstance(instanceType) as IDictionary;
-            if (dict == null)
-                throw new NotSupportedException($"[BinaryDeserializeHandler] 类型未实现 IDictionary，无法作为字典反序列化。类型: {dictType}");
-
             for (int i = 0; i < count; i++)
             {
                 object key = ReadValue(reader, keyType, encoding);
@@ -155,52 +143,22 @@ namespace PowerCellStudio
             return dict;
         }
 
-        private static object ReadSet(BinaryReader reader, Type setType, Type elementType, Encoding encoding)
+        private static object ReadSet(BinaryReader reader, object set, Type setType, Type elementType, Encoding encoding)
         {
-            int count = reader.ReadInt32();
-            object set = CreateObjectInstance(setType);
-            MethodInfo addMethod = setType.GetMethod("Add", new[] { elementType });
-            if (addMethod == null)
-                throw new NotSupportedException($"[BinaryDeserializeHandler] 集合类型缺少 Add 方法，无法作为集合反序列化。类型: {setType}");
-
-            for (int i = 0; i < count; i++)
-            {
-                addMethod.Invoke(set, new[] { ReadValue(reader, elementType, encoding) });
-            }
-
-            return set;
+            var readerDelegate = BinarySerializeTypeBuffer.GetCollectionReadDelegate(typeof(ISet<>), elementType);
+            return readerDelegate(reader, set, encoding);
         }
 
-        private static object ReadQueue(BinaryReader reader, Type queueType, Type elementType, Encoding encoding)
+        private static object ReadQueue(BinaryReader reader, object queue, Type queueType, Type elementType, Encoding encoding)
         {
-            int count = reader.ReadInt32();
-            object queue = CreateObjectInstance(queueType);
-            MethodInfo enqueueMethod = queueType.GetMethod("Enqueue", new[] { elementType });
-            if (enqueueMethod == null)
-                throw new NotSupportedException($"[BinaryDeserializeHandler] 集合类型缺少 Enqueue 方法，无法作为队列反序列化。类型: {queueType}");
-
-            for (int i = 0; i < count; i++)
-            {
-                enqueueMethod.Invoke(queue, new[] { ReadValue(reader, elementType, encoding) });
-            }
-
-            return queue;
+            var readerDelegate = BinarySerializeTypeBuffer.GetCollectionReadDelegate(typeof(Queue<>), elementType);
+            return readerDelegate(reader, queue, encoding);
         }
 
-        private static object ReadStack(BinaryReader reader, Type stackType, Type elementType, Encoding encoding)
+        private static object ReadStack(BinaryReader reader, object stack, Type stackType, Type elementType, Encoding encoding)
         {
-            int count = reader.ReadInt32();
-            object stack = CreateObjectInstance(stackType);
-            MethodInfo pushMethod = stackType.GetMethod("Push", new[] { elementType });
-            if (pushMethod == null)
-                throw new NotSupportedException($"[BinaryDeserializeHandler] 集合类型缺少 Push 方法，无法作为栈反序列化。类型: {stackType}");
-
-            for (int i = 0; i < count; i++)
-            {
-                pushMethod.Invoke(stack, new[] { ReadValue(reader, elementType, encoding) });
-            }
-
-            return stack;
+            var readerDelegate = BinarySerializeTypeBuffer.GetCollectionReadDelegate(typeof(Stack<>), elementType);
+            return readerDelegate(reader, stack, encoding);
         }
 
         private static object ReadKeyValuePair(BinaryReader reader, Type pairType, Encoding encoding)
@@ -249,6 +207,42 @@ namespace PowerCellStudio
                 $"[BinaryDeserializeHandler] 类型缺少可调用的无参构造函数，且未显式标记为 [Serializable]，拒绝使用未初始化对象回退。类型: {type}");
         }
 
+        #endregion
+
+        #region 集合类型特殊处理
+
+        private static object ReadSetGeneric<T>(BinaryReader reader, object collection, Encoding encoding)
+        {
+            int count = reader.ReadInt32();
+            ISet<T> set = (ISet<T>)collection;
+            for (int i = 0; i < count; i++)
+            {
+                set.Add((T)ReadValue(reader, typeof(T), encoding));
+            }
+            return set;
+        }
+
+        private static object ReadQueueGeneric<T>(BinaryReader reader, object collection, Encoding encoding)
+        {
+            int count = reader.ReadInt32();
+            Queue<T> queue = (Queue<T>)collection;
+            for (int i = 0; i < count; i++)
+            {
+                queue.Enqueue((T)ReadValue(reader, typeof(T), encoding));
+            }
+            return queue;
+        }
+
+        private static object ReadStackGeneric<T>(BinaryReader reader, object collection, Encoding encoding)
+        {
+            int count = reader.ReadInt32();
+            Stack<T> stack = (Stack<T>)collection;
+            for (int i = 0; i < count; i++)
+            {
+                stack.Push((T)ReadValue(reader, typeof(T), encoding));
+            }
+            return stack;
+        }
         #endregion
     }
 }

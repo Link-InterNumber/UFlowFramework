@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace PowerCellStudio
 {
@@ -19,23 +21,11 @@ namespace PowerCellStudio
         private static readonly Dictionary<Type, FieldInfo[]> _fieldCache = new Dictionary<Type, FieldInfo[]>();
         
         // 特定类型自定义写入方式
-        private static readonly Dictionary<Type, IBinarySerializerTypeSelector> _customSelectorCache = new Dictionary<Type, IBinarySerializerTypeSelector>();
+        private static readonly Dictionary<Type, IBinarySerializerTypeSelector> _customSelectorMap = new Dictionary<Type, IBinarySerializerTypeSelector>();
         
-        private static readonly Dictionary<Type, GenericTypeInfo> _genericTypeInfoCache = new Dictionary<Type, GenericTypeInfo>();
-        
-        private static readonly Type _IListType = typeof(IList<>);
-        private static readonly Type _IDictionaryType = typeof(IDictionary<,>);
-        private static readonly Type _ISetType = typeof(ISet<>);
-        private static readonly Type _QueueType = typeof(Queue<>);
-        private static readonly Type _StackType = typeof(Stack<>);
-        private static readonly Type _KeyValuePairType = typeof(KeyValuePair<,>);
+        private static readonly Dictionary<Type, GenericTypeInfo> _genericColletionTypeInfoMap = new Dictionary<Type, GenericTypeInfo>();
 
-        public static Type IListType => _IListType;
-        public static Type IDictionaryType => _IDictionaryType;
-        public static Type ISetType => _ISetType;
-        public static Type QueueType => _QueueType;
-        public static Type StackType => _StackType;
-        public static Type KeyValuePairType => _KeyValuePairType;
+        private static readonly Dictionary<Type, MethodInfo> _collectionAddMethodCache = new Dictionary<Type, MethodInfo>();
 
         static BinarySerializeTypeBuffer()
         {
@@ -46,6 +36,7 @@ namespace PowerCellStudio
             RegisterCustomSelector(new DateTimeOffsetSelector());
         }
 
+        // 支持的ICollection类型/接口，以及实例化回退类型
         private static readonly Dictionary<Type, Type> _supportedCollection = new Dictionary<Type, Type>
         {
             { typeof(IList<>), typeof(List<>) },
@@ -53,13 +44,15 @@ namespace PowerCellStudio
             { typeof(ISet<>), typeof(HashSet<>) },
             { typeof(Queue<>), typeof(Queue<>) },
             { typeof(Stack<>), typeof(Stack<>) },
+            { typeof(ICollection<>), typeof(List<>) },
         };
         
         public static bool IsSupportedType(Type type)
         {
             if (type.IsInterface)
             {
-                return _supportedCollection.ContainsKey(type.GetGenericTypeDefinition());
+                var genericType = GetCollectionGenericTypeInfo(type).genericDefinition;
+                return genericType != null;
             }
             if (type.IsAbstract || type.ContainsGenericParameters)
                 return false;
@@ -78,9 +71,9 @@ namespace PowerCellStudio
             if (!_fieldCache.TryGetValue(type, out var fields))
             {
                 fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                    .Where(f => !f.IsNotSerialized 
+                    .Where(f => (f.IsPublic && !f.IsNotSerialized)
 # if UNITY_5_3_OR_NEWER
-                                && (f.IsPublic || f.IsDefined(typeof(UnityEngine.SerializeField), false))
+                                || f.IsDefined(typeof(UnityEngine.SerializeField))
 # endif
                                 )
                     .OrderBy(f => f.MetadataToken)
@@ -90,85 +83,122 @@ namespace PowerCellStudio
             return fields;
         }
 
-        internal static GenericTypeInfo GetCollectionGenericTypeInfo(Type type)
+        public static GenericTypeInfo GetCollectionGenericTypeInfo(Type type)
         {
-            if (!_genericTypeInfoCache.TryGetValue(type, out var info))
+            if (_genericColletionTypeInfoMap.TryGetValue(type, out var info))
             {
-                foreach (var keyValue in _supportedCollection)
+                return info;
+            }
+            foreach (var keyValue in _supportedCollection)
+            {
+                var (genericType, fallback) = (keyValue.Key, keyValue.Value);
+                if (genericType.IsInterface)
                 {
-                    var (genericType, fallback) =  (keyValue.Key, keyValue.Value);
-                    if (genericType.IsInterface)
+                    if (type.IsGenericType && type.GetGenericTypeDefinition() == genericType)
                     {
-                        if (type.IsGenericType && type.GetGenericTypeDefinition() == genericType)
+                        info = new GenericTypeInfo()
                         {
-                            info = new GenericTypeInfo()
-                            {
-                                type = type,
-                                genericDefinition = genericType,
-                                genericArguments = type.GetGenericArguments(),
-                                resolvedType = fallback.MakeGenericType(type.GetGenericArguments())
-                            };
-                            break;
-                        }
-
-                        Type[] interfaces = type.GetInterfaces();
-                        for (int i = 0; i < interfaces.Length; i++)
-                        {
-                            Type interfaceType = interfaces[i];
-                            if (!interfaceType.IsGenericType || interfaceType.GetGenericTypeDefinition() != genericType)
-                                continue;
-                            info = new GenericTypeInfo()
-                            {
-                                type = type,
-                                genericDefinition = genericType,
-                                genericArguments = interfaceType.GetGenericArguments(),
-                                resolvedType = type.IsInterface ? fallback.MakeGenericType(interfaceType.GetGenericArguments()) : type
-                            };
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        var tempType = type;
-                        while (tempType != null && tempType != typeof(object))
-                        {
-                            if (!tempType.IsGenericType || tempType.GetGenericTypeDefinition() != genericType)
-                            {
-                                tempType = tempType.BaseType;
-                                continue;
-                            }
-                            info = new GenericTypeInfo()
-                            {
-                                type = type,
-                                genericDefinition = genericType,
-                                genericArguments = tempType.GetGenericArguments(),
-                                resolvedType = type
-                            };
-                            break;
-                        }
+                            type = type,
+                            genericDefinition = genericType,
+                            genericArguments = type.GetGenericArguments(),
+                            resolvedType = fallback.MakeGenericType(type.GetGenericArguments())
+                        };
+                        break;
                     }
 
-                    if (info.genericDefinition != null)
+                    Type[] interfaces = type.GetInterfaces();
+                    for (int i = 0; i < interfaces.Length; i++)
                     {
+                        Type interfaceType = interfaces[i];
+                        if (!interfaceType.IsGenericType || interfaceType.GetGenericTypeDefinition() != genericType)
+                            continue;
+                        info = new GenericTypeInfo()
+                        {
+                            type = type,
+                            genericDefinition = genericType,
+                            genericArguments = interfaceType.GetGenericArguments(),
+                            resolvedType = type.IsInterface ? fallback.MakeGenericType(interfaceType.GetGenericArguments()) : type
+                        };
                         break;
                     }
                 }
-                // 找不到也塞个空值 
-                _genericTypeInfoCache[type] = info;
+                else
+                {
+                    var tempType = type;
+                    while (tempType != null && tempType != typeof(object))
+                    {
+                        if (!tempType.IsGenericType || tempType.GetGenericTypeDefinition() != genericType)
+                        {
+                            tempType = tempType.BaseType;
+                            continue;
+                        }
+                        info = new GenericTypeInfo()
+                        {
+                            type = type,
+                            genericDefinition = genericType,
+                            genericArguments = tempType.GetGenericArguments(),
+                            resolvedType = type
+                        };
+                        break;
+                    }
+                }
+
+                if (info.genericDefinition != null)
+                {
+                    break;
+                }
             }
+            // 找不到也塞个空值 
+            _genericColletionTypeInfoMap[type] = info;
             return info;
         }
 
-        internal static void RegisterCustomSelector(IBinarySerializerTypeSelector selector)
+        public static MethodInfo GetCollectionAddMethod(Type collectionType, Type elementType, string methodName)
+        {
+            if (_collectionAddMethodCache.TryGetValue(collectionType, out var method))
+            {
+                return method;
+            }
+            method = collectionType.GetMethod((methodName), new[] { elementType });
+            _collectionAddMethodCache[collectionType] = method;
+            return method;
+        }
+
+        public delegate object CollectionReadDelegate(BinaryReader reader, object collection, Encoding encoding);
+        private static readonly Dictionary<string, CollectionReadDelegate> _collectionReadDelegateCache= new Dictionary<string, CollectionReadDelegate>();
+
+        public static CollectionReadDelegate GetCollectionReadDelegate(Type collectionKind, Type elementType)
+        {
+            string key = collectionKind.FullName + "|" + elementType.FullName;
+            if (_collectionReadDelegateCache.TryGetValue(key, out var del))
+                return del;
+
+            MethodInfo openMethod;
+            if (collectionKind == typeof(ISet<>))
+                openMethod = typeof(BinaryDeserializeHandler).GetMethod("ReadSetGeneric", BindingFlags.NonPublic | BindingFlags.Static);
+            else if (collectionKind == typeof(Queue<>))
+                openMethod = typeof(BinaryDeserializeHandler).GetMethod("ReadQueueGeneric", BindingFlags.NonPublic | BindingFlags.Static);
+            else if (collectionKind == typeof(Stack<>))
+                openMethod = typeof(BinaryDeserializeHandler).GetMethod("ReadStackGeneric", BindingFlags.NonPublic | BindingFlags.Static);
+            else
+                throw new NotSupportedException();
+
+            MethodInfo closedMethod = openMethod.MakeGenericMethod(elementType);
+            del = (CollectionReadDelegate)Delegate.CreateDelegate(typeof(CollectionReadDelegate), closedMethod);
+            _collectionReadDelegateCache[key] = del;
+            return del;
+        }
+
+        public static void RegisterCustomSelector(IBinarySerializerTypeSelector selector)
         {
             if (selector == null)
                 throw new ArgumentNullException(nameof(selector));
-            _customSelectorCache[selector.TargetType] = selector;
+            _customSelectorMap[selector.TargetType] = selector;
         }
 
         public static IBinarySerializerTypeSelector GetCustomSelector(Type type)
         {
-            _customSelectorCache.TryGetValue(type, out var selector);
+            _customSelectorMap.TryGetValue(type, out var selector);
             return selector;
         }
     }

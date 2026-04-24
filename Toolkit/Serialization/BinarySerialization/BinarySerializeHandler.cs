@@ -13,27 +13,6 @@ namespace PowerCellStudio
 
         public static void WriteValue(BinaryWriter writer, object value, Type type, Encoding encoding)
         {
-            // 处理 null 值
-            if (value == null)
-            {
-                writer.Write((byte)0); // 标记为 null
-                return;
-            }
-
-            writer.Write((byte)1); // 标记为非 null
-
-            var customSelector = BinarySerializeTypeBuffer.GetCustomSelector(type);
-            if (customSelector != null)
-            {
-                customSelector.Write(writer, value, encoding);
-                return;
-            }
-
-#if UNITY_5_3_OR_NEWER
-            if (typeof(UnityEngine.Object).IsAssignableFrom(type))
-                throw new NotSupportedException($"[BinarySerializeHandler] UnityEngine.Object 类型不支持直接序列化。类型: {type}");
-#endif
-
             if (type.IsEnum)
             {
                 Type underlyingType = Enum.GetUnderlyingType(type);
@@ -88,12 +67,37 @@ namespace PowerCellStudio
 
         private static void WriteObject(BinaryWriter writer, object obj, Type type, Encoding encoding)
         {
+            // 处理 null 值
+            if (obj == null)
+            {
+                writer.Write((byte)0); // 标记为 null
+                return;
+            }
+
+            writer.Write((byte)1); // 标记为非 null
+
+            var customSelector = BinarySerializeTypeBuffer.GetCustomSelector(type);
+            if (customSelector != null)
+            {
+                customSelector.Write(writer, obj, encoding);
+                return;
+            }
+
+#if UNITY_5_3_OR_NEWER
+            if (typeof(UnityEngine.Object).IsAssignableFrom(type))
+                throw new NotSupportedException($"[BinarySerializeHandler] UnityEngine.Object 类型不支持直接序列化。类型: {type}");
+#endif
+
             // 处理数组
             if (type.IsArray)
             {
                 WriteArray(writer, (Array)obj, type.GetElementType(), encoding);
                 return;
             }
+
+            if (!BinarySerializeTypeBuffer.IsSupportedType(type))
+                throw new NotSupportedException($"[BinarySerializeHandler] 不支持的类型，无法序列化。类型: {type}");
+
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
             {
                 WriteKeyValuePair(writer, obj, type.GetGenericArguments(), encoding);
@@ -103,6 +107,8 @@ namespace PowerCellStudio
             var collectionTypeInfo = BinarySerializeTypeBuffer.GetCollectionGenericTypeInfo(type);
             if (collectionTypeInfo.genericDefinition != null)
             {
+                WriteFields(writer, obj, collectionTypeInfo.resolvedType, encoding);
+
                 if (collectionTypeInfo.genericDefinition == typeof(IList<>))
                 {
                     WriteList(writer, (IList)obj, collectionTypeInfo.genericArguments[0], encoding);
@@ -115,13 +121,13 @@ namespace PowerCellStudio
                 }
                 if (collectionTypeInfo.genericDefinition == typeof(ISet<>))
                 {
-                    WriteEnumerable(writer, (IEnumerable)obj, type, collectionTypeInfo.genericArguments[0], encoding);
+                    WriteEnumerable(writer, (IEnumerable)obj, collectionTypeInfo.resolvedType, collectionTypeInfo.genericArguments[0], encoding);
                     return;
                 }
 
                 if (collectionTypeInfo.genericDefinition == typeof(Queue<>))
                 {
-                    WriteEnumerable(writer, (IEnumerable)obj, type, collectionTypeInfo.genericArguments[0], encoding);
+                    WriteEnumerable(writer, (IEnumerable)obj, collectionTypeInfo.resolvedType, collectionTypeInfo.genericArguments[0], encoding);
                     return;
                 }
 
@@ -130,9 +136,10 @@ namespace PowerCellStudio
                     WriteStack(writer, (IEnumerable)obj, collectionTypeInfo.genericArguments[0], encoding);
                     return;
                 }
+                return;
             }
 
-            // 处理普通类/结构体：遍历所有字段
+            // 处理普通类/结构体：遍历所有public字段或
             WriteFields(writer, obj, type, encoding);
         }
 

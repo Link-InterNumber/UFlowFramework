@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -7,6 +8,10 @@ namespace PowerCellStudio
 {
     public static partial class EncryptUtils
     {
+        private const int AesKeyLength = 16;
+        private static readonly Encoding Utf8Encoding = new UTF8Encoding(false);
+        private static readonly ConcurrentDictionary<string, byte[]> AesKeyCache = new ConcurrentDictionary<string, byte[]>();
+
         #region DES
         
         /// <summary>
@@ -162,26 +167,7 @@ namespace PowerCellStudio
             if (string.IsNullOrEmpty(encryptionKey)) return data;
             try
             {
-                Span<byte> keyBytes = stackalloc byte[16];
-                int len = Encoding.UTF8.GetBytes(encryptionKey, keyBytes);
-                if (len < 16) keyBytes.Slice(len, 16 - len).Clear();
-
-                using (Aes aes = Aes.Create())
-                {
-                    aes.Key = keyBytes.ToArray();
-                    aes.GenerateIV();
-                    aes.Padding = PaddingMode.PKCS7;
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        ms.Write(aes.IV, 0, aes.IV.Length);
-                        using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
-                        {
-                            cs.Write(data, 0, data.Length);
-                            cs.FlushFinalBlock();
-                        }
-                        return ms.ToArray();
-                    }
-                }
+                return EncryptAesBytesCore(data, encryptionKey);
             }
             catch (Exception e)
             {
@@ -195,34 +181,7 @@ namespace PowerCellStudio
             if (string.IsNullOrEmpty(encryptionKey)) return encryptData;
             try
             {
-                Span<byte> keyBytes = stackalloc byte[16];
-                int len = Encoding.UTF8.GetBytes(encryptionKey, keyBytes);
-                if (len < 16) keyBytes.Slice(len, 16 - len).Clear();
-
-                using (Aes aes = Aes.Create())
-                {
-                    aes.Key = keyBytes.ToArray();
-                    aes.Padding = PaddingMode.PKCS7;
-                    using (MemoryStream ms = new MemoryStream(encryptData))
-                    {
-                        byte[] iv = new byte[aes.IV.Length];
-                        ms.Read(iv, 0, iv.Length);
-                        aes.IV = iv;
-                        using (CryptoStream cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Read))
-                        {
-                            using (MemoryStream outputMs = new MemoryStream())
-                            {
-                                byte[] buffer = new byte[2048];
-                                int read;
-                                while ((read = cs.Read(buffer, 0, buffer.Length)) > 0)
-                                {
-                                    outputMs.Write(buffer, 0, read);
-                                }
-                                return outputMs.ToArray();
-                            }
-                        }
-                    }
-                }
+                return DecryptAesBytesCore(encryptData, encryptionKey);
             }
             catch (Exception e)
             {
@@ -234,59 +193,72 @@ namespace PowerCellStudio
         public static string AESEncrypt(string plainText, string encryptionKey)
         {
             if (string.IsNullOrEmpty(encryptionKey)) return plainText;
-            byte[] keyBytes = Encoding.UTF8.GetBytes(encryptionKey);
-            Array.Resize(ref keyBytes, 16);
-            using (Aes aes = Aes.Create())
-            {
-                aes.Key = keyBytes;
-                aes.GenerateIV();
-                aes.Padding = PaddingMode.PKCS7; // Ensure the same padding mode is used
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    ms.Write(aes.IV, 0, aes.IV.Length);
-                    using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
-                    {
-                        byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
-                        cs.Write(plainBytes, 0, plainBytes.Length);
-                        cs.FlushFinalBlock();
-                    }
-                    return Convert.ToBase64String(ms.ToArray());
-                }
-            }
+            byte[] plainBytes = Utf8Encoding.GetBytes(plainText);
+            byte[] encryptedBytes = EncryptAesBytesCore(plainBytes, encryptionKey);
+            return Convert.ToBase64String(encryptedBytes);
         }
 
         public static string AESDecrypt(string cipherText, string encryptionKey)
         {
             if (string.IsNullOrEmpty(encryptionKey)) return cipherText;
-            byte[] keyBytes = Encoding.UTF8.GetBytes(encryptionKey);
-            Array.Resize(ref keyBytes, 16);
             byte[] cipherBytes = Convert.FromBase64String(cipherText);
-            using (Aes aes = Aes.Create())
-            {
-                aes.Key = keyBytes;
-                aes.Padding = PaddingMode.PKCS7; // Ensure the same padding mode is used
-                using (MemoryStream ms = new MemoryStream(cipherBytes))
-                {
-                    byte[] iv = new byte[aes.IV.Length];
-                    ms.Read(iv, 0, iv.Length);
-                    aes.IV = iv;
-                    using (CryptoStream cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Read))
-                    {
-                        using (MemoryStream outputMs = new MemoryStream())
-                        {
-                            byte[] buffer = new byte[2048];
-                            int read;
-                            while ((read = cs.Read(buffer, 0, buffer.Length)) > 0)
-                            {
-                                outputMs.Write(buffer, 0, read);
-                            }
+            byte[] resultBytes = DecryptAesBytesCore(cipherBytes, encryptionKey);
+            return Utf8Encoding.GetString(resultBytes, 0, resultBytes.Length);
+        }
 
-                            byte[] resultBytes = outputMs.ToArray();
-                            return Encoding.UTF8.GetString(resultBytes, 0, resultBytes.Length);
-                        }
-                    }
+        private static byte[] EncryptAesBytesCore(byte[] data, string encryptionKey)
+        {
+            using (Aes aes = CreateAes(encryptionKey))
+            {
+                aes.GenerateIV();
+                using (ICryptoTransform encryptor = aes.CreateEncryptor())
+                {
+                    byte[] cipherBytes = encryptor.TransformFinalBlock(data, 0, data.Length);
+                    byte[] result = new byte[aes.IV.Length + cipherBytes.Length];
+                    Buffer.BlockCopy(aes.IV, 0, result, 0, aes.IV.Length);
+                    Buffer.BlockCopy(cipherBytes, 0, result, aes.IV.Length, cipherBytes.Length);
+                    return result;
                 }
             }
+        }
+
+        private static byte[] DecryptAesBytesCore(byte[] encryptData, string encryptionKey)
+        {
+            using (Aes aes = CreateAes(encryptionKey))
+            {
+                int ivLength = aes.BlockSize >> 3;
+                if (encryptData == null || encryptData.Length < ivLength)
+                    throw new CryptographicException("Invalid AES payload.");
+
+                byte[] iv = new byte[ivLength];
+                Buffer.BlockCopy(encryptData, 0, iv, 0, ivLength);
+                aes.IV = iv;
+
+                using (ICryptoTransform decryptor = aes.CreateDecryptor())
+                {
+                    return decryptor.TransformFinalBlock(encryptData, ivLength, encryptData.Length - ivLength);
+                }
+            }
+        }
+
+        private static Aes CreateAes(string encryptionKey)
+        {
+            Aes aes = Aes.Create();
+            aes.Key = GetAesKeyBytes(encryptionKey);
+            aes.Padding = PaddingMode.PKCS7;
+            return aes;
+        }
+
+        private static byte[] GetAesKeyBytes(string encryptionKey)
+        {
+            return AesKeyCache.GetOrAdd(encryptionKey, static key =>
+            {
+                byte[] normalizedKey = new byte[AesKeyLength];
+                byte[] sourceBytes = Utf8Encoding.GetBytes(key);
+                int copyLength = Math.Min(sourceBytes.Length, AesKeyLength);
+                Buffer.BlockCopy(sourceBytes, 0, normalizedKey, 0, copyLength);
+                return normalizedKey;
+            });
         }
 
         #endregion

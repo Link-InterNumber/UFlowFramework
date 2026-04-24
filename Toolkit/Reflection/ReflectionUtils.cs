@@ -13,6 +13,10 @@ namespace PowerCellStudio
     /// </summary>
     public static class ReflectionUtils
     {
+        private const BindingFlags AnyMemberFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+        private const BindingFlags StaticMemberFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+        private const BindingFlags PublicInstanceFlags = BindingFlags.Public | BindingFlags.Instance;
+
         #region Create Instance
         
         /// <summary>
@@ -131,12 +135,10 @@ namespace PowerCellStudio
         {
             parameters ??= Array.Empty<object>();
 
-            return type.GetConstructor(
-                       BindingFlags.Public | BindingFlags.Instance,
-                       null,
-                       parameters.Select(parameter => parameter?.GetType() ?? typeof(object)).ToArray(),
-                       null) != null
-                   || type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+            var parameterTypes = parameters.Select(parameter => parameter?.GetType() ?? typeof(object)).ToArray();
+
+            return ReflectionTypeBuff.GetConstructor(type, PublicInstanceFlags, parameterTypes) != null
+                   || ReflectionTypeBuff.GetConstructors(type, PublicInstanceFlags)
                        .Any(constructor => ParametersMatch(constructor.GetParameters(), parameters));
         }
 
@@ -185,7 +187,7 @@ namespace PowerCellStudio
         public static object GetPropertyValue(object obj, string propertyName)
         {
             if (obj == null) throw new ArgumentNullException(nameof(obj));
-            var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            var prop = ReflectionTypeBuff.GetProperty(obj.GetType(), propertyName, AnyMemberFlags);
             return prop?.GetValue(obj);
         }
 
@@ -199,7 +201,7 @@ namespace PowerCellStudio
         public static void SetPropertyValue(object obj, string propertyName, object value)
         {
             if (obj == null) throw new ArgumentNullException(nameof(obj));
-            var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            var prop = ReflectionTypeBuff.GetProperty(obj.GetType(), propertyName, AnyMemberFlags);
             prop?.SetValue(obj, value);
         }
 
@@ -213,7 +215,7 @@ namespace PowerCellStudio
         public static object GetFieldValue(object obj, string fieldName)
         {
             if (obj == null) throw new ArgumentNullException(nameof(obj));
-            var field = obj.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            var field = ReflectionTypeBuff.GetField(obj.GetType(), fieldName, AnyMemberFlags);
             return field?.GetValue(obj);
         }
 
@@ -227,7 +229,7 @@ namespace PowerCellStudio
         public static void SetFieldValue(object obj, string fieldName, object value)
         {
             if (obj == null) throw new ArgumentNullException(nameof(obj));
-            var field = obj.GetType().GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            var field = ReflectionTypeBuff.GetField(obj.GetType(), fieldName, AnyMemberFlags);
             field?.SetValue(obj, value);
         }
 
@@ -242,7 +244,7 @@ namespace PowerCellStudio
         public static object InvokeMethod(object obj, string methodName, params object[] parameters)
         {
             if (obj == null) throw new ArgumentNullException(nameof(obj));
-            var method = obj.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            var method = ReflectionTypeBuff.GetMethod(obj.GetType(), methodName, AnyMemberFlags);
             return method?.Invoke(obj, parameters);
         }
 
@@ -286,7 +288,7 @@ namespace PowerCellStudio
         {
             if (obj == null && !isStatic) throw new ArgumentNullException(nameof(obj));
             var type = isStatic ? (Type)obj : obj.GetType();
-            var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            var methods = ReflectionTypeBuff.GetMethods(type, AnyMemberFlags);
             foreach (var method in methods)
             {
                 if (method.Name == methodName && method.IsGenericMethodDefinition)
@@ -313,7 +315,7 @@ namespace PowerCellStudio
         public static object InvokeStaticMethod(Type type, string methodName, params object[] parameters)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
-            var method = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            var method = ReflectionTypeBuff.GetMethod(type, methodName, StaticMemberFlags);
             return method?.Invoke(null, parameters);
         }
 
@@ -327,7 +329,7 @@ namespace PowerCellStudio
         public static object GetStaticPropertyValue(Type type, string propertyName)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
-            var prop = type.GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            var prop = ReflectionTypeBuff.GetProperty(type, propertyName, StaticMemberFlags);
             return prop?.GetValue(null);
         }
 
@@ -341,7 +343,7 @@ namespace PowerCellStudio
         public static void SetStaticPropertyValue(Type type, string propertyName, object value)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
-            var prop = type.GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            var prop = ReflectionTypeBuff.GetProperty(type, propertyName, StaticMemberFlags);
             prop?.SetValue(null, value);
         }
 
@@ -355,7 +357,7 @@ namespace PowerCellStudio
         public static object GetStaticFieldValue(Type type, string fieldName)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
-            var field = type.GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            var field = ReflectionTypeBuff.GetField(type, fieldName, StaticMemberFlags);
             return field?.GetValue(null);
         }
 
@@ -369,15 +371,17 @@ namespace PowerCellStudio
         public static void SetStaticFieldValue(Type type, string fieldName, object value)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
-            var field = type.GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            var field = ReflectionTypeBuff.GetField(type, fieldName, StaticMemberFlags);
             field?.SetValue(null, value);
         }
 
         #endregion
 
-        private static Dictionary<Type, List<Type>> _subtypeCache = new Dictionary<Type, List<Type>>();
-
-        public static bool needRefresh = true;
+        public static bool needRefresh
+        {
+            get => ReflectionTypeBuff.NeedRefresh;
+            set => ReflectionTypeBuff.NeedRefresh = value;
+        }
         
         /// <summary>
         /// Gets all instantiable subclasses (including generic subclasses) of a given type in the specified assembly.
@@ -389,26 +393,7 @@ namespace PowerCellStudio
         public static List<Type> GetInstantiableSubtype(Type baseType, params Assembly[] assemblise)
         {
             if (baseType == null) throw new ArgumentNullException(nameof(baseType));
-            if (needRefresh)
-            {
-                _subtypeCache.Clear();
-                needRefresh = false;
-            }
-            if (_subtypeCache.TryGetValue(baseType, out var list)) return list;
-            if (assemblise == null || assemblise.Length == 0) assemblise = AppDomain.CurrentDomain.GetAssemblies();
-            var types = new List<Type>();
-            foreach (var assembly in assemblise)
-            {
-                types.AddRange(
-                    assembly.GetTypes()
-                        .Where(t =>
-                            IsSubTypeOf(t, baseType) &&
-                            CanInstantiate(t)
-                        )
-                );
-            }
-            _subtypeCache[baseType] =  types;
-            return types;
+            return ReflectionTypeBuff.GetInstantiableSubtype(baseType, assemblise, CanInstantiate, IsSubTypeOf);
         }
 
         /// <summary>
@@ -482,7 +467,7 @@ namespace PowerCellStudio
             if (!generic.IsGenericType) return false;
             if (generic.IsInterface)
             {
-                Type[] interfaces = toCheck.GetInterfaces();
+                Type[] interfaces = ReflectionTypeBuff.GetInterfaces(toCheck);
                 for (int i = 0; i < interfaces.Length; i++)
                 {
                     Type interfaceType = interfaces[i];
