@@ -1,4 +1,5 @@
 using System.Collections;
+using System.IO;
 using System.Text;
 using UnityEngine;
 
@@ -21,6 +22,14 @@ namespace PowerCellStudio
             if (complete == 0)
             {
                 // TODO 首次加载
+                // 创建目录
+                var folder = Path.Combine(Application.persistentDataPath, "ConfigAsset");
+                if (!Directory.Exists(folder))
+                {
+                    Directory.CreateDirectory(folder);
+                }
+                // 将bundle中的文件拷贝到持久化目录
+                
                 
                 PlayerPrefs.SetInt(saveKey, 1);
             }

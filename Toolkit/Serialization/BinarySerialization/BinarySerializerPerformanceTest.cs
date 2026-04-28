@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using MessagePack;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -29,26 +30,30 @@ namespace PowerCellStudio
             }
             try
             {
-                using (var memoryStream = new MemoryStream())
-                {
-                    using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress, true))
-                    using (var streamWriter = new StreamWriter(gzipStream, new UTF8Encoding(false)))
-                    using (var jsonWriter = new JsonTextWriter(streamWriter))
-                    {
-                        var serializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
-                        {
-                            // TypeNameHandling = TypeNameHandling.Auto,
-                            PreserveReferencesHandling = PreserveReferencesHandling.Objects
-                        });
-                        serializer.Serialize(jsonWriter, data);
-                    }
-                    return memoryStream.ToArray();
-                }
+                var op = MessagePack.Resolvers.ContractlessStandardResolver.Options;
+                op = op.WithCompression(MessagePackCompression.Lz4BlockArray);
+                op = op.WithCompressionMinLength(1);
+                return MessagePack.MessagePackSerializer.Serialize(data, op);
+                // using (var memoryStream = new MemoryStream())
+                // {
+                //     using (var gzipStream = new GZipStream(memoryStream, CompressionMode.Compress, true))
+                //     using (var streamWriter = new StreamWriter(gzipStream, new UTF8Encoding(false)))
+                //     using (var jsonWriter = new JsonTextWriter(streamWriter))
+                //     {
+                //         var serializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
+                //         {
+                //             // TypeNameHandling = TypeNameHandling.Auto,
+                //             PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                //         });
+                //         serializer.Serialize(jsonWriter, data);
+                //     }
+                //     return memoryStream.ToArray();
+                // }
                 // return BinarySerializer.Serialize<T>(data);
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"SerializeToBinary failed: {e.Message}");
+                LinkLog.LogError($"SerializeToBinary failed: {e.InnerException}");
                 return Array.Empty<byte>();
             }
         }
@@ -62,23 +67,27 @@ namespace PowerCellStudio
             }
             try
             {
-                using (var compressedStream = new MemoryStream(bytes))
-                using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
-                using (var streamReader = new StreamReader(gzipStream, new UTF8Encoding(false)))
-                using (var jsonReader = new JsonTextReader(streamReader))
-                {
-                    var serializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
-                    {
-                        // TypeNameHandling = TypeNameHandling.Auto,
-                        PreserveReferencesHandling = PreserveReferencesHandling.Objects
-                    });
-                    return serializer.Deserialize<T>(jsonReader);
-                }
+                var op = MessagePack.Resolvers.ContractlessStandardResolver.Options;
+                op = op.WithCompression(MessagePackCompression.Lz4BlockArray);
+                op = op.WithCompressionMinLength(1);
+                return MessagePack.MessagePackSerializer.Deserialize<T>(bytes, op);
+                // using (var compressedStream = new MemoryStream(bytes))
+                // using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
+                // using (var streamReader = new StreamReader(gzipStream, new UTF8Encoding(false)))
+                // using (var jsonReader = new JsonTextReader(streamReader))
+                // {
+                //     var serializer = JsonSerializer.CreateDefault(new JsonSerializerSettings
+                //     {
+                //         // TypeNameHandling = TypeNameHandling.Auto,
+                //         PreserveReferencesHandling = PreserveReferencesHandling.Objects
+                //     });
+                //     return serializer.Deserialize<T>(jsonReader);
+                // }
                 // return BinarySerializer.Deserialize<T>(bytes);
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"DeserializeFromBinary failed: {e.Message}");
+                LinkLog.LogError($"DeserializeFromBinary failed: {e.InnerException}");
                 return default;
             }
         }
@@ -276,7 +285,7 @@ namespace PowerCellStudio
         }
 
         [Serializable]
-        private class PerformancePayload
+        public class PerformancePayload
         {
             public string Title;
             public int Version;
@@ -289,7 +298,7 @@ namespace PowerCellStudio
         }
 
         [Serializable]
-        private class PerformanceItem
+        public class PerformanceItem
         {
             public int Id;
             public string Name;
@@ -302,7 +311,7 @@ namespace PowerCellStudio
         }
 
         [Serializable]
-        private class PerformanceStats
+        public class PerformanceStats
         {
             public int Health;
             public int Mana;
@@ -310,7 +319,7 @@ namespace PowerCellStudio
         }
 
         [Serializable]
-        private class PerformanceSection
+        public class PerformanceSection
         {
             public string Name;
             public List<int> Indices;

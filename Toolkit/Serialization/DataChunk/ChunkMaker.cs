@@ -20,7 +20,7 @@ namespace PowerCellStudio
         /// <typeparam name="TData">Record type. 记录类型。</typeparam>
         /// <typeparam name="TKey">Chunk key type. 分块键类型。</typeparam>
         /// <returns>Chunk metadata sequence; <see cref="ChunkInfo.keyData"/> stores serialized <c>TKey[]</c>. 分块元数据序列；<see cref="ChunkInfo.keyData"/>保存序列化<c>TKey[]</c>。</returns>
-        public static void StreamWriteSync<TData, TKey>(string fileDirectory, string fileName, IEnumerable<TData> data,
+        public static void StreamWriteSync<TKey, TData>(string fileDirectory, string fileName, IEnumerable<TData> data,
             Func<TData, TKey> keySelector, int chunkSize, bool deEncrypt = true)
         {
             if (!Directory.Exists(fileDirectory)) Directory.CreateDirectory(fileDirectory);

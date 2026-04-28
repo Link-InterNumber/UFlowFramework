@@ -65,11 +65,6 @@ namespace PowerCellStudio
             var customSelector = BinarySerializeTypeBuffer.GetCustomSelector(type);
             if (customSelector != null)
                 return customSelector.Read(reader, encoding);
-            
-#if UNITY_5_3_OR_NEWER
-            if (typeof(UnityEngine.Object).IsAssignableFrom(type))
-                throw new NotSupportedException($"[BinaryDeserializeHandler] UnityEngine.Object 类型不支持直接反序列化。类型: {type}");
-#endif
 
             if (type.IsArray)
                 return ReadArray(reader, type, encoding);
@@ -175,36 +170,15 @@ namespace PowerCellStudio
 
         private static object ReadFields(BinaryReader reader, Type type, Encoding encoding)
         {
-            object obj = CreateObjectInstance(type);
-            FieldInfo[] fields = BinarySerializeTypeBuffer.GetSerializableFields(type);
-            foreach (FieldInfo field in fields)
+            var layout = BinarySerializeTypeBuffer.GetSerializableFields(type);
+            object obj = layout.CreateInstance();
+            foreach (var field in layout.Fields)
             {
                 object fieldValue = ReadValue(reader, field.FieldType, encoding);
-                field.SetValue(obj, fieldValue);
+                field.Field.SetValue(obj, fieldValue);
             }
 
             return obj;
-        }
-
-        private static object CreateObjectInstance(Type type)
-        {
-            if (type.IsValueType)
-                return Activator.CreateInstance(type);
-
-            ConstructorInfo ctor = type.GetConstructor(
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
-                null,
-                Type.EmptyTypes,
-                null);
-
-            if (ctor != null && !ctor.IsPrivate)
-                return ctor.Invoke(null);
-
-            if (type.IsSerializable)
-                return FormatterServices.GetUninitializedObject(type);
-
-            throw new NotSupportedException(
-                $"[BinaryDeserializeHandler] 类型缺少可调用的无参构造函数，且未显式标记为 [Serializable]，拒绝使用未初始化对象回退。类型: {type}");
         }
 
         #endregion
@@ -244,5 +218,10 @@ namespace PowerCellStudio
             return stack;
         }
         #endregion
+
+        private static T CreateInstance<T>(Type type) where T : new()
+        {
+            return new T();
+        }
     }
 }

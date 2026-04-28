@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace PowerCellStudio
@@ -15,10 +17,25 @@ namespace PowerCellStudio
         public Type resolvedType;
     }
 
+    internal sealed class TypeLayout
+    {
+        public Func<object> CreateInstance;
+        public FieldAccessor[] Fields;
+    }
+
+    internal delegate void RefObjectSetter(ref object target, object value);
+    
+    internal sealed class FieldAccessor
+    {
+        // public string Name;
+        public Type FieldType;
+        public FieldInfo Field;
+    }
+
     internal class BinarySerializeTypeBuffer
     {
         // 类型缓存
-        private static readonly Dictionary<Type, FieldInfo[]> _fieldCache = new Dictionary<Type, FieldInfo[]>();
+        private static readonly Dictionary<Type, TypeLayout> _fieldCache = new Dictionary<Type, TypeLayout>();
         
         // 特定类型自定义写入方式
         private static readonly Dictionary<Type, IBinarySerializerTypeSelector> _customSelectorMap = new Dictionary<Type, IBinarySerializerTypeSelector>();
@@ -66,11 +83,49 @@ namespace PowerCellStudio
             return true;
         }
 
-        public static FieldInfo[] GetSerializableFields(Type type)
+        public static TypeLayout GetSerializableFields(Type type)
         {
-            if (!_fieldCache.TryGetValue(type, out var fields))
-            {
-                fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+            if (_fieldCache.TryGetValue(type, out var layout))
+                return layout;
+
+            layout = BuildTypeLayout(type);
+            _fieldCache[type] = layout;
+            return layout;
+        }
+        
+        private static Func<object> BuildCreator(Type type)
+        {
+            if (type.IsValueType)
+                return () => Activator.CreateInstance(type);
+
+            ConstructorInfo ctor = type.GetConstructor(
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                null,
+                Type.EmptyTypes,
+                null);
+
+            if (ctor != null && !ctor.IsPrivate)
+                return () => ctor.Invoke(null);
+
+            if (type.IsSerializable)
+                return () => FormatterServices.GetUninitializedObject(type);
+
+            throw new NotSupportedException($"[BinaryDeserializeHandler] 类型缺少可调用的无参构造函数，且未显式标记为 [Serializable]，拒绝使用未初始化对象回退。类型: {type}");
+        }
+        
+        private static Func<object, object> BuildGetter(Type declaringType, FieldInfo field)
+        {
+            var objParam = Expression.Parameter(typeof(object), "obj");
+            var typedObj = Expression.Convert(objParam, declaringType);
+            var fieldExpr = Expression.Field(typedObj, field);
+            var boxedField = Expression.Convert(fieldExpr, typeof(object));
+
+            return Expression.Lambda<Func<object, object>>(boxedField, objParam).Compile();
+        }
+
+        private static TypeLayout BuildTypeLayout(Type type)
+        {
+            FieldInfo[] fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                     .Where(f => (f.IsPublic && !f.IsNotSerialized)
 # if UNITY_5_3_OR_NEWER
                                 || f.IsDefined(typeof(UnityEngine.SerializeField))
@@ -78,9 +133,25 @@ namespace PowerCellStudio
                                 )
                     .OrderBy(f => f.MetadataToken)
                     .ToArray();
-                _fieldCache[type] = fields;
+            
+            FieldAccessor[] accessors = new FieldAccessor[fields.Length];
+
+            for (int i = 0; i < fields.Length; i++)
+            {
+                FieldInfo field = fields[i];
+                accessors[i] = new FieldAccessor
+                {
+                    // Name = field.Name,
+                    FieldType = field.FieldType,
+                    Field = field
+                };
             }
-            return fields;
+
+            return new TypeLayout
+            {
+                CreateInstance = BuildCreator(type),
+                Fields = accessors
+            };
         }
 
         public static GenericTypeInfo GetCollectionGenericTypeInfo(Type type)
@@ -153,23 +224,12 @@ namespace PowerCellStudio
             return info;
         }
 
-        public static MethodInfo GetCollectionAddMethod(Type collectionType, Type elementType, string methodName)
-        {
-            if (_collectionAddMethodCache.TryGetValue(collectionType, out var method))
-            {
-                return method;
-            }
-            method = collectionType.GetMethod((methodName), new[] { elementType });
-            _collectionAddMethodCache[collectionType] = method;
-            return method;
-        }
-
         public delegate object CollectionReadDelegate(BinaryReader reader, object collection, Encoding encoding);
-        private static readonly Dictionary<string, CollectionReadDelegate> _collectionReadDelegateCache= new Dictionary<string, CollectionReadDelegate>();
+        private static readonly Dictionary<(Type, Type), CollectionReadDelegate> _collectionReadDelegateCache= new Dictionary<(Type, Type), CollectionReadDelegate>();
 
         public static CollectionReadDelegate GetCollectionReadDelegate(Type collectionKind, Type elementType)
         {
-            string key = collectionKind.FullName + "|" + elementType.FullName;
+            (Type, Type) key = (collectionKind, elementType);
             if (_collectionReadDelegateCache.TryGetValue(key, out var del))
                 return del;
 

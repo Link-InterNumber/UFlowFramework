@@ -25,22 +25,7 @@ namespace PowerCellStudio
 #endif
             return true;
         }
-
-        /// <summary>
-        /// 将对象序列化为字节数组。
-        /// </summary>
-        public static byte[] Serialize(object obj)
-        {
-            var type = obj?.GetType() ?? typeof(object);
-            if (!IsSupportedType(type))
-                throw new NotSupportedException($"[BinarySerializer] 不支持的类型，无法序列化。类型: {obj?.GetType()}");
-            using (var ms = new MemoryStream())
-            using (var writer = new BinaryWriter(ms, Encoding))
-            {
-                BinarySerializeHandler.WriteValue(writer, obj, type, Encoding);
-                return LZ4Pickler.Pickle(ms.ToArray());
-            }
-        }
+        
         
         /// <summary>
         /// 将对象序列化为字节数组。

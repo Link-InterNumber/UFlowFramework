@@ -91,9 +91,9 @@ namespace PowerCellStudio
         private IEnumerator GetServerRemoteManifest()
         {
 #if UNITY_EDITOR
-            var url = simulateRemoteBundleInEditor 
-                ? BuildRemoteUrl("remoteManifest.json") 
-                : "file://" + Path.Combine(Application.streamingAssetsPath, "remoteManifest.json");
+            var url = simulateRemoteBundleInEditor
+                ? BuildRemoteUrl("remoteManifest.json")
+                : $"file://{Application.streamingAssetsPath}/remoteManifest.json";
 #else
             var url = BuildRemoteUrl("remoteManifest.json");
 #endif
@@ -182,8 +182,8 @@ namespace PowerCellStudio
             initProcess = 0f;
             
             // 下载新的AssetMap文件
-            var indexFileUrl = BuildRemoteUrl(Path.Combine(ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Index.bytes" ));
-            var dataFileUrl = BuildRemoteUrl(Path.Combine(ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Data.bytes" ));
+            var indexFileUrl = BuildRemoteUrl($"{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}Index.bytes" );
+            var dataFileUrl = BuildRemoteUrl($"{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}Data.bytes" );
             var indexFilePath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Index.bytes" );
             var dataFilePath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Data.bytes" );
             var folder = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder);

@@ -83,15 +83,10 @@ namespace PowerCellStudio
                 return;
             }
 
-#if UNITY_5_3_OR_NEWER
-            if (typeof(UnityEngine.Object).IsAssignableFrom(type))
-                throw new NotSupportedException($"[BinarySerializeHandler] UnityEngine.Object 类型不支持直接序列化。类型: {type}");
-#endif
-
             // 处理数组
             if (type.IsArray)
             {
-                WriteArray(writer, (Array)obj, type.GetElementType(), encoding);
+                WriteArray(writer, obj as Array, type.GetElementType(), encoding);
                 return;
             }
 
@@ -146,9 +141,10 @@ namespace PowerCellStudio
         private static void WriteArray(BinaryWriter writer, Array array, Type elementType, Encoding encoding)
         {
             writer.Write(array.Length);
-            for (int i = 0; i < array.Length; i++)
+            foreach (var o in array)
             {
-                WriteValue(writer, array.GetValue(i), elementType, encoding);
+                WriteValue(writer, o, elementType, encoding);
+                
             }
         }
 
@@ -222,10 +218,10 @@ namespace PowerCellStudio
 
         private static void WriteFields(BinaryWriter writer, object obj, Type type, Encoding encoding)
         {
-            FieldInfo[] fields = BinarySerializeTypeBuffer.GetSerializableFields(type);
-            foreach (FieldInfo field in fields)
+            var layout = BinarySerializeTypeBuffer.GetSerializableFields(type);
+            foreach (var field in layout.Fields)
             {
-                object fieldValue = field.GetValue(obj);
+                object fieldValue = field.Field.GetValue(obj);
                 WriteValue(writer, fieldValue, field.FieldType, encoding);
             }
         }

@@ -30,8 +30,9 @@ namespace PowerCellStudio
             var hasAssetBundleMapMoved = PlayerPrefs.GetInt(_hasAssetBundleMapMovedKey, 0) > 0;
             if (!hasAssetBundleMapMoved)
             {
-                var indexFilePathV0 = Path.Combine(Application.streamingAssetsPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Index.bytes" );
-                var dataFilePathV0 = Path.Combine(Application.streamingAssetsPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Data.bytes" );
+                var indexFilePathV0 =$"{Application.streamingAssetsPath}/{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}Index.bytes";
+                var dataFilePathV0 =$"{Application.streamingAssetsPath}/{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}Data.bytes";
+#if UNITY_ANDROID
                 using (UnityWebRequest request = UnityWebRequest.Get("file://" + indexFilePathV0))
                 {
                     request.downloadHandler = new DownloadHandlerFile(indexFilePath);
@@ -54,6 +55,10 @@ namespace PowerCellStudio
                         yield break;
                     }
                 }
+#else
+                File.WriteAllBytes(indexFilePath, File.ReadAllBytes(indexFilePathV0));
+                File.WriteAllBytes(dataFilePath, File.ReadAllBytes(dataFilePathV0));
+#endif
                 PlayerPrefs.SetInt(_hasAssetBundleMapMovedKey, 1);
                 PlayerPrefs.Save();
             }
