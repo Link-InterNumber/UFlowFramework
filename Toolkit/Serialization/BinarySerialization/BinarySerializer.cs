@@ -38,7 +38,7 @@ namespace PowerCellStudio
             using (var ms = new MemoryStream())
             using (var writer = new BinaryWriter(ms, Encoding))
             {
-                BinarySerializeHandler.WriteValue(writer, obj, type, Encoding);
+                BinaryFormatterResolver.GetFormatter<T>().Write(writer, obj, Encoding);
                 return LZ4Pickler.Pickle(ms.ToArray());
             }
         }
@@ -54,8 +54,7 @@ namespace PowerCellStudio
             using (var ms = new MemoryStream(unpickledData))
             using (var reader = new BinaryReader(ms, Encoding))
             {
-                var type = typeof(T);
-                return (T)BinaryDeserializeHandler.ReadValue(reader, type, Encoding);
+                return BinaryFormatterResolver.GetFormatter<T>().Read(reader, Encoding);
             }
         }
 

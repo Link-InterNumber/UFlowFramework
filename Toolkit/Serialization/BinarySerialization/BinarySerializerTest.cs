@@ -17,6 +17,8 @@ namespace PowerCellStudio
 
             TestPrimitiveRoundTrip();
             TestCommonValueTypeRoundTrip();
+            TestArrayRoundTrip();
+            TestConcreteCollectionRoundTrip();
             TestUnityVector3RoundTrip();
             TestNestedObjectRoundTrip();
             TestInterfaceCollectionFieldRoundTrip();
@@ -26,6 +28,7 @@ namespace PowerCellStudio
             TestTypeWithoutParameterlessConstructorRoundTrip();
             TestSerializeFieldPrivateFieldRoundTrip();
             TestNullFieldRoundTrip();
+            TestNullRootRoundTrip();
 
             Debug.Log("========== BinarySerializer Test Suite Finished ==========");
         }
@@ -101,6 +104,55 @@ namespace PowerCellStudio
                 Assert(clone.Name == source.Name, "Nested parent field mismatch.");
                 Assert(clone.Child.Label == source.Child.Label, "Nested child label mismatch.");
                 Assert(clone.Child.Weight == source.Child.Weight, "Nested child weight mismatch.");
+            });
+        }
+
+        private void TestArrayRoundTrip()
+        {
+            RunTest("Array RoundTrip", () =>
+            {
+                ArrayContainer source = new ArrayContainer
+                {
+                    Numbers = new[] { 4, 8, 15, 16, 23, 42 },
+                    Labels = new[] { "alpha", null, "gamma" }
+                };
+
+                ArrayContainer clone = BinarySerializer.Deserialize<ArrayContainer>(BinarySerializer.Serialize(source));
+
+                Assert(clone != null, "Array container should deserialize.");
+                Assert(clone.Numbers != null, "Int array should deserialize.");
+                Assert(clone.Labels != null, "String array should deserialize.");
+                Assert(clone.Numbers.SequenceEqual(source.Numbers), "Int array values mismatch.");
+                Assert(clone.Labels.Length == source.Labels.Length, "String array length mismatch.");
+                Assert(clone.Labels[0] == source.Labels[0], "String array first value mismatch.");
+                Assert(clone.Labels[1] == null, "String array null element mismatch.");
+                Assert(clone.Labels[2] == source.Labels[2], "String array last value mismatch.");
+            });
+        }
+
+        private void TestConcreteCollectionRoundTrip()
+        {
+            RunTest("Concrete Collection RoundTrip", () =>
+            {
+                List<int> sourceList = new List<int> { 2, 4, 6, 8 };
+                Dictionary<string, int> sourceDictionary = new Dictionary<string, int>
+                {
+                    { "coins", 77 },
+                    { "gems", 12 }
+                };
+                HashSet<string> sourceSet = new HashSet<string> { "red", "blue" };
+
+                List<int> cloneList = BinarySerializer.Deserialize<List<int>>(BinarySerializer.Serialize(sourceList));
+                Dictionary<string, int> cloneDictionary = BinarySerializer.Deserialize<Dictionary<string, int>>(BinarySerializer.Serialize(sourceDictionary));
+                HashSet<string> cloneSet = BinarySerializer.Deserialize<HashSet<string>>(BinarySerializer.Serialize(sourceSet));
+
+                Assert(cloneList != null, "Concrete List should deserialize.");
+                Assert(cloneDictionary != null, "Concrete Dictionary should deserialize.");
+                Assert(cloneSet != null, "Concrete HashSet should deserialize.");
+                Assert(cloneList.SequenceEqual(sourceList), "Concrete List values mismatch.");
+                Assert(cloneDictionary.Count == sourceDictionary.Count, "Concrete Dictionary count mismatch.");
+                Assert(cloneDictionary["coins"] == 77 && cloneDictionary["gems"] == 12, "Concrete Dictionary values mismatch.");
+                Assert(cloneSet.SetEquals(sourceSet), "Concrete HashSet values mismatch.");
             });
         }
 
@@ -230,6 +282,18 @@ namespace PowerCellStudio
             });
         }
 
+        private void TestNullRootRoundTrip()
+        {
+            RunTest("Null Root RoundTrip", () =>
+            {
+                string cloneString = BinarySerializer.Deserialize<string>(BinarySerializer.Serialize<string>(null));
+                CustomEncodedValue cloneCustom = BinarySerializer.Deserialize<CustomEncodedValue>(BinarySerializer.Serialize<CustomEncodedValue>(null));
+
+                Assert(cloneString == null, "Null root string should stay null.");
+                Assert(cloneCustom == null, "Null root custom selector value should stay null.");
+            });
+        }
+
         private void TestTypeWithoutParameterlessConstructorRoundTrip()
         {
             RunTest("No Parameterless Constructor RoundTrip", () =>
@@ -278,7 +342,7 @@ namespace PowerCellStudio
         }
 
         [Serializable]
-        private class ValueTypeContainer
+        private struct ValueTypeContainer
         {
             public Guid GuidValue;
             public TimeSpan TimeSpanValue;
@@ -305,6 +369,13 @@ namespace PowerCellStudio
         {
             public Vector3 Position;
             public Vector3NestedContainer Nested;
+        }
+
+        [Serializable]
+        private class ArrayContainer
+        {
+            public int[] Numbers;
+            public string[] Labels;
         }
 
         [Serializable]
