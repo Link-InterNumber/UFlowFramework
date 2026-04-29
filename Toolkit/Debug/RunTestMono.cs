@@ -1,5 +1,6 @@
 
 using System;
+using System.Collections;
 using System.Diagnostics;
 using UnityEngine;
 
@@ -45,6 +46,22 @@ namespace PowerCellStudio
             {
                 stopwatch.Stop();
                 UnityEngine.Debug.LogError($"[FAIL] {testName} crashed after {stopwatch.Elapsed.TotalMilliseconds:F2} ms. \nException: {e.Message} \n{e.StackTrace}");
+            }
+        }
+
+        protected static void ExecuteEnumerator(IEnumerator routine)
+        {
+            if (routine == null)
+            {
+                return;
+            }
+
+            while (routine.MoveNext())
+            {
+                if (routine.Current is IEnumerator nested)
+                {
+                    ExecuteEnumerator(nested);
+                }
             }
         }
     }

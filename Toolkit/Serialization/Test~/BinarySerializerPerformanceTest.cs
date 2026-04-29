@@ -13,9 +13,9 @@ namespace PowerCellStudio
     public class BinarySerializerPerformanceTest : RunTestMono
     {
         private const int ItemCount = 512;
-        private const int SerializeIterations = 200;
-        private const int DeserializeIterations = 200;
-        private const int RoundTripIterations = 100;
+        private const int SerializeIterations = 512;
+        private const int DeserializeIterations = 512;
+        private const int RoundTripIterations = 512;
 
         private PerformancePayload _payload;
         private byte[] _binarySerializerBytes;

@@ -34,6 +34,14 @@
 		{
 			OnLoaded(data);
 		}
+		
+		partial void OnUnloaded(IEnumerable<{{ConfName}}> data);
+		
+		protected override void OnRemoveData(IEnumerable<{{ConfName}}> data)
+		{
+		    OnUnloaded(data);
+		}
+		
     }
 ****************************************************/
 
@@ -91,6 +99,13 @@ namespace PowerCellStudio
             
             csWriter.StartWriteMethod(CsWriter.MethodSign.Protected, CsWriter.MethodSign.Override, "void", "OnAddData", $"{confName} data");
             csWriter.WriteLine("OnLoaded(data);");
+            csWriter.EndWriteMethod();
+            
+            csWriter.WriteLine($"partial void OnUnloaded(IEnumerable<{confName}> data);");
+            csWriter.Space();
+            
+            csWriter.StartWriteMethod(CsWriter.MethodSign.Protected, CsWriter.MethodSign.Override, "void", "OnRemoveData", $"IEnumerable<{confName}> data");
+            csWriter.WriteLine("OnUnloaded(data);");
             csWriter.EndWriteMethod();
             
             csWriter.EndWriteBody();

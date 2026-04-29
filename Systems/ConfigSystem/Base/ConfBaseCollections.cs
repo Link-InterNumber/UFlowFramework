@@ -25,6 +25,8 @@ namespace PowerCellStudio
         protected abstract TKey GetKey(TData data);
 
         protected abstract void OnAddData(TData data);
+        
+        protected abstract void OnRemoveData(IEnumerable<TData> data);
 
         protected bool CheckLoadStatus()
         {
@@ -75,10 +77,10 @@ namespace PowerCellStudio
             _refCount--;
             if (_refCount > 0)
             {
-                _confQueryer.TryClearUnused();
+                _confQueryer.TryClearUnused(OnRemoveData);
                 return;
             }
-            _confQueryer.Clear();
+            _confQueryer.Clear(OnRemoveData);
             _loadStatus = AssetLoadStatus.Unload;
         }
 

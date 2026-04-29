@@ -15,7 +15,7 @@ namespace PowerCellStudio
         {
             _dataFilePath = dataFilePath;
             _keySelector = keySelector;
-            var (indexer, dataMap) = CreateChunkTools<TKey, TData>(indexFilePath);
+            var (indexer, dataMap) = CreateChunkTools(indexFilePath);
             _indexer = indexer;
             _dataMap = dataMap;
         }
@@ -24,6 +24,8 @@ namespace PowerCellStudio
         {
             _dataFilePath = dataFilePath;
             _keySelector = keySelector;
+            _indexer = new ChunkIndexer<TKey>();
+            _dataMap = new ChunkDataMap<TKey, TData>();
             var reader = ChunkReader.ReadIndexFile<TKey>(indexFilePath);
             yield return _indexer.InitAsync(reader, operationUnit);
             _dataMap.Init(_indexer.chunkCount);
@@ -96,18 +98,18 @@ namespace PowerCellStudio
             }
         }
 
-        public void TryClearUnused()
+        public void TryClearUnused(Action<IEnumerable<TData>> onRemove)
         {
-            _dataMap.TryClearUnused();
+            _dataMap.TryClearUnused(onRemove);
         }
 
-        public void Clear()
+        public void Clear(Action<IEnumerable<TData>> onRemove)
         {
-            _dataMap.ClearAll();
+            _dataMap.ClearAll(onRemove);
             _indexer.Clear();
         }
         
-        public static (ChunkIndexer<TKey> indexer, ChunkDataMap<TKey, TData> dataMap) CreateChunkTools<TKey, TData>(string indexFilePath)
+        public static (ChunkIndexer<TKey> indexer, ChunkDataMap<TKey, TData> dataMap) CreateChunkTools(string indexFilePath)
         {
             var chunkIndexer = new ChunkIndexer<TKey>();
             var dataMap = new ChunkDataMap<TKey, TData>();

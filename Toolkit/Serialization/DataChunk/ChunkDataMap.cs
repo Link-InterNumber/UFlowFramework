@@ -54,7 +54,7 @@ namespace PowerCellStudio
             AddRef(chunkIndex);
         }
 
-        public void TryClearUnused()
+        public void TryClearUnused(Action<IEnumerable<TData>> onRemove)
         {
             if (!_isInited) return;
             List<(int chunkIndex, int refCount)> toClearList = ListPool<(int chunkIndex, int refCount)>.Get();
@@ -75,24 +75,25 @@ namespace PowerCellStudio
                     _loadedChunkRefCount[chunkIndex] = 1;
                     continue;
                 }
-                ReleaseChunk(chunkIndex);
+                ReleaseChunk(chunkIndex, onRemove);
             }
             ListPool<(int chunkIndex, int refCount)>.Release(toClearList);
         }
         
-        public void ClearAll()
+        public void ClearAll(Action<IEnumerable<TData>> onRemove)
         {
             if (!_isInited) return;
             for (var i = 0; i < _loadedChunkRefCount.Length; i++)
             {
-                ReleaseChunk(i);
+                ReleaseChunk(i, onRemove);
             }
         }
             
 
-        private void ReleaseChunk(int chunkIndex)
+        private void ReleaseChunk(int chunkIndex, Action<IEnumerable<TData>> onRemove)
         {
             if (chunkIndex < 0 || chunkIndex >= _loadedChunkRefCount.Length) return;
+            onRemove?.Invoke(_chunkDataMap[chunkIndex].Values);
             _chunkDataMap[chunkIndex].Clear();
             _loadedChunkRefCount[chunkIndex] = 0;
         }
