@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.Mathematics;
+using UnityEngine;
 
 namespace PowerCellStudio
 {
@@ -60,6 +61,13 @@ namespace PowerCellStudio
                 return null;
             }
             return new Parabola2D(startPos, endPos, heightRelateTo2Point);
+        }
+
+        public static float Smoothstep(float from, float to, float t)
+        {
+            if (to.Equals(from)) return t <= from ? 0f : 1f;
+            t = Mathf.Clamp01((t - from) / (to - from));
+            return t * t * (3f - 2f * t);
         }
     }
 }

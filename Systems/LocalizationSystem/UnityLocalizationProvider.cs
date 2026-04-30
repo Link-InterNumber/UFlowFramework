@@ -32,7 +32,7 @@ namespace PowerCellStudio
                 return null;
             }
             if (_assetTable == null) return null;
-            var _loaderYieldInstruction = new LoaderYieldInstruction<T>(path);
+            var _loaderYieldInstruction = AssetUtils.GetLoadHandler<T>(path);
             var handler = _assetTable.GetAssetAsync<T>(key);
             handler.Completed += op =>
             {

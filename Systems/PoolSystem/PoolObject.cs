@@ -17,6 +17,9 @@ namespace PowerCellStudio
 
         public abstract void OnDeSpawn();
 
-        public virtual void Dispose() { }
+        public virtual void Dispose()
+        {
+            LinkPool = null;
+        }
     }
 }

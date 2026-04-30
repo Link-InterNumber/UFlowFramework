@@ -9,5 +9,11 @@ namespace PowerCellStudio
     public interface ILoaderYieldInstruction : IDisposable
     {
         public bool isDone { get; }
+        public bool canceled { get; }
+    }
+    
+    public interface ILoaderYieldInstruction<T> : ILoaderYieldInstruction
+    {
+        
     }
 }

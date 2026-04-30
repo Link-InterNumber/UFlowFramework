@@ -5,13 +5,13 @@ namespace PowerCellStudio
 {
     public class LoaderYieldInstructionPool
     {
-        private Dictionary<Type, Queue<ILoaderYieldInstruction>> _poolDic;
+        private Dictionary<Type, Stack<ILoaderYieldInstruction>> _poolDic;
 
         private int _maxCountInPool = 64;
 
         public LoaderYieldInstructionPool()
         {
-            _poolDic = new Dictionary<Type, Queue<ILoaderYieldInstruction>>();
+            _poolDic = new Dictionary<Type, Stack<ILoaderYieldInstruction>>();
         }
 
         public LoaderYieldInstruction<T> Get<T>(string path) where T : class
@@ -24,7 +24,7 @@ namespace PowerCellStudio
                 return instance;
             }
 
-            var item = stack.Dequeue();
+            var item = stack.Pop();
             var typedItem = (LoaderYieldInstruction<T>)item;
             typedItem.Reset(path);
             return typedItem;
@@ -37,7 +37,7 @@ namespace PowerCellStudio
 
             if (!_poolDic.TryGetValue(key, out var stack))
             {
-                stack = new Queue<ILoaderYieldInstruction>();
+                stack = new Stack<ILoaderYieldInstruction>();
                 _poolDic.Add(key, stack);
             }
 
@@ -46,7 +46,7 @@ namespace PowerCellStudio
                 return;
             }
 
-            stack.Enqueue(item);
+            stack.Push(item);
         }
     }
 }

@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace PowerCellStudio
 {
@@ -46,6 +47,21 @@ namespace PowerCellStudio
             {
                 stopwatch.Stop();
                 UnityEngine.Debug.LogError($"[FAIL] {testName} crashed after {stopwatch.Elapsed.TotalMilliseconds:F2} ms. \nException: {e.Message} \n{e.StackTrace}");
+            }
+        }
+
+        protected void RunProfilerTest(string testName, Action testAction)
+        {
+            try
+            {
+                Profiler.BeginSample(testName);
+                testAction();
+                Profiler.EndSample();
+            }
+            catch (System.Exception e)
+            {
+                Profiler.EndSample();
+                UnityEngine.Debug.LogError($"[FAIL] Exception: {e.Message} \n{e.StackTrace}");
             }
         }
 

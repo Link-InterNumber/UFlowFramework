@@ -20,6 +20,7 @@ namespace PowerCellStudio
 
         public virtual void Dispose()
         {
+            LinkPool =  null;
             GameObject.Destroy(gameObject);
         }
     }

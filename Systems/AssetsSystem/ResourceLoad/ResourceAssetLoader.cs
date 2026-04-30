@@ -119,7 +119,7 @@ namespace PowerCellStudio
             if (_disposed) return null;
             var assetName = Path.GetFileNameWithoutExtension(address);
             var request = Resources.LoadAsync<T>(assetName);
-            var instruction = new LoaderYieldInstruction<T>(assetName);
+            var instruction = AssetUtils.GetLoadHandler<T>(assetName);
             _waitForLoaded.Add(address);
             request.completed += operation =>
             {
