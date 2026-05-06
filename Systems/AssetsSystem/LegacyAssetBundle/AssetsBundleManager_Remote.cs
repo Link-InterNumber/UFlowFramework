@@ -206,9 +206,10 @@ namespace PowerCellStudio
                 if (webRequest.result != UnityWebRequest.Result.Success)
                     assetMapLoaded = false;
             }
+
             if (assetMapLoaded)
             {
-                PlayerPrefs.SetInt(_hasAssetBundleMapMovedKey, 1);
+                PlayerPrefs.SetInt(AssetBundleIndex.hasAssetBundleMapMovedKey, 1);
                 PlayerPrefs.Save();
             }
             

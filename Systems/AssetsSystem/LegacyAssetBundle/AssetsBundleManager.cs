@@ -33,7 +33,7 @@ namespace PowerCellStudio
                 return;
             }
             _preloadHandles = new Dictionary<string, LoaderYieldInstruction<Object>>();
-            _loadedBundleDic = new Dictionary<string, AssetsBundleRef>();
+            _loadedBundles = new LoadedCache<AssetBundle>();
             _waitForLoadList = new Dictionary<string, LoaderYieldInstruction<AssetBundle>>();
             
             _pool = new ObjectPool<BundleAssetLoader>(() => new BundleAssetLoader(this),
@@ -66,7 +66,7 @@ namespace PowerCellStudio
             GetClientRemoteManifest();
             yield return CheckRemoteBundle();
             yield return InitPathMap();
-            if (_assetPathMap == null) yield break;
+            if (_bundleIndex == null) yield break;
             initProcess = 0.3f;
             initState = AssetInitState.InitModule;
             yield return GetBundleManifest();
@@ -75,8 +75,7 @@ namespace PowerCellStudio
             var loadDefault = _waitForLoadList["default"];
             yield return loadDefault;
             initProcess = 0.9f;
-            _loadedBundleDic.TryGetValue("default", out var bundleRef);
-            var loaded = bundleRef?.Bundle;
+            _loadedBundles.TryGetCache("default", out var loaded);
             if (!loaded)
             {
                 AssetLog.LogError("default bundle did not exit!");
@@ -87,23 +86,6 @@ namespace PowerCellStudio
             initProcess = 1f;
             initState = AssetInitState.Complete;
             callBack?.Invoke();
-        }
-
-        // public bool CheckWithID = false;
-
-        public string GetBundleNameByAsset(string path)
-        {
-            if (!_inited) throw new Exception("AssetsBundleManager do not inited!!!");
-            var assetData = _assetPathMap.Get(path, null);
-            if (assetData == default)
-            {
-                AssetLog.LogError($"Can not find Bundle Name of [{path}]");
-                return string.Empty;
-            }
-            return assetData.assetBundle;
-            // if (!CheckWithID) return matched.assetBundle;
-            // var id = lowerPath.GenHashCode();
-            // return matched.hashCode.Equals(id) ? matched.assetBundle : string.Empty;
         }
     }
 }

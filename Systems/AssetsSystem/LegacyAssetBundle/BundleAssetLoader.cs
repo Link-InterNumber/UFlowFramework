@@ -332,7 +332,9 @@ namespace PowerCellStudio
             if (!AssetsBundleManager.simulateAssetBundleInEditor)
                 return string.IsNullOrEmpty(address) ? address : "Unity_Editor";
 #endif
-            return string.IsNullOrEmpty(address) ? address : _assetsBundleManager.GetBundleNameByAsset(address);
+            // TODO 
+            return address;
+            // return string.IsNullOrEmpty(address) ? address : _assetsBundleManager.GetBundleNameByAsset(address);
         }
 
         #endregion

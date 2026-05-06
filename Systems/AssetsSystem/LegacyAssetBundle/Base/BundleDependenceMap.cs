@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Pool;
 
@@ -22,20 +23,15 @@ namespace PowerCellStudio
             {
                 return dependenciesArray;
             }
-            var tempStack = HashStackPool<string>.Get();
+            var tempStack = HashSetPool<string>.Get();
             GetBundleDependenciesRecursively(bundleName, ref tempStack);
-            var result = new string[tempStack.Count];
-            for (int i = 0; i < result.Length; i++)
-            {
-                result[i] = tempStack.Pop();
-            }
+            var result = tempStack.ToArray();
             dependencies[bundleName] = result;
-            if (!HashStackPool<string>.Release(tempStack)) 
-                tempStack.Clear();
+            HashSetPool<string>.Release(tempStack);
             return result;
         }
 
-        private void GetBundleDependenciesRecursively(string bundleName, ref HashStack<string> dependenciesStack)
+        private void GetBundleDependenciesRecursively(string bundleName, ref HashSet<string> dependenciesStack)
         {
             var bundles = manifest.GetAllDependencies(bundleName);
             if (bundles == null || bundles.Length == 0)
@@ -47,7 +43,7 @@ namespace PowerCellStudio
                 var dependencyName = bundles[i];
                 if (dependenciesStack.Contains(dependencyName)) continue;
                 if (dependencyName == bundleName) continue;
-                dependenciesStack.Push(dependencyName);
+                dependenciesStack.Add(dependencyName);
                 GetBundleDependenciesRecursively(dependencyName, ref dependenciesStack);
             }
         }

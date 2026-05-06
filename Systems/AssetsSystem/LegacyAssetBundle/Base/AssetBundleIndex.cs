@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.IO;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace PowerCellStudio
 {
@@ -9,7 +10,7 @@ namespace PowerCellStudio
     {
         private ChunkDataQueryer<string, ScriptableAssetBundleData> _assetPathMap;
 
-        private static readonly string _hasAssetBundleMapMovedKey = "hasAssetBundleMapMoved";
+        public static readonly string hasAssetBundleMapMovedKey = "hasAssetBundleMapMoved";
         
         public IEnumerator Init()
         { 
@@ -22,7 +23,7 @@ namespace PowerCellStudio
                 Directory.CreateDirectory(folder);
             }
             // 初次启动，将streamingAssetsPath下的AssetBundleMap文件保存在Application.persistentDataPath
-            var hasAssetBundleMapMoved = PlayerPrefs.GetInt(_hasAssetBundleMapMovedKey, 0) > 0;
+            var hasAssetBundleMapMoved = PlayerPrefs.GetInt(hasAssetBundleMapMovedKey, 0) > 0;
             if (!hasAssetBundleMapMoved)
             {
                 var indexFilePathV0 =$"{Application.streamingAssetsPath}/{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}Index.bytes";
@@ -53,7 +54,7 @@ namespace PowerCellStudio
                 File.WriteAllBytes(indexFilePath, File.ReadAllBytes(indexFilePathV0));
                 File.WriteAllBytes(dataFilePath, File.ReadAllBytes(dataFilePathV0));
 #endif
-                PlayerPrefs.SetInt(_hasAssetBundleMapMovedKey, 1);
+                PlayerPrefs.SetInt(hasAssetBundleMapMovedKey, 1);
                 PlayerPrefs.Save();
             }
             

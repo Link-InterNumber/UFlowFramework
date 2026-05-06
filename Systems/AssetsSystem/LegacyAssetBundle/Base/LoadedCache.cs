@@ -40,6 +40,19 @@ namespace PowerCellStudio
             _cache.Remove(assetPath);
         }
 
+        public IEnumerable<KeyValuePair<string, CacheRef<T>>> GetAll()
+        {
+            foreach (var cacheValue in _cache)
+            {
+                yield return cacheValue;
+            }
+        }
+        
+        public void Clear()
+        {
+            _cache.Clear();
+        }
+
         public void AddRef(string assetPath, int addValue)
         {
             if (_cache.TryGetValue(assetPath, out var assetRef))
