@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using UnityEditor.VersionControl;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -13,6 +14,7 @@ namespace PowerCellStudio
             bundleName = manager.indexer.GetBundleNameByAsset(assetPath);
             if (string.IsNullOrEmpty(bundleName))
             {
+                AssetLog.LogError($"Failed to get bundle name for asset: {assetPath}");
                 if (handler == null) handler = AssetUtils.GetLoadHandler<T>(assetPath);
                 handler.SetAsset(null);
                 return handler;

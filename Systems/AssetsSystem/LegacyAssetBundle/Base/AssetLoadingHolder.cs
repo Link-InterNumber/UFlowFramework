@@ -3,11 +3,11 @@ using UnityEngine;
 
 namespace PowerCellStudio
 {
-    public class LoadingHolder<T>  where T : Object
+    public class AssetLoadingHolder<T>  where T : Object
     {
         private Dictionary<string, List<LoaderYieldInstruction<T>>>  _onloading;
         
-        public LoadingHolder()
+        public AssetLoadingHolder()
         {
             _onloading = new Dictionary<string, List<LoaderYieldInstruction<T>>>();
         }
@@ -22,30 +22,35 @@ namespace PowerCellStudio
             return _onloading.TryGetValue(assetPath, out handlerChain);
         }
 
-        public void AddLoadingHandle(string assetPath, LoaderYieldInstruction<T> handler)
+        public bool AddLoadingHandle(string assetPath, LoaderYieldInstruction<T> handler)
         {
             if (_onloading.TryGetValue(assetPath, out var handlerChain))
             {
                 handlerChain.Add(handler);
+                return false;
             }
             else
             {
                 handlerChain = new List<LoaderYieldInstruction<T>>();
                 handlerChain.Add(handler);
                 _onloading[assetPath] = handlerChain;
+                return true;
             }
         }
 
-        public void SetLoaded(string assetPath, T asset)
+        public int SetLoaded(string assetPath, T asset)
         {
+            var refCount = 0;
             if (_onloading.TryGetValue(assetPath, out var handler))
             {
+                refCount = handler.Count;
                 foreach (var h in handler)
                 {
                     h.SetAsset(asset);
                 }
             }
             _onloading.Remove(assetPath);
+            return refCount;
         }
     }
 }

@@ -17,7 +17,6 @@ namespace PowerCellStudio
         
         public bool isDone { get; private set; }
         public T asset { get; private set; }
-        public bool canceled { get; private set; }
         
         private string _assetPath;
         private TaskCompletionSource<T> _taskCompletionSource;
@@ -30,15 +29,15 @@ namespace PowerCellStudio
             Reset(assetPath);
         }
 
-        public void Reset(string assetPath)
+        internal void Reset(string assetPath)
         {
             _assetPath = assetPath;
             isDone = false;
-            canceled  = false;
             asset = null;
             _onLoadCompleted = null;
             _onLoadSuccess = null;
             _onLoadFailed = null;
+            _taskCompletionSource = null;
         }
 
         public Task<T> Task
@@ -99,14 +98,6 @@ namespace PowerCellStudio
             _onLoadSuccess = null;
             _onLoadFailed = null;
             _taskCompletionSource = null;
-        }
-
-        public void SetCancelled()
-        {
-            if (isDone || canceled) return;
-            isDone = true;
-            canceled =  true;
-            _taskCompletionSource?.SetCanceled();
         }
 
         public void Dispose()

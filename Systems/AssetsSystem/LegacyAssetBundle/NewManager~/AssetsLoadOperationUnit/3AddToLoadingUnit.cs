@@ -11,11 +11,9 @@ namespace PowerCellStudio
             string assetPath, string bundleName,
             bool releaseBundleOnTime) where T : Object
         {
-            if (manager.loadingAssets.TryGetLoadingHandle(assetPath, out var currentHandler))
-            {
-                currentHandler
-                return handler;
-            }
+            if (handler == null) handler = AssetUtils.GetLoadHandler<T>(assetPath);
+            var isFirst = manager.loadingAssets.AddLoadingHandle(assetPath, handler as LoaderYieldInstruction<Object>);
+            if (!isFirst) return handler;
             return next.Operation(handler, manager, assetPath, bundleName, releaseBundleOnTime);
         }
     }

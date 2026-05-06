@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace PowerCellStudio
 {
-    public class LoaderYieldInstructionPool
+    internal class LoaderYieldInstructionPool
     {
         private Dictionary<Type, Stack<ILoaderYieldInstruction>> _poolDic;
 
@@ -25,9 +25,9 @@ namespace PowerCellStudio
             }
 
             var item = stack.Pop();
-            var typedItem = (LoaderYieldInstruction<T>)item;
-            typedItem.Reset(path);
-            return typedItem;
+            var typedInstance = item as LoaderYieldInstruction<T>;
+            typedInstance?.Reset(path);
+            return typedInstance;
         }
 
         public void Release<T>(ILoaderYieldInstruction item) where T : class

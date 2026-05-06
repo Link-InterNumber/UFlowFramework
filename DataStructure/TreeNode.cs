@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 
-namespace UFlowFramework.DataStructure
+namespace PowerCellStudio
 {
     public class TreeNode<T> : IDisposable
     {
@@ -109,18 +110,18 @@ namespace UFlowFramework.DataStructure
 
         private bool IsDescendantOf(TreeNode<T> node)
         {
-            var visited = new HashSet<TreeNode<T>>();
+            var visited = HashSetPool<TreeNode<T>>.Get();
             var current = this;
             while (current != null && visited.Add(current))
             {
                 if (current == node)
                 {
+                    HashSetPool<TreeNode<T>>.Release(visited);
                     return true;
                 }
-
                 current = current.Parent;
             }
-
+            HashSetPool<TreeNode<T>>.Release(visited);
             return false;
         }
 

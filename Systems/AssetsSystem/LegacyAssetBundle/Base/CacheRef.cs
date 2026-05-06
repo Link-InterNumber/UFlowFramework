@@ -17,18 +17,18 @@ namespace PowerCellStudio
         
         public bool isAlive => refCount > 0;
 
-        public void AddRef()
+        public void AddRef(int addValue)
         {
             if (!_asset) return;
             if (refCount < 0) refCount = 0;
-            refCount++;
+            refCount += addValue;
         }
 
-        public void DeRef()
+        public void DeRef(int delValue)
         {
             if (!_asset) return;
             if (refCount < 1) return;
-            refCount--;
+            refCount -= delValue;
         }
 
         public void Dispose()

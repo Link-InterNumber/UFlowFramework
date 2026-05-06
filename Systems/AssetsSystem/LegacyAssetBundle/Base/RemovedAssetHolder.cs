@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -15,6 +14,11 @@ namespace PowerCellStudio
 
         private List<RemovedAssetHolderData> _removedAssetBuffer = new List<RemovedAssetHolderData>();
         private Dictionary<string, AssetBundle> _map = new Dictionary<string, AssetBundle>();
+
+        public bool IsHolding(string bundleName)
+        {
+            return _map.ContainsKey(bundleName);
+        }
 
         public void Push(string bundleName, AssetBundle bundle, float duration)
         {
