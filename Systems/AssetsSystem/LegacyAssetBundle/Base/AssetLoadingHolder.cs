@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 
 namespace PowerCellStudio
 {
@@ -22,19 +23,22 @@ namespace PowerCellStudio
             return _onloading.TryGetValue(assetPath, out handlerChain);
         }
 
-        public bool AddLoadingHandle(string assetPath, LoaderYieldInstruction<T> handler)
+        public void AddLoadingHandle(string assetPath, LoaderYieldInstruction<T> handler)
         {
+            if (handler == null)
+            {
+                AssetLog.LogError($"Trying to add null handler for asset {assetPath}");
+                return;
+            }
             if (_onloading.TryGetValue(assetPath, out var handlerChain))
             {
                 handlerChain.Add(handler);
-                return false;
             }
             else
             {
-                handlerChain = new List<LoaderYieldInstruction<T>>();
+                handlerChain = ListPool<LoaderYieldInstruction<T>>.Get();
                 handlerChain.Add(handler);
                 _onloading[assetPath] = handlerChain;
-                return true;
             }
         }
 
@@ -43,11 +47,13 @@ namespace PowerCellStudio
             var refCount = 0;
             if (_onloading.TryGetValue(assetPath, out var handler))
             {
-                refCount = handler.Count;
                 foreach (var h in handler)
                 {
+                    if (h.isDone) continue;
                     h.SetAsset(asset);
+                    refCount++;
                 }
+                ListPool<LoaderYieldInstruction<T>>.Release(handler);
             }
             _onloading.Remove(assetPath);
             return refCount;

@@ -1,14 +1,11 @@
 ﻿using System;
 
-#if !UNITY_WEBGL
-using System.Threading.Tasks;
-#endif
-
 namespace PowerCellStudio
 {
     public interface ILoaderYieldInstruction : IDisposable
     {
         public bool isDone { get; }
+        public bool autoRelease { get; }
     }
     
     public interface ILoaderYieldInstruction<T> : ILoaderYieldInstruction

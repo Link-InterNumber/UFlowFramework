@@ -166,13 +166,28 @@ namespace PowerCellStudio
             return new string(pathBuffer.Slice(0, position));
         }
 
-        public static LoaderYieldInstruction<T> GetLoadHandler<T>(string path) where T : class
+        public static LoaderYieldInstruction<T> GetLoadHandler<T>(string path, bool autoRelease = false) where T : class
         {
-            return _loaderYieldInstructionPool.Get<T>(path);
+            var handler = _loaderYieldInstructionPool.Get<T>(path);
+            if (autoRelease)
+            {
+                handler.AddAutoReleaseHandle(h =>
+                {
+                    _loaderYieldInstructionPool.Release<T>(h);
+                });
+            }
+            return handler;
         }
         
         public static void ReleaseLoadHandler<T>(ILoaderYieldInstruction item) where T : class
         {
+            if (item == null) return;
+            if (item.autoRelease)
+            {
+                AssetLog.LogError("Trying to release a handler that is already set to auto-release. This may indicate a logic error.");
+                item.Dispose();
+                return;
+            }
             _loaderYieldInstructionPool.Release<T>(item);
         }
 

@@ -52,6 +52,16 @@ namespace PowerCellStudio
             return result;
         }
 
+        public void Clear()
+        {
+            foreach (var data in _removedAssetBuffer)
+            {
+                UnloadData(data);
+            }
+            _removedAssetBuffer.Clear();
+            _map.Clear();
+        }
+
         public void LateUpdate()
         {
             if (_removedAssetBuffer.Count == 0) return;

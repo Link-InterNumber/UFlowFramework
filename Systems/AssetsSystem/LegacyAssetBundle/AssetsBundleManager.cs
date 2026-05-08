@@ -32,10 +32,15 @@ namespace PowerCellStudio
                 callBack?.Invoke();
                 return;
             }
+
             _preloadHandles = new Dictionary<string, LoaderYieldInstruction<Object>>();
+            _loadPlan = new LoadPlan();
+            _loadedAssets = new LoadedCache<Object>();
+            _loadingAssets = new AssetLoadingHolder<Object>();
             _loadedBundles = new LoadedCache<AssetBundle>();
-            _waitForLoadList = new Dictionary<string, LoaderYieldInstruction<AssetBundle>>();
-            
+            _loadingBundles = new BundleLoadingHolder();
+            _removedAssetHolder = new GameObject("RemovedAssetHolder").AddComponent<RemovedAssetHolder>();
+
             _pool = new ObjectPool<BundleAssetLoader>(() => new BundleAssetLoader(this),
                 loader => loader.Init(),
                 loader => loader.Deinit(),
@@ -62,25 +67,25 @@ namespace PowerCellStudio
         {
             _bundleFoldName = MainBundleName;
             initState = AssetInitState.CheckForResourceUpdates;
-            yield return GetServerRemoteManifest();
-            GetClientRemoteManifest();
-            yield return CheckRemoteBundle();
+            yield return InitializeRemoteBundleManifest();
             yield return InitPathMap();
             if (_bundleIndex == null) yield break;
             initProcess = 0.3f;
             initState = AssetInitState.InitModule;
             yield return GetBundleManifest();
             initProcess = 0.6f;
-            GetAssetsBundleAsync("default", null);
-            var loadDefault = _waitForLoadList["default"];
-            yield return loadDefault;
+            GetAssetsBundleAsync("default");
+            while (_loadingBundles.IsLoading("default"))
+            {
+                yield return null;
+            }
             initProcess = 0.9f;
             _loadedBundles.TryGetCache("default", out var loaded);
             if (!loaded)
             {
                 AssetLog.LogError("default bundle did not exit!");
             }
-            AddRef("default");
+            AddBundleRef("default");
             _inited = true;
             AssetLog.Log("AssetsBundleManager inited successfully");
             initProcess = 1f;

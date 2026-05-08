@@ -9,6 +9,7 @@ namespace PowerCellStudio
     public delegate void OnLoadCompleted<T>(T asset, string assetPath);
     public delegate void OnLoadSuccess<T>(T asset);
     public delegate void OnLoadFailed();
+    public delegate void OnDone<T>(LoaderYieldInstruction<T> instruction) where T : class;
 
     public class LoaderYieldInstruction<T> : CustomYieldInstruction, ILoaderYieldInstruction
         where T : class
@@ -17,12 +18,12 @@ namespace PowerCellStudio
         
         public bool isDone { get; private set; }
         public T asset { get; private set; }
-        
         private string _assetPath;
         private TaskCompletionSource<T> _taskCompletionSource;
         private event OnLoadCompleted<T> _onLoadCompleted;
         private event OnLoadSuccess<T> _onLoadSuccess;
         private event OnLoadFailed _onLoadFailed;
+        private event OnDone<T> _onDone;
 
         public LoaderYieldInstruction(string assetPath)
         {
@@ -32,12 +33,6 @@ namespace PowerCellStudio
         internal void Reset(string assetPath)
         {
             _assetPath = assetPath;
-            isDone = false;
-            asset = null;
-            _onLoadCompleted = null;
-            _onLoadSuccess = null;
-            _onLoadFailed = null;
-            _taskCompletionSource = null;
         }
 
         public Task<T> Task
@@ -83,6 +78,13 @@ namespace PowerCellStudio
             _onLoadFailed += callback;
         }
 
+        public bool autoRelease => _onDone != null;
+
+        internal void AddAutoReleaseHandle(OnDone<T> callback)
+        {
+            _onDone = callback;
+        }
+
         public void SetAsset(T loadedAsset)
         {
             if (isDone) return;
@@ -98,6 +100,8 @@ namespace PowerCellStudio
             _onLoadSuccess = null;
             _onLoadFailed = null;
             _taskCompletionSource = null;
+            _onDone?.Invoke(this);
+            _onDone = null;
         }
 
         public void Dispose()
@@ -109,6 +113,7 @@ namespace PowerCellStudio
             _onLoadFailed = null;
             _assetPath = null;
             _taskCompletionSource = null;
+            _onDone = null;
         }
     }
 }

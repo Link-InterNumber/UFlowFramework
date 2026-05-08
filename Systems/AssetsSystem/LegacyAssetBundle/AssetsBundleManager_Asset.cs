@@ -1,9 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
-using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
@@ -13,6 +11,10 @@ namespace PowerCellStudio
     {
         private static Dictionary<string, LoaderYieldInstruction<Object>> _preloadHandles;
         private AssetBundleIndex _bundleIndex;
+        // 计划加载的资源，key为BundleName，value为资源路径列表
+        private LoadPlan _loadPlan;
+        private LoadedCache<Object> _loadedAssets;
+        private AssetLoadingHolder<Object> _loadingAssets;
 
         private IEnumerator InitPathMap()
         {
@@ -22,19 +24,40 @@ namespace PowerCellStudio
             initProcess = 1f;
         }
 
+        public bool IsAssetLoading(string assetPath)
+        {
+            return _loadingAssets.IsLoading(assetPath);
+        }
+
         public void PreloadAsset(string path)
         {
             if (_preloadHandles == null) _preloadHandles = new Dictionary<string, LoaderYieldInstruction<Object>>();
             if (_preloadHandles.ContainsKey(path)) return;
             var loadAssetRequest = AssetUtils.GetLoadHandler<Object>(path);
-            var bundleName = _bundleIndex.GetBundleNameByAsset(path);
-            LoadAssetAsync<Object>(bundleName, path, loadAssetRequest);
+            LoadAssetAsync<Object>(path, loadAssetRequest);
             _preloadHandles.Add(path, loadAssetRequest);
         }
 
-        public T LoadAsset<T>(string bundleName, string assetPath)
+        public void DelAssetRef(string assetPath, int delCount = 1)
+        {
+            if (_loadedAssets.TryDelRef(assetPath, delCount, out var asset))
+            {
+                _loadedAssets.RemoveCache(assetPath);
+                Resources.UnloadAsset(asset);
+                var bundleName = _bundleIndex.GetBundleNameByAsset(assetPath);
+                DelBundleRef(bundleName, 1);
+            }
+        }
+
+        public T LoadAsset<T>(string assetPath)
             where T : Object
         {
+            if (_loadedAssets.TryGetCache(assetPath, out var cache) && cache is T cachedAsset && cachedAsset)
+            {
+                _loadedAssets.AddRef(assetPath, 1);
+                return cachedAsset;
+            }
+
             if (_preloadHandles.TryGetValue(assetPath, out var handle) && handle.isDone)
             {
                 _preloadHandles.Remove(assetPath);
@@ -42,10 +65,15 @@ namespace PowerCellStudio
                 AssetUtils.ReleaseLoadHandler<T>(handle);
                 return preloadAsset;
             }
-
+            var bundleName = _bundleIndex.GetBundleNameByAsset(assetPath);
+            if (string.IsNullOrEmpty(bundleName))
+            {
+                return null;
+            }
             if (!GetAssetBundle(bundleName, out var bundle)) 
                 return null;
 
+            T asset = null;
             if (AssetUtils.TryGetSubAssetName(assetPath, out var mainPath, out var subAssetName))
             {
                 var assets = bundle.LoadAssetWithSubAssets<T>(mainPath);
@@ -56,20 +84,34 @@ namespace PowerCellStudio
                 {
                     if (a == null || a.name != subAssetName || a is not T matched) 
                         continue;
-                    return matched;
+                    asset = matched;
+                    break;
                 }
-
-                return null;
+            }
+            else
+            {
+                asset = bundle.LoadAsset<T>(assetPath);
             }
 
-            var asset = bundle.LoadAsset<T>(assetPath);
+            if (asset)
+            {
+                _loadedAssets.AddCache(assetPath, asset);
+                _loadedAssets.AddRef(assetPath, 1);
+            }
             return asset;
         }
 
-        public void LoadAssetAsync<T>(string bundleName, string assetPath, LoaderYieldInstruction<T> loadAssetRequest)
+        public void LoadAssetAsync<T>(string assetPath, LoaderYieldInstruction<T> loadAssetRequest)
             where T : Object
         {
             if (loadAssetRequest == null) return;
+            if (_loadedAssets.TryGetCache(assetPath, out var asset) && asset is T cachedAsset && cachedAsset)
+            {
+                _loadedAssets.AddRef(assetPath, 1);
+                loadAssetRequest.SetAsset(cachedAsset);
+                return;
+            }
+
             if (_preloadHandles.ContainsKey(assetPath))
             {
                 var handle = _preloadHandles[assetPath];
@@ -88,66 +130,74 @@ namespace PowerCellStudio
                 }
                 return;
             }
-
-            GetAssetsBundleAsync(bundleName, (bundle, bundleName) =>
+            if (_loadingAssets.IsLoading(assetPath))
             {
-                GetAssetFromBundleAsync(bundle, assetPath, loadAssetRequest);
-            });
+                _loadingAssets.AddLoadingHandle(assetPath, loadAssetRequest as LoaderYieldInstruction<Object>);
+                return;
+            }
+            var bundleName = _bundleIndex.GetBundleNameByAsset(assetPath);
+            if (string.IsNullOrEmpty(bundleName))
+            {
+                loadAssetRequest.SetAsset(null);
+                return;
+            }
+            _loadPlan.AddPlan(bundleName, assetPath, typeof(T));
+            _loadingAssets.AddLoadingHandle(assetPath, loadAssetRequest as LoaderYieldInstruction<Object>);
+            GetAssetsBundleAsync(bundleName);
         }
 
-        private void GetAssetFromBundleAsync<T>(AssetBundle bundle, string assetPath, LoaderYieldInstruction<T> loadAssetRequest)
-            where T : Object
+        private void GetAssetFromBundleAsync(AssetBundle bundle, string bundleName, string assetPath, Type assetType)
         {
             if (!bundle)
             {
-                loadAssetRequest.SetAsset(null);
+                _loadingAssets.SetLoaded(assetPath, null);
                 return;
             }
 
             if (AssetUtils.TryGetSubAssetName(assetPath, out var mainPath, out var subAssetName))
             {
-                var assetRequest = bundle.LoadAssetWithSubAssetsAsync<T>(mainPath);
+                var assetRequest = bundle.LoadAssetWithSubAssetsAsync(mainPath, assetType);
                 assetRequest.completed += operation =>
                 {
                     var operationHandle = operation as AssetBundleRequest;
-                    if (operationHandle == null)
-                    {
-                        loadAssetRequest.SetAsset(null);
-                        return;
-                    }
-
-                    var assets = operationHandle.allAssets as T[];
+                    var assets = operationHandle?.allAssets;
                     if (assets == null)
                     {
-                        loadAssetRequest.SetAsset(null);
+                        _loadingAssets.SetLoaded(assetPath, null);
+                        DelBundleRef(bundleName, 1);
                         return;
                     }
                     foreach (var a in assets)
                     {
                         if (a == null) continue;
-                        if (a.name == subAssetName && a is T matched)
+                        if (a.name == subAssetName)
                         {
-                            loadAssetRequest.SetAsset(matched);
+                            _loadedAssets.AddCache(assetPath, a);
+                            var refCount = _loadingAssets.SetLoaded(assetPath, a);
+                            _loadedAssets.AddRef(assetPath, refCount);
                             return;
                         }
                     }
-
-                    loadAssetRequest.SetAsset(null);
+                    _loadingAssets.SetLoaded(assetPath, null);
+                    DelBundleRef(bundleName, 1);
                 };
             }
             else
             {
-                var assetRequest = bundle.LoadAssetAsync<T>(assetPath);
+                var assetRequest = bundle.LoadAssetAsync(assetPath, assetType);
                 assetRequest.completed += (operation) =>
                 {
                     var operationHandle = operation as AssetBundleRequest;
                     if(operationHandle == null)
                     {
-                        loadAssetRequest.SetAsset(null);
+                        _loadingAssets.SetLoaded(assetPath, null);
+                        DelBundleRef(bundleName, 1);
                         return;
                     }
-                    var asset = operationHandle.asset as T;
-                    loadAssetRequest.SetAsset(asset);
+                    var asset = operationHandle.asset;
+                    _loadedAssets.AddCache(assetPath, asset);
+                    var refCount = _loadingAssets.SetLoaded(assetPath, asset);
+                    _loadedAssets.AddRef(assetPath, refCount);
                 };
             }
         }

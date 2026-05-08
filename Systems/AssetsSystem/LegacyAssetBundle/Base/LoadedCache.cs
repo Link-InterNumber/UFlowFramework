@@ -14,7 +14,12 @@ namespace PowerCellStudio
 
         public bool IsLoaded(string assetPath)
         {
-            return _cache.ContainsKey(assetPath);
+            return _cache.ContainsKey(assetPath) && _cache[assetPath].asset;
+        }
+
+        public int GetRefCount(string assetPath)
+        {
+            return _cache.TryGetValue(assetPath, out var assetRef) ? assetRef.refCount : 0;
         }
 
         public bool TryGetCache(string assetPath, out T asset)

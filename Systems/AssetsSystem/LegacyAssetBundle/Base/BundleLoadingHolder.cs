@@ -1,29 +1,57 @@
 ﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace PowerCellStudio
 {
     public class BundleLoadingHolder
     {
-        private HashSet<string> _loadingBundles;
+        private Dictionary<string, LoaderYieldInstruction<AssetBundle>>  _onloading; 
 
         public BundleLoadingHolder()
         {
-            _loadingBundles = new HashSet<string>();
+            _onloading = new Dictionary<string, LoaderYieldInstruction<AssetBundle>>();
         }
 
         public bool IsLoading(string bundleName)
         {
-            return _loadingBundles.Contains(bundleName);
+            return _onloading.ContainsKey(bundleName);
         }
 
-        public void AddLoadingHandle(string bundleName)
+        // public bool TryGetLoadingHandle(string bundleName, out LoaderYieldInstruction<AssetBundle> handler)
+        // {
+        //     return _onloading.TryGetValue(bundleName, out handler);
+        // }
+
+        public LoaderYieldInstruction<AssetBundle> AddLoadingHandle(string bundleName, OnLoadCompleted<AssetBundle> handler)
         {
-            _loadingBundles.Add(bundleName);
+            if (_onloading.TryGetValue(bundleName, out var existingHandler))
+            {
+                if (handler != null) existingHandler.OnLoadCompleted(handler);
+                return existingHandler;
+            }
+            var yieldInstruction = AssetUtils.GetLoadHandler<AssetBundle>(bundleName);
+            if (handler != null) yieldInstruction.OnLoadCompleted(handler);
+            _onloading.Add(bundleName, yieldInstruction);
+            return yieldInstruction;
         }
 
-        public void SetLoaded(string bundleName)
+        public void Clear()
         {
-            _loadingBundles.Remove(bundleName);
+            _onloading.Clear();
+        }
+
+        public void SetLoaded(string bundleName, AssetBundle bundle)
+        {
+            if (_onloading.TryGetValue(bundleName, out var handler))
+            {
+                handler?.SetAsset(bundle);
+                AssetUtils.ReleaseLoadHandler<AssetBundle>(handler);
+            }
+            else
+            {
+                AssetLog.LogError($"Bundle {bundleName} is not loading");
+            }
+            _onloading.Remove(bundleName);
         }
     }
 }
