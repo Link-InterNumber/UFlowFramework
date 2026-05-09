@@ -33,29 +33,8 @@ namespace PowerCellStudio
         /// 创建一个资源加载器实例。
         /// <para>Create an asset loader instance.</para>
         /// </summary>
-        /// <param name="tag">加载器标签。<para>Loader tag.</para></param>
         /// <returns>资源加载器实例。<para>Asset loader instance.</para></returns>
-        IAssetLoader SpawnLoader(string tag);
-
-        /// <summary>
-        /// 回收指定的资源加载器实例。
-        /// <para>Despawn the specified asset loader instance.</para>
-        /// </summary>
-        /// <param name="loader">要回收的加载器。<para>Loader to despawn.</para></param>
-        void DeSpawnLoader(IAssetLoader loader);
-
-        /// <summary>
-        /// 回收所有资源加载器实例。
-        /// <para>Despawn all asset loader instances.</para>
-        /// </summary>
-        void DeSpawnAllLoader();
-
-        /// <summary>
-        /// 根据标签回收所有对应的资源加载器实例。
-        /// <para>Despawn all asset loaders by tag.</para>
-        /// </summary>
-        /// <param name="tag">加载器标签。<para>Loader tag.</para></param>
-        void DeSpawnLoaderByTag(string tag);
+        IAssetLoader CreateLoader();
 
         /// <summary>
         /// 加载指定名称的场景。
@@ -72,30 +51,6 @@ namespace PowerCellStudio
         /// </summary>
         /// <param name="name">场景名称。<para>Scene name.</para></param>
         void UnloadScene(string name);
-
-        /// <summary>
-        /// 预加载指定路径的资源。
-        /// <para>Preload the asset at the specified path.</para>
-        /// </summary>
-        /// <param name="path">资源路径。<para>Asset path.</para></param>
-        void PreloadAsset(string path);
-
-        /// <summary>
-        /// 按标签批量准备资源。
-        /// <para>Prepare assets in batch by labels.</para>
-        /// </summary>
-        /// <param name="labels">资源标签数组。<para>Asset label array.</para></param>
-        /// <param name="onComplete">准备完成回调。<para>Callback when preparation is complete.</para></param>
-        /// <param name="isConcurrent">是否并发加载。<para>Whether to load concurrently.</para></param>
-        /// <returns>准备处理句柄。<para>Prepare handler.</para></returns>
-        PrepareHandler Prepare(string[] labels, Action onComplete, bool isConcurrent = false);
-
-        /// <summary>
-        /// 卸载准备好的资源。
-        /// <para>Cancel asset preparation.</para>
-        /// </summary>
-        /// <param name="handler">准备处理句柄。<para>Prepare handler.</para></param>
-        void Unprepare(PrepareHandler handler);
 
         /// <summary>
         /// 清除未引用的资源。

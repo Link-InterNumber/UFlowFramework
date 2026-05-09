@@ -5,6 +5,8 @@ namespace PowerCellStudio
     public abstract class PoolObject: IPoolable, IDisposable
     {
         public LinkPool<IPoolable> LinkPool { get; set; }
+
+        public bool spawned => (!LinkPool?.IsInPool(this)) ?? false;
         
         public abstract void OnSpawn();
 

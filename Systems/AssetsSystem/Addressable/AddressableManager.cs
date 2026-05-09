@@ -5,7 +5,6 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.AddressableAssets.ResourceLocators;
-using UnityEngine.Pool;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.ResourceManagement.ResourceProviders;
 using UnityEngine.SceneManagement;
@@ -15,9 +14,6 @@ namespace PowerCellStudio
 {
     public class AddressableManager: IAssetManager //<AddressableAssetLoader>
     {
-        private ObjectPool<AddressableAssetLoader> _pool;
-        private Dictionary<int, AddressableAssetLoader> _activeLoader;
-
         private bool _inited = false;
         public bool inited => _inited;
 
@@ -28,61 +24,13 @@ namespace PowerCellStudio
                 callBack?.Invoke();
                 return;
             }
-            _preloadHandles = new Dictionary<string, AsyncOperationHandle>();
-            _pool = new ObjectPool<AddressableAssetLoader>(() => new AddressableAssetLoader(),
-                loader => loader.Init(),
-                loader => loader.Deinit(),
-                loader => loader.Deinit(), true, 10, 30);
-            _activeLoader = new Dictionary<int, AddressableAssetLoader>();
             var handle = Addressables.InitializeAsync(false);
             coroutineRunner.StartCoroutine(InitHandle(handle, callBack));
         }
 
-        public IAssetLoader SpawnLoader(string tag = "")
+        public IAssetLoader CreateLoader()
         {
-            var loader = _pool.Get();
-            loader.tag = tag;
-            _activeLoader.Add(loader.index, loader);
-            return loader;
-        }
-
-        public void DeSpawnLoader(IAssetLoader assetLoader)
-        {
-            if(assetLoader == null) return;
-            var addressAbleLoader = assetLoader as AddressableAssetLoader;
-            if(addressAbleLoader == null) return;
-            _activeLoader.Remove(addressAbleLoader.index);
-            if(!addressAbleLoader.spawned)
-            {
-                addressAbleLoader.Deinit();
-                return;
-            }
-            _pool.Release(addressAbleLoader);
-        }
-
-        public void DeSpawnLoaderByTag(string tag)
-        {
-            var loaders = _activeLoader.Where(o => o.Value.tag.Equals(tag)).ToArray();
-            if(loaders.Length == 0) return;
-            foreach (var addressableLoader in loaders)
-            {
-                DeSpawnLoader(addressableLoader.Value);
-            }
-        }
-
-        public void DeSpawnAllLoader()
-        {
-            while (_activeLoader.Count > 0)
-            {
-                var loader = _activeLoader.First().Value;
-                _activeLoader.Remove(loader.index);
-                if(!loader.spawned)
-                {
-                    loader.Deinit();
-                    continue;
-                }
-                _pool.Release(loader);
-            }
+            return new AddressableAssetLoader(this);
         }
 
         public AssetInitState initState { get; private set; }
@@ -166,46 +114,40 @@ namespace PowerCellStudio
             callback?.Invoke();
         }
 
-        public static AsyncOperationHandle<GameObject> LoadGameObjectAsync(string address, Vector3 position, Transform parent, Quaternion quaternion)
+        public AsyncOperationHandle<GameObject> LoadGameObjectAsync(string address, Vector3 position, Transform parent, Quaternion quaternion)
         {
             return Addressables.InstantiateAsync(address, position, quaternion, parent);
         }
 
-        public static bool ReleaseGameObject(GameObject obj)
+        public bool ReleaseGameObject(GameObject obj)
         {
             return Addressables.ReleaseInstance(obj);
         }
 
-        public static AsyncOperationHandle<T> LoadAsync<T>(string address) where T : Object
+        public AsyncOperationHandle<T> LoadAsync<T>(string address) where T : Object
         {
-            if(_preloadHandles.ContainsKey(address))
-            {
-                var handle = _preloadHandles[address];
-                _preloadHandles.Remove(address);
-                return handle.Convert<T>();
-            }
             return Addressables.LoadAssetAsync<T>(address);
         }
         
-        public static AsyncOperationHandle<IList<T>> LoadAllAsync<T>(string key) where T : Object
+        public AsyncOperationHandle<IList<T>> LoadAllAsync<T>(string key) where T : Object
         {
             return Addressables.LoadAssetsAsync<T>(key, null, true);
         }
 
-        public static AsyncOperationHandle<IList<T>> LoadAllAsync<T>(string address, string label) where T : Object
+        public AsyncOperationHandle<IList<T>> LoadAllAsync<T>(string address, string label) where T : Object
         {
             var key = new List<object>  { address, label };
             return Addressables.LoadAssetsAsync<T>(key, null, Addressables.MergeMode.Intersection, true);
         }
         
-        public static AsyncOperationHandle<IList<T>> LoadAllAsync<T>(string address, params string[] keys) where T : Object
+        public AsyncOperationHandle<IList<T>> LoadAllAsync<T>(string address, params string[] keys) where T : Object
         {
             var key = new List<object>  { address };
             key.AddRange(keys);
             return Addressables.LoadAssetsAsync<T>(key, null, Addressables.MergeMode.Intersection, true);
         }
 
-        public static void Release(AsyncOperationHandle handle)
+        public void Release(AsyncOperationHandle handle)
         {
             if (!handle.IsDone)
             {
@@ -213,91 +155,6 @@ namespace PowerCellStudio
                 return;
             }
             Addressables.Release(handle);
-        }
-
-        private static Dictionary<string, AsyncOperationHandle> _preloadHandles;
-
-        public void PreloadAsset(string path)
-        {
-            if(_preloadHandles == null) _preloadHandles = new Dictionary<string, AsyncOperationHandle>();
-            if(_preloadHandles.ContainsKey(path)) return;
-            var handle = LoadAsync<Object>(path);
-            _preloadHandles.Add(path, handle);
-        }
-
-        private List<PrepareHandler> _prepareHandlers = new List<PrepareHandler>();
-
-        public void Unprepare(PrepareHandler handler)
-        {
-            if (handler == null || handler.successLable == null) return;
-            handler.cancled = true;
-            if (!handler.isDone)
-            {
-                ApplicationManager.RunCoroutine(WaitForPrepareDone(handler));
-                return;
-            }
-            foreach(var bundleName in handler.successLable)
-            {
-                Release((AsyncOperationHandle)bundleName);
-            }
-            handler.Dispose();
-            _prepareHandlers.Remove(handler);
-        }
-
-        private IEnumerator WaitForPrepareDone(PrepareHandler handler)
-        {
-            yield return handler;
-            Unprepare(handler);
-        }
-
-        public PrepareHandler Prepare(string[] labels, Action onComplete, bool isConcurrent = false)
-        {
-            if (labels == null || labels.Length == 0)
-            {
-                onComplete?.Invoke();
-                return null;
-            }
-            var handler = new PrepareHandler();
-            handler.OnComplete(onComplete);
-            ApplicationManager.RunCoroutine(DownLoadPrepareAssets(labels, isConcurrent, handler));
-            _prepareHandlers.Add(handler);
-            return handler;
-        }
-
-        private IEnumerator DownLoadPrepareAssets(string[] labels, bool isConcurrent, PrepareHandler handler)
-        {
-            var waitList = new AsyncOperationHandle[labels.Length];
-            for (var i = 0; i < labels.Length; i++)
-            {
-                if (handler.cancled) break;
-                var remoteLabel = labels[i];
-                if (isConcurrent)
-                {
-                    var aoh = Addressables.DownloadDependenciesAsync(remoteLabel);
-                    handler.Append(aoh);
-                    waitList[i] = aoh;
-                }
-                else
-                {
-                    handler.SetProcessValue(i * 1f / labels.Length);
-                    var aoh = Addressables.DownloadDependenciesAsync(remoteLabel);
-                    handler.Append(aoh);
-                    yield return aoh;
-                }
-            }
-            if (isConcurrent)
-            {
-                var doneCount = 0;
-                while (doneCount < waitList.Length)
-                {
-                    doneCount = waitList.Count(o=>o.IsDone);
-                    handler.SetProcessValue(doneCount * 1f / waitList.Length);
-                    yield return null;
-                }
-            }
-            handler.SetProcessValue(1f);
-            if (handler.cancled) yield break;
-            handler.SetComplete();
         }
 
         private List<AsyncOperationHandle<SceneInstance> > _sceneInstances = new List<AsyncOperationHandle<SceneInstance>>();
@@ -377,18 +234,7 @@ namespace PowerCellStudio
 
         public void ClearUnusedAsset()
         {
-            var preload = _preloadHandles.Values.ToList();
-            foreach (var handler in preload)
-            {
-                Release(handler);
-            }
-            _preloadHandles.Clear();
-
-            var prepareHandles = new List<PrepareHandler>(_prepareHandlers);
-            for (var i = 0; i < prepareHandles.Count; i++)
-            {
-                Unprepare(prepareHandles[i]);
-            }
+            Resources.UnloadUnusedAssets();
         }
         
         // #region GameObject Pool

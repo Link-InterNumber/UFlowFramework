@@ -64,7 +64,6 @@ namespace PowerCellStudio
         private LoadedCache<AssetBundle> _loadedBundles;
         // 正在加载的Bundle，key为bundleName，value为加载协程的YieldInstruction
         private BundleLoadingHolder _loadingBundles;
-        private List<PrepareHandler> _prepareHandlers = new List<PrepareHandler>();
         // 移除保护，key为bundleName，value为Bundle和移除时间
         private RemovedAssetHolder _removedAssetHolder;
         
@@ -112,6 +111,7 @@ namespace PowerCellStudio
 
         #endregion
 
+        #region BundleRef
         public void AddBundleRef(string bundleName, int count = 1)
         {
             if (!_loadedBundles.IsLoaded(bundleName)) return;
@@ -156,6 +156,7 @@ namespace PowerCellStudio
                 }
             }
         }
+        #endregion
 
         private void OnBundleLoaded(string bundleName, AssetBundle loadedBundle)
         {
@@ -167,14 +168,14 @@ namespace PowerCellStudio
                 return;
             }
             _loadedBundles.AddCache(bundleName, loadedBundle);
-            _loadingBundles.SetLoaded(bundleName, loadedBundle);
             if (_bundleRefCountBuffer.TryGetValue(bundleName, out var refCount))
             {
                 _loadedBundles.AddRef(bundleName, refCount);
                 _bundleRefCountBuffer.Remove(bundleName);
             }
-            onBundleLoaded?.Invoke(bundleName, loadedBundle);
+            _loadingBundles.SetLoaded(bundleName, loadedBundle);
             TriggerLoadPlan(bundleName, loadedBundle);
+            onBundleLoaded?.Invoke(bundleName, loadedBundle);
         }
 
         private void TriggerLoadPlan(string bundleName, AssetBundle loadedBundle)
@@ -187,94 +188,6 @@ namespace PowerCellStudio
                 GetAssetFromBundleAsync(loadedBundle, bundleName, assetPath, assetType);
             }
             _loadPlan.ClearPlan(bundleName);
-        }
-
-        public void Unprepare(PrepareHandler handler)
-        {
-            if (handler == null || handler.successLable == null) return;
-            handler.cancled = true;
-            if (!handler.isDone)
-            {
-                _coroutineRunner.StartCoroutine(WaitForPrepareDone(handler));
-                return;
-            }
-            foreach(var bundleName in handler.successLable)
-            {
-                DelBundleRef((string)bundleName);
-            }
-            _prepareHandlers.Remove(handler);
-            handler.Dispose();
-        }
-
-        private IEnumerator WaitForPrepareDone(PrepareHandler handler)
-        {
-            yield return handler;
-            Unprepare(handler);
-        }
-
-        public PrepareHandler Prepare(string[] labels, Action onComplete, bool isConcurrent = false)
-        {
-            if (labels == null || labels.Length == 0)
-            {
-                onComplete?.Invoke();
-                return null;
-            }
-            var handler = new PrepareHandler();
-            handler.OnComplete(onComplete);
-            _coroutineRunner.StartCoroutine(DownLoadPrepareBundle(labels, isConcurrent, handler));
-            _prepareHandlers.Add(handler);
-            return handler;
-        }
-
-        private IEnumerator DownLoadPrepareBundle(string[] labels, bool isConcurrent, PrepareHandler handler)
-        {
-            var bundlesName = ListPool<string>.Get();
-            for (var i = 0; i < labels.Length; i++)
-            {
-                if (handler.cancled) break;
-                var bundleName = labels[i];
-                if (isConcurrent)
-                {
-                    GetAssetsBundleAsync(bundleName);
-                    if(_loadingBundles.IsLoading(bundleName))
-                    {
-                        bundlesName.Add(bundleName);
-                    }
-                }
-                else
-                {
-                    handler.SetProcessValue(i * 1f / labels.Length);
-                    GetAssetsBundleAsync(bundleName);
-                    while (_loadingBundles.IsLoading(bundleName))
-                    {
-                        yield return null;
-                    }
-                    bundlesName.Add(bundleName);
-                }
-            }
-            if (isConcurrent)
-            {
-                var doneCount = 0;
-                while (doneCount < bundlesName.Count)
-                {
-                    doneCount = bundlesName.Count(o=>!_loadingBundles.IsLoading(o));
-                    handler.SetProcessValue(doneCount * 1f / bundlesName.Count);
-                    yield return null;
-                }
-            }
-            for (var i = 0; i < bundlesName.Count; i++)
-            {
-                var bundleName = bundlesName[i];
-                if (_loadedBundles.IsLoaded(bundleName))
-                {
-                    handler.Append(bundleName);
-                    AddBundleRef(bundleName);
-                }
-            }
-            ListPool<string>.Release(bundlesName);
-            handler.SetProcessValue(1f);
-            if (handler.cancled) yield break;
-            handler.SetComplete();
         }
 
         // 获取已加载的Bundle，优先从已加载的Bundle中获取，如果已卸载但在移除保护中，则重新加入已加载的Bundle中并返回
@@ -328,10 +241,10 @@ namespace PowerCellStudio
                 // onGetBundle?.Invoke(loadedBundle, bundleName);
                 return;
             }
-            _coroutineRunner.StartCoroutine(AsyncLoadAssetsBundleHandler(bundleName));
+            _coroutineRunner.StartCoroutine(AsyncLoadAssetsBundleHandler(bundleName, null));
         }
 
-        private IEnumerator AsyncLoadAssetsBundleHandler(string bundleName)
+        private IEnumerator AsyncLoadAssetsBundleHandler(string bundleName, Action<AssetBundle> onLoaded)
         {
             var dependencies = _bundleDependenceMap.GetBundleDependencies(bundleName);
             yield return AsyncLoadMultipleAssetsBundle(dependencies);
@@ -346,16 +259,19 @@ namespace PowerCellStudio
             {
                 var bundle = GetAssetBundleCache(bundleName);
                 TriggerLoadPlan(bundleName, bundle);
-                // onGetBundle?.Invoke(bundle, bundleName);
+                onLoaded?.Invoke(bundle);
                 yield break;
             }
             if (_loadingBundles.IsLoading(bundleName))
             {
-                // _loadingBundles.AddLoadingHandle(bundleName, onGetBundle);
+                _loadingBundles.AddLoadingHandle(bundleName, (bundle, _) =>
+                {
+                    onLoaded?.Invoke(bundle);
+                });
                 yield break;
             }
             _loadingBundles.AddLoadingHandle(bundleName, null);
-            AsyncLoadSingleAssetsBundle(bundleName);
+            AsyncLoadSingleAssetsBundle(bundleName, onLoaded);
         }
 
         private IEnumerator AsyncLoadMultipleAssetsBundle(IEnumerable<string> bundleNames)
@@ -372,7 +288,7 @@ namespace PowerCellStudio
                 {
                     var newRequest = _loadingBundles.AddLoadingHandle(bundleName, null);
                     waitList.Add(bundleName);
-                    AsyncLoadSingleAssetsBundle(bundleName);
+                    AsyncLoadSingleAssetsBundle(bundleName, null);
                 } 
             }
             var wait = waitList.Count > 0 && waitList.Any(o=>_loadingBundles.IsLoading(o));
@@ -384,7 +300,7 @@ namespace PowerCellStudio
             ListPool<string>.Release(waitList);
         }
 
-        private void AsyncLoadSingleAssetsBundle(string bundleName)
+        private void AsyncLoadSingleAssetsBundle(string bundleName, Action<AssetBundle> onLoaded)
         {
             var path = GetBundlePath(bundleName);
             if (Application.platform == RuntimePlatform.Android)
@@ -399,10 +315,12 @@ namespace PowerCellStudio
                         {
                             var bundle = DownloadHandlerAssetBundle.GetContent(webRequest);
                             OnBundleLoaded(bundleName, bundle);
+                            onLoaded?.Invoke(bundle);
                         }
                         else
                         {
                             OnBundleLoaded(bundleName, null);
+                            onLoaded?.Invoke(null);
                         }
                         webRequest.Dispose();
                     };
@@ -416,6 +334,7 @@ namespace PowerCellStudio
                 {
                     var bundle = abcr.assetBundle;
                     OnBundleLoaded(bundleName, bundle);
+                    onLoaded?.Invoke(bundle);
                 };
                 return;
             }
@@ -424,10 +343,11 @@ namespace PowerCellStudio
                 if (!result) 
                 {
                     OnBundleLoaded(bundleName, null);
+                    onLoaded?.Invoke(null);
                     return;
                 }
                 _remoteBundleIndexer.SaveRemoteManifest();
-                AsyncLoadSingleAssetsBundle(bundleName);
+                AsyncLoadSingleAssetsBundle(bundleName, onLoaded);
             });
         }
 
@@ -560,20 +480,6 @@ namespace PowerCellStudio
 
         public void ClearUnusedAsset()
         {
-            var preload = _preloadHandles.Values.ToList();
-            foreach (var handler in preload)
-            {
-                // handler.Dispose();
-                AssetUtils.ReleaseLoadHandler<UnityEngine.Object>(handler);
-            }
-            _preloadHandles.Clear();
-
-            var prepareHandles = new List<PrepareHandler>(_prepareHandlers);
-            for (var i=0; i < prepareHandles.Count; i++)
-            {
-                Unprepare(prepareHandles[i]);
-            }
-
             _bundleIndex.ClearUnused();
             var cached = _loadedBundles.GetAll();
             var removeBundle = ListPool<string>.Get();

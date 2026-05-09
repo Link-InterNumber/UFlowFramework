@@ -5,18 +5,18 @@ namespace PowerCellStudio
     public class ABGameObjectSelfCleanup : MonoBehaviour
     {
         private string _address;
-        private IAssetLoader _loader;
+        private AssetsBundleManager _manager;
         
-        public void Set(IAssetLoader loader, string address)
+        public void Set(AssetsBundleManager manager, string address)
         {
             _address = address;
-            _loader = loader;
+            _manager = manager;
         }
         
         private void OnDestroy()
         {
-            if (_loader == null) return;
-            _loader.Release(_address);
+            if (_manager == null || string.IsNullOrEmpty(_address)) return;
+            _manager.DelAssetRef(_address);
         }
     }
 }

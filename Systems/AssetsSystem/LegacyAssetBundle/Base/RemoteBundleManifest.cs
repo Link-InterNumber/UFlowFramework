@@ -236,6 +236,7 @@ namespace PowerCellStudio
             // 下载新的AssetMap文件
             var indexFileUrl = BuildRemoteUrl($"{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}Index.bytes" );
             var dataFileUrl = BuildRemoteUrl($"{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}Data.bytes" );
+            // 保存的本地位置
             var indexFilePath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Index.bytes" );
             var dataFilePath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Data.bytes" );
             var folder = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder);

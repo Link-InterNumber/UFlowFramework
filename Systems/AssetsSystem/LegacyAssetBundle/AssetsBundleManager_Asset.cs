@@ -9,7 +9,6 @@ namespace PowerCellStudio
 {
     public partial class AssetsBundleManager
     {
-        private static Dictionary<string, LoaderYieldInstruction<Object>> _preloadHandles;
         private AssetBundleIndex _bundleIndex;
         // 计划加载的资源，key为BundleName，value为资源路径列表
         private LoadPlan _loadPlan;
@@ -29,17 +28,25 @@ namespace PowerCellStudio
             return _loadingAssets.IsLoading(assetPath);
         }
 
-        public void PreloadAsset(string path)
-        {
-            if (_preloadHandles == null) _preloadHandles = new Dictionary<string, LoaderYieldInstruction<Object>>();
-            if (_preloadHandles.ContainsKey(path)) return;
-            var loadAssetRequest = AssetUtils.GetLoadHandler<Object>(path);
-            LoadAssetAsync<Object>(path, loadAssetRequest);
-            _preloadHandles.Add(path, loadAssetRequest);
-        }
-
         public void DelAssetRef(string assetPath, int delCount = 1)
         {
+            if (_loadingAssets.IsLoading(assetPath))
+            {
+                _loadingAssets.TryGetLoadingHandle(assetPath, out var handlerChain);
+                if (handlerChain != null)
+                {
+                    var lastHandler = handlerChain[handlerChain.Count - 1];
+                    handlerChain.RemoveAt(handlerChain.Count - 1);
+                    lastHandler.SetAsset(null);
+                    if (handlerChain.Count == 0)
+                    {
+                        _loadingAssets.RemoveLoading(assetPath);
+                        var bundleName = _bundleIndex.GetBundleNameByAsset(assetPath);
+                        _loadPlan.RemovePlan(bundleName, assetPath);
+                    }
+                }
+                return;
+            }
             if (_loadedAssets.TryDelRef(assetPath, delCount, out var asset))
             {
                 _loadedAssets.RemoveCache(assetPath);
@@ -58,13 +65,6 @@ namespace PowerCellStudio
                 return cachedAsset;
             }
 
-            if (_preloadHandles.TryGetValue(assetPath, out var handle) && handle.isDone)
-            {
-                _preloadHandles.Remove(assetPath);
-                var preloadAsset = handle.asset as T;
-                AssetUtils.ReleaseLoadHandler<T>(handle);
-                return preloadAsset;
-            }
             var bundleName = _bundleIndex.GetBundleNameByAsset(assetPath);
             if (string.IsNullOrEmpty(bundleName))
             {
@@ -101,6 +101,48 @@ namespace PowerCellStudio
             return asset;
         }
 
+        public void LoadAssetsFromBundleAsync<T>(string bundleName, OnLoadSuccess<IList<T>> onSuccess, OnLoadFailed onFail) 
+            where T : Object
+        {
+            var loadedBundle = GetUseableBundle(bundleName);
+            if (loadedBundle)
+            {
+                loadedBundle.LoadAllAssetsAsync<T>().completed += operation =>
+                {
+                    var assetRequest = operation as AssetBundleRequest;
+                    var assets = assetRequest?.allAssets;
+                    if (assets == null)
+                    {
+                        onFail?.Invoke();
+                        return;
+                    }
+                    onSuccess?.Invoke(assets as IList<T>);
+                };
+            }
+            Action<AssetBundle> onLoaded = bundle =>
+            {
+                if (bundle == null)
+                {
+                    onFail?.Invoke();
+                    return;
+                }
+                AddBundleRef(bundleName, 1);
+                bundle.LoadAllAssetsAsync<T>().completed += operation =>
+                {
+                    var assetRequest = operation as AssetBundleRequest;
+                    var assets = assetRequest?.allAssets;
+                    DelBundleRef(bundleName, 1);
+                    if (assets == null)
+                    {
+                        onFail?.Invoke();
+                        return;
+                    }
+                    onSuccess?.Invoke(assets as IList<T>);
+                };
+            };
+            _coroutineRunner.StartCoroutine(AsyncLoadAssetsBundleHandler(bundleName, onLoaded));
+        }
+
         public void LoadAssetAsync<T>(string assetPath, LoaderYieldInstruction<T> loadAssetRequest)
             where T : Object
         {
@@ -112,24 +154,6 @@ namespace PowerCellStudio
                 return;
             }
 
-            if (_preloadHandles.ContainsKey(assetPath))
-            {
-                var handle = _preloadHandles[assetPath];
-                _preloadHandles.Remove(assetPath);
-                if (handle.isDone)
-                {
-                    loadAssetRequest.SetAsset(handle.asset as T);
-                    AssetUtils.ReleaseLoadHandler<T>(handle);
-                }
-                else
-                {
-                    handle.OnLoadCompleted((a, path) =>
-                    {
-                        loadAssetRequest.SetAsset(a as T);
-                    });
-                }
-                return;
-            }
             if (_loadingAssets.IsLoading(assetPath))
             {
                 _loadingAssets.AddLoadingHandle(assetPath, loadAssetRequest as LoaderYieldInstruction<Object>);

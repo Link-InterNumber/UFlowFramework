@@ -10,6 +10,7 @@ namespace PowerCellStudio
 {
     public class AddressableAssetLoader: IAssetLoader, IIndex
     {
+        private readonly AddressableManager _manager;
         private bool _spawned = false;
         public bool spawned => _spawned;
         
@@ -17,8 +18,9 @@ namespace PowerCellStudio
         
         private int _index;
         public int index => _index;
-        public AddressableAssetLoader()
+        public AddressableAssetLoader(AddressableManager manager)
         {
+            _manager = manager;
             _index = IndexGetter.instance.Get<AddressableAssetLoader>();
         }
         
@@ -43,7 +45,7 @@ namespace PowerCellStudio
             foreach (var (_, handle) in _handles)
             {
                 if(handle.IsValid())
-                    AddressableManager.Release(handle);
+                    _manager.Release(handle);
             }
             _handles.Clear();
         }
@@ -67,7 +69,7 @@ namespace PowerCellStudio
                 _handles.Remove(address);
                 if(handle.IsValid())
                 {
-                    AddressableManager.Release(handle);
+                    _manager.Release(handle);
                     return true;
                 }
             }
@@ -84,11 +86,39 @@ namespace PowerCellStudio
             return false;
         }
 
+        public bool IsAnyLoading()
+        {
+            foreach (var handle in _handles.Values)
+            {
+                if (handle.IsValid() && !handle.IsDone)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void Concat(IAssetLoader other)
+        {
+            if (other is AddressableAssetLoader otherLoader)
+            {
+                foreach (var (address, handle) in otherLoader._handles)
+                {
+                    if(!handle.IsValid()) continue;
+                    if (_handles.ContainsKey(address))
+                        _manager.Release(handle);
+                    else
+                        _handles[address] = handle;
+                }
+                otherLoader._handles.Clear();
+            }
+        }
+
         #region GameObject
 
         public AsyncOperationHandle<GameObject> GetInstantiateHandle(string address, Vector3 pos, Transform parent = null, Quaternion quaternion = default)
         {
-            return AddressableManager.LoadGameObjectAsync(address, 
+            return _manager.LoadGameObjectAsync(address, 
                     pos, 
                     parent, 
                     quaternion.Equals(default)? Quaternion.identity : quaternion);
@@ -137,12 +167,12 @@ namespace PowerCellStudio
             {
                 if (operationHandle.Status == AsyncOperationStatus.Succeeded)
                 {
-                    operationHandle.Result.AddComponent<AddressableGameObjectSelfCleanup>();
+                    AttachSelfCleanup(operationHandle.Result);
                     onSuccess?.Invoke(operationHandle.Result);
                 }
                 else
                 {
-                    AddressableManager.Release(handle);
+                    _manager.Release(handle);
                     AssetLog.LogError($"Load Prefab [{address}] Fail!");
                     onFail?.Invoke();
                 }
@@ -162,12 +192,12 @@ namespace PowerCellStudio
                     operationHandle.Result.transform.localScale = Vector3.one;
                     operationHandle.Result.transform.localPosition = Vector3.zero;
                     operationHandle.Result.transform.rotation = Quaternion.identity;
-                    operationHandle.Result.AddComponent<AddressableGameObjectSelfCleanup>();
+                    AttachSelfCleanup(operationHandle.Result);
                     onSuccess?.Invoke(operationHandle.Result);
                 }
                 else
                 {
-                    AddressableManager.Release(handle);
+                    _manager.Release(handle);
                     AssetLog.LogError($"Load Prefab [{address}] Fail!");
                     onFail?.Invoke();
                 }
@@ -180,11 +210,21 @@ namespace PowerCellStudio
             var obj = await handle.Task;
             if (obj == null)
             {
-                AddressableManager.Release(handle);
+                _manager.Release(handle);
                 return null;
             }
-            obj.AddComponent<AddressableGameObjectSelfCleanup>();
+            AttachSelfCleanup(obj);
             return obj;
+        }
+
+        private void AttachSelfCleanup(GameObject gameObject)
+        {
+            var cleanup = gameObject.GetComponent<AddressableGameObjectSelfCleanup>();
+            if (cleanup == null)
+            {
+                cleanup = gameObject.AddComponent<AddressableGameObjectSelfCleanup>();
+            }
+            cleanup.Init(_manager);
         }
 
         #endregion
@@ -199,7 +239,7 @@ namespace PowerCellStudio
                 if (asyncHandle.IsValid())
                     return asyncHandle;
             }
-            var newHandle = AddressableManager.LoadAsync<T>(address);
+            var newHandle = _manager.LoadAsync<T>(address);
             _handles.Add(address, newHandle);
             return newHandle;
         }
@@ -328,11 +368,39 @@ namespace PowerCellStudio
                 else
                 {
                     AssetLog.LogError($"Load {typeof(T).Name} Asset Fail!");
-                    AddressableManager.Release(handle);
+                    _manager.Release(handle);
                     instruction.SetAsset(null);
                 }
             };
             return instruction;
+        }
+
+        public void LoadAllAsync<T>(string label, OnLoadSuccess<IList<T>> onSuccess, OnLoadFailed onFail = null) where T : Object
+        {
+            AsyncOperationHandle<IList<T>> handler = default;
+            if(_handles.TryGetValue(label, out var handle))
+            {
+                var asyncHandle = handle.Convert<IList<T>>();
+                if (asyncHandle.IsValid())
+                    handler = asyncHandle;
+            }
+            else
+            {
+                handler = _manager.LoadAllAsync<T>(label);
+                _handles.Add(label, handler);
+            }
+            handler.Completed += operationHandle =>
+            {
+                if (operationHandle.Status == AsyncOperationStatus.Succeeded)
+                {
+                    onSuccess?.Invoke(operationHandle.Result);
+                }
+                else
+                {
+                    AssetLog.LogError($"Load Assets With Label [{label}] Fail!");
+                    onFail?.Invoke();
+                }
+            };
         }
 
         #endregion
@@ -459,7 +527,7 @@ namespace PowerCellStudio
                 else
                 {
                     AssetLog.LogError($"Load {typeof(T).Name} Asset Fail!");
-                    AddressableManager.Release(handle);
+                    _manager.Release(handle);
                     instruction.SetAsset(null);
                 }
             };

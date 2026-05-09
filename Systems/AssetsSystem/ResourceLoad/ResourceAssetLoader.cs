@@ -10,14 +10,14 @@ namespace PowerCellStudio
     public class ResourceAssetLoader : IAssetLoader
     {
         private Dictionary<string, Object> _assets;
-        private HashSet<string> _waitForLoaded;
+        private Dictionary<string, ResourceRequest> _waitForLoaded;
         private bool _disposed;
-        
+
         public ResourceAssetLoader()
         {
             _index = IndexGetter.instance.Get<ResourceAssetLoader>();
             _assets = new Dictionary<string, Object>();
-            _waitForLoaded = new HashSet<string>();
+            _waitForLoaded = new Dictionary<string, ResourceRequest>();
             _disposed = false;
         }
 
@@ -26,22 +26,26 @@ namespace PowerCellStudio
         private bool _spawned = false;
         public bool spawned => _spawned;
         public string tag { get; set; }
-        
+
         public void Init()
         {
-            if(_spawned) return;
+            if (_spawned) return;
+            _disposed = false;
+            _waitForLoaded.Clear();
             _spawned = true;
         }
 
         public void Deinit()
         {
-            if(!_spawned) return;
+            if (!_spawned) return;
             _disposed = true;
             foreach (var asset in _assets)
             {
                 Resources.UnloadAsset(asset.Value);
             }
+
             _assets.Clear();
+            _waitForLoaded.Clear();
             _spawned = false;
         }
 
@@ -56,60 +60,128 @@ namespace PowerCellStudio
 
         public bool IsLoading(string address)
         {
-            return _waitForLoaded.Contains(address);
+            return _waitForLoaded.ContainsKey(address);
         }
 
-        public void LoadAsync<T>(string address, OnLoadSuccess<T> onSuccess, OnLoadFailed onFail = null) where T : Object
+        public bool IsAnyLoading()
         {
-            if(_disposed) return;
-            // 从resources文件夹中异步加载资源
-            var assetName = Path.GetFileNameWithoutExtension(address);
-            var asset = Resources.LoadAsync<T>(assetName);
-            _waitForLoaded.Add(address);
-            asset.completed += operation =>
+            return _waitForLoaded.Count > 0;
+        }
+
+        public void Concat(IAssetLoader other)
+        {
+            if (other is ResourceAssetLoader resourceLoader)
+            {
+                foreach (var asset in resourceLoader._assets)
+                {
+                    if (!_assets.ContainsKey(asset.Key))
+                    {
+                        _assets.Add(asset.Key, asset.Value);
+                    }
+                }
+
+                foreach (var pair in resourceLoader._waitForLoaded)
+                {
+                    _waitForLoaded[pair.Key] = pair.Value;
+                }
+            }
+        }
+
+        private bool TryGetCachedAsset<T>(string address, out T asset) where T : Object
+        {
+            if (_assets.TryGetValue(address, out var loadedAsset) && loadedAsset is T cachedAsset && cachedAsset != null)
+            {
+                asset = cachedAsset;
+                return true;
+            }
+
+            asset = null;
+            return false;
+        }
+
+        private void RemoveLoadingRequest(string address, ResourceRequest request)
+        {
+            if (_waitForLoaded.TryGetValue(address, out var cachedRequest) && ReferenceEquals(cachedRequest, request))
             {
                 _waitForLoaded.Remove(address);
-                if(asset.asset == null)
+            }
+        }
+
+        private ResourceRequest GetOrStartLoadRequest<T>(string address) where T : Object
+        {
+            if (_waitForLoaded.TryGetValue(address, out var request))
+            {
+                return request;
+            }
+
+            var assetName = Path.GetFileNameWithoutExtension(address);
+            request = Resources.LoadAsync<T>(assetName);
+            _waitForLoaded[address] = request;
+            return request;
+        }
+
+
+        public void LoadAsync<T>(string address, OnLoadSuccess<T> onSuccess, OnLoadFailed onFail = null)
+            where T : Object
+        {
+            if (_disposed) return;
+            if (TryGetCachedAsset(address, out T cachedAsset))
+            {
+                onSuccess?.Invoke(cachedAsset);
+                return;
+            }
+
+            var request = GetOrStartLoadRequest<T>(address);
+            request.completed += operation =>
+            {
+                RemoveLoadingRequest(address, request);
+                if (request.asset == null)
                 {
                     onFail?.Invoke();
                     return;
                 }
-                var obj = asset.asset as T;
-                if(obj == null)
+
+                var obj = request.asset as T;
+                if (obj == null)
                 {
                     onFail?.Invoke();
                     return;
                 }
-                _assets.Add(address, asset.asset);
+
+                _assets[address] = request.asset;
                 if (_disposed)
                 {
                     Release(address);
                     return;
                 }
-                onSuccess?.Invoke(asset.asset as T);
+
+                onSuccess?.Invoke(obj);
             };
         }
 
         public Task<T> LoadTask<T>(string address) where T : Object
         {
             if (_disposed) return null;
-            var assetName = Path.GetFileNameWithoutExtension(address);
+            if (TryGetCachedAsset(address, out T cachedRuntimeAsset))
+            {
+                return Task.FromResult(cachedRuntimeAsset);
+            }
+
             var task = new TaskCompletionSource<T>();
-            var request = Resources.LoadAsync<T>(assetName);
-            _waitForLoaded.Add(address);
+            var request = GetOrStartLoadRequest<T>(address);
             request.completed += operation =>
             {
-                _waitForLoaded.Remove(address);
-                if(request.asset == null) return;
+                RemoveLoadingRequest(address, request);
+                if (request.asset == null) return;
                 var obj = request.asset as T;
-                if(obj == null) return;
-                _assets.Add(address, request.asset);
+                if (obj == null) return;
+                _assets[address] = request.asset;
                 if (_disposed)
                 {
                     Release(address);
                     task.SetResult(null);
                 }
-                else task.SetResult(request.asset as T);
+                else task.SetResult(obj);
             };
             return task.Task;
         }
@@ -117,55 +189,70 @@ namespace PowerCellStudio
         public LoaderYieldInstruction<T> LoadAsYieldInstruction<T>(string address) where T : Object
         {
             if (_disposed) return null;
-            var assetName = Path.GetFileNameWithoutExtension(address);
-            var request = Resources.LoadAsync<T>(assetName);
-            var instruction = AssetUtils.GetLoadHandler<T>(assetName);
-            _waitForLoaded.Add(address);
+            var instruction = AssetUtils.GetLoadHandler<T>(address);
+            if (TryGetCachedAsset(address, out T cachedRuntimeAsset))
+            {
+                instruction.SetAsset(cachedRuntimeAsset);
+                return instruction;
+            }
+
+            var request = GetOrStartLoadRequest<T>(address);
             request.completed += operation =>
             {
-                _waitForLoaded.Remove(address);
-                if(request.asset == null)
+                RemoveLoadingRequest(address, request);
+                if (request.asset == null)
                 {
                     instruction.SetAsset(null);
                     return;
                 }
+
                 var obj = request.asset as T;
-                if(obj == null)
+                if (obj == null)
                 {
                     instruction.SetAsset(null);
                     return;
                 }
-                _assets.Add(address, request.asset);
+
+                _assets[address] = request.asset;
                 if (_disposed)
                 {
                     Release(address);
                     instruction.SetAsset(null);
                 }
-                else instruction.SetAsset(request.asset as T);
+                else instruction.SetAsset(obj);
             };
             return instruction;
         }
 
-        public void AsyncLoadNInstantiate(string address, OnLoadSuccess<GameObject> onSuccess, OnLoadFailed onFail = null)
+        public void AsyncLoadNInstantiate(string address, OnLoadSuccess<GameObject> onSuccess,
+            OnLoadFailed onFail = null)
         {
-            if(_disposed) return;
-            var assetName = Path.GetFileNameWithoutExtension(address);
-            var asset = Resources.LoadAsync<GameObject>(assetName);
-            _waitForLoaded.Add(address);
-            asset.completed += operation =>
+            if (_disposed) return;
+            if (TryGetCachedAsset(address, out GameObject cachedPrefab))
             {
-                _waitForLoaded.Remove(address);
-                if(asset.asset == null)
+                var cachedGo = GameObject.Instantiate(cachedPrefab);
+                _assets[address] = cachedGo;
+                onSuccess?.Invoke(cachedGo);
+                return;
+            }
+
+            var request = GetOrStartLoadRequest<GameObject>(address);
+            request.completed += operation =>
+            {
+                RemoveLoadingRequest(address, request);
+                if (request.asset == null)
                 {
                     onFail?.Invoke();
                     return;
                 }
-                var obj = asset.asset as GameObject;
-                if(obj == null)
+
+                var obj = request.asset as GameObject;
+                if (obj == null)
                 {
                     onFail?.Invoke();
                     return;
                 }
+
                 var go = GameObject.Instantiate(obj);
                 _assets.Add(address, go);
                 if (_disposed)
@@ -180,26 +267,36 @@ namespace PowerCellStudio
             };
         }
 
-        public void AsyncLoadNInstantiate(string address, Transform parent, OnLoadSuccess<GameObject> onSuccess, OnLoadFailed onFail = null)
+        public void AsyncLoadNInstantiate(string address, Transform parent, OnLoadSuccess<GameObject> onSuccess,
+            OnLoadFailed onFail = null)
         {
-            if(_disposed) return;
-            var assetName = Path.GetFileNameWithoutExtension(address);
-            var handle = Resources.LoadAsync<GameObject>(assetName);
-            _waitForLoaded.Add(address);
+            if (_disposed) return;
+            if (TryGetCachedAsset(address, out GameObject cachedPrefab))
+            {
+                var cachedGo = GameObject.Instantiate(cachedPrefab, parent);
+                cachedGo.transform.localScale = Vector3.one;
+                _assets[address] = cachedGo;
+                onSuccess?.Invoke(cachedGo);
+                return;
+            }
+
+            var handle = GetOrStartLoadRequest<GameObject>(address);
             handle.completed += operation =>
             {
-                _waitForLoaded.Remove(address);
-                if(handle.asset == null)
+                RemoveLoadingRequest(address, handle);
+                if (handle.asset == null)
                 {
                     onFail?.Invoke();
                     return;
                 }
+
                 var obj = handle.asset as GameObject;
-                if(obj == null)
+                if (obj == null)
                 {
                     onFail?.Invoke();
                     return;
                 }
+
                 var go = GameObject.Instantiate(obj);
                 _assets.Add(address, go);
                 if (_disposed)
@@ -213,6 +310,42 @@ namespace PowerCellStudio
                     // go.AddComponent<ABGameObjectSelfCleanup>().Set(this, address);
                     onSuccess?.Invoke(go);
                 }
+            };
+        }
+
+        public void LoadAllAsync<T>(string label, OnLoadSuccess<IList<T>> onSuccess, OnLoadFailed onFail = null) where T : Object
+        {
+            if (_disposed) return;
+            if (TryGetCachedAsset(label, out T cachedRuntimeAsset))
+            {
+                onSuccess?.Invoke(new List<T> { cachedRuntimeAsset });
+                return;
+            }
+
+            var request = GetOrStartLoadRequest<T>(label);
+            request.completed += operation =>
+            {
+                RemoveLoadingRequest(label, request);
+                if (request.asset == null)
+                {
+                    onFail?.Invoke();
+                    return;
+                }
+
+                var obj = request.asset as T;
+                if (obj == null)
+                {
+                    onFail?.Invoke();
+                    return;
+                }
+
+                _assets[label] = request.asset;
+                if (_disposed)
+                {
+                    Release(label);
+                    onSuccess?.Invoke(null);
+                }
+                else onSuccess?.Invoke(new List<T> { obj });
             };
         }
     }

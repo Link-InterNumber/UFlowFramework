@@ -17,6 +17,15 @@ namespace PowerCellStudio
         {
             return _onloading.ContainsKey(assetPath);
         }
+
+        public void RemoveLoading(string assetPath)
+        {
+            if (_onloading.TryGetValue(assetPath, out var handler))
+            {
+                ListPool<LoaderYieldInstruction<T>>.Release(handler);
+                _onloading.Remove(assetPath);
+            }
+        }
         
         public bool TryGetLoadingHandle(string assetPath, out List<LoaderYieldInstruction<T>> handlerChain)
         {

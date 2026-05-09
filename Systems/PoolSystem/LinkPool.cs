@@ -45,7 +45,9 @@ namespace PowerCellStudio
             _maxSize = maxSize;
             for (int i = 0; i < initSize; i++)
             {
-                _stack.Push(_createFun());
+                var obj = _createFun();
+                _stack.Push(obj);
+                _set.Add(obj);
             }
         }
 

@@ -81,6 +81,44 @@ namespace PowerCellStudio
             return false;
         }
 
+        public bool IsLoading(string address)
+        {
+            return _assetsBundleManager.IsAssetLoading(address);
+        }
+
+        public bool IsAnyLoading()
+        {
+            foreach (var kvp in _refCount)
+            {
+                if (_assetsBundleManager.IsAssetLoading(kvp.Key))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void Concat(IAssetLoader other)
+        {
+            if (other is BundleAssetLoader otherLoader)
+            {
+                foreach (var kvp in otherLoader._refCount)
+                {
+                    var assetPath = kvp.Key;
+                    var refCount = kvp.Value;
+                    if (_refCount.TryGetValue(assetPath, out var current))
+                    {
+                        _refCount[assetPath] = current + refCount;
+                    }
+                    else
+                    {
+                        _refCount[assetPath] = refCount;
+                    }
+                }
+                otherLoader._refCount.Clear();
+            }
+        }
+
         private void OnLoadFinish<T>(T asset, string address) where T : Object
         {
             if(!asset)
@@ -187,30 +225,62 @@ namespace PowerCellStudio
         {
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
+            if (!AssetsBundleManager.simulateAssetBundleInEditor)
+            {
+                EditorSimulateLoad<GameObject>(address, Time.unscaledDeltaTime * Random.Range(1,5), (loaded) =>
+                {
+                    var go = GameObject.Instantiate(loaded);
+                    var autoClean = go.AddComponent<ABGameObjectSelfCleanup>();
+                    autoClean.Set(_assetsBundleManager, address);
+                    onSuccess?.Invoke(go);
+                }, onFail);
+                return;
+            }
 #endif
-            LoadAsync<GameObject>(address, (loaded) =>
+            var loadRequest = AssetUtils.GetLoadHandler<GameObject>(address, true);
+            _assetsBundleManager.LoadAssetAsync<GameObject>(address, loadRequest);
+            loadRequest.OnLoadSuccess((loaded) =>
             {
                 var go = GameObject.Instantiate(loaded);
                 var autoClean = go.AddComponent<ABGameObjectSelfCleanup>();
-                autoClean.Set(this, address);
+                autoClean.Set(_assetsBundleManager, address);
                 onSuccess?.Invoke(go);
-            }, onFail);
+            });
+            loadRequest.OnLoadFailed(() =>
+            {
+                onFail?.Invoke();
+            });
         }
 
         public void AsyncLoadNInstantiate(string address, Transform parent, OnLoadSuccess<GameObject> onSuccess, OnLoadFailed onFail = null)
         {
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
-#endif
-            LoadAsync<GameObject>(address, (loaded) =>
+            if (!AssetsBundleManager.simulateAssetBundleInEditor)
             {
-                var go = GameObject.Instantiate(loaded);
-                go.transform.SetParent(parent);
-                go.transform.localScale = Vector3.one;
+                EditorSimulateLoad<GameObject>(address, Time.unscaledDeltaTime * Random.Range(1,5), (loaded) =>
+                {
+                    var go = GameObject.Instantiate(loaded, parent);
+                    var autoClean = go.AddComponent<ABGameObjectSelfCleanup>();
+                    autoClean.Set(_assetsBundleManager, address);
+                    onSuccess?.Invoke(go);
+                }, onFail);
+                return;
+            }
+#endif
+            var loadRequest = AssetUtils.GetLoadHandler<GameObject>(address, true);
+            _assetsBundleManager.LoadAssetAsync<GameObject>(address, loadRequest);
+            loadRequest.OnLoadSuccess((loaded) =>
+            {
+                var go = GameObject.Instantiate(loaded, parent);
                 var autoClean = go.AddComponent<ABGameObjectSelfCleanup>();
-                autoClean.Set(this, address);
+                autoClean.Set(_assetsBundleManager, address);
                 onSuccess?.Invoke(go);
-            }, onFail);
+            });
+            loadRequest.OnLoadFailed(() =>
+            {
+                onFail?.Invoke();
+            });
         }
 
 #if !UNITY_WEBGL
@@ -227,9 +297,9 @@ namespace PowerCellStudio
             return _assetsBundleManager.LoadAsset<T>(address);
         }
 
-        public bool IsLoading(string address)
+        public void LoadAllAsync<T>(string label, OnLoadSuccess<IList<T>> onSuccess, OnLoadFailed onFail = null) where T : Object
         {
-            return _assetsBundleManager.IsAssetLoading(address);
+            _assetsBundleManager.LoadAssetsFromBundleAsync(label, onSuccess, onFail);
         }
 #endif
 

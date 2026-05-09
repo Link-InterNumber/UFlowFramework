@@ -33,19 +33,12 @@ namespace PowerCellStudio
                 return;
             }
 
-            _preloadHandles = new Dictionary<string, LoaderYieldInstruction<Object>>();
             _loadPlan = new LoadPlan();
             _loadedAssets = new LoadedCache<Object>();
             _loadingAssets = new AssetLoadingHolder<Object>();
             _loadedBundles = new LoadedCache<AssetBundle>();
             _loadingBundles = new BundleLoadingHolder();
             _removedAssetHolder = new GameObject("RemovedAssetHolder").AddComponent<RemovedAssetHolder>();
-
-            _pool = new ObjectPool<BundleAssetLoader>(() => new BundleAssetLoader(this),
-                loader => loader.Init(),
-                loader => loader.Deinit(),
-                loader => loader.Deinit(), true, 10, 30);
-            _activeLoader = new Dictionary<long, BundleAssetLoader>();
             
 #if UNITY_EDITOR
             if (!simulateAssetBundleInEditor)
