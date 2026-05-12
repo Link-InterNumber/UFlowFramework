@@ -19,7 +19,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"SerializeToJson failed: {e.Message}");
+                LinkLog.LogError($"SerializeToJson failed: {e.Message}\n {e.InnerException}");
                 return "{}";
             }
         }
@@ -36,7 +36,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"DeserializeFromJson failed: {e.Message}");
+                LinkLog.LogError($"DeserializeFromJson failed: {e.Message}\n {e.InnerException}");
                 return default;
             }
         }
@@ -53,12 +53,12 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"SerializeToBinary failed: {e.Message}");
+                LinkLog.LogError($"SerializeToBinary failed: {e.Message}\n {e.InnerException}");
                 return Array.Empty<byte>();
             }
         }
 
-        public static T DeserializeFromBinary<T>(byte[] bytes)
+        public static T DeserializeFromBinary<T>(byte[] bytes, int offset = 0, int count = -1)
         {
             if (bytes == null || bytes.Length == 0)
             {
@@ -66,11 +66,11 @@ namespace PowerCellStudio
             }
             try
             {
-                return BinarySerializer.Deserialize<T>(bytes);
+                return BinarySerializer.Deserialize<T>(bytes, offset, count);
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"DeserializeFromBinary failed: {e.Message}");
+                LinkLog.LogError($"DeserializeFromBinary failed: {e.Message}\n {e.InnerException}");
                 return default;
             }
         }
@@ -84,13 +84,13 @@ namespace PowerCellStudio
             return await Task.Run(() => SerializeToBinary(data));
         }
 
-        public static async Task<T> DeserializeFromBinaryAsync<T>(byte[] bytes)
+        public static async Task<T> DeserializeFromBinaryAsync<T>(byte[] bytes, int offset = 0, int count = -1)
         {
             if (bytes == null || bytes.Length == 0)
             {
                 return default;
             }
-            return await Task.Run(() => DeserializeFromBinary<T>(bytes));
+            return await Task.Run(() => DeserializeFromBinary<T>(bytes, offset, count));
         }
     }
 }

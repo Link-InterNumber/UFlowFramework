@@ -18,7 +18,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.LogError($"<color=red>[FAIL]</color> {testName}\nException: {e.Message}\n{e.StackTrace}");
+                UnityEngine.Debug.LogError($"<color=red>[FAIL]</color> {testName}\nException: {e.Message}\nInnerException: {e.InnerException}\n{e.StackTrace}");
             }
         }
 
@@ -50,6 +50,25 @@ namespace PowerCellStudio
             }
         }
 
+        protected void RunMemoryTest(string testName, Action testAction)
+        {
+            System.GC.Collect();
+            System.GC.WaitForPendingFinalizers();
+            long beforeMemory = GC.GetTotalMemory(true);
+            try
+            {
+                testAction();
+                long afterMemory = GC.GetTotalMemory(false);
+                long deltaMemory = afterMemory - beforeMemory;
+                UnityEngine.Debug.Log($"[PASS] {testName}: Memory change = {deltaMemory} bytes (before: {beforeMemory}, after: {afterMemory})");
+            }
+            catch (Exception e)
+            {
+                long afterMemory = GC.GetTotalMemory(false);
+                UnityEngine.Debug.LogError($"[FAIL] {testName} crashed. Memory before: {beforeMemory}, after: {afterMemory}. \nException: {e.Message} \n{e.StackTrace}");
+            }
+        }
+
         protected void RunProfilerTest(string testName, Action testAction)
         {
             try
@@ -61,7 +80,7 @@ namespace PowerCellStudio
             catch (System.Exception e)
             {
                 Profiler.EndSample();
-                UnityEngine.Debug.LogError($"[FAIL] Exception: {e.Message} \n{e.StackTrace}");
+                UnityEngine.Debug.LogError($"[FAIL] Exception: {e.Message} \nInnerException: {e.InnerException} \n{e.StackTrace}");
             }
         }
 

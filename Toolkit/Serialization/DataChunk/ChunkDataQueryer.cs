@@ -10,23 +10,26 @@ namespace PowerCellStudio
         private ChunkDataMap<TKey, TData> _dataMap;
         private ChunkIndexer<TKey> _indexer;
         private Func<TData, TKey> _keySelector;
+        private ChunkDataOptions _options;
 
-        public void Prepare(string indexFilePath, string dataFilePath, Func<TData, TKey> keySelector)
+        public void Prepare(string indexFilePath, string dataFilePath, Func<TData, TKey> keySelector, ChunkDataOptions options = null)
         {
             _dataFilePath = dataFilePath;
             _keySelector = keySelector;
-            var (indexer, dataMap) = CreateChunkTools(indexFilePath);
+            _options = options;
+            var (indexer, dataMap) = CreateChunkTools(indexFilePath, options);
             _indexer = indexer;
             _dataMap = dataMap;
         }
         
-        public IEnumerator PrepareYieldInstruction(string indexFilePath, string dataFilePath, Func<TData, TKey> keySelector, int operationUnit = 512)
+        public IEnumerator PrepareYieldInstruction(string indexFilePath, string dataFilePath, Func<TData, TKey> keySelector, int operationUnit = 512, ChunkDataOptions options = null)
         {
             _dataFilePath = dataFilePath;
             _keySelector = keySelector;
+            _options = options;
             _indexer = new ChunkIndexer<TKey>();
             _dataMap = new ChunkDataMap<TKey, TData>();
-            var reader = ChunkReader.ReadIndexFile<TKey>(indexFilePath);
+            var reader = ChunkReader.ReadIndexFile<TKey>(indexFilePath, options);
             yield return _indexer.InitAsync(reader, operationUnit);
             _dataMap.Init(_indexer.chunkCount);
         }
@@ -35,7 +38,7 @@ namespace PowerCellStudio
         {
             var offset = _indexer.GetChunkOffset(chunkIndex);
             if (offset < 0) return;
-            var dataSource = ChunkReader.ReadChunkData<TData>(_dataFilePath, offset);
+            var dataSource = ChunkReader.ReadChunkData<TData>(_dataFilePath, offset, _options);
             _dataMap.AddChunk(chunkIndex, dataSource, _keySelector, onAdd);
         }
 
@@ -81,7 +84,7 @@ namespace PowerCellStudio
 
                 var offset = _indexer.GetChunkOffset(i);
                 if (offset < 0) continue;
-                var dataSource = ChunkReader.ReadChunkData<TData>(_dataFilePath, offset);
+                var dataSource = ChunkReader.ReadChunkData<TData>(_dataFilePath, offset, _options);
                 foreach (var confBase in dataSource)
                     yield return confBase;
             }
@@ -109,11 +112,11 @@ namespace PowerCellStudio
             _indexer.Clear();
         }
         
-        public static (ChunkIndexer<TKey> indexer, ChunkDataMap<TKey, TData> dataMap) CreateChunkTools(string indexFilePath)
+        public static (ChunkIndexer<TKey> indexer, ChunkDataMap<TKey, TData> dataMap) CreateChunkTools(string indexFilePath, ChunkDataOptions options = null)
         {
             var chunkIndexer = new ChunkIndexer<TKey>();
             var dataMap = new ChunkDataMap<TKey, TData>();
-            var reader = ChunkReader.ReadIndexFile<TKey>(indexFilePath);
+            var reader = ChunkReader.ReadIndexFile<TKey>(indexFilePath, options);
             chunkIndexer.Init(reader);
             dataMap.Init(chunkIndexer.chunkCount);
             return (chunkIndexer, dataMap);

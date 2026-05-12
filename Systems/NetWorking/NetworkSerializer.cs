@@ -8,7 +8,7 @@ namespace GameProtocol
 {
     public class NetworkSerializer : INetworkSerializer
     {
-        private static readonly int msgIdSize = 4;
+        private static readonly int msgIdSize = sizeof(int);
         private IMessageIdMap _messageIdMap;
 
         public NetworkSerializer(IMessageIdMap messageIdMap)
@@ -53,7 +53,7 @@ namespace GameProtocol
         
         public void Dispose()
         {
-
+            _messageIdMap = null;
         }
     }
 }
