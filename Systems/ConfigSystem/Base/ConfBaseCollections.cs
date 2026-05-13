@@ -73,7 +73,15 @@ namespace PowerCellStudio
         
         public void Release(bool force)
         {
+            if (!CheckLoadStatus()) return;
             if (_refCount == 0) return;
+            if (force)
+            {
+                _refCount = 0;
+                _confQueryer.Clear(OnRemoveData);
+                _loadStatus = AssetLoadStatus.Unload;
+                return;
+            }
             _refCount--;
             if (_refCount > 0)
             {

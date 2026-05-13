@@ -1,4 +1,8 @@
 using System;
+using System.IO;
+using System.Text;
+
+
 #if UNITY_EDITOR
 using UnityEngine.Localization.Settings;
 using UnityEngine.Localization.Tables;
@@ -62,6 +66,31 @@ namespace PowerCellStudio
             UnityEditor.EditorUtility.SetDirty(stringTable);
 #endif
             return result;
+        }
+
+        public static void WriteItemData(LocalizationStringRef item, BinaryWriter writer, Encoding encoding)
+        {
+            item.rawString.WriteString(writer, encoding);
+            item.localizationKey.WriteString(writer, encoding);
+        }
+
+        public static LocalizationStringRef ReadItemData(BinaryReader reader, Encoding encoding)
+        {
+            var rawString = StringExtension.ReadString(reader, encoding);
+            var localizationKey = StringExtension.ReadString(reader, encoding);
+            return new LocalizationStringRef() { rawString = rawString, localizationKey = localizationKey };
+        }
+
+        public override void WriteData(BinaryWriter writer, Encoding encoding)
+        {
+            rawString.WriteString(writer, encoding);
+            localizationKey.WriteString(writer, encoding);
+        }
+
+        public override void ReadData(BinaryReader reader, Encoding encoding)
+        {
+            rawString = StringExtension.ReadString(reader, encoding);
+            localizationKey = StringExtension.ReadString(reader, encoding);
         }
     }
 }

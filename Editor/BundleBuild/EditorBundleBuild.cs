@@ -5,14 +5,27 @@ using System.Linq;
 using UnityEngine;
 using System;
 using UnityEditor;
+using static PowerCellStudio.ConfigSettingItem;
 
 namespace PowerCellStudio
 {
     public class EditorBundleBuild
     {
+        private static void SetConfigFolderAssetBundleName()
+        {
+            var configFolder = EditorSaveUtils.GetEditorPref(SaveKey.assetFilePath, "Assets/ConfigAsset/");
+            var importer = AssetImporter.GetAtPath(configFolder);
+            if (importer != null)
+            {
+                importer.assetBundleName = ConfigManager.assetLabel;
+                EditorUtility.SetDirty(importer);
+            }
+        }
+
         [MenuItem("Build/AssetBundle/Build AssetBundle", false, 2)]
         public static void BuildAsserBundleOnly()
         {
+            SetConfigFolderAssetBundleName();
             ConfigMenu.CreateConfigAssetByForce();
             var buildPath = Path.Combine(Application.streamingAssetsPath,
                 AssetsBundleBuildUtils.GetBuildFoldName(EditorUserBuildSettings.activeBuildTarget));
@@ -30,6 +43,7 @@ namespace PowerCellStudio
 
         private static void BuildAsserBundle(bool resetRemoteManifest, Action onRemoteManifestGenerated)
         {
+            SetConfigFolderAssetBundleName();
             ConfigMenu.CreateConfigAssetByForce();
             var buildPath = Path.Combine(Application.streamingAssetsPath,
                 AssetsBundleBuildUtils.GetBuildFoldName(EditorUserBuildSettings.activeBuildTarget));
@@ -51,6 +65,7 @@ namespace PowerCellStudio
         [MenuItem("Build/AssetBundle/Build AssetBundle Incrementally", false, 2)]
         public static void BuildAsserBundleIncrementally()
         {
+            SetConfigFolderAssetBundleName();
             ConfigMenu.CreateConfigAssetByForce();
             var buildPath = Path.Combine(Application.streamingAssetsPath,
                 AssetsBundleBuildUtils.GetBuildFoldName(EditorUserBuildSettings.activeBuildTarget));

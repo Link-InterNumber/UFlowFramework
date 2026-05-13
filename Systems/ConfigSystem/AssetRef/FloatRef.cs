@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Text;
 
 namespace PowerCellStudio
 {
@@ -17,6 +19,16 @@ namespace PowerCellStudio
         public static float Parse(string stringValue, string confName, int rowIndex, int colIndex)
         {
             return string.IsNullOrEmpty(stringValue) ? 0f : float.Parse(stringValue);
+        }
+
+        public static void WriteItemData(float item, BinaryWriter writer, Encoding encoding)
+        {
+            writer.Write(item);
+        }
+
+        public static float ReadItemData(BinaryReader reader, Encoding encoding)
+        {
+            return reader.ReadSingle();
         }
     }
 }

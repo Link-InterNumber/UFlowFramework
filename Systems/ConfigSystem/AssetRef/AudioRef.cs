@@ -1,7 +1,8 @@
 using System;
-using System.Threading.Tasks;
+using System.IO;
+using System.Text;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
+// using UnityEngine.AddressableAssets;
 
 namespace PowerCellStudio
 {
@@ -13,10 +14,10 @@ namespace PowerCellStudio
             return assetLoader.LoadAsYieldInstruction<AudioClip>(assetName);
         }
 
-        public override AssetReferenceT<AudioClip> GetAssetReference()
-        {
-            return new AssetReferenceAudioClip(guid);
-        }
+        // public override AssetReferenceT<AudioClip> GetAssetReference()
+        // {
+        //     return new AssetReferenceAudioClip(guid);
+        // }
 
         // public static implicit operator AudioClip(AudioRef target)
         // {
@@ -50,6 +51,31 @@ namespace PowerCellStudio
             ret.guid = UnityEditor.AssetDatabase.AssetPathToGUID(stringValue);
 #endif
             return ret;
+        }
+
+        public static void WriteItemData(AudioRef item, BinaryWriter writer, Encoding encoding)
+        {
+            item.assetName.WriteString(writer, encoding);
+            item.guid.WriteString(writer, encoding);
+        }
+
+        public static AudioRef ReadItemData(BinaryReader reader, Encoding encoding)
+        {
+            var assetName = StringExtension.ReadString(reader, encoding);
+            var guid = StringExtension.ReadString(reader, encoding);
+            return new AudioRef() { assetName = assetName, guid = guid };
+        }
+
+        public override void WriteData(BinaryWriter writer, Encoding encoding)
+        {
+            WriteItemData(this, writer, encoding);
+        }
+
+        public override void ReadData(BinaryReader reader, Encoding encoding)
+        {
+            var item = ReadItemData(reader, encoding);
+            assetName = item.assetName;
+            guid = item.guid;
         }
     }
 }

@@ -1,7 +1,8 @@
 using System;
-using System.Threading.Tasks;
+using System.IO;
+using System.Text;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
+// using UnityEngine.AddressableAssets;
 
 namespace PowerCellStudio
 {
@@ -13,10 +14,10 @@ namespace PowerCellStudio
             return assetLoader.LoadAsYieldInstruction<Sprite>(assetName);
         }
 
-        public override AssetReferenceT<Sprite> GetAssetReference()
-        {
-            return new AssetReferenceSprite(guid);
-        }
+        // public override AssetReferenceT<Sprite> GetAssetReference()
+        // {
+        //     return new AssetReferenceSprite(guid);
+        // }
 
         // public static implicit operator Sprite(SpriteRef target)
         // {
@@ -50,6 +51,31 @@ namespace PowerCellStudio
             ret.guid = UnityEditor.AssetDatabase.AssetPathToGUID(stringValue);
 #endif
             return ret;
+        }
+
+        public static void WriteItemData(SpriteRef item, BinaryWriter writer, Encoding encoding)
+        {
+            item.assetName.WriteString(writer, encoding);
+            item.guid.WriteString(writer, encoding);
+        }
+
+        public static SpriteRef ReadItemData(BinaryReader reader, Encoding encoding)
+        {
+            var assetName = StringExtension.ReadString(reader, encoding);
+            var guid = StringExtension.ReadString(reader, encoding);
+            return new SpriteRef() { assetName = assetName, guid = guid };
+        }
+
+        public override void WriteData(BinaryWriter writer, Encoding encoding)
+        {
+            assetName.WriteString(writer, encoding);
+            guid.WriteString(writer, encoding);
+        }
+
+        public override void ReadData(BinaryReader reader, Encoding encoding)
+        {
+            assetName = StringExtension.ReadString(reader, encoding);
+            guid = StringExtension.ReadString(reader, encoding);
         }
     }
 }

@@ -32,13 +32,13 @@ namespace PowerCellStudio
                 callBack?.Invoke();
                 return;
             }
-
             _loadPlan = new LoadPlan();
             _loadedAssets = new LoadedCache<Object>();
             _loadingAssets = new AssetLoadingHolder<Object>();
             _loadedBundles = new LoadedCache<AssetBundle>();
             _loadingBundles = new BundleLoadingHolder();
             _removedAssetHolder = new GameObject("RemovedAssetHolder").AddComponent<RemovedAssetHolder>();
+            GameObject.DontDestroyOnLoad(_removedAssetHolder.gameObject);
             
 #if UNITY_EDITOR
             if (!simulateAssetBundleInEditor)
@@ -60,11 +60,13 @@ namespace PowerCellStudio
         {
             _bundleFoldName = MainBundleName;
             initState = AssetInitState.CheckForResourceUpdates;
+            initProcess = 0f;
             yield return InitializeRemoteBundleManifest();
+            initState = AssetInitState.InitModule;
+            initProcess = 0f;
             yield return InitPathMap();
             if (_bundleIndex == null) yield break;
             initProcess = 0.3f;
-            initState = AssetInitState.InitModule;
             yield return GetBundleManifest();
             initProcess = 0.6f;
             GetAssetsBundleAsync("default");

@@ -27,5 +27,4 @@ namespace PowerCellStudio
             ConfigLog.LogError($"[ConfBase] 反序列化失败，未重写ReadData方法。ConfName: {GetType().Name}");
         }
     }
-    
 }

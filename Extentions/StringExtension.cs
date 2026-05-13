@@ -4,6 +4,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using System.Security.Cryptography;
+using System.IO;
+using System.Buffers;
 
 namespace PowerCellStudio
 {
@@ -230,5 +232,81 @@ namespace PowerCellStudio
             }
             return default;
         }
+
+        #region Binary
+
+        private const int StackBufferSize = 256;
+
+        public static void WriteString(this string value, BinaryWriter writer, Encoding encoding)
+        {
+            if (value == null)
+            {
+                writer.Write(-1);
+                return;
+            }
+
+            int byteCount = encoding.GetByteCount(value);
+            writer.Write(byteCount);
+
+            if (byteCount == 0)
+                return;
+
+            if (byteCount <= StackBufferSize)
+            {
+                Span<byte> buffer = stackalloc byte[StackBufferSize];
+                int written = encoding.GetBytes(value.AsSpan(), buffer);
+                writer.Write(buffer.Slice(0, written));
+            }
+            else
+            {
+                byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(byteCount);
+                Span<byte> buffer = rentedBuffer.AsSpan(0, byteCount);
+                int written = encoding.GetBytes(value.AsSpan(), buffer);
+                writer.Write(buffer.Slice(0, written));
+                ArrayPool<byte>.Shared.Return(rentedBuffer);
+            }
+        }
+
+        public static string ReadString(BinaryReader reader, Encoding encoding)
+        {
+            int length = reader.ReadInt32();
+            if (length < 0)
+                return null;
+
+            if (length == 0)
+                return string.Empty;
+
+            if (length <= StackBufferSize)
+            {
+                Span<byte> buffer = stackalloc byte[StackBufferSize];
+                ReadExactly(reader, buffer.Slice(0, length));
+                return encoding.GetString(buffer.Slice(0, length));
+            }
+
+            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(length);
+            Span<byte> pooledSpan = rentedBuffer.AsSpan(0, length);
+            ReadExactly(reader, pooledSpan);
+            var result = encoding.GetString(pooledSpan);
+            ArrayPool<byte>.Shared.Return(rentedBuffer);
+            return result;
+        }
+
+        private static void ReadExactly(BinaryReader reader, Span<byte> buffer)
+        {
+            int offset = 0;
+            while (offset < buffer.Length)
+            {
+                int read = reader.Read(buffer.Slice(offset));
+                if (read <= 0)
+                {
+                    LinkLog.LogError("Unexpected end of stream while reading string data.");
+                    return;
+                }
+
+                offset += read;
+            }
+        }
+
+        #endregion
     }
 }

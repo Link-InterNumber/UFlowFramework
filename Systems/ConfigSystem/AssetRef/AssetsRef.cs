@@ -1,12 +1,13 @@
 using System;
-using System.Threading.Tasks;
-using UnityEngine.AddressableAssets;
+using System.IO;
+using System.Text;
+// using UnityEngine.AddressableAssets;
 using Object = UnityEngine.Object;
 
 namespace PowerCellStudio
 {
     [Serializable]
-    public abstract class AssetsRef<T> : TypeRef where T: Object
+    public abstract class AssetsRef<T> : TypeRef, IBinaryData where T: Object
     {
         // public string bundleName;
         public string assetName;
@@ -14,7 +15,10 @@ namespace PowerCellStudio
 
         public abstract LoaderYieldInstruction<T> Load(IAssetLoader assetLoader);
 
-        public abstract AssetReferenceT<T> GetAssetReference();
+        // public abstract AssetReferenceT<T> GetAssetReference();
 
+        public abstract void WriteData(BinaryWriter writer, Encoding encoding);
+
+        public abstract void ReadData(BinaryReader reader, Encoding encoding);
     }
 }

@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Text;
 
 namespace PowerCellStudio
 {
@@ -17,6 +19,16 @@ namespace PowerCellStudio
         public static long Parse(string stringValue, string confName, int rowIndex, int colIndex)
         {
             return string.IsNullOrEmpty(stringValue) ? 0L : long.Parse(stringValue);
+        }
+
+        public static void WriteItemData(long item, BinaryWriter writer, Encoding encoding)
+        {
+            writer.Write(item);
+        }
+
+        public static long ReadItemData(BinaryReader reader, Encoding encoding)
+        {
+            return reader.ReadInt64();
         }
     }
 }
