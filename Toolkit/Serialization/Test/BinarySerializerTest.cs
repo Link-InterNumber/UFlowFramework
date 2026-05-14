@@ -28,6 +28,7 @@ namespace PowerCellStudio
             TestNestedCustomSelectorRoundTrip();
             TestTypeWithoutParameterlessConstructorRoundTrip();
             TestSerializeFieldPrivateFieldRoundTrip();
+            TestSerializableCtorlessSerializeFieldPrivateFieldRoundTrip();
             TestNullFieldRoundTrip();
             TestNullRootRoundTrip();
             TestSpanRoundTrip();
@@ -405,6 +406,24 @@ namespace PowerCellStudio
             });
         }
 
+        private void TestSerializableCtorlessSerializeFieldPrivateFieldRoundTrip()
+        {
+            RunTest("Serializable Ctorless SerializeField Private Field RoundTrip", () =>
+            {
+                SerializableCtorlessPrivateFieldContainer source = new SerializableCtorlessPrivateFieldContainer("ctorless-private", 31);
+                source.SetHiddenValues(64, "hidden-serialized");
+
+                SerializableCtorlessPrivateFieldContainer clone = BinarySerializer.Deserialize<SerializableCtorlessPrivateFieldContainer>(BinarySerializer.Serialize(source));
+
+                Assert(clone != null, "Serializable ctorless private field container should deserialize.");
+                Assert(clone.Name == source.Name, "Ctorless private field container name mismatch.");
+                Assert(clone.Level == source.Level, "Ctorless private field container level mismatch.");
+                Assert(clone.GetHiddenNumber() == 64, "Ctorless [SerializeField] private int field mismatch.");
+                Assert(clone.GetHiddenText() == "hidden-serialized", "Ctorless [SerializeField] private string field mismatch.");
+                Assert(clone.PublicMirror == source.PublicMirror, "Ctorless public field should still roundtrip.");
+            });
+        }
+
         [Serializable]
         private class PrimitiveContainer
         {
@@ -520,6 +539,44 @@ namespace PowerCellStudio
                 _hiddenNumber = hiddenNumber;
                 _hiddenText = hiddenText;
                 PublicMirror = hiddenNumber * 2;
+            }
+
+            public int GetHiddenNumber()
+            {
+                return _hiddenNumber;
+            }
+
+            public string GetHiddenText()
+            {
+                return _hiddenText;
+            }
+        }
+
+        [Serializable]
+        private class SerializableCtorlessPrivateFieldContainer
+        {
+            public string Name;
+            public int Level;
+
+            [SerializeField]
+            private int _hiddenNumber;
+
+            [SerializeField]
+            private string _hiddenText;
+
+            public int PublicMirror;
+
+            public SerializableCtorlessPrivateFieldContainer(string name, int level)
+            {
+                Name = name;
+                Level = level;
+            }
+
+            public void SetHiddenValues(int hiddenNumber, string hiddenText)
+            {
+                _hiddenNumber = hiddenNumber;
+                _hiddenText = hiddenText;
+                PublicMirror = hiddenNumber * 3;
             }
 
             public int GetHiddenNumber()

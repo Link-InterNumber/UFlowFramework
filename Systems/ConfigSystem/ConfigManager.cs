@@ -19,12 +19,13 @@ namespace PowerCellStudio
 
         public IEnumerator Init(OnLoadCompleted onInitCompleted)
         {
-            // TODO 从资源中加载所有的配置表二进制文件存放在$"{Application.persistentDataPath}/ConfigAsset/"目录下
+#if !UNITY_EDITOR
+            // 从资源中加载所有的配置表二进制文件存放在$"{Application.persistentDataPath}/ConfigAsset/"目录下
             var saveKey = "ConfigFirstLoadComplete";
             var complete = PlayerPrefs.GetInt(saveKey, 0);
             if (complete == 0)
             {
-                // TODO 首次加载
+                // 首次加载
                 // 创建目录
                 var folder = Path.Combine(Application.persistentDataPath, "ConfigAsset");
                 if (!Directory.Exists(folder))
@@ -47,6 +48,21 @@ namespace PowerCellStudio
                 yield return wait;
                 PlayerPrefs.SetInt(saveKey, 1);
             }
+# else
+            // 编辑器下直接从Assets目录加载配置表二进制文件，用作检查配置表资源是否配置正确分包/group
+            var loader = AssetUtils.SpawnLoader("InitConfigLoader");
+            var wait = new YieldInstructionCompletionSource<IList<TextAsset>>();
+            loader.LoadAllAsync<TextAsset>(assetLabel, assets =>
+            {
+                wait.SetResult(assets);
+                AssetUtils.DeSpawnLoader(loader);
+            }, 
+            () =>
+            {
+                ConfigLog.LogError($"Failed to load config assets with label {assetLabel}, please check if the config assets are correctly labeled and included in the build.");
+            });
+            yield return wait;
+# endif
             // // 你可以使用 ConfigGroup 加载多个配置数据；
             // // You can use ConfigGroup to load multiple configuration data;
             // _initConfig = new ConfigGroup<CommonConfigLoader>(_guidanceConf, _rolePropConf); //(_baseTypeSampleConf, _customTypeSampleConf);

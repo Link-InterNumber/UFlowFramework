@@ -98,22 +98,6 @@ namespace PowerCellStudio
             return false;
         }
 
-        public void Concat(IAssetLoader other)
-        {
-            if (other is AddressableAssetLoader otherLoader)
-            {
-                foreach (var (address, handle) in otherLoader._handles)
-                {
-                    if(!handle.IsValid()) continue;
-                    if (_handles.ContainsKey(address))
-                        _manager.Release(handle);
-                    else
-                        _handles[address] = handle;
-                }
-                otherLoader._handles.Clear();
-            }
-        }
-
         #region GameObject
 
         public AsyncOperationHandle<GameObject> GetInstantiateHandle(string address, Vector3 pos, Transform parent = null, Quaternion quaternion = default)

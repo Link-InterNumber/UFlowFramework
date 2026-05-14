@@ -113,12 +113,14 @@ public class GameSession : TcpSession
 
     protected override void OnConnected()
     {
+        base.OnConnected();
         var gameServer = (TcpGameServer)Server;
         gameServer.OnConnectedEvent?.Invoke();
     }
 
     protected override void OnReceived(byte[] buffer, long offset, long size)
     {
+        base.OnReceived(buffer, offset, size);
         var start = (int) queueBuffer.Length;
         queueBuffer.Write(buffer, (int) offset, (int) size);
         queueBufferPointer.Enqueue(new BufferPointer(start, (int) size));

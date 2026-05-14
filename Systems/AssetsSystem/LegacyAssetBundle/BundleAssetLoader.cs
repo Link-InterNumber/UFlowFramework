@@ -98,27 +98,6 @@ namespace PowerCellStudio
             return false;
         }
 
-        public void Concat(IAssetLoader other)
-        {
-            if (other is BundleAssetLoader otherLoader)
-            {
-                foreach (var kvp in otherLoader._refCount)
-                {
-                    var assetPath = kvp.Key;
-                    var refCount = kvp.Value;
-                    if (_refCount.TryGetValue(assetPath, out var current))
-                    {
-                        _refCount[assetPath] = current + refCount;
-                    }
-                    else
-                    {
-                        _refCount[assetPath] = refCount;
-                    }
-                }
-                otherLoader._refCount.Clear();
-            }
-        }
-
         private void OnLoadFinish<T>(T asset, string address) where T : Object
         {
             if(!asset)
@@ -128,6 +107,8 @@ namespace PowerCellStudio
             }
             AddRef(address);
         }
+
+        #endregion
 
 #if UNITY_EDITOR
         private T EditorSimulateLoad<T>(string address, float delay, OnLoadSuccess<T> callback, OnLoadFailed onLoadFailed = null) 
@@ -296,13 +277,43 @@ namespace PowerCellStudio
 #endif
             return _assetsBundleManager.LoadAsset<T>(address);
         }
-
+#endif
+        
         public void LoadAllAsync<T>(string label, OnLoadSuccess<IList<T>> onSuccess, OnLoadFailed onFail = null) where T : Object
         {
+            // 获取bundle名为label的中间类型为T的所有资源
+#if UNITY_EDITOR
+            if (!AssetsBundleManager.simulateAssetBundleInEditor)
+            {
+                List<T> assets = new List<T>();
+                string[] assetPaths = AssetDatabase.GetAssetPathsFromAssetBundle(label);
+                if (assetPaths == null || assetPaths.Length == 0)
+                {
+                    AssetLog.LogError($"No assets found in bundle with label {label}");
+                    onFail?.Invoke();
+                    return;
+                }
+                // 遍历所有路径
+                foreach (string path in assetPaths)
+                {
+                    // 加载资源
+                    T asset = AssetDatabase.LoadAssetAtPath<T>(path);
+                    if (asset != null)
+                    {
+                        AddRef(path);
+                        assets.Add(asset);
+                    }
+                }
+                var delay = Time.unscaledDeltaTime * Random.Range(1,5);
+                ApplicationManager.instance.DelayedCall(delay, () =>
+                {
+                    onSuccess?.Invoke(assets);
+                });
+                return;
+            }
+#endif
             _assetsBundleManager.LoadAssetsFromBundleAsync(label, onSuccess, onFail);
         }
-#endif
 
-        #endregion
     }
 }
