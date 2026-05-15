@@ -1,19 +1,12 @@
 using System;
-using System.Collections;
-using PowerCellStudio;
 using UnityEngine;
 
-namespace GameProtocol
+namespace PowerCellStudio
 {
-    public interface IMessageReceiveHandler : IDisposable, IEnumerator
-    {
-        public void OnReceived(object message, Type messageType);
-    }
-    
     public class MessageReceiveHandler<T> : CustomYieldInstruction, IMessageReceiveHandler
-        where T : class, global::ProtoBuf.IExtensible
     {
         private bool _invokeOnce = false;
+        public bool invokeOnce => _invokeOnce;
         
         public MessageReceiveHandler(bool invokeOnce = false)
         {
@@ -23,7 +16,7 @@ namespace GameProtocol
         public void OnReceived(object message, Type messageType)
         {
             if (messageType != typeof(T)) return;
-            ReceiveMessage(message as T);
+            ReceiveMessage((T)message);
             if (!_invokeOnce) return;
             RemoveAllListeners();
         }
@@ -62,7 +55,7 @@ namespace GameProtocol
         {
             RemoveAllListeners();
             _onreceivedEvent = null;
-            _message = null;
+            _message = default;
         }
 
         public int EventListenerCount => _onreceivedEvent?.GetEventListenerCount()??0;

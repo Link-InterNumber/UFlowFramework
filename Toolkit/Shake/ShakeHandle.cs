@@ -16,22 +16,50 @@ namespace PowerCellStudio
 
         public bool isUnscaleTime => _data.isUnscaleTime;
 
+        private Vector3 _previousShakePosition;
+        private Vector3 _posDelta;
+        private Quaternion _previousShakeRotation;
+        private bool _isCancelled;
+
         public ShakeHandle(ShakeRequest data)
         {
             _data = data;
             hashCode = _data.target.GetHashCode();
             time = 0;
+            _previousShakeRotation = Quaternion.identity;
+            _isCancelled = false;
+        }
+
+        public void Merge(ShakeHandle other)
+        {
+            if (other == null || other._data.target != _data.target) return;
+            var newShakeRequest = new ShakeRequest
+            {
+                shakeType = other._data.shakeType | _data.shakeType,
+                target = _data.target,
+                duration = _data.duration + other._data.duration - time,
+                frequency = Mathf.Max(_data.frequency, other._data.frequency),
+                magnitude = Vector3.Max(_data.magnitude, other._data.magnitude),
+                curve = other._data.curve != null ? other._data.curve : _data.curve,
+                isUnscaleTime = other._data.isUnscaleTime,
+                isCamera = _data.isCamera || other._data.isCamera
+            };
+            _data = newShakeRequest;
         }
 
         public void Cancel()
         {
+            if (_isCancelled) return;
+            _isCancelled = true;
             time = _data.duration + 1f;
-            _data.target.localPosition = _data.origPos;
-            _data.target.localRotation = _data.origRota;
+            if (!_data.target) return;
+            _data.target.localPosition = _data.target.localPosition - _previousShakePosition;
+            _data.target.localRotation = _data.target.localRotation * Quaternion.Inverse(_previousShakeRotation);
         }
 
         public void Process(float dt)
         {
+            if (isDone || _isCancelled) return;
             time += dt;
             if (!_data.target)
             {
@@ -44,8 +72,10 @@ namespace PowerCellStudio
                 float x = Mathf.PerlinNoise(time * _data.frequency, 0) * 2 - 1; // 输出范围 [-1,1]
                 float y = Mathf.PerlinNoise(time * _data.frequency, 1) * 2 - 1;
                 float z = Mathf.PerlinNoise(time * _data.frequency, 2) * 2 - 1;
-                var shakePosition = new Vector3(x * _data.magnitude.x, y * _data.magnitude.y, z * _data.magnitude.z) * curvePosition;
-                _data.target.localPosition = _data.origPos + shakePosition;
+                var shakeValue = new Vector3(x * _data.magnitude.x, y * _data.magnitude.y, z * _data.magnitude.z) * curvePosition;
+                _posDelta = shakeValue - _previousShakePosition;
+                _previousShakePosition = shakeValue;
+                _data.target.localPosition = _data.target.localPosition + _posDelta;
             }
             if ((_data.shakeType & ShakeUtils.ShakeType.Rotation) != 0)
             {
@@ -63,54 +93,10 @@ namespace PowerCellStudio
                     x * magnitude.x * curvePosition,
                     y * magnitude.y * curvePosition,
                     z * magnitude.z * curvePosition);
-                _data.target.localRotation = _data.origRota * shakeRotation;
+                var rotDelta = shakeRotation * Quaternion.Inverse(_previousShakeRotation);
+                _previousShakeRotation = shakeRotation;
+                _data.target.localRotation = _data.target.localRotation * rotDelta;
             }
         }
-    }
-
-    public struct ShakeRequest
-    {
-        public ShakeUtils.ShakeType shakeType;
-
-        public Transform target;
-
-        public float duration;
-
-        public float frequency;
-
-        public Vector3 magnitude;
-
-        public AnimationCurve curve;
-
-        public bool isUnscaleTime;
-
-        public Vector3 origPos;
-
-        public Quaternion origRota;
-
-        public bool isCamera;
-
-        public ShakeRequest(
-        ShakeUtils.ShakeType shakeType,
-        Transform target,
-        float duration,
-        float frequency,
-        Vector3 magnitude,
-        AnimationCurve curve,
-        bool isUnscaleTime,
-        bool isCamera)
-        {
-            this.shakeType = shakeType;
-            this.target = target;
-            this.duration = duration;
-            this.frequency = frequency;
-            this.magnitude = magnitude;
-            this.curve = curve;
-            this.isUnscaleTime = isUnscaleTime;
-            this.isCamera = isCamera;
-
-            origPos = target.position;
-            origRota = target.localRotation;
-      }
     }
 }

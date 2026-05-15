@@ -1,12 +1,5 @@
-﻿namespace GameProtocol
+﻿namespace PowerCellStudio
 {
-    public enum QueueLogLevel
-    {
-        Info,
-        Warning,
-        Error
-    }
-    
     public struct QueueLog
     {
         public QueueLogLevel logLevel;

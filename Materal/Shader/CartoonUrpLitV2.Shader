@@ -224,13 +224,14 @@ Shader "Custom/CartoonUrpLitV2"
                 {
                     Light light = GetAdditionalLight(index, offsetPosAddtionalLight, half4(1,1,1,1));
                     float dotProduct_al = dot(bump, light.direction);
-                    diffuseShadow += max(0, dotProduct_al * light.distanceAttenuation);
-                    float shaow_al = (light.distanceAttenuation * light.shadowAttenuation);
+                    float distanceAttenuation = min(3, light.distanceAttenuation);
+                    diffuseShadow += max(0, dotProduct_al * distanceAttenuation);
+                    float shaow_al = (distanceAttenuation * light.shadowAttenuation);
                     shadow += shaow_al;
 
-                    edgeLight += getEdgeLight(dotProduct_al, viewDir, light.direction, light.color * light.distanceAttenuation, fresnelP5, shaow_al, edgeSize);
+                    edgeLight += getEdgeLight(dotProduct_al, viewDir, light.direction, light.color * distanceAttenuation, fresnelP5, shaow_al, edgeSize);
                     float3 lightColor = (light.color + albedo) * 0.5;
-                    diffuse += smoothstep(-_LightBoundary, 1.0 + _LightBoundary, dotProduct_al * light.distanceAttenuation) * light.shadowAttenuation * lightColor * _Diffuse.rgb;
+                    diffuse += smoothstep(-_LightBoundary, 1.0 + _LightBoundary, dotProduct_al * distanceAttenuation) * light.shadowAttenuation * lightColor * _Diffuse.rgb;
                     float3 halfDir_al = normalize(light.direction + viewDir);
                     specular += light.color * _Specular.rgb * pow(max(0, dot(bump, halfDir_al)), _Gloss) * shaow_al;
                 }

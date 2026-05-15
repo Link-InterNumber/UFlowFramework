@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Custom_CartoonUrpLit
-  m_Shader: {fileID: 4800000, guid: 3dc36fa3aeb9f3445b558e8737c77f19, type: 3}
+  m_Shader: {fileID: 4800000, guid: 47c6d717f0264b1479c9e1bb6c4d7727, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
@@ -29,25 +29,28 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: df6abec84972e144fbb92b8965b0ed17, type: 3}
+        m_Texture: {fileID: 2800000, guid: 65244c3fa05657d4db85c59b042d7c1e, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _BumpScale: 1
+    - _CalSubShadow: 0
     - _ColorSaturation: 0.66
     - _DarkIntensity: 1
-    - _DarkPower: 1
-    - _DiffuseScale: 1
-    - _EdgeLightScale: 3.63
-    - _EdgeLightSize: 0.752
-    - _Fresnel: 0.941
-    - _Gloss: 14
-    - _LightBoundary: -0.307
-    - _LightPower: 0.5
+    - _DarkPower: 1.24
+    - _DiffuseScale: 1.13
+    - _EdgeLightScale: 4.31
+    - _EdgeLightSize: 0.762
+    - _Fresnel: 0.455
+    - _Gloss: 70
+    - _LightBoundary: -0.455
+    - _LightPower: 0.386
     - _ReceiveShadows: 1
+    - _SubShadow: 1.75
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _Diffuse: {r: 1, g: 1, b: 1, a: 1}
-    - _Specular: {r: 1, g: 1, b: 1, a: 1}
+    - _Specular: {r: 1, g: 0.70260185, b: 0, a: 1}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1

@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -21,22 +19,26 @@ namespace PowerCellStudio
             Large
         }
 
-        private static Dictionary<int, ShakeHandle> _cashe = new Dictionary<int, ShakeHandle>();
+        private static ShakeProcesser _processer;
+
+        public static ShakeProcesser GetShakeProcesser()
+        {
+            if (!_processer)
+            {
+                var obj = new GameObject("ShakeProcesser");
+                _processer = obj.AddComponent<ShakeProcesser>();
+            }
+            return _processer;
+        }
 
         public static ShakeHandle Shake(ShakeType shakeType, Transform target, float duration, float frequency, Vector3 magnitude,
              bool isUnscaleTime = true, AnimationCurve curve = null)
         {
             if (!target) return null;
-            var hashCode = target.GetHashCode();
-            if (_cashe.TryGetValue(hashCode, out var currentHandle))
-            {
-                currentHandle.Cancel();
-            }
             var isCamera = target.GetComponent<Camera>() != null;
             var request = new ShakeRequest(shakeType, target, duration, frequency, magnitude, curve, isUnscaleTime, isCamera);
             var handle = new ShakeHandle(request);
-            _cashe[hashCode] = handle;
-            ApplicationManager.RunCoroutine(ProcessHandle(handle));
+            GetShakeProcesser().PushHandle(handle);
             return handle;
         }
 
@@ -97,17 +99,6 @@ namespace PowerCellStudio
                     break;
             }
             return ShakeCamera(camera, duration, frequency, magnitude, shakeType, isUnscaleTime, curve);
-        }
-
-        private static IEnumerator ProcessHandle(ShakeHandle handle)
-        {
-            while (!handle.isDone)
-            {
-                handle.Process(handle.isUnscaleTime? Time.unscaledDeltaTime : Time.deltaTime);
-                yield return null;
-            }
-            handle.Cancel();
-            _cashe.Remove(handle.hashCode);
         }
     }
 }

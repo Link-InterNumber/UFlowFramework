@@ -78,7 +78,7 @@ namespace PowerCellStudio
             Screen.SetResolution(newRes.x, newRes.y, fullscreen);
             // Debug.LogError($"newRes: {newRes.x} * {newRes.y}");
             // Debug.LogError($"Resolution: {Screen.currentResolution.width} * {Screen.currentResolution.height}");
-            EventManager.instance.onChangeResolution.Invoke(newRes);
+            EventManager.instance?.onChangeResolution.Invoke(newRes);
         }
 
         public void OnInit()
@@ -124,7 +124,7 @@ namespace PowerCellStudio
             var orientation = Screen.orientation;
             if (_currentOrientation == orientation) return;
             _currentOrientation = orientation;
-            EventManager.instance.onScreenOrientationChange.Invoke(_currentOrientation);
+            EventManager.instance?.onScreenOrientationChange.Invoke(_currentOrientation);
         }
         
         public void ClearUnusedAsset()
@@ -137,17 +137,17 @@ namespace PowerCellStudio
         private void OnApplicationPause(bool hasFocus)
         {
             _applicationState = hasFocus ? ApplicationState.Pause : ApplicationState.Playing;
-            EventManager.instance.onPause.Invoke(_applicationState != ApplicationState.Playing);
+            EventManager.instance?.onPause.Invoke(_applicationState != ApplicationState.Playing);
         }
 
         protected void OnApplicationQuit()
         {
             _applicationState = ApplicationState.Quit;
-            EventManager.instance.onQuit.Invoke();
-            EventManager.instance.onLoading.RemoveAllListeners();
-            EventManager.instance.onPause.RemoveAllListeners();
-            EventManager.instance.onQuit.RemoveAllListeners();
-            EventManager.instance.onChangeResolution.RemoveAllListeners();
+            EventManager.instance?.onQuit.Invoke();
+            EventManager.instance?.onLoading.RemoveAllListeners();
+            EventManager.instance?.onPause.RemoveAllListeners();
+            EventManager.instance?.onQuit.RemoveAllListeners();
+            EventManager.instance?.onChangeResolution.RemoveAllListeners();
         }
 
         public void SetLoading(bool isLoading)

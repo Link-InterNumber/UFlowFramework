@@ -1,10 +1,9 @@
 ﻿using System.Collections;
 using System.Net.Sockets;
 using NetCoreServer;
-using PowerCellStudio;
 using UnityEngine;
 
-namespace GameProtocol
+namespace PowerCellStudio
 {
     [DonotInitModuleAutoly]
     public partial class NetClientManager : SingletonBase<NetClientManager>, IExecutionModule

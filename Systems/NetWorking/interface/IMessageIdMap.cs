@@ -1,6 +1,6 @@
 using System;
 
-namespace GameProtocol
+namespace PowerCellStudio
 {
     public interface IMessageIdMap
     {

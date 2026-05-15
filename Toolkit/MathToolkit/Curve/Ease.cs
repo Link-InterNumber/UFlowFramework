@@ -18,6 +18,9 @@ namespace PowerCellStudio
         InQuint,
         OutQuint,
         InOutQuint,
+        InExpo,
+        OutExpo,
+        InOutExpo,
         InSine,
         OutSine,
         InOutSine,
@@ -113,11 +116,17 @@ namespace PowerCellStudio
                     return EaseOutBounce(normalizedTime);
                 case EaseType.InOutBounce:
                     return EaseInOutBounce(normalizedTime);
+                case EaseType.InExpo:
+                    return EaseInExpo(normalizedTime);
+                case EaseType.OutExpo:
+                    return EaseOutExpo(normalizedTime);
+                case EaseType.InOutExpo:
+                    return EaseInOutExpo(normalizedTime);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
         }
-        
+
         public static Func<float, float> GetEase(EaseType type)
         {
             switch (type)
@@ -184,6 +193,12 @@ namespace PowerCellStudio
                     return EaseOutBounce;
                 case EaseType.InOutBounce:
                     return EaseInOutBounce;
+                case EaseType.InExpo:
+                    return EaseInExpo;
+                case EaseType.OutExpo:
+                    return EaseOutExpo;
+                case EaseType.InOutExpo:
+                    return EaseInOutExpo;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
@@ -398,6 +413,27 @@ namespace PowerCellStudio
             return normalizedTime < 0.5f
                 ? (1f - BounceOut(1f - 2f * normalizedTime)) * 0.5f
                 : (1f + BounceOut(2f * normalizedTime - 1)) * 0.5f;
+        }
+
+        private static float EaseInExpo(float normalizedTime)
+        {
+            return normalizedTime == 0f ? 0f : Mathf.Pow(2f, 10f * normalizedTime - 10f);
+        }
+
+        private static float EaseOutExpo(float normalizedTime)
+        {
+            return normalizedTime >= 1f ? 1f : 1f - Mathf.Pow(2f, -10f * normalizedTime);
+        }
+
+        private static float EaseInOutExpo(float normalizedTime)
+        {
+            return normalizedTime == 0f
+                ? 0f
+                : normalizedTime >= 1f
+                    ? 1f
+                    : normalizedTime < 0.5f
+                        ? Mathf.Pow(2f, 20f * normalizedTime - 10f) * 0.5f
+                        : (2f - Mathf.Pow(2f, -20f * normalizedTime + 10f)) * 0.5f;
         }
     }
 }
