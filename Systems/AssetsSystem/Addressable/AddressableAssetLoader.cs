@@ -98,6 +98,34 @@ namespace PowerCellStudio
             return false;
         }
 
+        public void Merge(IAssetLoader other)
+        {
+            if (other == null || other.index == this.index || !other.spawned) return;
+            if (other.IsAnyLoading())
+            {
+                AssetLog.LogError($"Trying to merge loader {other.index} into {this.index} while it still has loading assets. This may cause unexpected behavior.");
+                return;
+            }
+            if (other is AddressableAssetLoader otherLoader)
+            {
+                foreach (var kvp in otherLoader._handles)
+                {
+                    if (!_handles.ContainsKey(kvp.Key))
+                    {
+                        _handles.Add(kvp.Key, kvp.Value);
+                    }
+                    else
+                    {
+                        if (kvp.Value.IsValid())
+                        {
+                            _manager.Release(kvp.Value);
+                        }
+                    }
+                }
+                otherLoader._handles.Clear();
+            }
+        }
+
         #region GameObject
 
         public AsyncOperationHandle<GameObject> GetInstantiateHandle(string address, Vector3 pos, Transform parent = null, Quaternion quaternion = default)

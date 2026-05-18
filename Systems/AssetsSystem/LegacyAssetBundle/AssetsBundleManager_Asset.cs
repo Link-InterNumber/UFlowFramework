@@ -143,6 +143,26 @@ namespace PowerCellStudio
             _coroutineRunner.StartCoroutine(AsyncLoadAssetsBundleHandler(bundleName, onLoaded));
         }
 
+        public void PreloadAsset(string assetPath)
+        {
+            if (_loadedAssets.TryGetCache(assetPath, out var asset) && asset)
+            {
+                return;
+            }
+            if (_loadingAssets.IsLoading(assetPath))
+            {
+                return;
+            }
+            var bundleName = _bundleIndex.GetBundleNameByAsset(assetPath);
+            if (string.IsNullOrEmpty(bundleName))
+            {
+                return;
+            }
+            _loadPlan.AddPlan(bundleName, assetPath, typeof(Object));
+            _loadingAssets.AddLoadingHandle(assetPath, null);
+            GetAssetsBundleAsync(bundleName);
+        }
+
         public void LoadAssetAsync<T>(string assetPath, LoaderYieldInstruction<T> loadAssetRequest)
             where T : Object
         {

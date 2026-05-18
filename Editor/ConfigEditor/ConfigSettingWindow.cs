@@ -22,7 +22,7 @@ namespace PowerCellStudio
         {
             public static string excelPath = "excelPath";
             public static string csFilePath = "csFilePath";
-            public static string assetFilePath = "assetFilePath";
+            // public static string assetFilePath = "assetFilePath";
             public static string UIPrefabPath = "UIPrefabPath";
             public static string localizationCSVPath = "localizationCSVPath";
         }
@@ -42,11 +42,11 @@ namespace PowerCellStudio
             _save = new ConfigSettingSave();
             var defaultExcelPath = Path.Combine(Environment.CurrentDirectory, "ExcelFiles");
             var defaultCsPath = "Assets/ConfigScript/";
-            var defaultAssetPath = "Assets/Resources/";
+            var defaultAssetPath = "Assets/StreamingAssets/ConfigAsset/";
             var defaultLocalCsvPath = Path.Combine(defaultExcelPath, "Localization");
             _save.excelPath = EditorSaveUtils.GetEditorPref(SaveKey.excelPath, defaultExcelPath);
             _save.csFilePath = EditorSaveUtils.GetEditorPref(SaveKey.csFilePath, defaultCsPath);
-            _save.assetFilePath = EditorSaveUtils.GetEditorPref(SaveKey.assetFilePath, defaultAssetPath);
+            _save.assetFilePath = defaultAssetPath; // EditorSaveUtils.GetEditorPref(SaveKey.assetFilePath, defaultAssetPath);
             _save.UIPrefabPath = EditorSaveUtils.GetEditorPref(SaveKey.UIPrefabPath, string.Empty);
             _save.localizationCSVPath = EditorSaveUtils.GetEditorPref(SaveKey.localizationCSVPath, defaultLocalCsvPath);
             //设置绘制按钮的格式
@@ -73,7 +73,7 @@ namespace PowerCellStudio
         {
             _save.excelPath = EditorGUILayout.TextField("excel file Path:", _save.excelPath);
             _save.csFilePath = EditorGUILayout.TextField("cs file Path:", _save.csFilePath);
-            _save.assetFilePath = EditorGUILayout.TextField("asset file Path:", _save.assetFilePath);
+            EditorGUILayout.LabelField("asset file Path:", _save.assetFilePath);
             _save.localizationCSVPath = EditorGUILayout.TextField("Output CSV File Path", _save.localizationCSVPath);
             // InitGuiStyle();
             GUILayout.Space(30);
@@ -205,7 +205,7 @@ namespace PowerCellStudio
             if (_save.csFilePath[_save.csFilePath.Length - 1] != '/')
                 _save.csFilePath += '/';
             EditorSaveUtils.SetEditorPref(SaveKey.csFilePath, _save.csFilePath);
-            EditorSaveUtils.SetEditorPref(SaveKey.assetFilePath, _save.assetFilePath);
+            // EditorSaveUtils.SetEditorPref(SaveKey.assetFilePath, _save.assetFilePath);
             EditorSaveUtils.SetEditorPref(SaveKey.UIPrefabPath, _save.UIPrefabPath);
             EditorSaveUtils.SetEditorPref(SaveKey.localizationCSVPath, _save.localizationCSVPath);
         }

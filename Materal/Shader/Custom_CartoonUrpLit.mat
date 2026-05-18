@@ -44,7 +44,7 @@ Material:
     - _EdgeLightSize: 0.762
     - _Fresnel: 0.455
     - _Gloss: 70
-    - _LightBoundary: -0.455
+    - _LightBoundary: -0.252
     - _LightPower: 0.386
     - _ReceiveShadows: 1
     - _SubShadow: 1.75

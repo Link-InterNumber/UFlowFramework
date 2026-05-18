@@ -57,5 +57,12 @@ namespace PowerCellStudio
         /// <para>Clear unused asset.</para>
         /// </summary>
         void ClearUnusedAsset();
+
+        /// <summary>
+        /// 预加载资源。
+        /// <para>Preload an asset.</para>
+        /// </summary>
+        /// <param name="address">资源地址。<para>Asset address.</para></param>
+        void PreloadAsset(string address);
     }
 }

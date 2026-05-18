@@ -203,6 +203,10 @@ namespace PowerCellStudio
             ui.transform.gameObject.SetActive(false);
             if(ui is IUIParent parent)
             {
+                foreach (var uiChild in parent.openedUIs)
+                {
+                    uiChild.OnHide();
+                }
                 EventManager.instance.onPageClose.Invoke(parent);
             }
             if(ui is IUIChild child)

@@ -33,11 +33,12 @@ namespace PowerCellStudio
         public void Merge(ShakeHandle other)
         {
             if (other == null || other._data.target != _data.target) return;
+            var newTime = other._data.duration + time;
             var newShakeRequest = new ShakeRequest
             {
                 shakeType = other._data.shakeType | _data.shakeType,
                 target = _data.target,
-                duration = _data.duration + other._data.duration - time,
+                duration = newTime > _data.duration ? newTime : _data.duration,
                 frequency = Mathf.Max(_data.frequency, other._data.frequency),
                 magnitude = Vector3.Max(_data.magnitude, other._data.magnitude),
                 curve = other._data.curve != null ? other._data.curve : _data.curve,

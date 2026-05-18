@@ -120,7 +120,7 @@ namespace PowerCellStudio
             bool isEnumKey, bool isMultiKey)
         {
             var excelFileName = reader.path.Replace("\\", "/").Split('/').LastOrDefault();
-            var assetPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.assetFilePath, "Assets/ConfigAsset/");
+            var assetPath = ConfigManager.assetFolderPath;
             var miniColumn = configTypeInfoList.Min(info => info.columns.Min());
             var keySelector = BuildChunkKeySelector(confName, keys, isEnumKey, isMultiKey);
 

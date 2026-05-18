@@ -58,7 +58,7 @@ namespace PowerCellStudio
             {
                 foreach (var h in handler)
                 {
-                    if (h.isDone) continue;
+                    if (h == null || h.isDone) continue;
                     h.SetAsset(asset);
                     refCount++;
                 }

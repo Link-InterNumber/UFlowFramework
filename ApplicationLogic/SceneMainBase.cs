@@ -26,6 +26,7 @@ namespace PowerCellStudio
 
         private IEnumerator UpdateLoadState()
         {
+            yield return ConfigManager.CopyConfigToPersistentDataPath();
             if(!loadingString && !loadingPecent && !loadingImage) yield break;
             while (AssetUtils.initState != AssetInitState.Complete)
             {

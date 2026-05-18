@@ -98,6 +98,31 @@ namespace PowerCellStudio
             return false;
         }
 
+        public void Merge(IAssetLoader other)
+        {
+            if (other == null || other.index == this.index || !other.spawned) return;
+            if (other.IsAnyLoading())
+            {
+                AssetLog.LogError($"Trying to merge loader {other.index} into {this.index} while it still has loading assets. This may cause unexpected behavior.");
+                return;
+            }
+            if (other is BundleAssetLoader otherLoader)
+            {
+                foreach (var kvp in otherLoader._refCount)
+                {
+                    if (!_refCount.ContainsKey(kvp.Key))
+                    {
+                        _refCount.Add(kvp.Key, kvp.Value);
+                    }
+                    else
+                    {
+                        _refCount[kvp.Key] += kvp.Value;
+                    }
+                }
+                otherLoader._refCount.Clear();
+            }
+        }
+
         private void OnLoadFinish<T>(T asset, string address) where T : Object
         {
             if(!asset)

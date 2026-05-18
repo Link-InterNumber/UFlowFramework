@@ -124,8 +124,21 @@ namespace PowerCellStudio
             return Addressables.ReleaseInstance(obj);
         }
 
+        private Dictionary<string, AsyncOperationHandle> _preloadHandlers = new Dictionary<string, AsyncOperationHandle>();
+
+        public void PreloadAsset(string address)
+        {
+            if (_preloadHandlers.ContainsKey(address)) return;
+            var handle = Addressables.LoadAssetAsync<Object>(address);
+            _preloadHandlers[address] = handle;
+        }
+
         public AsyncOperationHandle<T> LoadAsync<T>(string address) where T : Object
         {
+            if (_preloadHandlers.TryGetValue(address, out var handle))
+            {
+                return handle.Convert<T>();
+            }
             return Addressables.LoadAssetAsync<T>(address);
         }
         
@@ -234,6 +247,11 @@ namespace PowerCellStudio
 
         public void ClearUnusedAsset()
         {
+            foreach (var handler in _preloadHandlers.Values)
+            {
+                Addressables.Release(handler);
+            }
+            _preloadHandlers.Clear();
             Resources.UnloadUnusedAssets();
         }
         

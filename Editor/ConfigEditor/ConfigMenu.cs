@@ -102,55 +102,16 @@ namespace PowerCellStudio
         [MenuItem("Tools/Config/Create Config Assets", false, 101)]
         public static void CreateConfigAsset()
         {
-            try
-            {
-                var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.excelPath, "");
-                if (!Directory.Exists(excelPath))
-                {
-                    EditorUtility.DisplayDialog("ConfigMenu", "Excel files path doesn't exist.", "OK");
-                    return;
-                }
-                md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
-                Dictionary<string, string> historyMap = LoadHistoryFile(excelPath);
-
-                var assetFilePath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.assetFilePath, "Assets/ConfigAsset/");
-                if (!Directory.Exists(assetFilePath))
-                {
-                    Directory.CreateDirectory(assetFilePath);
-                }
-                var types = Assembly.GetAssembly(typeof(ConfCreator)).GetTypes().Where(t => 
-                    !t.IsAbstract &&
-                    t.IsClass &&
-                    t.IsSubclassOf(typeof(ConfCreator))).ToArray();
-                EditorUtility.DisplayProgressBar("Create Config Assets", "Start Running", 0f);
-                for (var i = 0; i < types.Length; i++)
-                {
-                    var type = types[i];
-                    EditorUtility.DisplayProgressBar("Create Config Assets", $"Running {type.Name}", 1f * i / types.Length);
-                    var mathod = type.GetMethod("CreatAsset", BindingFlags.Static | BindingFlags.Public);
-                    if (mathod == null) continue;
-                    historyMap.TryGetValue(type.Name, out var oldMd5);
-                    var md5String = (string) mathod.Invoke(null, new object[]{oldMd5});
-                    historyMap[type.Name] = md5String;
-                }
-                SaveHistoryFile(excelPath, historyMap);
-            }
-            catch (Exception e)
-            {
-                ConfigLog.LogError($"{e.Message}\n{e.StackTrace}");
-            }
-            finally
-            { 
-                md5.Dispose();
-                EditorUtility.ClearProgressBar();
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-            }
-
+            CreateConfigAssetsInternal(false);
         }
-        
+
         [MenuItem("Tools/Config/Create Config Assets By Force", false, 102)]
         public static void CreateConfigAssetByForce()
+        {
+            CreateConfigAssetsInternal(true);
+        }
+
+        private static void CreateConfigAssetsInternal(bool force)
         {
             try
             {
@@ -161,9 +122,9 @@ namespace PowerCellStudio
                     return;
                 }
                 md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
-                // Dictionary<string, string> historyMap = LoadHistoryFile(excelPath);
+                var historyMap = force ? null : LoadHistoryFile(excelPath);
 
-                var assetFilePath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.assetFilePath, "Assets/ConfigAsset/");
+                var assetFilePath = ConfigManager.assetFolderPath;
                 if (!Directory.Exists(assetFilePath))
                 {
                     Directory.CreateDirectory(assetFilePath);
@@ -179,18 +140,37 @@ namespace PowerCellStudio
                     EditorUtility.DisplayProgressBar("Create Config Assets", $"Running {type.Name}", 1f * i / types.Length);
                     var mathod = type.GetMethod("CreatAsset", BindingFlags.Static | BindingFlags.Public);
                     if (mathod == null) continue;
-                    // historyMap.TryGetValue(type.Name, out var oldMd5);
-                    mathod.Invoke(null, new object[]{"-1"});
-                    // historyMap[type.Name] = md5String;
+                    var oldMd5 = "-1";
+                    if (!force)
+                    {
+                        historyMap.TryGetValue(type.Name, out oldMd5);
+                    }
+                    var md5String = (string) mathod.Invoke(null, new object[]{oldMd5});
+                    if (!force)
+                    {
+                        historyMap[type.Name] = md5String;
+                    }
                 }
-                // SaveHistoryFile(excelPath, historyMap);
+                if (!force)
+                {
+                    SaveHistoryFile(excelPath, historyMap);
+                }
+                // 获取assetFilePath下的文件列表，保存为一个txt文件，命名为ConfigAssetList.txt，内容为每行一个文件名
+                var sb = new StringBuilder();
+                var assetFiles = Directory.GetFiles(assetFilePath).Select(Path.GetFileName);
+                foreach (var assetFile in assetFiles)
+                {
+                    sb.AppendLine(assetFile);
+                }
+                var listFilePath = Path.Combine(assetFilePath, ConfigManager.configAssetListName);
+                File.WriteAllText(listFilePath, sb.ToString(), Encoding.UTF8);
             }
             catch (Exception e)
             {
                 ConfigLog.LogError($"{e.Message}\n{e.StackTrace}");
             }
             finally
-            {
+            { 
                 md5.Dispose();
                 EditorUtility.ClearProgressBar();
                 AssetDatabase.SaveAssets();
@@ -277,7 +257,7 @@ namespace PowerCellStudio
         [MenuItem("Tools/Config/Delete Config Assets", false, 102)]
         public static void DeleteConfigAsset()
         {
-            var assetPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.assetFilePath, "Assets/ConfigAsset/");
+            var assetPath = ConfigManager.assetFolderPath;
             if (!Directory.Exists(assetPath))
             {
                 return;

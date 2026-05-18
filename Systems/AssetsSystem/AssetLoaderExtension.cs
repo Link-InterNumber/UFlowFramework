@@ -100,13 +100,7 @@ namespace PowerCellStudio
         /// <param name="assetLoader">AssetLoader</param>
         /// <param name="address">音频路径</param>
         /// <param name="callback">对加载的预制体的回调</param>
-        public static void LoadAudioAsync(this IAssetLoader assetLoader, string address, Action<AudioClip> callback)
-        {
-            assetLoader.LoadAsync<AudioClip>(address, (loaded) =>
-            {
-                callback?.Invoke(loaded);
-            });
-        }
+ 
         
         // /// <summary>
         // /// 同步加载音频

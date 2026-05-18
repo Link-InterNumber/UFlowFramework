@@ -68,8 +68,14 @@ namespace PowerCellStudio
             return _waitForLoaded.Count > 0;
         }
 
-        public void Concat(IAssetLoader other)
+        public void Merge(IAssetLoader other)
         {
+            if (other == null || other.index == this.index || !other.spawned) return;
+            if (other.IsAnyLoading())
+            {
+                AssetLog.LogError($"Trying to merge loader {other.index} into {this.index} while it still has loading assets. This may cause unexpected behavior.");
+                return;
+            }
             if (other is ResourceAssetLoader resourceLoader)
             {
                 foreach (var asset in resourceLoader._assets)
@@ -78,11 +84,6 @@ namespace PowerCellStudio
                     {
                         _assets.Add(asset.Key, asset.Value);
                     }
-                }
-
-                foreach (var pair in resourceLoader._waitForLoaded)
-                {
-                    _waitForLoaded[pair.Key] = pair.Value;
                 }
             }
         }

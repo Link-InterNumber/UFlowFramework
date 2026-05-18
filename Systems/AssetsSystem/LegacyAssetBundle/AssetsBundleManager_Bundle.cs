@@ -481,6 +481,11 @@ namespace PowerCellStudio
         public void ClearUnusedAsset()
         {
             _bundleIndex.ClearUnused();
+            var unusedAssets = _loadedAssets.ClearUnusedAssets();
+            foreach (var asset in unusedAssets)
+            {
+                Resources.UnloadAsset(asset);
+            }
             var cached = _loadedBundles.GetAll();
             var removeBundle = ListPool<string>.Get();
             foreach (var cacheRef in cached)
@@ -493,7 +498,8 @@ namespace PowerCellStudio
             for (var i = 0; i < removeBundle.Count; i++)
             {
                 var bundleRef = removeBundle[i];
-                _bundleRefCountBuffer[bundleRef] = _loadedBundles.GetRefCount(bundleRef);
+                var refCount = _loadedBundles.GetRefCount(bundleRef);
+                if (refCount > 0) _bundleRefCountBuffer[bundleRef] = refCount;
                 _loadedBundles.TryGetCache(bundleRef, out var ab);
                 ab.Unload(false);
                 _loadedBundles.RemoveCache(bundleRef);

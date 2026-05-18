@@ -10,6 +10,8 @@ namespace PowerCellStudio
     [Serializable]
     public class PIDCurve
     {
+        private const float MaxIntegralMagnitude = 1000f;
+
         /// <summary>
         /// 比例系数
         /// Proportional coefficient
@@ -62,25 +64,16 @@ namespace PowerCellStudio
         }
 
         /// <summary>
-        /// 计算PID负反馈值
-        /// Calculate PID feedback value.
+        /// 计算本帧增加量
+        /// Calculate the increment for the current frame.
         /// </summary>
         /// <param name="dt">时间差 / Time delta</param>
         /// <param name="curValue">当前值 / Current value</param>
-        /// <returns>负反馈值 / Feedback value</returns>
+        /// <returns>本帧增加量 / Increment for the current frame</returns>
         public float Update(float dt, float curValue)
         {
-            if (dt == 0f) return 0f;
-            
             var delta = _targetValue - curValue;
-            var pValue = P * delta * dt;
-            var iValue = I * _integralAccumulate * dt;
-            var dValue = D * (_previousDelta - delta);
-            
-            _integralAccumulate += (delta + _previousDelta) * 0.5f * dt;
-            _previousDelta = delta;
-            
-            return pValue + iValue + dValue;
+            return Step(dt, delta, ref _previousDelta, ref _integralAccumulate);
         }
 
         /// <summary>
@@ -94,6 +87,24 @@ namespace PowerCellStudio
             _targetValue = targetVal;
             _previousDelta = targetVal - curVal;
             _integralAccumulate = 0f;
+        }
+
+        private float Step(float dt, float delta, ref float previousDelta, ref float integralAccumulate)
+        {
+            if (dt <= 0f) return 0f;
+
+            integralAccumulate = Mathf.Clamp(
+                integralAccumulate + (delta + previousDelta) * 0.5f * dt,
+                -MaxIntegralMagnitude,
+                MaxIntegralMagnitude);
+
+            var pValue = P * delta * dt;
+            var iValue = I * integralAccumulate * dt;
+            var dValue = D * (previousDelta - delta);
+
+            previousDelta = delta;
+
+            return pValue + iValue + dValue;
         }
 
 #if UNITY_EDITOR
@@ -120,17 +131,8 @@ namespace PowerCellStudio
         /// <returns>更新后的反馈值 / Updated feedback value</returns>
         public float OnGUIUpdateValue(float dt, float input)
         {
-            if (dt == 0f) return 0f;
-            
             var delta = -input;
-            var pValue = P * delta * dt;
-            var iValue = I * _integralAccumulateOnGUI * dt;
-            var dValue = D * (_previousDeltaOnGUI - delta);
-            
-            _integralAccumulateOnGUI += (delta + _previousDeltaOnGUI) * 0.5f * dt;
-            _previousDeltaOnGUI = delta;
-            
-            return pValue + iValue + dValue;
+            return Step(dt, delta, ref _previousDeltaOnGUI, ref _integralAccumulateOnGUI);
         }
 #endif
     }

@@ -42,6 +42,77 @@ Shader "Custom/BaseUrpLit"
 
         Pass
         {
+            Name "ShadowCaster"
+            Tags { "LightMode" = "ShadowCaster" }
+
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
+            Cull Back
+
+            HLSLPROGRAM
+            #pragma vertex ShadowPassVertex
+            #pragma fragment ShadowPassFragment
+            #pragma multi_compile_instancing
+            #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
+
+            float3 _LightDirection;
+            float3 _LightPosition;
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+            };
+
+            float4 GetShadowPositionHClip(Attributes input)
+            {
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
+
+#if _CASTING_PUNCTUAL_LIGHT_SHADOW
+                float3 lightDirectionWS = normalize(_LightPosition - positionWS);
+#else
+                float3 lightDirectionWS = _LightDirection;
+#endif
+
+                float4 positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, lightDirectionWS));
+
+#if UNITY_REVERSED_Z
+                positionCS.z = min(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);
+#else
+                positionCS.z = max(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);
+#endif
+
+                return ApplyShadowClamping(positionCS);
+            }
+
+            Varyings ShadowPassVertex(Attributes input)
+            {
+                Varyings output;
+                UNITY_SETUP_INSTANCE_ID(input);
+                output.positionCS = GetShadowPositionHClip(input);
+                return output;
+            }
+
+            half4 ShadowPassFragment(Varyings input) : SV_TARGET
+            {
+                return 0;
+            }
+            ENDHLSL
+        }
+
+        Pass
+        {
             Name "BaseColor"
             Tags
             {
@@ -54,8 +125,7 @@ Shader "Custom/BaseUrpLit"
             #pragma vertex vert
             #pragma fragment frag
             // 阴影
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
-			#pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             // 雾
             #pragma multi_compile_fog
             // 额外光源
@@ -88,6 +158,7 @@ Shader "Custom/BaseUrpLit"
                 float4 TtoW1 : TEXCOORD2; // Tangent to World space
                 float4 TtoW2 : TEXCOORD3; // Tangent to World space
                 half fogFactor : TEXCOORD4;
+                half3 vertexLighting : TEXCOORD5;
                 // float4 shadowCoord : TEXCOORD5;	// shadow receive
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -119,14 +190,16 @@ Shader "Custom/BaseUrpLit"
 
                 float3 worldPos = vertexInput.positionWS.xyz; // mul(unity_ObjectToWorld, v.vertex).xyz;
 
-                float3 worldNormal = normalize(mul(unity_ObjectToWorld, v.normal));
-                float3 worldTangent = normalize(mul(unity_ObjectToWorld, v.tangent.xyz));
-                float3 worldBinormal = cross(worldNormal, worldTangent) * v.tangent.w;
+                float3 worldNormal = TransformObjectToWorldNormal(v.normal);
+                float3 worldTangent = normalize(TransformObjectToWorldDir(v.tangent.xyz));
+                float tangentSign = v.tangent.w * GetOddNegativeScale();
+                float3 worldBinormal = normalize(cross(worldNormal, worldTangent) * tangentSign);
 
                 o.TtoW0 = float4(worldTangent.x, worldBinormal.x, worldNormal.x, worldPos.x);
                 o.TtoW1 = float4(worldTangent.y, worldBinormal.y, worldNormal.y, worldPos.y);
                 o.TtoW2 = float4(worldTangent.z, worldBinormal.z, worldNormal.z, worldPos.z);
 
+                o.vertexLighting = VertexLighting(worldPos, worldNormal);
                 o.fogFactor = ComputeFogFactor(vertexInput.positionCS.z);
                 return o;
             }
@@ -135,7 +208,6 @@ Shader "Custom/BaseUrpLit"
             {
                 UNITY_SETUP_INSTANCE_ID(i);
                 float3 worldPos = float3(i.TtoW0.w, i.TtoW1.w, i.TtoW2.w);
-                float3 lightDir = GetMainLight().direction;
                 float3 viewDir = normalize(_WorldSpaceCameraPos - worldPos);
 
                 // 法线
@@ -153,14 +225,19 @@ Shader "Custom/BaseUrpLit"
                 
                 // 主光源阴影
                 float4 shadowCoord = TransformWorldToShadowCoord(worldPos);
-                float shadow = MainLightRealtimeShadow(shadowCoord);
+                Light mainLight = GetMainLight(shadowCoord);
+                float3 lightDir = mainLight.direction;
 
                 // 光照
-                float3 ambient = half3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w).xyz * albedo;
-                float3 diffuse = _MainLightColor.rgb * albedo * _Diffuse.rgb * max(0, dot(bump, lightDir)) * shadow + fresnel;
+                float3 ambient = SampleSH(bump) * albedo;
+                float3 diffuse = mainLight.color * albedo * _Diffuse.rgb * saturate(dot(bump, lightDir)) * mainLight.shadowAttenuation + fresnel;
                 // 反射方向
                 float3 halfDir = normalize(lightDir + viewDir);
-                float3 specular = _MainLightColor.rgb * _Specular.rgb * pow(max(0, dot(bump, halfDir)), _Gloss) * shadow;
+                float3 specular = mainLight.color * _Specular.rgb * pow(saturate(dot(bump, halfDir)), _Gloss) * mainLight.shadowAttenuation;
+
+#if defined(_ADDITIONAL_LIGHTS_VERTEX)
+                diffuse += i.vertexLighting * albedo * _Diffuse.rgb;
+#endif
 
 #if defined(_ADDITIONAL_LIGHTS)
                 // 获取额外光源处理

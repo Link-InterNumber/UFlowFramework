@@ -77,6 +77,8 @@ namespace PowerCellStudio
 
         public abstract void OnFocus();
 
+        public virtual void OnHide(){}
+
         public abstract void OnClose();
 
         public virtual void OnUIDestroy()

@@ -5,8 +5,8 @@
     	public {{ConfName}}Collections()
 		{
 #if UNITY_EDITOR
-			_assetPath = "Assets/ConfigAsset/{{ConfName}}Data.bytes";
-			_idxFilePath = "Assets/ConfigAsset/{{ConfName}}Index.bytes";
+			_assetPath = $"{ConfigManager.assetFolderPath}/{{ConfName}}Data.bytes";
+			_idxFilePath = $"{ConfigManager.assetFolderPath}/{{ConfName}}Index.bytes";
 #else
 			_assetPath = Path.Combine(Application.persistentDataPath, "ConfigAsset", "{{ConfName}}Data.bytes");
 			_idxFilePath = Path.Combine(Application.persistentDataPath, "ConfigAsset", "{{ConfName}}Index.bytes");
@@ -119,7 +119,7 @@ namespace PowerCellStudio
 
         private static void WriteConstructor(CsWriter csWriter, string confName)
         {
-            var assetPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.assetFilePath, "Assets/ConfigAsset/");
+            var assetPath = ConfigManager.assetFolderPath;
             csWriter.StartWriteMethod(CsWriter.MethodSign.Public,
                     CsWriter.MethodSign.None, 
                     "",

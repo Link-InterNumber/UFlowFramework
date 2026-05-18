@@ -75,16 +75,18 @@ namespace PowerCellStudio
             OnOpen(data);
         }
 
-        public abstract void OnOpen(object data);
-
         bool IUIComponent.Close()
         {
             return true;
         }
 
-        public abstract void OnClose();
-        
+        public abstract void OnOpen(object data);
+
         public abstract void OnFocus();
+        
+        public virtual void OnHide(){}
+
+        public abstract void OnClose();
 
         public virtual void RegisterEvent()
         {

@@ -18,6 +18,7 @@ namespace PowerCellStudio
 
         public void Init(MonoBehaviour coroutineRunner, Action callBack)
         {
+            this.coroutineRunner = coroutineRunner;
             initState = AssetInitState.InitModule;
             initProcess = 0.5f;
             // Resources不需要复杂初始化，直接完成
@@ -62,6 +63,11 @@ namespace PowerCellStudio
         public void ClearUnusedAsset()
         {
             Resources.UnloadUnusedAssets();
+        }
+
+        public void PreloadAsset(string address)
+        {
+            Resources.LoadAsync(address);
         }
     }
 }

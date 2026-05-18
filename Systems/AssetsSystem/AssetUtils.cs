@@ -19,16 +19,17 @@ namespace PowerCellStudio
         
         private static LoaderYieldInstructionPool _loaderYieldInstructionPool;
         private static AssetLoaderPool _assetLoaderPool;
-        private static PoolableObjectPool _preLoaderPool;
+        private static PoolableObjectPool _batchLoaderPool;
         
         public static AssetInitState initState => _assetManager?.initState ?? AssetInitState.Complete;
 
         public static float initProcess => _assetManager?.initProcess ?? 0f;
         
-        public static void Init(MonoBehaviour coroutineRunner, Action callBack)
+        public static void Init(MonoBehaviour coroutineRunner, Action callBack, LoadMode loadMode = LoadMode.Addressable)
         {
+            _loadMode = loadMode;
             _loaderYieldInstructionPool = new LoaderYieldInstructionPool();
-            _preLoaderPool = new PoolableObjectPool(() => new AssetBatchLoader(), 10, 100);
+            _batchLoaderPool = new PoolableObjectPool(() => new AssetBatchLoader(), 10, 100);
             switch (_loadMode)
             {
                 case LoadMode.AssetBundle:
@@ -121,7 +122,7 @@ namespace PowerCellStudio
         /// <returns>下载处理句柄。<para>Download handler.</para></returns>
         public static AssetBatchLoader SpawnBatchLoader(IAssetLoader loader, string[] labels, Action onComplete, bool isConcurrent = false)
         {
-            var handler = _preLoaderPool.Get() as AssetBatchLoader;
+            var handler = _batchLoaderPool.Get() as AssetBatchLoader;
             handler.Prepare(loader, labels, onComplete, isConcurrent);
             return handler;
         }
@@ -134,7 +135,7 @@ namespace PowerCellStudio
         public static void DespawnBatchLoader(AssetBatchLoader handler)
         {
             if (handler == null) return;
-            _preLoaderPool.Release(handler);
+            _batchLoaderPool.Release(handler);
         }
 
         public static string EditorCheckPath(string paths)
@@ -219,6 +220,11 @@ namespace PowerCellStudio
                 return;
             }
             _loaderYieldInstructionPool.Release<T>(item);
+        }
+
+        public static void PreloadAsset(string address)
+        {
+            _assetManager?.PreloadAsset(address);
         }
 
         public static void ClearUnusedAsset()

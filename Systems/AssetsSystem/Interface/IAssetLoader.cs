@@ -96,5 +96,7 @@ namespace PowerCellStudio
         /// <param name="onSuccess">加载成功回调。Callback invoked when loading succeeds.</param>
         /// <param name="onFail">加载失败回调。Callback invoked when loading fails.</param>
         public void LoadAllAsync<T>(string label, OnLoadSuccess<IList<T>> onSuccess, OnLoadFailed onFail = null) where T : UnityEngine.Object;
+
+        // public void Merge(IAssetLoader other);
     }
 }

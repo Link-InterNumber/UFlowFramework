@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEngine;
@@ -8,7 +7,8 @@ namespace PowerCellStudio
 {
     public partial class ConfigManager: SingletonBase<ConfigManager>
     {
-        public static string assetLabel = "configasset";
+        public static string assetFolderPath => $"{Application.streamingAssetsPath}/ConfigAsset/";
+        public static string configAssetListName => "ConfigAssetList.txt";
 
         private bool _inited = false;
         /// <summary>
@@ -17,52 +17,75 @@ namespace PowerCellStudio
         /// </summary>
         private ConfigGroup _initConfig;
 
-        public IEnumerator Init(OnLoadCompleted onInitCompleted)
+        public static IEnumerator CopyConfigToPersistentDataPath()
         {
-#if !UNITY_EDITOR
-            // 从资源中加载所有的配置表二进制文件存放在$"{Application.persistentDataPath}/ConfigAsset/"目录下
             var saveKey = "ConfigFirstLoadComplete";
             var complete = PlayerPrefs.GetInt(saveKey, 0);
-            if (complete == 0)
+            if (complete > 0) // 已经完成过复制，直接返回
+                yield break;
+
+            // 从资源中加载所有的配置表二进制文件存放在$"{Application.persistentDataPath}/ConfigAsset/"目录下
+            var folder = Path.Combine(Application.persistentDataPath, "ConfigAsset");
+            if (!Directory.Exists(folder))
             {
-                // 首次加载
-                // 创建目录
-                var folder = Path.Combine(Application.persistentDataPath, "ConfigAsset");
-                if (!Directory.Exists(folder))
-                {
-                    Directory.CreateDirectory(folder);
-                }
-                // 将bundle中的文件拷贝到持久化目录
-                var loader = AssetUtils.SpawnLoader("InitConfigLoader");
-                var wait = new YieldInstructionCompletionSource<IList<TextAsset>>();
-                loader.LoadAllAsync<TextAsset>(assetLabel, assets =>
-                {
-                    foreach (var asset in assets)
-                    {
-                        var assetPath = Path.Combine(folder, Path.GetFileNameWithoutExtension(asset.name) + ".bytes");
-                        File.WriteAllBytes(assetPath, asset.bytes);
-                    }
-                    wait.SetResult(assets);
-                    AssetUtils.DeSpawnLoader(loader);
-                });
-                yield return wait;
-                PlayerPrefs.SetInt(saveKey, 1);
+                Directory.CreateDirectory(folder);
             }
-# else
-            // 编辑器下直接从Assets目录加载配置表二进制文件，用作检查配置表资源是否配置正确分包/group
-            var loader = AssetUtils.SpawnLoader("InitConfigLoader");
-            var wait = new YieldInstructionCompletionSource<IList<TextAsset>>();
-            loader.LoadAllAsync<TextAsset>(assetLabel, assets =>
+            if (Application.platform == RuntimePlatform.WebGLPlayer)
             {
-                wait.SetResult(assets);
-                AssetUtils.DeSpawnLoader(loader);
-            }, 
-            () =>
+                // WebGL平台无法直接访问文件系统，暂不支持从资源中加载配置表二进制文件
+                Debug.LogError("WebGL platform does not support loading config asset from resources.");
+                yield break;
+            }
+            if (Application.platform == RuntimePlatform.Android)
             {
-                ConfigLog.LogError($"Failed to load config assets with label {assetLabel}, please check if the config assets are correctly labeled and included in the build.");
-            });
-            yield return wait;
-# endif
+                var listFilePath = $"{assetFolderPath}{configAssetListName}";
+                using var wepRequest = UnityEngine.Networking.UnityWebRequest.Get(listFilePath);
+                wepRequest.downloadHandler = new UnityEngine.Networking.DownloadHandlerFile(Path.Combine(folder, configAssetListName));
+                var asyncOp = wepRequest.SendWebRequest();
+                yield return asyncOp;
+                if (wepRequest.result != UnityEngine.Networking.UnityWebRequest.Result.Success)                {
+                    Debug.LogError($"Failed to copy config asset list file from {listFilePath} to {folder}, error: {wepRequest.error}");
+                    yield break;
+                }
+                var listFileContent = File.ReadAllText(Path.Combine(folder, configAssetListName), Encoding.UTF8);
+                var assetFiles = listFileContent.Split(new[] { '\r', '\n' }, System.StringSplitOptions.RemoveEmptyEntries);
+                wepRequest.Dispose();
+                foreach (var assetFile in assetFiles)
+                {
+                    var assetPath = $"{assetFolderPath}{assetFile}";
+                    var destPath = Path.Combine(folder, assetFile);
+                    using var assetRequest = UnityEngine.Networking.UnityWebRequest.Get(assetPath);
+                    assetRequest.downloadHandler = new UnityEngine.Networking.DownloadHandlerFile(destPath);
+                    var assetAsyncOp = assetRequest.SendWebRequest();
+                    yield return assetAsyncOp;
+                    if (assetRequest.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+                    {
+                        Debug.LogError($"Failed to copy config asset file from {assetPath} to {destPath}, error: {assetRequest.error}");
+                    }
+                    assetRequest.Dispose();
+                }
+            }
+            else
+            {
+                var listFilePath = Path.Combine(assetFolderPath, configAssetListName);
+                // 其他平台可以直接访问文件系统
+                var listFileContent = File.ReadAllText(listFilePath, Encoding.UTF8);
+                var assetFiles = listFileContent.Split(new[] { '\r', '\n' }, System.StringSplitOptions.RemoveEmptyEntries);
+                foreach (var assetFile in assetFiles)
+                {
+                    var assetPath = Path.Combine(assetFolderPath, assetFile);
+                    var destPath = Path.Combine(folder, assetFile);
+                    File.Copy(assetPath, destPath, true);
+                }
+            }
+
+            PlayerPrefs.SetInt(saveKey, 1);
+        }
+
+        public IEnumerator Init(OnLoadCompleted onInitCompleted)
+        {
+            // 编辑器下直接assetFolderPath中加载配置表二进制文件，无需拷贝到持久化目录
+            yield return null;
             // // 你可以使用 ConfigGroup 加载多个配置数据；
             // // You can use ConfigGroup to load multiple configuration data;
             // _initConfig = new ConfigGroup<CommonConfigLoader>(_guidanceConf, _rolePropConf); //(_baseTypeSampleConf, _customTypeSampleConf);

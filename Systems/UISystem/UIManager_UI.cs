@@ -136,19 +136,13 @@ namespace PowerCellStudio
             var page = GetOrCreatePage<T>();
             if (page == null) return null;
             page.pushMode = pushMode;
+            UIUtils.OpenUI(page, data);
             if (currentPage != null && currentPage.GetHashCode() == page.GetHashCode())
             {
-                UIUtils.OpenUI(currentPage, data);
                 SortingPage();
                 return currentPage as T;
             }
-            if (pushMode == PagePushMode.Replace && _pageStack.Count > 0)
-            {
-                var pageToClose = _pageStack.Pop();
-                TryCachePage(pageToClose, true, null);
-            }
             _pageStack.Push(page);
-            UIUtils.OpenUI(page, data);
             SortingPage();
             return page;
         }
@@ -319,10 +313,39 @@ namespace PowerCellStudio
             }
             if (currentPage.GetUI<T>() == null && typeof(IUIPoolable).IsAssignableFrom(windowType))
             {
-                _poolPage.OpenUI<T>(currentPage, data, beforeOpen);
+                _poolPage.OpenUI<T>(currentPage, data, () => BeforeOpenWindow(beforeOpen));
                 return;
             }
-            currentPage.OpenUI<T>(data, beforeOpen);
+            currentPage.OpenUI<T>(data, () => BeforeOpenWindow(beforeOpen));
+        }
+
+        private void BeforeOpenWindow(Action beforeOpen)
+        {
+            switch (currentPage.pushMode)
+            {
+                case PagePushMode.CloseOther:
+                    foreach (var uiParent in _pageStack)
+                    {
+                        if (uiParent == currentPage) continue;
+                        if (uiParent.isOpened)
+                        {
+                            UIUtils.ClosePageInstance(uiParent, false, null, _poolPage);
+                        }
+                    }
+                    break;
+                case PagePushMode.Replace:
+                    if (_pageStack.Count > 0)
+                    {
+                        var top = _pageStack.Pop();
+                        var second = _pageStack.Pop();
+                        _pageStack.Push(top);
+                        TryCachePage(second, true, null);
+                    }
+                    break;
+                case PagePushMode.Overlap:
+                    break;
+            }
+            beforeOpen?.Invoke();
         }
 
         /// <summary>
@@ -360,26 +383,6 @@ namespace PowerCellStudio
                     UIUtils.RemoveChild(window);
                     UIUtils.SetUIChildToParent(window, _poolPage);
                 }
-            }
-        }
-
-        /// <summary>
-        /// 当UI窗口打开时，将之前没关闭的Page关闭。
-        /// When a UI window opens, close any previous pages that weren't closed.
-        /// </summary>
-        /// <param name="data">窗口数据 / Window data</param>
-        private void OnUIWindowOpened(IUIChild data)
-        {
-            if (data is IUIStandAlone) return;
-            if (_pageStack.Count < 2 || currentPage.pushMode == PagePushMode.Overlap) return;
-            var index = 0;
-            foreach (var uiParent in _pageStack)
-            {
-                if (index > 0 && uiParent.isOpened)
-                {
-                    UIUtils.ClosePageInstance(uiParent, false, null, _poolPage);
-                }
-                index++;
             }
         }
 

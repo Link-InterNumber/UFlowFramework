@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 
 namespace PowerCellStudio
 {
@@ -51,6 +52,24 @@ namespace PowerCellStudio
             {
                 yield return cacheValue;
             }
+        }
+
+        public IEnumerable<T> ClearUnusedAssets()
+        {
+            var keysToRemove = ListPool<string>.Get();
+            foreach (var cacheValue in _cache)
+            {
+                if (!cacheValue.Value.isAlive)
+                {
+                    keysToRemove.Add(cacheValue.Key);
+                    yield return cacheValue.Value.asset;
+                }
+            }
+            foreach (var key in keysToRemove)
+            {
+                _cache.Remove(key);
+            }
+            ListPool<string>.Release(keysToRemove);
         }
         
         public void Clear()
