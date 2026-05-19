@@ -166,7 +166,7 @@ namespace PowerCellStudio
         private static void WriteConfEnumKeys(CsWriter csWriter, ExcelReader excelReader, ConfigTypeInfo keyInfo, string confName)
         {
             var p = excelReader.path.Replace("\\", "/");
-            var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.excelPath, "");
+            var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingLogic.SaveKey.excelPath, "");
             string path = Path.Combine(excelPath, p.Split('/').LastOrDefault() ?? string.Empty);
             var enumValues = new HashSet<string>();
             var list = new List<string>();

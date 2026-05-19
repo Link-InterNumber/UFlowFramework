@@ -189,7 +189,7 @@ namespace PowerCellStudio
             // 如果需要枚举导出逻辑，可在此处把之前的拼接逻辑以追加形式加到 _generatedCsString 尾部或使用模板替换
             // 为了保持和之前一样的功能：
             var p = _path.Replace("\\", "/");
-            var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.excelPath, "");
+            var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingLogic.SaveKey.excelPath, "");
             string path = Path.Combine(excelPath, p.Split('/').LastOrDefault() ?? string.Empty);
             var enumValues = new HashSet<string>();
             var list = new List<string>();

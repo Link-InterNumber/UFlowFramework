@@ -30,7 +30,7 @@ namespace PowerCellStudio
         {
             try
             {
-                var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.excelPath, "");
+                var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingLogic.SaveKey.excelPath, "");
                 if (string.IsNullOrEmpty(excelPath) || !Directory.Exists(excelPath))
                 {
                     excelPath = EditorUtility.OpenFolderPanel("Select the folder of excel files", Environment.CurrentDirectory, "");
@@ -42,8 +42,8 @@ namespace PowerCellStudio
                     EditorUtility.DisplayDialog("ConfigMenu", "Excel files path doesn't exist.", "OK");
                     return;
                 }
-                EditorSaveUtils.SetEditorPref(ConfigSettingWindow.SaveKey.excelPath, excelPath);
-                var csFileFold = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.csFilePath, "Assets/ConfigScript/");
+                EditorSaveUtils.SetEditorPref(ConfigSettingLogic.SaveKey.excelPath, excelPath);
+                var csFileFold = EditorSaveUtils.GetEditorPref(ConfigSettingLogic.SaveKey.csFilePath, "Assets/ConfigScript/");
                 var editorCsFold = Path.Combine(csFileFold, "Editor/");
                 if (!Directory.Exists(csFileFold))
                 {
@@ -115,7 +115,7 @@ namespace PowerCellStudio
         {
             try
             {
-                var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.excelPath, "");
+                var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingLogic.SaveKey.excelPath, "");
                 if (!Directory.Exists(excelPath))
                 {
                     EditorUtility.DisplayDialog("ConfigMenu", "Excel files path doesn't exist.", "OK");
@@ -272,7 +272,7 @@ namespace PowerCellStudio
                 EditorUtility.DisplayProgressBar("Delete Config Assets", $"Delete Asset {path}", 1f * i / paths.Length);
                 AssetDatabase.DeleteAsset(path);
             }
-            var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.excelPath, "");
+            var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingLogic.SaveKey.excelPath, "");
             SaveHistoryFile(excelPath, new Dictionary<string, string>());
             EditorUtility.ClearProgressBar();
             AssetDatabase.Refresh();
@@ -283,8 +283,8 @@ namespace PowerCellStudio
         {
             try
             {
-                // var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.excelPath);
-                var csvPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.localizationCSVPath, Path.Combine(Environment.CurrentDirectory, "ExcelFiles/Localization")); //Path.Combine(excelPath, "Localization");
+                // var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingLogic.SaveKey.excelPath);
+                var csvPath = EditorSaveUtils.GetEditorPref(ConfigSettingLogic.SaveKey.localizationCSVPath, Path.Combine(Environment.CurrentDirectory, "ExcelFiles/Localization")); //Path.Combine(excelPath, "Localization");
                 if (!Directory.Exists(csvPath))
                 {
                     Directory.CreateDirectory(csvPath);

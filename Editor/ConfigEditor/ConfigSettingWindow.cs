@@ -9,7 +9,33 @@ namespace PowerCellStudio
 {
     public class ConfigSettingWindow : EditorWindow
     {
-        public class ConfigSettingSave
+        [MenuItem("Tools/Config/Config Setting Window", false, 99)]
+        static void OpenEditorSettingWindow()
+        {
+            EditorWindow.GetWindow<ConfigSettingWindow>(false, "Config Setting Window", true).Show();
+        }
+        
+        private readonly ConfigSettingLogic _logic = new ConfigSettingLogic();
+
+        void OnEnable()
+        {
+            _logic.Initialize();
+        }
+
+        private void OnDisable()
+        {
+            _logic.Dispose();
+        }
+        
+        void OnGUI()
+        {
+            _logic.OnGUI();
+        }
+    }
+
+    internal sealed class ConfigSettingLogic
+    {
+        private sealed class ConfigSettingSave
         {
             public string excelPath;
             public string csFilePath;
@@ -18,88 +44,81 @@ namespace PowerCellStudio
             public string localizationCSVPath;
         }
 
-        public class SaveKey
+        public static class SaveKey
         {
-            public static string excelPath = "excelPath";
-            public static string csFilePath = "csFilePath";
-            // public static string assetFilePath = "assetFilePath";
-            public static string UIPrefabPath = "UIPrefabPath";
-            public static string localizationCSVPath = "localizationCSVPath";
+            public static readonly string excelPath = "excelPath";
+            public static readonly string csFilePath = "csFilePath";
+            public static readonly string UIPrefabPath = "UIPrefabPath";
+            public static readonly string localizationCSVPath = "localizationCSVPath";
         }
-        
-        [MenuItem("Tools/Config/Config Setting Window", false, 99)]
-        static void OpenEditorSettingWindow()
+
+        private sealed class Mark
         {
-            EditorWindow.GetWindow<ConfigSettingWindow>(false, "Config Setting Window", true).Show();
+            public bool has;
         }
-        
+
+        private const string DefaultCsPath = "Assets/ConfigScript/";
+        private const string DefaultAssetPath = "Assets/StreamingAssets/ConfigAsset/";
+
         private ConfigSettingSave _save;
 
-        // private GUIStyle _guiStyle;
-
-        void OnEnable()
+        public void Initialize()
         {
             _save = new ConfigSettingSave();
             var defaultExcelPath = Path.Combine(Environment.CurrentDirectory, "ExcelFiles");
-            var defaultCsPath = "Assets/ConfigScript/";
-            var defaultAssetPath = "Assets/StreamingAssets/ConfigAsset/";
             var defaultLocalCsvPath = Path.Combine(defaultExcelPath, "Localization");
             _save.excelPath = EditorSaveUtils.GetEditorPref(SaveKey.excelPath, defaultExcelPath);
-            _save.csFilePath = EditorSaveUtils.GetEditorPref(SaveKey.csFilePath, defaultCsPath);
-            _save.assetFilePath = defaultAssetPath; // EditorSaveUtils.GetEditorPref(SaveKey.assetFilePath, defaultAssetPath);
+            _save.csFilePath = EditorSaveUtils.GetEditorPref(SaveKey.csFilePath, DefaultCsPath);
+            _save.assetFilePath = DefaultAssetPath;
             _save.UIPrefabPath = EditorSaveUtils.GetEditorPref(SaveKey.UIPrefabPath, string.Empty);
             _save.localizationCSVPath = EditorSaveUtils.GetEditorPref(SaveKey.localizationCSVPath, defaultLocalCsvPath);
-            //设置绘制按钮的格式
-            // InitGuiStyle();
         }
 
-        // private void InitGuiStyle()
-        // {
-        //     if(_guiStyle != null) return;
-        //     _guiStyle = new GUIStyle(EditorStyles.miniButton);
-        //     _guiStyle.fontSize = 15;
-        //     _guiStyle.fixedHeight = 25;
-        //     // _guiStyle.fixedWidth = 200;
-        // }
-
-        private void OnDisable()
+        public void Dispose()
         {
             _save = null;
-            // _guiStyle = null;
-            // _guiStyle = null;
         }
-        
-        void OnGUI()
+
+        public void OnGUI()
         {
+            if (_save == null)
+            {
+                Initialize();
+            }
+
             _save.excelPath = EditorGUILayout.TextField("excel file Path:", _save.excelPath);
             _save.csFilePath = EditorGUILayout.TextField("cs file Path:", _save.csFilePath);
             EditorGUILayout.LabelField("asset file Path:", _save.assetFilePath);
             _save.localizationCSVPath = EditorGUILayout.TextField("Output CSV File Path", _save.localizationCSVPath);
-            // InitGuiStyle();
+
             GUILayout.Space(30);
             if (GUILayout.Button("Save Settings"))
             {
-                SaveSettings();
+                SaveData();
             }
+
             GUILayout.Space(10);
             if (GUILayout.Button("Create Cs Files"))
             {
-                SaveSettings();
+                SaveData();
                 ConfigMenu.CreateCsFiles();
-                _save.excelPath = EditorSaveUtils.GetEditorPref(SaveKey.excelPath, "");
+                _save.excelPath = EditorSaveUtils.GetEditorPref(SaveKey.excelPath, string.Empty);
             }
+
             GUILayout.Space(10);
             if (GUILayout.Button("Create Config Assets"))
             {
-                SaveSettings();
+                SaveData();
                 ConfigMenu.CreateConfigAsset();
                 ConfigMenu.CreateLocalizationCsv();
             }
+
             GUILayout.Space(10);
             if (GUILayout.Button("Delete Config Assets"))
             {
                 ConfigMenu.DeleteConfigAsset();
             }
+
             GUILayout.Space(10);
             if (GUILayout.Button("Create Localization csv"))
             {
@@ -123,13 +142,48 @@ namespace PowerCellStudio
                     EditorUtility.DisplayDialog("Error", "Please specify a valid output file path.", "OK");
                     return;
                 }
+
                 ExportTextsToCSV(_save.UIPrefabPath, _save.localizationCSVPath);
             }
         }
 
-        private class Mark
+        public void SaveData()
         {
-            public bool has = false;
+            if (_save == null)
+            {
+                Initialize();
+            }
+
+            if (string.IsNullOrEmpty(_save.excelPath) || !Directory.Exists(_save.excelPath))
+            {
+                _save.excelPath =
+                    EditorUtility.OpenFolderPanel("Select the folder of excel files", Environment.CurrentDirectory, string.Empty);
+            }
+
+            EditorSaveUtils.SetEditorPref(SaveKey.excelPath, _save.excelPath);
+            if (string.IsNullOrEmpty(_save.csFilePath) || !Directory.Exists(_save.csFilePath))
+            {
+                _save.csFilePath = DefaultCsPath;
+            }
+
+            if (string.IsNullOrEmpty(_save.assetFilePath) || !Directory.Exists(_save.assetFilePath))
+            {
+                _save.assetFilePath = "Assets/Resources/";
+            }
+
+            if (_save.assetFilePath[_save.assetFilePath.Length - 1] != '/')
+            {
+                _save.assetFilePath += '/';
+            }
+
+            if (_save.csFilePath[_save.csFilePath.Length - 1] != '/')
+            {
+                _save.csFilePath += '/';
+            }
+
+            EditorSaveUtils.SetEditorPref(SaveKey.csFilePath, _save.csFilePath);
+            EditorSaveUtils.SetEditorPref(SaveKey.UIPrefabPath, _save.UIPrefabPath);
+            EditorSaveUtils.SetEditorPref(SaveKey.localizationCSVPath, _save.localizationCSVPath);
         }
 
         private void ExportTextsToCSV(string folderPath, string outputFilePath)
@@ -146,13 +200,17 @@ namespace PowerCellStudio
 
                 if (prefab != null)
                 {
-                    AddTextsFromGameObject(prefab.transform, "", stringBuilder, mark);
-                    if (mark.has) EditorUtility.SetDirty(prefab);
+                    AddTextsFromGameObject(prefab.transform, string.Empty, stringBuilder, mark);
+                    if (mark.has)
+                    {
+                        EditorUtility.SetDirty(prefab);
+                    }
                 }
+
                 mark.has = false;
             }
-            mark = null;
-            File.WriteAllText(outputFilePath, stringBuilder.ToString());            
+
+            File.WriteAllText(outputFilePath, stringBuilder.ToString());
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             EditorUtility.DisplayDialog("Export Complete", $"Exported text data to {outputFilePath}", "OK");
@@ -161,53 +219,20 @@ namespace PowerCellStudio
 
         private void AddTextsFromGameObject(Transform transform, string parentPath, StringBuilder stringBuilder, Mark mark)
         {
-            // Prepare the path string
             string currentPath = string.IsNullOrEmpty(parentPath) ? transform.name : $"{parentPath}_{transform.name}";
 
-            // Get Text component (you might consider using TryGetComponent for better performance in the latest Unity versions)
             var textComponent = transform.GetComponent<TextEx>();
             if (textComponent != null && textComponent.staticText)
             {
                 mark.has = true;
                 textComponent.localizationKey = currentPath;
-                // Use AppendLine for automatic newline and efficient string building
                 stringBuilder.AppendLine($"{currentPath},{textComponent.text}");
             }
 
-            // Recursively process child transforms
             foreach (Transform child in transform)
             {
                 AddTextsFromGameObject(child, currentPath, stringBuilder, mark);
             }
-        }
-
-        private void SaveSettings()
-        {
-            if (string.IsNullOrEmpty(_save.excelPath) || !Directory.Exists(_save.excelPath))
-            {
-                _save.excelPath =
-                    EditorUtility.OpenFolderPanel("Select the folder of excel files", Environment.CurrentDirectory, "");
-            }
-
-            EditorSaveUtils.SetEditorPref(SaveKey.excelPath, _save.excelPath);
-            if (string.IsNullOrEmpty(_save.csFilePath) || !Directory.Exists(_save.csFilePath))
-            {
-                _save.csFilePath = "Assets/ConfigScript/";
-            }
-
-            if (string.IsNullOrEmpty(_save.assetFilePath) || !Directory.Exists(_save.assetFilePath))
-            {
-                _save.assetFilePath = "Assets/Resources/";
-            }
-
-            if (_save.assetFilePath[_save.assetFilePath.Length - 1] != '/')
-                _save.assetFilePath += '/';
-            if (_save.csFilePath[_save.csFilePath.Length - 1] != '/')
-                _save.csFilePath += '/';
-            EditorSaveUtils.SetEditorPref(SaveKey.csFilePath, _save.csFilePath);
-            // EditorSaveUtils.SetEditorPref(SaveKey.assetFilePath, _save.assetFilePath);
-            EditorSaveUtils.SetEditorPref(SaveKey.UIPrefabPath, _save.UIPrefabPath);
-            EditorSaveUtils.SetEditorPref(SaveKey.localizationCSVPath, _save.localizationCSVPath);
         }
     }
 }

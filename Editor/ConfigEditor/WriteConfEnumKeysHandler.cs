@@ -9,7 +9,7 @@ namespace PowerCellStudio
         private static void Write(in CsWriter csWriter, in ConfigTypeInfo keyInfo, in string confName, in ExcelReader excelReader)
         {
             var p = excelReader.path.Replace("\\", "/");
-            var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingWindow.SaveKey.excelPath, "");
+            var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingLogic.SaveKey.excelPath, "");
             string path = Path.Combine(excelPath, p.Split('/').LastOrDefault() ?? string.Empty);
             var enumValues = new HashSet<string>();
             var list = new List<string>();
