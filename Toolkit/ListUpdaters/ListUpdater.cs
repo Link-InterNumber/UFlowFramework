@@ -183,15 +183,15 @@ namespace PowerCellStudio
                 return;
             }
             if (data == null || !GetPrefab()) return;
-            if (_updateCoroutine != null) ApplicationManager.instance.StopCoroutine(_updateCoroutine);
+            _updateCoroutine?.Cancel();
             for (var i = 0; i < transform.childCount; i++)
             {
                 transform.GetChild(i).gameObject.SetActive(false);
             }
-            _updateCoroutine = ApplicationManager.RunCoroutine(UpdateListWithIntervalHandler(data, interval, startIndex, destroyUnused));
+            _updateCoroutine = AsyncManager.Run(UpdateListWithIntervalHandler(data, interval, startIndex, destroyUnused));
         }
 
-        private Coroutine _updateCoroutine;
+        private AsyncHandlerBase _updateCoroutine;
 
         private IEnumerator UpdateListWithIntervalHandler(IEnumerable<object> data, float interval, int startIndex, bool destroyUnused)
         {

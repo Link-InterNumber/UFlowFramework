@@ -638,13 +638,13 @@ namespace PowerCellStudio
         /// <param name="camera">可选的摄像机对象。如果为 null，则截取屏幕。Optional camera object. If null, captures the screen.</param>
         /// <param name="encrypt">是否加密保存的图片。Whether to encrypt the saved image.</param>
         /// <returns>返回一个协程对象，用于在协程中等待截取完成。</returns>
-        public static Coroutine TakeCapture(string fileName, Rect rect, Camera camera = null, bool encrypt = false)
+        public static AsyncHandlerBase TakeCapture(string fileName, Rect rect, Camera camera = null, bool encrypt = false)
         {
             if (captureTakeing) return null;
             captureTakeing = true;
             if (camera == null)
-                return ApplicationManager.RunCoroutine(ScreenCapture(fileName, rect, encrypt));
-            return ApplicationManager.RunCoroutine(CameraCapture(camera, fileName, rect, encrypt));
+                return AsyncManager.Run(ScreenCapture(fileName, rect, encrypt));
+            return AsyncManager.Run(CameraCapture(camera, fileName, rect, encrypt));
         }
 
         private static IEnumerator CameraCapture(Camera camera, string fileName, Rect rect, bool encrypt)

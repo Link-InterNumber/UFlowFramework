@@ -119,7 +119,7 @@ namespace PowerCellStudio
             {
                 case State.Opened:
                     _state = State.WaitToClose;
-                    ApplicationManager.RunCoroutine(WaitToClose(0.5f));
+                    AsyncManager.Run(WaitToClose(0.5f));
                     return false;
                 case State.WaitToClose:
                     return false;

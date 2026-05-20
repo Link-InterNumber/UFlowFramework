@@ -75,7 +75,7 @@ namespace PowerCellStudio
             {
                 return;
             }
-            ApplicationManager.RunCoroutine(DisconnectHandler());
+            AsyncManager.Run(DisconnectHandler());
         }
         
         private IEnumerator DisconnectHandler()
@@ -120,7 +120,7 @@ namespace PowerCellStudio
         
         private void ReconnectDelayedAsync()
         {
-            ApplicationManager.RunCoroutine(ReconnectDelayedAsyncHandler());
+            AsyncManager.Run(ReconnectDelayedAsyncHandler());
         }
         
         private IEnumerator ReconnectDelayedAsyncHandler()

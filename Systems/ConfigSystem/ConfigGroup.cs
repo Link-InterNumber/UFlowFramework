@@ -40,7 +40,7 @@ namespace PowerCellStudio
             _configs.Add(confBaseCollections);
         }
 
-        public Coroutine LoadAll()
+        public AsyncHandlerBase LoadAll()
         {
             if (_configs.Count == 0)
             {
@@ -53,10 +53,10 @@ namespace PowerCellStudio
             foreach (var confBaseCollections in _configs)
             {
                 // if (confBaseCollections.loadStatus == AssetLoadStatus.Loaded) continue;
-                ApplicationManager.RunCoroutine(confBaseCollections.PrepareAsync());
+                AsyncManager.Run(confBaseCollections.PrepareAsync());
             }
 
-            return ApplicationManager.RunCoroutine(MonitoringLoadStatus());
+            return AsyncManager.Run(MonitoringLoadStatus());
         }
 
         public bool ReleaseAll()

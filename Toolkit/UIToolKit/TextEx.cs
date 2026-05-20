@@ -19,12 +19,12 @@ namespace PowerCellStudio
             if(!Application.isPlaying) return;
             if(changeFontWhenLanChange)
             {
-                EventManager.instance.onLanguageChange.AddListener(ChangeFont);
+                LocalizationManager.instance.onLanguageChange.AddListener(ChangeFont);
                 ChangeFont(LocalizationManager.instance.curLanguage);
             }
             if (!staticText || string.IsNullOrEmpty(localizationKey)) return;
             SetLocalizedText();
-            EventManager.instance.onLanguageChange.AddListener(OnLocalChange);
+            LocalizationManager.instance.onLanguageChange.AddListener(OnLocalChange);
             _addListener = true;
         }
 
@@ -34,8 +34,8 @@ namespace PowerCellStudio
             _paramCache = null;
             if(!Application.isPlaying) return;
             localizationKey = null;
-            EventManager.instance.onLanguageChange.RemoveListener(OnLocalChange);
-            EventManager.instance.onLanguageChange.RemoveListener(ChangeFont);
+            LocalizationManager.instance.onLanguageChange.RemoveListener(OnLocalChange);
+            LocalizationManager.instance.onLanguageChange.RemoveListener(ChangeFont);
         }
 
         private void ChangeFont(Language data)
@@ -57,7 +57,7 @@ namespace PowerCellStudio
             }
             SetLocalizedText();
             if(_addListener) return;
-            EventManager.instance.onLanguageChange.AddListener(OnLocalChange);
+            LocalizationManager.instance.onLanguageChange.AddListener(OnLocalChange);
             _addListener = true;
         }
 

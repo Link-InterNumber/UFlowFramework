@@ -81,7 +81,7 @@ namespace PowerCellStudio
         {
             if (_state == State.Empty) return;
             if (_actAsset && _actRuntimePlayer)
-                ApplicationManager.RunCoroutine(CancelRoutine(_actAsset, _actRuntimePlayer));
+                AsyncManager.Run(CancelRoutine(_actAsset, _actRuntimePlayer));
             _state = State.Empty;
             _actAsset = null;
             _actRuntimePlayer = null;

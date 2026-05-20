@@ -6,7 +6,7 @@ namespace PowerCellStudio
 {
     public class DialogPlayer : MonoBehaviour, IDialogPlayer
     {
-        private Coroutine _seq;
+        private AsyncHandlerBase _seq;
         private AudioSource _audioSource;
         private Transform _parent;
         private float _realVolume;
@@ -40,7 +40,7 @@ namespace PowerCellStudio
 
         public void DeInit()
         {
-            if(_seq != null) ApplicationManager.instance.StopCoroutine(_seq);
+            _seq?.Cancel();
             _seq = null;
             GameObject.Destroy(gameObject);
         }
@@ -59,12 +59,12 @@ namespace PowerCellStudio
         private void OnLoadedAudioClip(AudioClip obj)
         {
             _targetClip = obj;
-            _seq = ApplicationManager.RunCoroutine(PlayBase(_callback));
+            _seq = AsyncManager.Run(PlayBase(_callback));
         }
 
         private void StopPlay()
         {
-            if(_seq != null) ApplicationManager.instance.StopCoroutine(_seq);
+            _seq?.Cancel();
             _seq = null;
             _assetLoader?.Release(_clipRef);
         }
@@ -149,7 +149,7 @@ namespace PowerCellStudio
                 _audioSource.volume = _realVolume;
                 return;
             }
-            ApplicationManager.RunCoroutine(SetVolumeHandler(_realVolume, transferTime, onComplete));
+            AsyncManager.Run(SetVolumeHandler(_realVolume, transferTime, onComplete));
         }
 
         public void SetMaxVolume(float maxVolume)

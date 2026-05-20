@@ -5,8 +5,8 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem.UI;
-using UnityEngine.Pool;
 #endif
+using UnityEngine.Pool;
 
 namespace PowerCellStudio
 {
@@ -219,6 +219,7 @@ namespace PowerCellStudio
             public object Current => _routine.Current;
         }
 
+        [Obsolete("Use AsyncManager.Run instead.")]
         public static Coroutine RunCoroutine(IEnumerator routine)
         {
 #if UNITY_EDITOR
@@ -237,6 +238,7 @@ namespace PowerCellStudio
             }
         }
 
+        [Obsolete("Use AsyncManager.ScheduleByFrame instead.")]
         public Coroutine DelayedNextFrame(Action call)
         {
             return RunCoroutine(DelayedNextFrameHandler(call));
@@ -248,6 +250,7 @@ namespace PowerCellStudio
             call?.Invoke();
         }
 
+        [Obsolete("Use AsyncManager.Schedule instead.")]
         public Coroutine DelayedCall(float timeInSecond, Action call, bool ignoreTimeScale = true)
         {
             return RunCoroutine(DelayedCallHandler(timeInSecond, call, ignoreTimeScale));

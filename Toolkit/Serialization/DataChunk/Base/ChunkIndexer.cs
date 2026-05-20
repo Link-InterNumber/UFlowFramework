@@ -2,11 +2,10 @@ using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.Pool;
 
 namespace PowerCellStudio
 {
-    public class ChunkIndexer<TKey>
+    public class ChunkIndexer<TKey> : IChunkIndexer<TKey>
     {
         private Dictionary<TKey, int> _keyMap;
         private Dictionary<int, long> _offsetMap;

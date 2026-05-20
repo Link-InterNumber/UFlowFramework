@@ -248,7 +248,7 @@ namespace PowerCellStudio
                     UIUtils.ClosePageInstance(page, false, callback, _poolPage);
                     var pageType = page.GetType();
                     _cachedUIs.Add(pageType, page);
-                    ApplicationManager.RunCoroutine(WaitForRemoveCacheUI(pageType, retainTime));
+                    AsyncManager.Run(WaitForRemoveCacheUI(pageType, retainTime));
                     return;
                 }
             }

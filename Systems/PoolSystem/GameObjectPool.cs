@@ -39,7 +39,7 @@ namespace PowerCellStudio
             _assetLoader = AssetUtils.SpawnLoader(nameof(PoolManager));
             _root = root;
             _tag = $"{Path.GetFileNameWithoutExtension(path)}_{IndexGetter.instance.Get<GameObjectPool>()}";
-            ApplicationManager.RunCoroutine(InitPoolHandle(path, initSize));
+            AsyncManager.Run(InitPoolHandle(path, initSize));
         }
 
         public IEnumerator WaitForInitAsYieldInstruction()

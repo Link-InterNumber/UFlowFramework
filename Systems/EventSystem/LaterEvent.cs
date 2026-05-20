@@ -1,11 +1,9 @@
 namespace PowerCellStudio
 {
-    public class LaterEvent : IInvolke
+    public class LaterEvent : LineEventBase, IInvolke
     {
         private event BaseLinkAction events;
         private bool _toInvoke = false;
-
-        public bool enable = true;
 
         public void AddListener(BaseLinkAction fun)
         {
@@ -41,7 +39,7 @@ namespace PowerCellStudio
             events += onceFun;
         }
 
-        public void RemoveAllListeners()
+        public override void RemoveAllListeners()
         {
             events = null;
         }
@@ -65,12 +63,10 @@ namespace PowerCellStudio
         }
     }
 
-    public class LaterEvent<T> : IInvolke
+    public class LaterEvent<T> : LineEventBase, IInvolke
     {
         private event BaseLinkAction<T> events;
         private bool _toInvoke = false;
-
-        public bool enable = true;
 
         public void AddListener(BaseLinkAction<T> fun)
         {
@@ -106,7 +102,7 @@ namespace PowerCellStudio
             events += onceFun;
         }
 
-        public void RemoveAllListeners()
+        public override void RemoveAllListeners()
         {
             events = null;
         }
@@ -132,12 +128,10 @@ namespace PowerCellStudio
         }
     }
 
-    public class LaterEvent<T, TK> : IInvolke
+    public class LaterEvent<T, TK> : LineEventBase, IInvolke
     {
         private event BaseLinkAction<T, TK> events;
         private bool _toInvoke = false;
-
-        public bool enable = true;
 
         public void AddListener(BaseLinkAction<T, TK> fun)
         {
@@ -173,7 +167,7 @@ namespace PowerCellStudio
             events += onceFun;
         }
 
-        public void RemoveAllListeners()
+        public override void RemoveAllListeners()
         {
             events = null;
         }
@@ -201,12 +195,10 @@ namespace PowerCellStudio
         }
     }
 
-    public class LaterEvent<T, TK, TL> : IInvolke
+    public class LaterEvent<T, TK, TL> : LineEventBase, IInvolke
     {
         private event BaseLinkAction<T, TK, TL> events;
         private bool _toInvoke = false;
-
-        public bool enable = true;
 
         public void AddListener(BaseLinkAction<T, TK, TL> fun)
         {
@@ -242,7 +234,7 @@ namespace PowerCellStudio
             events += onceFun;
         }
 
-        public void RemoveAllListeners()
+        public override void RemoveAllListeners()
         {
             events = null;
         }

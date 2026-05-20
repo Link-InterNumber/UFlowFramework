@@ -30,5 +30,13 @@ namespace PowerCellStudio
             var keyLength = reader.ReadInt32();
             keyData = reader.ReadBytes(keyLength);
         }
+
+        public void ReadOnlyOffset(BinaryReader reader)
+        {
+            index = reader.ReadInt32();
+            offset = reader.ReadInt64();
+            var keyLength = reader.ReadInt32();
+            reader.BaseStream.Seek(keyLength, SeekOrigin.Current);
+        }
     }
 }

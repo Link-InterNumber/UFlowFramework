@@ -238,7 +238,7 @@ namespace PowerCellStudio
                 callBack(go);
                 return;
             }
-            ApplicationManager.RunCoroutine(GetGameObjectAsyncHandler(path, callBack));
+            AsyncManager.Run(GetGameObjectAsyncHandler(path, callBack));
         }
 
         /// <summary>

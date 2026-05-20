@@ -10,13 +10,13 @@ namespace PowerCellStudio
         private void Awake()
         {
             if (!Application.isPlaying) return;
-            EventManager.instance.onLanguageChange.AddListener(OnLocalChange);
+            LocalizationManager.instance.onLanguageChange.AddListener(OnLocalChange);
         }
 
         private void OnDestroy()
         {
             if (!Application.isPlaying) return;
-            EventManager.instance.onLanguageChange.RemoveListener(OnLocalChange);
+            LocalizationManager.instance.onLanguageChange.RemoveListener(OnLocalChange);
             LocalizationManager.instance.ReleaseAsset(localizationKey);
             localizationKey = null;
         }

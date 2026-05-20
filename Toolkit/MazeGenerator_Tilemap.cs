@@ -44,7 +44,7 @@ public class MazeGenerator_Tilemap : MonoBehaviour
     public void BuildMaze()
     {
         if (isBuilding) return;
-        CoroutineRunner.instance.StartCoroutine(FullMaze());
+        PowerCellStudio.AsyncManager.Run(FullMaze());
     }
 
     private bool isBuilding = false;
@@ -136,7 +136,7 @@ public class MazeGenerator_Tilemap : MonoBehaviour
     public void DestroyMaze()
     {
         if (!clearTile || isBuilding) return;
-        CoroutineRunner.instance.StartCoroutine(DestroyMazeHandle());
+        PowerCellStudio.AsyncManager.Run(DestroyMazeHandle());
     }
 
     private bool clearTile = true;

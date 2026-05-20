@@ -20,7 +20,7 @@ namespace PowerCellStudio
                 return;
             }
 
-            ApplicationManager.RunCoroutine(WaitForLoopPoint(audioSource, action));
+            AsyncManager.Run(WaitForLoopPoint(audioSource, action));
         }
 
         private static IEnumerator WaitForLoopPoint(AudioSource audioSource, UnityAction<AudioSource> action)

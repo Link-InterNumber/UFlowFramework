@@ -18,7 +18,7 @@ namespace PowerCellStudio
             if(!Application.isPlaying) return;
             if (!staticText || string.IsNullOrEmpty(localizationKey)) return;
             SetLocalizedText();
-            EventManager.instance.onLanguageChange.AddListener(OnLocalChange);
+            LocalizationManager.instance.onLanguageChange.AddListener(OnLocalChange);
             _addListener = true;
         }
 
@@ -26,10 +26,12 @@ namespace PowerCellStudio
         {
             base.OnDestroy();
             _paramCache = null;
-            localizationKey = null;
             if(!Application.isPlaying) return;
-            if (!staticText || string.IsNullOrEmpty(localizationKey)) return;
-            EventManager.instance.onLanguageChange.RemoveListener(OnLocalChange);
+            if (_addListener)
+            {
+                LocalizationManager.instance.onLanguageChange.RemoveListener(OnLocalChange);
+            }
+            localizationKey = null;
         }
 
         public void SetLocalizationText(string key, params object[] param)
@@ -45,7 +47,7 @@ namespace PowerCellStudio
             }
             SetLocalizedText();
             if(_addListener) return;
-            EventManager.instance.onLanguageChange.AddListener(OnLocalChange);
+            LocalizationManager.instance.onLanguageChange.AddListener(OnLocalChange);
             _addListener = true;
         }
 

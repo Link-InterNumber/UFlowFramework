@@ -18,6 +18,7 @@ namespace PowerCellStudio
             {
                 Camera.main.gameObject.name = nameof(MainCamera);
             }
+            gameObject.AddComponent<AsyncManager>();
             DontDestroyOnLoad(gameObject);
             // DOTween.Init();
             AssetUtils.Init(this, OnInited);

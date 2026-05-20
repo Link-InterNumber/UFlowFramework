@@ -127,7 +127,7 @@ namespace PowerCellStudio
             {
                 prefab = transform.GetChild(0) as RectTransform;
             }
-            ApplicationManager.RunCoroutine(DelayInit());
+            AsyncManager.Run(DelayInit());
         }
 
         private IEnumerator DelayInit()
@@ -187,7 +187,7 @@ namespace PowerCellStudio
                 ListPool<GameObject>.Release(toDestroy);
             }
             _previousIndex = -1;
-            ApplicationManager.RunCoroutine(DelayReorderItemsByPos());
+            AsyncManager.Run(DelayReorderItemsByPos());
         }
 
         private IRecycleScrollRectLayout CreateLayoutHandler(Vector2 prefabRectSize)

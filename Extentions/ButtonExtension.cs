@@ -55,7 +55,7 @@ namespace PowerCellStudio
             
             private void OnClick()
             {
-                ApplicationManager.RunCoroutine(RunEnumeratorHandler());
+                AsyncManager.Run(RunEnumeratorHandler());
             }
             
             private IEnumerator RunEnumeratorHandler()

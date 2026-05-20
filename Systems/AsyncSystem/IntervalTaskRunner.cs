@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace PowerCellStudio
 {
-    public class IntervalTaskRunner : MonoSingleton<IntervalTaskRunner>
+    public sealed class IntervalCallRunner : IDisposable
     {
         private class IntervalTask: PoolObject, IIndex
         {
@@ -34,23 +33,37 @@ namespace PowerCellStudio
             }
 
             public override void OnSpawn(){}
+
+            public override void Dispose()
+            {
+                base.Dispose();
+                action = null;
+                autoReleaseCondition = null;
+            }
         }
 
-        private readonly PoolableObjectPool _taskPool = new PoolableObjectPool(() => new IntervalTask(), 10, 100);
+        private PoolableObjectPool<IntervalTask> _taskPool = new PoolableObjectPool<IntervalTask>(() => new IntervalTask(), 10, 5);
         private Dictionary<int, IntervalTask> _taskMap = new Dictionary<int, IntervalTask>();
         private HashSet<int> _tasksToRemove = new HashSet<int>();
 
-        protected override void OnDestroy()
+        public void Dispose()
         {
-            ClearTasks();
-            base.OnDestroy();
+            foreach (var task in _taskMap.Values)
+            {
+                task.Dispose();
+            }
+            _taskMap.Clear();
             _taskPool.Dispose();
+            _tasksToRemove.Clear();
+            _taskMap = null;
+            _taskPool = null;
+            _tasksToRemove = null;
         }
 
         public int RegisterTask(float interval, System.Action action, Func<bool> autoReleaseCondition)
         {
             if (interval <= 0 || action == null) return -1;
-            var task = _taskPool.Get() as IntervalTask;
+            var task = _taskPool.Get();
             task.Setup(interval, action, autoReleaseCondition);
             _taskMap[task.index] = task;
             return task.index;
@@ -62,7 +75,7 @@ namespace PowerCellStudio
             _tasksToRemove.Add(taskIndex);
         }
 
-        private void FixedUpdate()
+        public void Tick(float deltaTime)
         {
             if (_tasksToRemove.Count > 0)
             {
@@ -77,7 +90,6 @@ namespace PowerCellStudio
                 _tasksToRemove.Clear();
             }
 
-            float deltaTime = Time.fixedDeltaTime;
             if (_taskMap.Count == 0) return;
             foreach (var task in _taskMap.Values)
             {
@@ -94,13 +106,12 @@ namespace PowerCellStudio
             }
         }
 
-        private void ClearTasks()
+        public void ClearAllTasks()
         {
             foreach (var task in _taskMap.Values)
             {
-                task.DeSpawn();
+                _tasksToRemove.Add(task.index);
             }
-            _taskMap.Clear();
         }
     }
 }

@@ -7,6 +7,8 @@ namespace PowerCellStudio
 {
    public class LocalizationManager : SingletonBase<LocalizationManager>
     {
+        public readonly LinkEvent<Language> onLanguageChange = new LinkEvent<Language>();
+
         private ILocalizationProvider _localizationProvider;
         private Language _curLanguage = ConstSetting.DefaultLanguage;
         public Language curLanguage => _curLanguage;
@@ -70,7 +72,7 @@ namespace PowerCellStudio
             return !string.IsNullOrEmpty(result);
         }
 
-        public Coroutine ChangeLanguage(Language language, Action callBack = null)
+        public AsyncHandlerBase ChangeLanguage(Language language, Action callBack = null)
         {
             if (_curLanguage == language)
             {
@@ -78,7 +80,7 @@ namespace PowerCellStudio
                 return null;  
             }
             _curLanguage = language;
-            return ApplicationManager.RunCoroutine(ChangeLanguageHandle(callBack));
+            return AsyncManager.Run(ChangeLanguageHandle(callBack));
         }
 
         private IEnumerator ChangeLanguageHandle(Action callBack)
@@ -98,7 +100,7 @@ namespace PowerCellStudio
             if(_assetLoader == null)
                 _assetLoader = AssetUtils.SpawnLoader(this.GetType().Name);
             yield return _localizationProvider.ChangeLanguage(_curLanguage);
-            EventManager.instance.onLanguageChange.Invoke(_curLanguage);
+            onLanguageChange.Invoke(_curLanguage);
             callBack?.Invoke();
         }
     }

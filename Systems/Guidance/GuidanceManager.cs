@@ -11,6 +11,9 @@ namespace PowerCellStudio
     /// </summary>
     public class GuidanceManager : SingletonBase<GuidanceManager>, IOnGameStartModule, IOnGameResetModule
     {
+        public LinkEvent<int> onGuidanceStart = new LinkEvent<int>();
+        public LinkEvent<int, int> onGuidanceEnd = new LinkEvent<int, int>();
+
         private Dictionary<int, GuidanceTag> _guidanceTags;
         private HashSet<int> _onIndex;
         private HashSet<int> _executedIndex;
@@ -227,7 +230,7 @@ namespace PowerCellStudio
                 conf = conf,
                 tag = tag
             });
-            EventManager.instance.onGuidanceStart?.Invoke(conf.id);
+            onGuidanceStart?.Invoke(conf.id);
         }
         
         /// <summary>
@@ -245,7 +248,7 @@ namespace PowerCellStudio
             if (conf != null && conf.nextGuidance > 0)
             {
                 _nextIndex = conf.nextGuidance;
-                EventManager.instance.onGuidanceEnd?.Invoke(guidanceIndex, _nextIndex);
+                onGuidanceEnd?.Invoke(guidanceIndex, _nextIndex);
                 var hasNewGuidance = ReactiveGuidance(conf.nextGuidance);
                 if (!hasNewGuidance) 
                     UIManager.instance.CloseWindow<GuidanceWindow>();
@@ -257,7 +260,7 @@ namespace PowerCellStudio
             _currentIndex.Clear();
             UIManager.instance.CloseWindow<GuidanceWindow>();
             SaveExecutedIndex();
-            EventManager.instance.onGuidanceEnd?.Invoke(guidanceIndex, _nextIndex);
+            onGuidanceEnd?.Invoke(guidanceIndex, _nextIndex);
         }
     }
 }

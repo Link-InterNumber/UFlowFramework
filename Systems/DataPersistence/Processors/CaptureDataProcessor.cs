@@ -42,7 +42,7 @@ namespace PowerCellStudio
             }
             // 使用 file:// 协议加载本地文件
             string url = "file://" + path;
-            ApplicationManager.RunCoroutine(LoadImageCoroutine(url, onComplete, decrypt));
+            AsyncManager.Run(LoadImageCoroutine(url, onComplete, decrypt));
         }
 
         private IEnumerator LoadImageCoroutine(string url, Action<Sprite> onComplete, bool decrypt)

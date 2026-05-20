@@ -24,6 +24,11 @@ namespace PowerCellStudio
             Func<TData, TKey> keySelector, int chunkSize, ChunkDataOptions options = null)
         {
             if (!Directory.Exists(fileDirectory)) Directory.CreateDirectory(fileDirectory);
+            // if (typeof(TKey) == typeof(int) || typeof(TKey) == typeof(long))
+            // {
+            //     // 如果key是int、long，可以使用更高效的索引器
+            //     data = data.OrderBy(keySelector);
+            // }
             ChunkDataOptions resolvedOptions = ChunkDataOptions.Resolve(options);
             var dataFilePath = Path.Combine(fileDirectory, $"{fileName}Data.bytes");
             var chunkInfos = WriteYieldInstruction(dataFilePath, data, keySelector, chunkSize, resolvedOptions);

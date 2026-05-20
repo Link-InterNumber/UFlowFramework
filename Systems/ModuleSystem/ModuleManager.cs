@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -49,19 +48,6 @@ namespace PowerCellStudio
             EventManager.instance.onResetGame.AddListener(OnResetGame);
         }
 
-        // private void InitModules()
-        // {
-        //     var modules = _modules.Values.ToList();
-        //     foreach (var module in modules)
-        //     {
-        //         module.OnInit();
-        //         if (module is IEventModule eventModule)
-        //         {
-        //             eventModule.RegisterEvent();
-        //         }
-        //     }
-        // }
-
         private void CreateSingletonModule()
         {
             var res = ReflectionUtils.GetInstantiableSubtype(typeof(SingletonBase<>));
@@ -73,37 +59,10 @@ namespace PowerCellStudio
                 });
             foreach (var type in res)
             {
-                var property = type.GetProperty("instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-                if (property == null) continue;
-                object typeInstance = null;
-                if (type.GetCustomAttribute<DonotInitModuleAutoly>() != null)
-                {
-                    // 获取当前类型的instance属性
-                    typeInstance = property.GetValue(null, null);
-                }
-                else
-                {
-                    property.SetValue(null, Activator.CreateInstance(type));
-                    typeInstance = property.GetValue(null, null);
-                }
-                if (typeInstance == null) continue;
-                if (typeInstance is IModule module)
-                {
-                    module.OnInit();
-                    AddModule(type, module);
-                }
-#if UNITY_EDITOR
-                moduleInfos.Add(new ModuleInfo
-                {
-                    name = type.Name,
-                    mono = null,
-                    inExecution = typeInstance is IExecutionModule,
-                    inLaterExecution = typeInstance is ILaterExecutionModule
-                });
-#endif
+                CreateModule(type);
             }
         }
-        
+
         private void CreateMonoSingletonModule()
         {
             var res = ReflectionUtils.GetInstantiableSubtype(typeof(MonoSingleton<>));
@@ -115,30 +74,92 @@ namespace PowerCellStudio
             });
             foreach (var type in res)
             {
-                // 判断是否已经实例化
-                var exitGo = GameObject.Find(type.Name);
-                var instanceGo = exitGo?.GetComponent(type)?? null;
-                if (instanceGo == null && type.GetCustomAttribute<DonotInitModuleAutoly>() == null)
-                {
-                    var go = new GameObject(type.Name);
-                    instanceGo = go.AddComponent(type);
-                }
-                if (instanceGo == null) continue;
-                if (instanceGo is IModule module)
-                {
-                    module.OnInit();
-                    AddModule(type, module);
-                }
-#if UNITY_EDITOR
-                moduleInfos.Add(new ModuleInfo
-                {
-                    name = type.Name,
-                    mono = instanceGo.gameObject,
-                    inExecution = instance is IExecutionModule,
-                    inLaterExecution = instance is ILaterExecutionModule
-                });
-#endif
+                CreateModule(type);
             }
+        }
+
+        private bool CreateModule(Type type)
+        {
+            if (_modules.ContainsKey(type)) return true;
+
+            // 依赖处理
+            var dependAttributes = type.GetCustomAttributes<ModuleDependence>();
+            foreach (var dependAttribute in dependAttributes)
+            {
+                var dependType = dependAttribute.DependModuleType;
+                if (!CreateModule(dependType))
+                {
+                    ModuleLog.LogError($"Failed to create module {type.Name} because dependency {dependType.Name} failed to create.");
+                    return false;
+                }
+            }
+            var autoInit = type.GetCustomAttribute<DonotInitModuleAutoly>() == null;
+            var property = type.GetProperty("instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+            var isMonoBehavior = ReflectionUtils.IsSubTypeOf(type, typeof(MonoBehaviour));
+            object typeInstance = null;
+            try
+            {
+                if (property == null)
+                {
+                    // 非静态的单例类，直接实例化
+                    if (!autoInit)
+                    {
+                        ModuleLog.LogWarning($"Module {type.Name} is marked with DonotInitModuleAutoly, but it does not have an instance property. Skipping initialization.");
+                        return false;
+                    }
+                    if (isMonoBehavior)
+                    {
+                        var go = new GameObject(type.Name);
+                        typeInstance = go.AddComponent(type);
+                        go.transform.SetParent(transform);
+                    }
+                    else
+                    {
+                        typeInstance = Activator.CreateInstance(type);
+                    }
+                }
+                else
+                {
+                    // 静态的单例类，获取instance属性的值，如果为null则实例化
+                    typeInstance = property.GetValue(null, null);
+                    if (typeInstance == null && autoInit)
+                    {
+                        if (isMonoBehavior)
+                        {
+                            var go = new GameObject(type.Name);
+                            typeInstance = go.AddComponent(type);
+                            go.transform.SetParent(transform);
+                        }
+                        else
+                        {
+                            typeInstance = Activator.CreateInstance(type);
+                            property.SetValue(null, typeInstance);
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                ModuleLog.LogError($"Failed to create module {type.Name}: {e}");
+                return false;
+            }
+
+            if (typeInstance == null) return false;
+            if (typeInstance is IModule module)
+            {
+                module.OnInit();
+                AddModule(type, module);
+            }
+#if UNITY_EDITOR
+            moduleInfos.Add(new ModuleInfo
+            {
+                name = type.Name,
+                mono = null,
+                inExecution = typeInstance is IExecutionModule,
+                inLaterExecution = typeInstance is ILaterExecutionModule
+            });
+#endif
+            return true;
         }
 
         protected override void Deinit()
@@ -209,7 +230,7 @@ namespace PowerCellStudio
             AddModule(type, module);
         }
         
-        public void RemoveModule(Type type)
+        private void RemoveModule(Type type)
         {
             _fixedExecutionModule?.Remove(type);
             _executionModule?.Remove(type);
@@ -234,6 +255,37 @@ namespace PowerCellStudio
 #if UNITY_EDITOR
             moduleInfos.RemoveAll(o => o.name.Equals(type.Name));
 #endif
+        }
+
+        public void RemoveModule<T>() where T : class, IModule
+        {
+            var type = typeof(T);
+            RemoveModule(type);
+        }
+
+        public T GetModule<T>() where T : class, IModule
+        {
+            var type = typeof(T);
+            if (_modules != null && _modules.TryGetValue(type, out var module))
+            {
+                return module as T;
+            }
+            ModuleLog.LogError<T>($"Module {type.Name} not found.");
+            return null;
+        }
+
+        public T GetOrAddModule<T>() where T : class, IModule, new()
+        {
+            var type = typeof(T);
+            if (_modules != null && _modules.TryGetValue(type, out var module))
+            {
+                return module as T;
+            }
+            if (CreateModule(type))
+            {
+                return GetModule<T>();
+            }
+            return null;
         }
 
         private void FixedUpdate()

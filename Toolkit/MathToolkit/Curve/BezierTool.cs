@@ -19,7 +19,7 @@ namespace PowerCellStudio
         /// <param name="armLengthScale">控制点和起点距离 = 起点到终点的距离 * armLengthScale -  Control point and starting point distance = Distance from starting point to endpoint * arm length scale</param>
         /// <param name="onComplete">完成的回调 - call on transform tween to end pos</param>
         /// <returns></returns>
-        public static Coroutine BezierMove(Transform transform, float duration, Vector2 endPos, float armLengthScale = 0.5f, Action<Transform> onComplete = null)
+        public static AsyncHandlerBase BezierMove(Transform transform, float duration, Vector2 endPos, float armLengthScale = 0.5f, Action<Transform> onComplete = null)
         {
             if (!transform) return null;
             duration = Mathf.Max(0f, duration);
@@ -27,7 +27,7 @@ namespace PowerCellStudio
             var armLength = armLengthScale * distance;
             var ctrlPos = transform.position + new Vector3(Random.Range(-armLength, armLength), Random.Range(-armLength, armLength), 0);
             var points = new List<Vector3> { transform.position, ctrlPos, endPos };
-            return ApplicationManager.RunCoroutine(BezierMoveHandler(transform, duration, points, true, false, onComplete));
+            return AsyncManager.Run(BezierMoveHandler(transform, duration, points, true, false, onComplete));
         }
         
         /// <summary>
@@ -41,11 +41,11 @@ namespace PowerCellStudio
         /// <param name="isLocalPos">使用本地位置，默认false - Whether to use local position.</param>
         /// <param name="onComplete">完成的回调 - call on transform tween to end pos</param>
         /// <returns>协程，由ApplicationManager启动 - Coroutine launched by ApplicationManager.</returns>
-        public static Coroutine BezierMove(Transform transform, float duration, IList<Vector3> points, bool unscaleTime = false, bool isLocalPos = false, Action<Transform> onComplete = null)
+        public static AsyncHandlerBase BezierMove(Transform transform, float duration, IList<Vector3> points, bool unscaleTime = false, bool isLocalPos = false, Action<Transform> onComplete = null)
         {
             if (!transform || points == null || points.Count < 2) return null;
             duration = Mathf.Max(0f, duration);
-            return ApplicationManager.RunCoroutine(BezierMoveHandler(transform, duration, points, unscaleTime, isLocalPos, onComplete));
+            return AsyncManager.Run(BezierMoveHandler(transform, duration, points, unscaleTime, isLocalPos, onComplete));
         }
 
         private static IEnumerator BezierMoveHandler(Transform transform, float duration, IList<Vector3> points, bool unscaleTime = false, bool isLocalPos = false, Action<Transform> onComplete = null)

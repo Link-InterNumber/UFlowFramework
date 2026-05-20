@@ -8,9 +8,23 @@ namespace PowerCellStudio
     {
         private string _dataFilePath;
         private ChunkDataMap<TKey, TData> _dataMap;
-        private ChunkIndexer<TKey> _indexer;
+        private IChunkIndexer<TKey> _indexer;
         private Func<TData, TKey> _keySelector;
         private ChunkDataOptions _options;
+
+        public void Prepare(string indexFilePath, string dataFilePath, Func<TData, TKey> keySelector,
+            Func<TKey, bool> keyPredicate, Func<TKey, int> keyToChunkIndex, ChunkDataOptions options = null)
+        {
+            _dataFilePath = dataFilePath;
+            _keySelector = keySelector;
+            _options = options;
+            var indexer = new ChunkCustomIndexer<TKey>(keyPredicate, keyToChunkIndex);
+            _dataMap = new ChunkDataMap<TKey, TData>();
+            var reader = ChunkReader.ReadIndexFile<TKey>(indexFilePath, options);
+            indexer.Init(reader);
+            _indexer = indexer;
+            _dataMap.Init(_indexer.chunkCount);
+        }
 
         public void Prepare(string indexFilePath, string dataFilePath, Func<TData, TKey> keySelector, ChunkDataOptions options = null)
         {
@@ -27,10 +41,11 @@ namespace PowerCellStudio
             _dataFilePath = dataFilePath;
             _keySelector = keySelector;
             _options = options;
-            _indexer = new ChunkIndexer<TKey>();
+            var indexer = new ChunkIndexer<TKey>();
             _dataMap = new ChunkDataMap<TKey, TData>();
             var reader = ChunkReader.ReadIndexFile<TKey>(indexFilePath, options);
-            yield return _indexer.InitAsync(reader, operationUnit);
+            yield return indexer.InitAsync(reader, operationUnit);
+            _indexer = indexer;
             _dataMap.Init(_indexer.chunkCount);
         }
         
@@ -56,17 +71,29 @@ namespace PowerCellStudio
         public IEnumerable<TData> GetByKey(Func<TKey, bool> keyPredicate, Action<TData> onAdd)
         {
             if (keyPredicate == null) yield break;
-            var chunkIndexes = _indexer.GetChunkIndexByKey(keyPredicate);
+            var indexer = _indexer as ChunkIndexer<TKey>;
+            if (indexer == null) yield break;
+            var chunkIndexes = indexer.GetChunkIndexByKey(keyPredicate);
             foreach (var chunkIndex in chunkIndexes)
             {
                 if (!_dataMap.IsChunkLoaded(chunkIndex))
                 {
-                    LoadChunk(chunkIndex, onAdd);
+                    var offset = _indexer.GetChunkOffset(chunkIndex);
+                    if (offset < 0) continue;
+                    var dataSource = ChunkReader.ReadChunkData<TData>(_dataFilePath, offset, _options);
+                    foreach (var confBase in dataSource)
+                    {
+                        if (!keyPredicate.Invoke(_keySelector(confBase))) continue;
+                        yield return confBase;
+                    }
                 }
-                foreach (var data in _dataMap.GetAllData(chunkIndex))
+                else
                 {
-                    if (!keyPredicate.Invoke(_keySelector(data))) continue;
-                    yield return data;
+                    foreach (var data in _dataMap.GetAllData(chunkIndex))
+                    {
+                        if (!keyPredicate.Invoke(_keySelector(data))) continue;
+                        yield return data;
+                    }
                 }
             }
         }

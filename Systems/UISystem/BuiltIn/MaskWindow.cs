@@ -48,7 +48,7 @@ namespace PowerCellStudio
             if (maskWindowData.yieldInstruction != null)
             {
                 AddWaitingCount();
-                ApplicationManager.RunCoroutine(Wait(maskWindowData.yieldInstruction));
+                AsyncManager.Run(Wait(maskWindowData.yieldInstruction));
             }
             if (maskWindowData.canClose == null && maskWindowData.yieldInstruction == null)
                 _emptyCount++;

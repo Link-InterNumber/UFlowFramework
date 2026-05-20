@@ -1,10 +1,16 @@
 
 namespace PowerCellStudio
 {
-    public class LinkEvent : IInvolke
+    public class LineEventBase
+    {
+        public bool enable = true;
+
+        public virtual void RemoveAllListeners(){}
+    }
+
+    public class LinkEvent : LineEventBase, IInvolke
     {
         private event BaseLinkAction events;
-        public bool enable = true;
 
         public void AddListener(BaseLinkAction fun)
         {
@@ -41,7 +47,7 @@ namespace PowerCellStudio
             events += onceFun;
         }
 
-        public void RemoveAllListeners()
+        public override void RemoveAllListeners()
         {
             events = null;
         }
@@ -58,10 +64,9 @@ namespace PowerCellStudio
         }
     }
 
-    public class LinkEvent<T> : IInvolke<T>
+    public class LinkEvent<T> : LineEventBase, IInvolke<T>
     {
         private event BaseLinkAction<T> events;
-        public bool enable = true;
 
         public void AddListener(BaseLinkAction<T> fun)
         {
@@ -108,16 +113,15 @@ namespace PowerCellStudio
             return events?.GetInvocationList().Length ?? 0;
         }
 
-        public void RemoveAllListeners()
+        public override void RemoveAllListeners()
         {
             events = null;
         }
     }
 
-    public class LinkEvent<T, TK> :IInvolke<T, TK>
+    public class LinkEvent<T, TK> : LineEventBase, IInvolke<T, TK>
     {
         private event BaseLinkAction<T, TK> events;
-        public bool enable = true;
 
         public void AddListener(BaseLinkAction<T, TK> fun)
         {
@@ -165,16 +169,15 @@ namespace PowerCellStudio
             return events?.GetInvocationList().Length ?? 0;
         }
 
-        public void RemoveAllListeners()
+        public override void RemoveAllListeners()
         {
             events = null;
         }
     }
 
-    public class LinkEvent<T, TK, TL> : IInvolke<T, TK, TL>
+    public class LinkEvent<T, TK, TL> : LineEventBase, IInvolke<T, TK, TL>
     {
         private event BaseLinkAction<T, TK, TL> events;
-        public bool enable = true; 
 
         public void AddListener(BaseLinkAction<T, TK, TL> fun)
         {
@@ -221,7 +224,7 @@ namespace PowerCellStudio
             return events?.GetInvocationList().Length ?? 0;
         }
 
-        public void RemoveAllListeners()
+        public override void RemoveAllListeners()
         {
             events = null;
         }

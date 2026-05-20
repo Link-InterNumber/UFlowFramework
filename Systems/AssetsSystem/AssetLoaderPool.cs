@@ -37,7 +37,7 @@ namespace PowerCellStudio
             if (assetLoader.IsAnyLoading())
             {
                 // 等待加载完成再释放
-                ApplicationManager.RunCoroutine(WaitForLoadComplete(assetLoader));
+                AsyncManager.Run(WaitForLoadComplete(assetLoader));
                 return;
             }
             _activeLoader.Remove(assetLoader.index);

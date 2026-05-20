@@ -146,12 +146,6 @@ namespace PowerCellStudio
 
         #endregion
 
-        #region 业务逻辑
-
-        // TODO write here
-
-        #endregion
-
         #region LatereEvents
 
         private HashSet<IInvolke> _latereEvents = new HashSet<IInvolke>();

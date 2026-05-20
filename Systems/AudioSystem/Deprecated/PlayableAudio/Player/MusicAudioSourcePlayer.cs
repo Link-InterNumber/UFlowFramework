@@ -8,7 +8,7 @@ namespace PowerCellStudio
 {
     public class MusicAudioSourcePlayer : MonoBehaviour, IBgmPlayer
     {
-        private Coroutine _seq;
+        private AsyncHandlerBase _seq;
         private AudioSource _audioSource;
         private MusicGroup _curGroup = MusicGroup.Battle;
         private float _realVolume;
@@ -55,7 +55,7 @@ namespace PowerCellStudio
             var clip = info.GetNextClip();
             if (clip)
             {
-                _seq = ApplicationManager.RunCoroutine(PlayBase(clip, 0f, info.fadeoutTime, info.intervalTime, info.fadeinTime));
+                _seq = AsyncManager.Run(PlayBase(clip, 0f, info.fadeoutTime, info.intervalTime, info.fadeinTime));
             }
         }
 
@@ -119,13 +119,13 @@ namespace PowerCellStudio
             var clip = info.GetCurrentClip();
             if (clip)
             {
-                if (_seq != null) ApplicationManager.instance.StopCoroutine(_seq);
+                _seq?.Cancel();
                 var startTime = 0f;
                 if (!info.restart && _audioTime.TryGetValue(group, out var playTime))
                 {
                     startTime = Mathf.Max(0, playTime + Time.unscaledTime - _lastPlayTime) % clip.length;
                 }
-                _seq = ApplicationManager.RunCoroutine(PlayBase(clip, startTime, info.fadeoutTime,
+                _seq = AsyncManager.Run(PlayBase(clip, startTime, info.fadeoutTime,
                     info.intervalTime, info.fadeinTime));
             }
             return true;
@@ -278,7 +278,7 @@ namespace PowerCellStudio
             onComplete?.Invoke();
         }
 
-        private Coroutine _volumeHandler;
+        private AsyncHandlerBase _volumeHandler;
         public void SetVolume(float volume, float transferTime, Action onComplete = null)
         {
             if(!_audioSource) return;
@@ -289,8 +289,8 @@ namespace PowerCellStudio
                 _audioSource.volume = _realVolume;
                 return;
             }
-            if(_volumeHandler != null) ApplicationManager.instance.StopCoroutine(_volumeHandler);
-            _volumeHandler = ApplicationManager.RunCoroutine(SetVolumeHandler(_realVolume, transferTime, onComplete));
+            _volumeHandler?.Cancel();
+            _volumeHandler = AsyncManager.Run(SetVolumeHandler(_realVolume, transferTime, onComplete));
         }
         
         public void SetMaxVolume(float maxVolume)

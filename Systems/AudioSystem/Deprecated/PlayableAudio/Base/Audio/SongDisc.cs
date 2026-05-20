@@ -24,7 +24,7 @@ namespace PowerCellStudio
         {
             _assetLoader = AssetUtils.SpawnLoader("SongDisc");
             _clipRefs = new HashSet<string>(clipRefs);
-            ApplicationManager.RunCoroutine(LoadAudioClip(clipRefs));
+            AsyncManager.Run(LoadAudioClip(clipRefs));
             _isRandom = isRandom;
             _index = 0;
         }
@@ -67,7 +67,7 @@ namespace PowerCellStudio
             }
             _isRandom = isRandom;
             _index = 0;
-            ApplicationManager.RunCoroutine(LoadAudioClip(clipRefs));
+            AsyncManager.Run(LoadAudioClip(clipRefs));
         }
         
         public void Restart()

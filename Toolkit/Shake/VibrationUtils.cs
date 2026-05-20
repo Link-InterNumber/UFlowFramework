@@ -64,7 +64,7 @@ namespace PowerCellStudio
 
 #if ENABLE_INPUT_SYSTEM
 
-        private static Coroutine _RumbleCoroutine;
+        private static AsyncHandlerBase _RumbleCoroutine;
         // We reference types conditionally to avoid compile errors when the package isn't present.
         private static void TryRumbleGamepads(float lowFrequency, float highFrequency, float duration)
         {
@@ -73,14 +73,14 @@ namespace PowerCellStudio
             {
                 StopRumble();
             }
-            _RumbleCoroutine = ApplicationManager.RunCoroutine(RumbleRoutine(lowFrequency, highFrequency, duration));
+            _RumbleCoroutine = AsyncManager.Run(RumbleRoutine(lowFrequency, highFrequency, duration));
         }
 
         private static void StopRumble()
         {
             if (_RumbleCoroutine != null)
             {
-                ApplicationManager.instance.StopCoroutine(_RumbleCoroutine);
+                _RumbleCoroutine.Cancel();
                 _RumbleCoroutine = null;
             }
             var gamepads = UnityEngine.InputSystem.Gamepad.all;
