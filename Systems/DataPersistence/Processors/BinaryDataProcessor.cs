@@ -20,7 +20,8 @@ namespace PowerCellStudio
             CheckDirectory();
             try
             {
-                var bytes = SerializeUtils.SerializeToBinary(data);
+                var bytes = SerializeBinaryPayload(PlayerDataType.Binary, data);
+                bytes = PersistenceEnvelopeUtility.PackBinary(GetCurrentVersion<T>(), bytes);
                 if (encrypt) bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
                 File.WriteAllBytes(filePath, bytes);
                 LinkLog.Log($"Save a Binary at {filePath}");
@@ -55,7 +56,8 @@ namespace PowerCellStudio
                 // 将繁重的 序列化 和 加密 工作移至线程池，避免阻塞主线程
                 await Task.Run(async () =>
                 {
-                    var bytes = await SerializeUtils.SerializeToBinaryAsync(data);
+                    var bytes = SerializeBinaryPayload(PlayerDataType.Binary, data);
+                    bytes = PersistenceEnvelopeUtility.PackBinary(GetCurrentVersion<T>(), bytes);
                     if (encrypt)
                     {
                         bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
@@ -82,9 +84,29 @@ namespace PowerCellStudio
             try
             {
                 byte[] encryptedData = File.ReadAllBytes(filePath);
-                var decryptedData = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
-                
-                return SerializeUtils.DeserializeFromBinary<T>(decryptedData);
+                var content = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
+                var version = 0;
+                if (PersistenceEnvelopeUtility.TryUnpackBinary(content, out var storedVersion, out var payload))
+                {
+                    version = storedVersion;
+                    var result = DeserializeBinaryPayload<T>(PlayerDataType.Binary, version, payload);
+                    if (result != null && TryUpgradeData(version, result, out var upgradedData, out var upgraded) && upgraded)
+                    {
+                        result = upgradedData;
+                        Save(saveKey, result, decrypt);
+                    }
+
+                    return result;
+                }
+
+                var legacyResult = DeserializeBinaryPayload<T>(PlayerDataType.Binary, version, content);
+                if (legacyResult != null && TryUpgradeData(version, legacyResult, out var upgradedLegacy, out var legacyUpgraded) && legacyUpgraded)
+                {
+                    legacyResult = upgradedLegacy;
+                    Save(saveKey, legacyResult, decrypt);
+                }
+
+                return legacyResult;
             }
             catch (Exception e)
             {
@@ -126,8 +148,23 @@ namespace PowerCellStudio
                 await Task.Run(async () =>
                 {
                     byte[] encryptedData = await File.ReadAllBytesAsync(filePath);
-                    var decryptedData = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
-                    data = await SerializeUtils.DeserializeFromBinaryAsync<T>(decryptedData);
+                    var content = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
+                    var version = 0;
+                    if (PersistenceEnvelopeUtility.TryUnpackBinary(content, out var storedVersion, out var payload))
+                    {
+                        version = storedVersion;
+                        data = DeserializeBinaryPayload<T>(PlayerDataType.Binary, version, payload);
+                    }
+                    else
+                    {
+                        data = DeserializeBinaryPayload<T>(PlayerDataType.Binary, version, content);
+                    }
+
+                    if (data != null && TryUpgradeData(version, data, out var upgradedData, out var upgraded) && upgraded)
+                    {
+                        data = upgradedData;
+                        Save(saveKey, data, decrypt);
+                    }
                 });
                 onComplete?.Invoke(data);
             }

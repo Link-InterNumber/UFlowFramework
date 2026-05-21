@@ -20,15 +20,16 @@ namespace PowerCellStudio
             CheckDirectory();
             try
             {
-                string json = SerializeUtils.SerializeToJson(data);
+                string json = SerializeStringPayload(PlayerDataType.Json, data);
+                var versionedJson = PersistenceEnvelopeUtility.PackString(GetCurrentVersion<T>(), json);
                 if (encrypt)
                 {
-                    var jsonEn = EncryptUtils.AESEncrypt(json, ConstSetting.FileEncryptionKey);
+                    var jsonEn = EncryptUtils.AESEncrypt(versionedJson, ConstSetting.FileEncryptionKey);
                     File.WriteAllText(filePath, jsonEn);
                 }
                 else
                 {
-                    File.WriteAllText(filePath, json);
+                    File.WriteAllText(filePath, versionedJson);
                 }
                 LinkLog.Log($"Save a Json at {filePath}");
                 return true;
@@ -62,15 +63,16 @@ namespace PowerCellStudio
             {
                 await Task.Run(async () =>
                 {
-                    string json = SerializeUtils.SerializeToJson(data);
+                    string json = SerializeStringPayload(PlayerDataType.Json, data);
+                    var versionedJson = PersistenceEnvelopeUtility.PackString(GetCurrentVersion<T>(), json);
                     if (encrypt)
                     {
-                        var jsonEn = EncryptUtils.AESEncrypt(json, ConstSetting.FileEncryptionKey);
+                        var jsonEn = EncryptUtils.AESEncrypt(versionedJson, ConstSetting.FileEncryptionKey);
                         await File.WriteAllTextAsync(filePath, jsonEn);
                     }
                     else
                     {
-                        await File.WriteAllTextAsync(filePath, json);
+                        await File.WriteAllTextAsync(filePath, versionedJson);
                     }
                 });
                 LinkLog.Log($"Save a Json at {filePath}");
@@ -88,16 +90,29 @@ namespace PowerCellStudio
             if (!TryGetSaveFilePath(saveKey, out var filePath)) return default;
             if (!File.Exists(filePath)) return default;
 
-            var jsonEn = File.ReadAllText(filePath);
             T result = default;
             try
             {
-                if (decrypt)
+                var rawText = File.ReadAllText(filePath);
+                var content = decrypt
+                    ? EncryptUtils.AESDecrypt(rawText, ConstSetting.FileEncryptionKey)
+                    : rawText;
+                var version = 0;
+                if (PersistenceEnvelopeUtility.TryUnpackString(content, out var storedVersion, out var payload))
                 {
-                    var json = EncryptUtils.AESDecrypt(jsonEn, ConstSetting.FileEncryptionKey);
-                    result = SerializeUtils.DeserializeFromJson<T>(json);
+                    version = storedVersion;
+                    result = DeserializeStringPayload<T>(PlayerDataType.Json, version, payload);
                 }
-                result = SerializeUtils.DeserializeFromJson<T>(jsonEn);
+                else
+                {
+                    result = DeserializeStringPayload<T>(PlayerDataType.Json, version, content);
+                }
+
+                if (result != null && TryUpgradeData(version, result, out var upgradedData, out var upgraded) && upgraded)
+                {
+                    result = upgradedData;
+                    Save(saveKey, result, decrypt);
+                }
             }
             catch (Exception e)
             {
@@ -138,15 +153,28 @@ namespace PowerCellStudio
                 T data = default;
                 await Task.Run(async () =>
                 {
-                    var jsonEn = await File.ReadAllTextAsync(filePath);
+                    var rawText = await File.ReadAllTextAsync(filePath);
                     try
                     {
-                        if (decrypt)
+                        var content = decrypt
+                            ? EncryptUtils.AESDecrypt(rawText, ConstSetting.FileEncryptionKey)
+                            : rawText;
+                        var version = 0;
+                        if (PersistenceEnvelopeUtility.TryUnpackString(content, out var storedVersion, out var payload))
                         {
-                            var json = EncryptUtils.AESDecrypt(jsonEn, ConstSetting.FileEncryptionKey);
-                            data = SerializeUtils.DeserializeFromJson<T>(json);
+                            version = storedVersion;
+                            data = DeserializeStringPayload<T>(PlayerDataType.Json, version, payload);
                         }
-                        data = SerializeUtils.DeserializeFromJson<T>(jsonEn);
+                        else
+                        {
+                            data = DeserializeStringPayload<T>(PlayerDataType.Json, version, content);
+                        }
+
+                        if (data != null && TryUpgradeData(version, data, out var upgradedData, out var upgraded) && upgraded)
+                        {
+                            data = upgradedData;
+                            Save(saveKey, data, decrypt);
+                        }
                     }
                     catch (Exception e)
                     {

@@ -31,15 +31,16 @@ namespace PowerCellStudio
         public override bool Save<T>(string saveKey, T data, bool encrypt)
         {
             if (string.IsNullOrEmpty(saveKey)) return false;
-            string json = SerializeUtils.SerializeToJson(data);
+            string json = SerializeStringPayload(PlayerDataType.PlayerPrefs, data);
+            var versionedJson = PersistenceEnvelopeUtility.PackString(GetCurrentVersion<T>(), json);
             if (encrypt)
             {
-                var jsonEn = EncryptUtils.Base64Encrypt(json);
+                var jsonEn = EncryptUtils.Base64Encrypt(versionedJson);
                 PlayerPrefs.SetString(saveKey, jsonEn);
             }
             else
             {
-                PlayerPrefs.SetString(saveKey, json);
+                PlayerPrefs.SetString(saveKey, versionedJson);
             }
             PlayerPrefs.Save();
             if (TryGetSaveFilePath(saveKey, out var filePath))
@@ -60,15 +61,26 @@ namespace PowerCellStudio
         {
             if (!PlayerPrefs.HasKey(saveKey)) return default;
             string json = PlayerPrefs.GetString(saveKey, "{}");
-            if (decrypt)
+            var content = decrypt ? EncryptUtils.Base64Decrypt(json) : json;
+            var version = 0;
+            T result;
+            if (PersistenceEnvelopeUtility.TryUnpackString(content, out var storedVersion, out var payload))
             {
-                var jsonDe = EncryptUtils.Base64Decrypt(json);
-                return SerializeUtils.DeserializeFromJson<T>(jsonDe);
+                version = storedVersion;
+                result = DeserializeStringPayload<T>(PlayerDataType.PlayerPrefs, version, payload);
             }
             else
             {
-                return SerializeUtils.DeserializeFromJson<T>(json);
+                result = DeserializeStringPayload<T>(PlayerDataType.PlayerPrefs, version, content);
             }
+
+            if (result != null && TryUpgradeData(version, result, out var upgradedData, out var upgraded) && upgraded)
+            {
+                result = upgradedData;
+                Save(saveKey, result, decrypt);
+            }
+
+            return result;
         }
 
         public override void ReadAsync<T>(string saveKey, Action<T> onComplete, bool decrypt)

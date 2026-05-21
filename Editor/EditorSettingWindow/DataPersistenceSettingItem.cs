@@ -22,12 +22,14 @@ namespace PowerCellStudio
         private string readedDataString;
         public string itemName => "Persistence Data";
         private bool _isEncrypt = true;
+        private List<string> _configurationWarnings;
 
         private Sprite _loadedSprite;
         public void InitSave()
         {
             _dataDictionary = new Dictionary<string, string>();
             _captureProcessor = new CaptureDataProcessor();
+            _configurationWarnings = PersistenceVersionRouter.GetConfigurationWarnings();
             var enumValues = Enum.GetValues(typeof(PlayerDataType));
             _persistenceDataProcessors = new PersistenceDataProcessor[enumValues.Length];
 
@@ -80,6 +82,7 @@ namespace PowerCellStudio
             _dataDictionary = null;
             _persistenceDataProcessors = null;
             _captureProcessor = null;
+            _configurationWarnings = null;
             selectedDataKey = null;
             readedDataString = null;
             _loadedSprite = null;
@@ -87,6 +90,12 @@ namespace PowerCellStudio
 
         public void OnGUI(EditorWindow window)
         {
+            if (_configurationWarnings != null && _configurationWarnings.Count > 0)
+            {
+                EditorGUILayout.HelpBox(string.Join("\n", _configurationWarnings), MessageType.Warning);
+                GUILayout.Space(8);
+            }
+
             if (GUILayout.Button("Clear Player Prefs"))
             {
                 _persistenceDataProcessors[(int)PlayerDataType.PlayerPrefs].ClearAll();

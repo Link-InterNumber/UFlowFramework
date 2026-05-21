@@ -21,12 +21,8 @@ namespace PowerCellStudio
 
         public void Init(int chunkLength)
         {
-            _loadedChunkRefCount = new int[chunkLength];
-            _chunkDataMap = new Dictionary<TKey, TData>[chunkLength];
-            for (var i = 0; i < chunkLength; i++)
-            {
-                _chunkDataMap[i] = new Dictionary<TKey, TData>();
-            }
+            _loadedChunkRefCount = new Dictionary<int, int>(chunkLength);
+            _chunkDataMap = new Dictionary<int, Dictionary<TKey, TData>>(chunkLength);
         }
         
         private void AddRef(int chunkIndex)
