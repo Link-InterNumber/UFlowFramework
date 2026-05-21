@@ -13,6 +13,8 @@ namespace PowerCellStudio
 
         public IEnumerable<int> GetChunkIndexByKey(Func<TKey, bool> keyPredicate);
 
+        public IEnumerable<int> GetAllChunkIndexes();
+
         public long GetChunkOffset(int chunkIndex);
     }
 }

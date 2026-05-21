@@ -57,6 +57,20 @@ ChunkMaker.StreamWriteSync<MyData, int>(
 - `MyConfigData.bytes`：真实数据文件，按chunk顺序写入数据记录。
 - `MyConfigIndex.bytes`：chunk索引文件，保存chunk偏移与对应键集合。
 
+如果你希望分块规则直接由外部决定，也可以传入一个 `key => chunkId` 方法作为分组依据：
+
+```csharp
+ChunkMaker.StreamWriteSync<MyData, int>(
+    fileDirectory: dataDirectory,
+    fileName: fileName,
+    data: records,
+    keySelector: item => item.id,
+    keyToChunkIndex: key => key / 100,
+    options: new ChunkDataOptions { EnableEncryption = true });
+```
+
+此时相同 `chunkId` 的记录会写入同一个 chunk，`ChunkInfo.index` 直接保存这个 `chunkId`。
+
 ### 2.🔍 **准备查询器**
 
 在运行时使用 `ChunkDataQueryer<TKey, TData>` 加载索引并准备缓存结构。
@@ -319,9 +333,12 @@ foreach (var item in queryer.Find(data => data.name.Contains("test")))
   - 生成数据文件与索引文件。
   - `chunkSize` 是每个chunk最大记录数。
   - `options` 使用的二进制序列化方式和加密/解密设置。
+- `StreamWriteSync<TData, TKey>(string fileDirectory, string fileName, IEnumerable<TData> data, Func<TData, TKey> keySelector, Func<TKey, int> keyToChunkIndex, ChunkDataOptions options = null)`
+    - 按自定义 `chunkId` 分组生成数据文件与索引文件。
 
 ### `ChunkDataQueryer<TKey, TData>` 常用方法
 
+- `Prepare(string indexFilePath, string dataFilePath, Func<TData, TKey> keySelector, Func<TKey, int> keyToChunkIndex, ChunkDataOptions options = null)`
 - `Prepare(string indexFilePath, string dataFilePath, Func<TData, TKey> keySelector, ChunkDataOptions options = null)`
 - `PrepareYieldInstruction(string indexFilePath, string dataFilePath, Func<TData, TKey> keySelector, int operationUnit = 512, ChunkDataOptions options = null)`
 - `Get(TKey key, Action<TData> onAdd)`
@@ -356,6 +373,8 @@ foreach (var item in queryer.Find(data => data.name.Contains("test")))
 5. `IChunkEncryptor.Decrypt(byte[] data, int offset, int count)` 的 `offset` 和 `count` 表示当前有效载荷区间，不能忽略。
 6. `ChunkDataMap` 的 `GetData` 会在访问数据时增加引用次数，避免短期内频繁释放。
 7. `Clear()` 会清空所有已加载chunk，并释放索引缓存。
+8. 使用自定义 `chunkId` 写入时，读取端的 `keyToChunkIndex` 必须与写入时保持一致。
+9. 自定义 `chunkId` 需要是非负整数；负值会被视为无效配置。
 
 ---
 

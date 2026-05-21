@@ -35,6 +35,20 @@ namespace PowerCellStudio
             var indexFilePath = Path.Combine(fileDirectory, $"{fileName}Index.bytes");
             StreamWriteChunkInfo(indexFilePath, chunkInfos, resolvedOptions);
         }
+
+        public static void StreamWriteSync<TKey, TData>(string fileDirectory, string fileName, IEnumerable<TData> data,
+            Func<TData, TKey> keySelector, Func<TKey, int> keyToChunkIndex, ChunkDataOptions options = null)
+        {
+            if (!Directory.Exists(fileDirectory)) Directory.CreateDirectory(fileDirectory);
+            if (keySelector == null) throw new ArgumentNullException(nameof(keySelector));
+            if (keyToChunkIndex == null) throw new ArgumentNullException(nameof(keyToChunkIndex));
+
+            ChunkDataOptions resolvedOptions = ChunkDataOptions.Resolve(options);
+            var dataFilePath = Path.Combine(fileDirectory, $"{fileName}Data.bytes");
+            var chunkInfos = WriteYieldInstructionByChunkId(dataFilePath, data, keySelector, keyToChunkIndex, resolvedOptions);
+            var indexFilePath = Path.Combine(fileDirectory, $"{fileName}Index.bytes");
+            StreamWriteChunkInfo(indexFilePath, chunkInfos, resolvedOptions);
+        }
         
         private static IEnumerable<ChunkInfo> WriteYieldInstruction<TData, TKey>(string filePath, IEnumerable<TData> data,
             Func<TData, TKey> keySelector, int chunkSize, ChunkDataOptions options)
@@ -104,6 +118,74 @@ namespace PowerCellStudio
                 yield return chunkInfo;
             }
             ListPool<TKey>.Release(keys);
+            dataFile.Flush();
+        }
+
+        private static IEnumerable<ChunkInfo> WriteYieldInstructionByChunkId<TData, TKey>(string filePath, IEnumerable<TData> data,
+            Func<TData, TKey> keySelector, Func<TKey, int> keyToChunkIndex, ChunkDataOptions options)
+        {
+            using var dataFile = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            var groupedRecords = new Dictionary<int, List<TData>>();
+            var groupedKeys = new Dictionary<int, List<TKey>>();
+
+            foreach (var item in data)
+            {
+                if (item == null) continue;
+                var key = keySelector(item);
+                var chunkIndex = keyToChunkIndex(key);
+                if (chunkIndex < 0)
+                {
+                    throw new InvalidOperationException($"[ChunkMaker] key {key} produced an invalid chunkIndex {chunkIndex}.");
+                }
+
+                if (!groupedRecords.TryGetValue(chunkIndex, out var recordList))
+                {
+                    recordList = new List<TData>();
+                    groupedRecords[chunkIndex] = recordList;
+                    groupedKeys[chunkIndex] = new List<TKey>();
+                }
+
+                recordList.Add(item);
+                groupedKeys[chunkIndex].Add(key);
+            }
+
+            var offset = 0L;
+            foreach (var chunkIndex in groupedRecords.Keys.OrderBy(index => index))
+            {
+                foreach (var item in groupedRecords[chunkIndex])
+                {
+                    var dataBytes = options.ResolvedSerializer.Write(item);
+                    if (dataBytes == null || dataBytes.Length == 0)
+                    {
+                        UnityEngine.Debug.LogError($"[ChunkMaker] 序列化失败或数据为空，跳过当前数据。类型: {item?.GetType()}");
+                        continue;
+                    }
+
+                    if (options.ResolvedEncryptor != null)
+                    {
+                        dataBytes = options.ResolvedEncryptor.Encrypt(dataBytes);
+                    }
+
+                    var lengthBytes = BitConverter.GetBytes(dataBytes.Length);
+                    dataFile.Write(lengthBytes, 0, lengthBytes.Length);
+                    dataFile.Write(dataBytes, 0, dataBytes.Length);
+                }
+
+                var dataLengthBytes = BitConverter.GetBytes(0);
+                dataFile.Write(dataLengthBytes, 0, dataLengthBytes.Length);
+
+                yield return new ChunkInfo
+                {
+                    index = chunkIndex,
+                    offset = offset,
+                    keyData = groupedKeys[chunkIndex].Count > 0
+                        ? options.ResolvedSerializer.Write(groupedKeys[chunkIndex].ToArray()).ToArray()
+                        : Array.Empty<byte>(),
+                };
+
+                offset = dataFile.Position;
+            }
+
             dataFile.Flush();
         }
         

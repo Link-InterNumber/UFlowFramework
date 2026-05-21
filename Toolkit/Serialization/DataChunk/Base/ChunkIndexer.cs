@@ -1,7 +1,8 @@
 using System;
-using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEngine.Pool;
 
 namespace PowerCellStudio
 {
@@ -66,16 +67,20 @@ namespace PowerCellStudio
         public IEnumerable<int> GetChunkIndexByKey(Func<TKey, bool> keyPredicate)
         {
             if (keyPredicate == null) yield break;
-            var set = ArrayPool<bool>.Shared.Rent(_offsetMap.Count);
-            Array.Clear(set, 0, _offsetMap.Count);
+            var returnedChunkIndexes = HashSetPool<int>.Get();
             foreach (var kvp in _keyMap)
             {
-                if (set[kvp.Value]) continue;
+                if (returnedChunkIndexes.Contains(kvp.Value)) continue;
                 if (!keyPredicate.Invoke(kvp.Key)) continue;
                 yield return kvp.Value;
-                set[kvp.Value] = true;
+                returnedChunkIndexes.Add(kvp.Value);
             }
-            ArrayPool<bool>.Shared.Return(set);
+            HashSetPool<int>.Release(returnedChunkIndexes);
+        }
+
+        public IEnumerable<int> GetAllChunkIndexes()
+        {
+            return _offsetMap.Keys.OrderBy(index => index);
         }
 
         public long GetChunkOffset(int chunkIndex)

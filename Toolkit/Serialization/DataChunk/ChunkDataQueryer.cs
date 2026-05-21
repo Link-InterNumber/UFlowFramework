@@ -7,11 +7,22 @@ namespace PowerCellStudio
     public class ChunkDataQueryer<TKey, TData> 
     {
         private string _dataFilePath;
-        private ChunkDataMap<TKey, TData> _dataMap;
+        private IChunkDataMap<TKey, TData> _dataMap;
         private IChunkIndexer<TKey> _indexer;
         private Func<TData, TKey> _keySelector;
         private ChunkDataOptions _options;
 
+        /// <summary>
+        /// 构建可推导Key=>ChunkIndex的查询器，适用于Key与ChunkIndex之间存在明确映射关系的场景。
+        /// keyPredicate函数用于判断key是否在数据范围内，keyToChunkIndex函数用于将满足条件的key转换为chunkIndex。
+        /// 对比基础版本，可以减少key=>chunkIndex的缓存数据。
+        /// </summary>
+        /// <param name="indexFilePath">索引文件路径，包含chunk索引和关联key信息</param>
+        /// <param name="dataFilePath">数据文件路径，包含实际的chunk数据</param>
+        /// <param name="keySelector">用于从数据中提取key的函数</param>
+        /// <param name="keyPredicate">用于判断key是否满足条件的函数</param>
+        /// <param name="keyToChunkIndex">用于将key转换为chunk索引的函数</param>
+        /// <param name="options">可选的chunk数据选项</param>
         public void Prepare(string indexFilePath, string dataFilePath, Func<TData, TKey> keySelector,
             Func<TKey, bool> keyPredicate, Func<TKey, int> keyToChunkIndex, ChunkDataOptions options = null)
         {
@@ -19,13 +30,36 @@ namespace PowerCellStudio
             _keySelector = keySelector;
             _options = options;
             var indexer = new ChunkCustomIndexer<TKey>(keyPredicate, keyToChunkIndex);
-            _dataMap = new ChunkDataMap<TKey, TData>();
+            _dataMap = new ChunkCustomDataMap<TKey, TData>();
             var reader = ChunkReader.ReadIndexFile<TKey>(indexFilePath, options);
             indexer.Init(reader);
             _indexer = indexer;
             _dataMap.Init(_indexer.chunkCount);
         }
 
+        /// <summary>
+        /// 构建可推导Key=>ChunkIndex的查询器，适用于Key与ChunkIndex之间存在明确映射关系的场景。
+        /// keyPredicate函数用于判断key是否在数据范围内，keyToChunkIndex函数用于将满足条件的key转换为chunkIndex。
+        /// 对比基础版本，可以减少key=>chunkIndex的缓存数据。
+        /// </summary>
+        /// <param name="indexFilePath">索引文件路径，包含chunk索引和关联key信息</param>
+        /// <param name="dataFilePath">数据文件路径，包含实际的chunk数据</param>
+        /// <param name="keySelector">用于从数据中提取key的函数</param>
+        /// <param name="keyToChunkIndex">用于将key转换为chunk索引的函数</param>
+        /// <param name="options">可选的chunk数据选项</param>
+        public void Prepare(string indexFilePath, string dataFilePath, Func<TData, TKey> keySelector,
+            Func<TKey, int> keyToChunkIndex, ChunkDataOptions options = null)
+        {
+            Prepare(indexFilePath, dataFilePath, keySelector, _ => true, keyToChunkIndex, options);
+        }
+
+        /// <summary>
+        /// 构建基础版本的查询器，会建立key=>chunkIndex的缓存数据。
+        /// </summary>
+        /// <param name="indexFilePath">索引文件路径，包含chunk索引和关联key信息</param>
+        /// <param name="dataFilePath">数据文件路径，包含实际的chunk数据</param>
+        /// <param name="keySelector">用于从数据中提取key的函数</param>
+        /// <param name="options">可选的chunk数据选项</param>
         public void Prepare(string indexFilePath, string dataFilePath, Func<TData, TKey> keySelector, ChunkDataOptions options = null)
         {
             _dataFilePath = dataFilePath;
@@ -36,6 +70,14 @@ namespace PowerCellStudio
             _dataMap = dataMap;
         }
         
+        /// <summary>
+        /// 构建基础版本的查询器，会建立key=>chunkIndex的缓存数据。
+        /// </summary>
+        /// <param name="indexFilePath">索引文件路径，包含chunk索引和关联key信息</param>
+        /// <param name="dataFilePath">数据文件路径，包含实际的chunk数据</param>
+        /// <param name="keySelector">用于从数据中提取key的函数</param>
+        /// <param name="operationUnit">每次操作的单位数量</param>
+        /// <param name="options">可选的chunk数据选项</param>
         public IEnumerator PrepareYieldInstruction(string indexFilePath, string dataFilePath, Func<TData, TKey> keySelector, int operationUnit = 512, ChunkDataOptions options = null)
         {
             _dataFilePath = dataFilePath;
@@ -100,16 +142,16 @@ namespace PowerCellStudio
 
         public IEnumerable<TData> GetAll()
         {
-            for (var i = 0; i < _indexer.chunkCount; i++)
+            foreach (var chunkIndex in _indexer.GetAllChunkIndexes())
             {
-                if (_dataMap.IsChunkLoaded(i))
+                if (_dataMap.IsChunkLoaded(chunkIndex))
                 {
-                    foreach (var confBase in _dataMap.GetAllData(i))
+                    foreach (var confBase in _dataMap.GetAllData(chunkIndex))
                         yield return confBase;
                     continue;
                 }
 
-                var offset = _indexer.GetChunkOffset(i);
+                var offset = _indexer.GetChunkOffset(chunkIndex);
                 if (offset < 0) continue;
                 var dataSource = ChunkReader.ReadChunkData<TData>(_dataFilePath, offset, _options);
                 foreach (var confBase in dataSource)
@@ -139,10 +181,10 @@ namespace PowerCellStudio
             _indexer.Clear();
         }
         
-        public static (ChunkIndexer<TKey> indexer, ChunkDataMap<TKey, TData> dataMap) CreateChunkTools(string indexFilePath, ChunkDataOptions options = null)
+        public static (ChunkIndexer<TKey> indexer, IChunkDataMap<TKey, TData> dataMap) CreateChunkTools(string indexFilePath, ChunkDataOptions options = null)
         {
             var chunkIndexer = new ChunkIndexer<TKey>();
-            var dataMap = new ChunkDataMap<TKey, TData>();
+            IChunkDataMap<TKey, TData> dataMap = new ChunkDataMap<TKey, TData>();
             var reader = ChunkReader.ReadIndexFile<TKey>(indexFilePath, options);
             chunkIndexer.Init(reader);
             dataMap.Init(chunkIndexer.chunkCount);
