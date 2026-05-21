@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using Random = System.Random;
 
 namespace PowerCellStudio
 {
@@ -12,16 +11,122 @@ namespace PowerCellStudio
     /// </summary>
     public class Randomizer
     {
-        private static Random _random = new Random();
+        private const ulong DefaultSequence = 1442695040888963407UL;
+        private const double DoubleUnitScale = 1.0 / 9007199254740992.0;
+
+        private static readonly Randomizer _default = new Randomizer();
+        public static Randomizer Default => _default;
+        private ulong _state;
+        private ulong _increment;
+
+        public Randomizer()
+        {
+            var seed = unchecked((ulong)DateTime.UtcNow.Ticks ^ (ulong)Environment.TickCount);
+            Reseed(seed, DefaultSequence);
+        }
         
         /// <summary>
         /// 设置随机种子。
         /// Set random seed for the random number generator.
         /// </summary>
         /// <param name="seed">种子值 / Seed value</param>
-        public static void SetSeed(int seed)
+        public void SetSeed(int seed)
         {
-            _random = new Random(seed);
+            Reseed(unchecked((uint)seed), DefaultSequence);
+        }
+
+        private void Reseed(ulong seed, ulong sequence)
+        {
+            _state = 0UL;
+            _increment = (sequence << 1) | 1UL;
+            NextUInt32Internal();
+            _state += seed;
+            NextUInt32Internal();
+        }
+
+        private uint NextUInt32Internal()
+        {
+            ulong previousState = _state;
+            _state = previousState * 6364136223846793005UL + _increment;
+            uint xorshifted = (uint)(((previousState >> 18) ^ previousState) >> 27);
+            int rotation = (int)(previousState >> 59);
+            return (xorshifted >> rotation) | (xorshifted << ((-rotation) & 31));
+        }
+
+        private ulong NextUInt64Internal()
+        {
+            return ((ulong)NextUInt32Internal() << 32) | NextUInt32Internal();
+        }
+
+        private uint NextUInt32Bounded(uint exclusiveMax)
+        {
+            if (exclusiveMax == 0u)
+            {
+                return 0u;
+            }
+
+            uint threshold = unchecked((uint)(0u - exclusiveMax)) % exclusiveMax;
+            while (true)
+            {
+                uint value = NextUInt32Internal();
+                if (value >= threshold)
+                {
+                    return value % exclusiveMax;
+                }
+            }
+        }
+
+        private ulong NextUInt64Bounded(ulong exclusiveMax)
+        {
+            if (exclusiveMax == 0UL)
+            {
+                return NextUInt64Internal();
+            }
+
+            ulong threshold = unchecked(0UL - exclusiveMax) % exclusiveMax;
+            while (true)
+            {
+                ulong value = NextUInt64Internal();
+                if (value >= threshold)
+                {
+                    return value % exclusiveMax;
+                }
+            }
+        }
+
+        private int NextIntExclusive(int minInclusive, int maxExclusive)
+        {
+            if (maxExclusive <= minInclusive)
+            {
+                return minInclusive;
+            }
+
+            uint range = unchecked((uint)(maxExclusive - minInclusive));
+            return minInclusive + (int)NextUInt32Bounded(range);
+        }
+
+        private double NextDouble01()
+        {
+            return (NextUInt64Internal() >> 11) * DoubleUnitScale;
+        }
+
+        private void NextBytesInternal(byte[] buffer)
+        {
+            if (buffer == null)
+            {
+                return;
+            }
+
+            int index = 0;
+            while (index < buffer.Length)
+            {
+                ulong value = NextUInt64Internal();
+                for (int i = 0; i < 8 && index < buffer.Length; i++)
+                {
+                    buffer[index++] = (byte)(value & 0xFF);
+                    value >>= 8;
+                }
+            }
         }
 
         /// <summary>
@@ -29,9 +134,9 @@ namespace PowerCellStudio
         /// Get a random float value between [0, 1).
         /// </summary>
         /// <returns>随机值 / Random value</returns>
-        public static float Value01()
+        public float Value01()
         {
-            return (float)_random.NextDouble();
+            return (float)NextDouble01();
         }
 
         /// <summary>
@@ -39,9 +144,9 @@ namespace PowerCellStudio
         /// Get a random double value between [0, 1).
         /// </summary>
         /// <returns>随机值 / Random value</returns>
-        public static double ValueDouble01()
+        public double ValueDouble01()
         {
-            return _random.NextDouble();
+            return NextDouble01();
         }
 
         /// <summary>
@@ -51,7 +156,7 @@ namespace PowerCellStudio
         /// <param name="min">最小值 / Minimum value</param>
         /// <param name="max">最大值 / Maximum value</param>
         /// <returns>随机浮点数 / Random float</returns>
-        public static float Range(float min, float max)
+        public float Range(float min, float max)
         {
             if (min == max) return min;
             if (min > max)
@@ -60,7 +165,7 @@ namespace PowerCellStudio
                 min = max;
                 max = tmp;
             }
-            return min + (float)_random.NextDouble() * (max - min);
+            return min + (float)NextDouble01() * (max - min);
         }
 
         /// <summary>
@@ -70,7 +175,7 @@ namespace PowerCellStudio
         /// <param name="min">最小值 / Minimum value</param>
         /// <param name="max">最大值 / Maximum value</param>
         /// <returns>随机浮点数 / Random float</returns>
-        public static double RangeDouble(double min, double max)
+        public double RangeDouble(double min, double max)
         {
             if (min == max) return min;
             if (min > max)
@@ -79,7 +184,7 @@ namespace PowerCellStudio
                 min = max;
                 max = tmp;
             }
-            return min + _random.NextDouble() * (max - min);
+            return min + NextDouble01() * (max - min);
         }
         
         /// <summary>
@@ -89,7 +194,7 @@ namespace PowerCellStudio
         /// <param name="min">最小值 / Minimum value</param>
         /// <param name="max">最大值 / Maximum value</param>
         /// <returns>随机整数 / Random integer</returns>
-        public static int Range(int min, int max)
+        public int Range(int min, int max)
         {
             if (min == max) return min;
             if (min > max)
@@ -98,7 +203,9 @@ namespace PowerCellStudio
                 min = max;
                 max = tmp;
             }
-            return _random.Next(min, max + 1);
+            ulong range = (ulong)((long)max - min) + 1UL;
+            long offset = (long)NextUInt64Bounded(range);
+            return (int)(min + offset);
         }
         
         /// <summary>
@@ -108,7 +215,7 @@ namespace PowerCellStudio
         /// <param name="min">最小值 / Minimum value</param>
         /// <param name="max">最大值 / Maximum value</param>
         /// <returns>随机整数 / Random integer</returns>
-        public static uint RangeUint(uint min, uint max)
+        public uint RangeUint(uint min, uint max)
         {
             if (min == max) return min;
             if (min > max)
@@ -117,13 +224,8 @@ namespace PowerCellStudio
                 min = max;
                 max = tmp;
             }
-            double randomDouble = _random.NextDouble();
-
-            ulong range = (ulong)(max - min);
-            if (max < uint.MaxValue)
-                range++;
-
-            return min + (uint)(randomDouble * range);
+            ulong range = (ulong)(max - min) + 1UL;
+            return min + (uint)NextUInt64Bounded(range);
         }
         
         /// <summary>
@@ -133,7 +235,7 @@ namespace PowerCellStudio
         /// <param name="min">最小值 / Minimum value</param>
         /// <param name="max">最大值 / Maximum value</param>
         /// <returns>随机长整型数 / Random long</returns>
-        public static long Range(long min, long max)
+        public long Range(long min, long max)
         {
             if (min == max) return min;
             if (min > max)
@@ -142,13 +244,9 @@ namespace PowerCellStudio
                 min = max;
                 max = tmp;
             }
-            double randomDouble = _random.NextDouble();
-
-            ulong range = (ulong)(max - min);
-            if (max < long.MaxValue)
-                range++;
-
-            return min + (long)(randomDouble * range);
+            ulong range = unchecked((ulong)(max - min)) + 1UL;
+            ulong offset = range == 0UL ? NextUInt64Internal() : NextUInt64Bounded(range);
+            return unchecked((long)(unchecked((ulong)min) + offset));
         }
         
         /// <summary>
@@ -156,14 +254,16 @@ namespace PowerCellStudio
         /// Get a random point inside a unit sphere.
         /// </summary>
         /// <returns> 随机三维方向 / Random 3d direction</returns
-        public static Vector3 RandomInsideUnitSphere()
+        public Vector3 RandomInsideUnitSphere()
         {
-            var angle1 = Range(0f, 360f);
-            var angle2 = Range(0f, 360f);
-            var x = (float)(Math.Cos(angle1 * Math.PI / 180f) * Math.Sin(angle2 * Math.PI / 180f));
-            var y = (float)(Math.Sin(angle1 * Math.PI / 180f) * Math.Sin(angle2 * Math.PI / 180f));
-            var z = (float)(Math.Cos(angle2 * Math.PI / 180f));
-            return new Vector3(x, y, z);
+            while (true)
+            {
+                float x = Range(-1f, 1f);
+                float y = Range(-1f, 1f);
+                float z = Range(-1f, 1f);
+                if (x * x + y * y + z * z > 1f) continue;
+                return new Vector3(x, y, z);
+            }
         }
 
         /// <summary>
@@ -171,10 +271,15 @@ namespace PowerCellStudio
         /// Get a random point inside a unit circle.
         /// </summary>
         /// <returns> 随机二维方向 / Random 2d direction</returns>
-        public static Vector2 RandomInsideUnitCircle()
+        public Vector2 RandomInsideUnitCircle()
         {
-            var angle = Range(0f, 360f);
-            return new Vector2((float)Math.Cos(angle * Math.PI / 180f), (float)Math.Sin(angle * Math.PI / 180f) );
+            while (true)
+            {
+                float x = Range(-1f, 1f);
+                float y = Range(-1f, 1f);
+                if (x * x + y * y > 1f) continue;
+                return new Vector2(x, y);
+            }
         }
         
         /// <summary>
@@ -184,7 +289,7 @@ namespace PowerCellStudio
         /// <param name="min">最小值 / Minimum value</param>
         /// <param name="max">最大值 / Maximum value</param>
         /// <returns>随机长整型数 / Random long</returns>
-        public static ulong RangeUlong(ulong min, ulong max)
+        public ulong RangeUlong(ulong min, ulong max)
         {
             if (min == max) return min;
             if (min > max)
@@ -193,13 +298,9 @@ namespace PowerCellStudio
                 min = max;
                 max = tmp;
             }
-            double randomDouble = _random.NextDouble();
-
-            ulong range = (ulong)(max - min);
-            if (max < ulong.MaxValue)
-                range++;
-
-            return min + (ulong)(randomDouble * range);
+            ulong range = (max - min) + 1UL;
+            ulong offset = range == 0UL ? NextUInt64Internal() : NextUInt64Bounded(range);
+            return min + offset;
         }
         
         /// <summary>
@@ -207,10 +308,10 @@ namespace PowerCellStudio
         /// Generate a random long integer.
         /// </summary>
         /// <returns>随机长整数 / Random long</returns>
-        public static long RandomLong()
+        public long RandomLong()
         {
             byte[] buffer = new byte[8];
-            _random.NextBytes(buffer);
+            NextBytesInternal(buffer);
 
             return BitConverter.ToInt64(buffer, 0);
         }
@@ -220,10 +321,10 @@ namespace PowerCellStudio
         /// Generate a random ulong integer.
         /// </summary>
         /// <returns>随机无符号长整数 / Random ulong</returns>
-        public static ulong RandomULong()
+        public ulong RandomULong()
         {
             byte[] buffer = new byte[8];
-            _random.NextBytes(buffer);
+            NextBytesInternal(buffer);
             return BitConverter.ToUInt64(buffer, 0);
         }
 
@@ -232,10 +333,10 @@ namespace PowerCellStudio
         /// Generate a random integer.
         /// </summary>
         /// <returns>随机整数 / Random int</returns>
-        public static int RandomInt()
+        public int RandomInt()
         {
             byte[] buffer = new byte[4];
-            _random.NextBytes(buffer);
+            NextBytesInternal(buffer);
 
             int randomInt = BitConverter.ToInt32(buffer, 0);
             return randomInt;
@@ -246,10 +347,10 @@ namespace PowerCellStudio
         /// Generate a random unsigned integer.
         /// </summary>
         /// <returns>随无符号机整数 / Random int</returns>
-        public static uint RandomUInt()
+        public uint RandomUInt()
         {
             byte[] buffer = new byte[4];
-            _random.NextBytes(buffer);
+            NextBytesInternal(buffer);
 
             return BitConverter.ToUInt32(buffer, 0);
         }
@@ -260,7 +361,7 @@ namespace PowerCellStudio
         /// </summary>
         /// <param name="val">要判断的值 / Value to check against</param>
         /// <returns>结果，是否符合 / Result, whether it meets the condition</returns>
-        public static bool True(float val)
+        public bool True(float val)
         {
             if (val >= 1f) return true;
             if (val <= 0f) return false;
@@ -274,7 +375,7 @@ namespace PowerCellStudio
         /// <param name="weight">权重值 / Weight value</param>
         /// <param name="total">总计范围 / Total range</param>
         /// <returns>结果，是否符合 / Result, whether it meets the condition</returns>
-        public static bool True(float weight, float total)
+        public bool True(float weight, float total)
         {
             if (total <= weight) return true;
             if (weight <= 0f) return false;
@@ -289,7 +390,7 @@ namespace PowerCellStudio
         /// <param name="weight">权重值 / Weight value</param>
         /// <param name="total">总计范围 / Total range</param>
         /// <returns>结果，是否符合 / Result, whether it meets the condition</returns>
-        public static bool True(int weight, int total)
+        public bool True(int weight, int total)
         {
             if (total <= weight) return true;
             if (weight <= 0) return false;
@@ -304,7 +405,7 @@ namespace PowerCellStudio
         /// <param name="weight">权重值 / Weight value</param>
         /// <param name="total">总计范围 / Total range</param>
         /// <returns>结果，是否符合 / Result, whether it meets the condition</returns>
-        public static bool True(long weight, long total)
+        public bool True(long weight, long total)
         {
             if (total <= weight) return true;
             if (weight <= 0) return false;
@@ -319,11 +420,11 @@ namespace PowerCellStudio
         /// <typeparam name="T">元素类型 / Type of element</typeparam>
         /// <param name="elements">抽取池 / Pool of elements to select from</param>
         /// <returns>选中的元素 / Selected element</returns>
-        public static T RandomSelection<T>(T[] elements)
+        public T RandomSelection<T>(T[] elements)
         {
             if (elements == null || elements.Length == 0) return default;
             if (elements.Length == 1) return elements[0];
-            int randomIndex = _random.Next(0, elements.Length);
+            int randomIndex = NextIntExclusive(0, elements.Length);
             return elements[randomIndex];
         }
         
@@ -334,11 +435,11 @@ namespace PowerCellStudio
         /// <typeparam name="T">元素类型 / Type of element</typeparam>
         /// <param name="elements">抽取池 / Pool of elements to select from</param>
         /// <returns>选中的元素 / Selected element</returns>
-        public static T RandomSelection<T>(IList<T> elements)
+        public T RandomSelection<T>(IList<T> elements)
         {
             if (elements == null || elements.Count == 0) return default;
             if (elements.Count == 1) return elements[0];
-            int randomIndex = _random.Next(0, elements.Count);
+            int randomIndex = NextIntExclusive(0, elements.Count);
             return elements[randomIndex];
         }
 
@@ -350,7 +451,7 @@ namespace PowerCellStudio
         /// <param name="elements">抽取池 / Pool of elements to select from</param>
         /// <param name="weights">对应权重 / Corresponding weights</param>
         /// <returns>选中的元素 / Selected element</returns>
-        public static T WeightedRandomSelection<T>(T[] elements, int[] weights)
+        public T WeightedRandomSelection<T>(T[] elements, int[] weights)
         {
             if (elements == null || elements.Length == 0 || weights == null) return default;
             if (weights.Length == 0) return RandomSelection(elements);
@@ -364,7 +465,7 @@ namespace PowerCellStudio
                 if (w > 0) totalWeight += w;
             }
             if (totalWeight <= 0) return default;
-            int randomNumber = _random.Next(0, totalWeight);
+            int randomNumber = NextIntExclusive(0, totalWeight);
             int cumulativeWeight = 0;
             for (int i = 0; i < elements.Length; i++)
             {
@@ -386,7 +487,7 @@ namespace PowerCellStudio
         /// <param name="elements">抽取池 / Pool of elements to select from</param>
         /// <param name="weights">对应权重 / Corresponding weights</param>
         /// <returns>选中的元素 / Selected element</returns>
-        public static T WeightedRandomSelection<T>(List<T> elements, List<int> weights)
+        public T WeightedRandomSelection<T>(List<T> elements, List<int> weights)
         {
             if (elements == null || elements.Count == 0 || weights == null) return default;
             if (weights.Count == 0) return RandomSelection(elements);
@@ -400,7 +501,7 @@ namespace PowerCellStudio
                 if (w > 0) totalWeight += w;
             }
             if (totalWeight <= 0) return default;
-            int randomNumber = _random.Next(0, totalWeight);
+            int randomNumber = NextIntExclusive(0, totalWeight);
             int cumulativeWeight = 0;
             for (int i = 0; i < elements.Count; i++)
             {
@@ -421,13 +522,13 @@ namespace PowerCellStudio
         /// <typeparam name="T">元素类型 / Type of element</typeparam>
         /// <param name="itemWeightPair">元素与权重 / Element-weight pairs</param>
         /// <returns>选中的元素 / Selected element</returns>
-        public static T WeightedRandomSelection<T>(Dictionary<T, int> itemWeightPair)
+        public T WeightedRandomSelection<T>(Dictionary<T, int> itemWeightPair)
         {
             if (itemWeightPair == null || itemWeightPair.Count == 0) return default;
 
             int totalWeight = itemWeightPair.Values.Sum();
             if (totalWeight <= 0) return default;
-            int randomNumber = _random.Next(0, totalWeight);
+            int randomNumber = NextIntExclusive(0, totalWeight);
             int cumulativeWeight = 0;
             foreach (var keyValuePair in itemWeightPair)
             {
@@ -446,7 +547,7 @@ namespace PowerCellStudio
         /// <param name="elements">抽取的元素池 / Pool of elements to select from</param>
         /// <param name="count">抽取的数量 / Number of elements to select</param>
         /// <returns>选中的元素集合 / List of selected elements</returns>
-        public static List<T> RandomSelectionWithoutDuplicates<T>(IList<T> elements, int count)
+        public List<T> RandomSelectionWithoutDuplicates<T>(IList<T> elements, int count)
         {
             if (elements == null || elements.Count == 0) return default;
             if (count <= 0) return new List<T>();
@@ -459,7 +560,7 @@ namespace PowerCellStudio
 
             for (int i = 0; i < count; i++)
             {
-                int j = _random.Next(i, n); // 随机选一个索引 j∈[i,n)
+                int j = NextIntExclusive(i, n); // 随机选一个索引 j∈[i,n)
                 // swap buffer[i] and buffer[j]
                 T tmp = buffer[i];
                 buffer[i] = buffer[j];
@@ -480,7 +581,7 @@ namespace PowerCellStudio
         /// <param name="elements">抽取的元素池 / Pool of elements to select from</param>
         /// <param name="count">抽取的数量 / Number of elements to select</param>
         /// <returns>选中的元素集合 / List of selected elements</returns>
-        public static List<T> RandomSelectionWithoutDuplicates<T>(T[] elements, int count)
+        public List<T> RandomSelectionWithoutDuplicates<T>(T[] elements, int count)
         {
             if (elements == null || elements.Length == 0) return new List<T>();
             int n = elements.Length;
@@ -492,7 +593,7 @@ namespace PowerCellStudio
             Array.Copy(elements, buffer, n);
             for (int i = 0; i < count; i++)
             {
-                int j = _random.Next(i, n);
+                int j = NextIntExclusive(i, n);
                 T tmp = buffer[i];
                 buffer[i] = buffer[j];
                 buffer[j] = tmp;
@@ -529,7 +630,7 @@ namespace PowerCellStudio
         /// <param name="ItemWeightsPair">元素与权重的字典 / Dictionary of elements and weights</param>
         /// <param name="count">要选取的数量 / Number of elements to select</param>
         /// <returns>选中的元素集合 / List of selected elements</returns>
-        public static List<T> WeightedRandomSelectionWithoutDuplicates<T>(IList<T> items, IList<int> weights, int count)
+        public List<T> WeightedRandomSelectionWithoutDuplicates<T>(IList<T> items, IList<int> weights, int count)
         {
             if (items == null || items.Count <= 0 || weights == null || weights.Count <= 0 || count <= 0) return new List<T>();
             while (items.Count > weights.Count)
@@ -556,7 +657,7 @@ namespace PowerCellStudio
         /// <param name="ItemWeightsPair">元素与权重的字典 / Dictionary of elements and weights</param>
         /// <param name="count">要选取的数量 / Number of elements to select</param>
         /// <returns>选中的元素集合 / List of selected elements</returns>
-        public static List<T> WeightedRandomSelectionWithoutDuplicates<T>(Dictionary<T, int> ItemWeightsPair, int count)
+        public List<T> WeightedRandomSelectionWithoutDuplicates<T>(Dictionary<T, int> ItemWeightsPair, int count)
         {
             if (ItemWeightsPair == null || ItemWeightsPair.Count <= 0 || count <= 0) return new List<T>();
             if (count > ItemWeightsPair.Count) return ItemWeightsPair.Keys.ToList();
@@ -565,7 +666,7 @@ namespace PowerCellStudio
             return WeightedRandomSelectionWithoutDuplicatesHandler<T>(weightedElements, count);
         }
 
-        private static List<T> WeightedRandomSelectionWithoutDuplicatesHandler<T>(List<WeightedElement<T>> weightedElements, int count)
+        private List<T> WeightedRandomSelectionWithoutDuplicatesHandler<T>(List<WeightedElement<T>> weightedElements, int count)
         {
             List<T> result = new List<T>();
             weightedElements.Sort((a, b) => b.Weight.CompareTo(a.Weight));
@@ -576,7 +677,7 @@ namespace PowerCellStudio
                     totalWeight += weightedElements[i].Weight;
                 if (totalWeight <= 0) break;
 
-                int randomValue = _random.Next(0, totalWeight);
+                int randomValue = NextIntExclusive(0, totalWeight);
 
                 WeightedElement<T> selected = weightedElements[0];
                 foreach (WeightedElement<T> element in weightedElements)
@@ -594,7 +695,7 @@ namespace PowerCellStudio
             return result;
         }
         
-        public static void Shuffle<T>(T[] array)
+        public void Shuffle<T>(T[] array)
         {
             if (array == null || array.Length <= 1) return;
             for (int i = array.Length - 1; i > 0; i--)
@@ -606,7 +707,7 @@ namespace PowerCellStudio
             }
         }
 
-        public static void Shuffle<T>(IList<T> list)
+        public void Shuffle<T>(IList<T> list)
         {
             if (list == null || list.Count <= 1) return;
             for (int i = list.Count - 1; i > 0; i--)

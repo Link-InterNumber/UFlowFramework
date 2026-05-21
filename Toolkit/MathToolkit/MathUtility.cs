@@ -17,12 +17,12 @@ namespace PowerCellStudio
 
         public static bool TrueMillion(int v)
         {
-            return Randomizer.True(v, MillionInt);
+            return Randomizer.Default.True(v, MillionInt);
         }
 
         public static bool TrueMillion(long v)
         {
-            return Randomizer.True(v, MillionLong);
+            return Randomizer.Default.True(v, MillionLong);
         }
         
         public static float Remap(float val, float start, float end, float toStart, float toEnd)

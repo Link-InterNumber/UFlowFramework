@@ -51,7 +51,7 @@ namespace PowerCellStudio
             }
             if (_isRandom)
             {
-                Randomizer.Shuffle(_clips);
+                Randomizer.Default.Shuffle(_clips);
             }
             onClipLoaded?.Invoke(this);
         }
@@ -103,7 +103,7 @@ namespace PowerCellStudio
             {
                 if (_isRandom)
                 {
-                    Randomizer.Shuffle(_clips);
+                    Randomizer.Default.Shuffle(_clips);
                 }
                 _index = 0;
             }

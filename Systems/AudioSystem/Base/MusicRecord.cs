@@ -37,7 +37,7 @@ namespace PowerCellStudio
             _isRandom = isRandom;
             if (_isRandom)
             {
-                Randomizer.Shuffle(_clips);
+                Randomizer.Default.Shuffle(_clips);
             }
             _index = 0;
         }
@@ -118,7 +118,7 @@ namespace PowerCellStudio
             if (_index < _clips.Count) return;
             if (_isRandom && _clips.Count > 0)
             {
-                Randomizer.Shuffle(_clips);
+                Randomizer.Default.Shuffle(_clips);
             }
             _index = 0;
         }

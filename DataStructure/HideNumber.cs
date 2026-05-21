@@ -14,7 +14,7 @@ namespace PowerCellStudio
         
         public HideInt(int num = 0)
         {
-            encryptKey = Randomizer.Range(1000, 100000);
+            encryptKey = Randomizer.Default.Range(1000, 100000);
             encryptNum = num ^ encryptKey;
         }
 
@@ -32,7 +32,7 @@ namespace PowerCellStudio
         
         public HideFloat(float num = 0)
         {
-            encryptKey = Randomizer.Range(1000, 100000);
+            encryptKey = Randomizer.Default.Range(1000, 100000);
             encryptNum = Mathf.RoundToInt(num * 10000) ^ encryptKey;
         }
 
@@ -50,7 +50,7 @@ namespace PowerCellStudio
         
         public HideLong(long num = 0)
         {
-            encryptKey = Randomizer.Range(1000L, 100000L);
+            encryptKey = Randomizer.Default.Range(1000L, 100000L);
             encryptNum = num ^ encryptKey;
         }
 
