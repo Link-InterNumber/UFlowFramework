@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using K4os.Compression.LZ4;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -33,8 +36,68 @@ namespace PowerCellStudio
             TestNullRootRoundTrip();
             TestSpanRoundTrip();
             TestSpanAndByteArrayCompatibility();
+            TestSafeModeRoundTrip();
+            TestSafeModeSchemaCompatibility();
 
             Debug.Log("========== BinarySerializer Test Suite Finished ==========");
+        }
+
+        private void TestSafeModeRoundTrip()
+        {
+            RunTest("Safe Mode RoundTrip", () =>
+            {
+                SafeModeContainer source = new SafeModeContainer
+                {
+                    Name = "safe-mode",
+                    Level = 18,
+                    Enabled = true
+                };
+
+                byte[] bytes = SerializeUtils.SerializeToBinary(source, BinaryObjectSerializationMode.Safe);
+                SafeModeContainer clone = SerializeUtils.DeserializeFromBinary<SafeModeContainer>(bytes, 0, -1, BinaryObjectSerializationMode.Safe);
+
+                Assert(bytes.Length > 0, "Safe mode should produce bytes.");
+                Assert(bytes.Length >= 4, "Safe mode should use a compressed payload.");
+                Assert(clone != null, "Safe mode clone should not be null.");
+                Assert(clone.Name == source.Name, "Safe mode string field mismatch.");
+                Assert(clone.Level == source.Level, "Safe mode int field mismatch.");
+                Assert(clone.Enabled == source.Enabled, "Safe mode bool field mismatch.");
+            });
+        }
+
+        private void TestSafeModeSchemaCompatibility()
+        {
+            RunTest("Safe Mode Schema Compatibility", () =>
+            {
+                SafeModeSchemaContainer source = new SafeModeSchemaContainer
+                {
+                    Name = "schema-safe",
+                    Level = 6,
+                    NewCounter = 99
+                };
+
+                byte[] bytes = SerializeUtils.SerializeToBinary(source, BinaryObjectSerializationMode.Safe);
+                string json = ReadSafeModeJson(bytes);
+                JObject sourceObject = JObject.Parse(json);
+                JObject mutatedObject = new JObject();
+
+                if (sourceObject.TryGetValue("$id", out var idToken))
+                {
+                    mutatedObject.Add("$id", idToken);
+                }
+
+                mutatedObject.Add(nameof(SafeModeSchemaContainer.Level), sourceObject[nameof(SafeModeSchemaContainer.Level)]);
+                mutatedObject.Add("LegacyField", 777);
+                mutatedObject.Add(nameof(SafeModeSchemaContainer.Name), sourceObject[nameof(SafeModeSchemaContainer.Name)]);
+
+                byte[] mutatedBytes = WriteSafeModeJson(mutatedObject.ToString(Formatting.None));
+                SafeModeSchemaContainer clone = SerializeUtils.DeserializeFromBinary<SafeModeSchemaContainer>(mutatedBytes, 0, -1, BinaryObjectSerializationMode.Safe);
+
+                Assert(clone != null, "Safe mode schema clone should not be null.");
+                Assert(clone.Name == source.Name, "Safe mode should preserve matching fields after reordering.");
+                Assert(clone.Level == source.Level, "Safe mode should preserve matching int fields after reordering.");
+                Assert(clone.NewCounter == default, "Safe mode should use default value for missing fields.");
+            });
         }
 
         private void TestPrimitiveRoundTrip()
@@ -510,6 +573,22 @@ namespace PowerCellStudio
         }
 
         [Serializable]
+        private class SafeModeContainer
+        {
+            public string Name;
+            public int Level;
+            public bool Enabled;
+        }
+
+        [Serializable]
+        private class SafeModeSchemaContainer
+        {
+            public string Name;
+            public int Level;
+            public int NewCounter;
+        }
+
+        [Serializable]
         private class ConstructorOnlyContainer
         {
             public string Name;
@@ -626,6 +705,20 @@ namespace PowerCellStudio
             Alpha,
             Beta,
             Gamma
+        }
+
+        private static string ReadSafeModeJson(byte[] data)
+        {
+            byte[] jsonBytes = LZ4Pickler.Unpickle(data);
+            using var jsonStream = new MemoryStream(jsonBytes);
+            using var streamReader = new StreamReader(jsonStream, Encoding.UTF8);
+            return streamReader.ReadToEnd();
+        }
+
+        private static byte[] WriteSafeModeJson(string json)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(json ?? string.Empty);
+            return LZ4Pickler.Pickle(bytes);
         }
     }
 }

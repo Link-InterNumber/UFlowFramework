@@ -202,21 +202,22 @@ namespace PowerCellStudio
 
         private void AddModule<T>(Type type, T module) where T : class, IModule
         {
+            var isMonoBehavior = module is MonoBehaviour;
             if (module is IEventModule eventModule)
             {
                 eventModule.RegisterEvent();
             }
-            if (module is IFixedExecutionModule fixedExecutionModule && _fixedExecutionModule != null)
+            if (module is IFixedExecutionModule fixedExecutionModule && _fixedExecutionModule != null && !isMonoBehavior)
             {
                 fixedExecutionModule.inExecution = true;
                 _fixedExecutionModule[type] = fixedExecutionModule;
             }
-            if (module is IExecutionModule executionModule && _executionModule != null)
+            if (module is IExecutionModule executionModule && _executionModule != null && !isMonoBehavior)
             {
                 executionModule.inExecution = true;
                 _executionModule[type] = executionModule;
             }
-            if (module is ILaterExecutionModule laterExecutionModule && _laterExecutionModule != null)
+            if (module is ILaterExecutionModule laterExecutionModule && _laterExecutionModule != null && !isMonoBehavior)
             {
                 laterExecutionModule.inExecution = true;
                 _laterExecutionModule[type] = laterExecutionModule;

@@ -18,6 +18,7 @@ namespace PowerCellStudio
 
         private PerformancePayload _payload;
         private byte[] _binarySerializerBytes;
+        private byte[] _binarySerializerSafeBytes;
         private byte[] _serializeUtilsBytes;
 
         // 测试使用二进制方法（JSON + GZip）与 BinarySerializer 进行性能对比
@@ -98,6 +99,7 @@ namespace PowerCellStudio
             WarmUp();
 
             ValidateBinarySerializerRoundTrip();
+            ValidateBinarySerializerSafeRoundTrip();
             ValidateSerializeUtilsRoundTrip();
             CacheSerializedBytes();
             LogSerializedSizes();
@@ -112,6 +114,7 @@ namespace PowerCellStudio
         private void WarmUp()
         {
             BinarySerializer.Serialize(_payload);
+            SerializeUtils.SerializeToBinary(_payload, BinaryObjectSerializationMode.Safe);
             SerializeToBinary(_payload);
         }
 
@@ -121,6 +124,19 @@ namespace PowerCellStudio
             {
                 PerformancePayload clone = BinarySerializer.Deserialize<PerformancePayload>(BinarySerializer.Serialize(_payload));
                 AssertPayloadEquivalent(_payload, clone, "BinarySerializer");
+            });
+        }
+
+        private void ValidateBinarySerializerSafeRoundTrip()
+        {
+            RunTest("BinarySerializer Safe RoundTrip Validation", () =>
+            {
+                PerformancePayload clone = SerializeUtils.DeserializeFromBinary<PerformancePayload>(
+                    SerializeUtils.SerializeToBinary(_payload, BinaryObjectSerializationMode.Safe),
+                    0,
+                    -1,
+                    BinaryObjectSerializationMode.Safe);
+                AssertPayloadEquivalent(_payload, clone, "BinarySerializer Safe");
             });
         }
 
@@ -136,12 +152,14 @@ namespace PowerCellStudio
         private void CacheSerializedBytes()
         {
             _binarySerializerBytes = BinarySerializer.Serialize(_payload);
+            _binarySerializerSafeBytes = SerializeUtils.SerializeToBinary(_payload, BinaryObjectSerializationMode.Safe);
             _serializeUtilsBytes = SerializeToBinary(_payload);
         }
 
         private void LogSerializedSizes()
         {
             Debug.Log($"[Size] BinarySerializer: {_binarySerializerBytes.Length} bytes");
+            Debug.Log($"[Size] BinarySerializer Safe: {_binarySerializerSafeBytes.Length} bytes");
             Debug.Log($"[Size] SerializeToBinary: {_serializeUtilsBytes.Length} bytes");
         }
 
@@ -152,6 +170,14 @@ namespace PowerCellStudio
                 for (int i = 0; i < SerializeIterations; i++)
                 {
                     BinarySerializer.Serialize(_payload);
+                }
+            });
+
+            RunPerformanceTest($"BinarySerializer Safe Serialize x{SerializeIterations}", () =>
+            {
+                for (int i = 0; i < SerializeIterations; i++)
+                {
+                    SerializeUtils.SerializeToBinary(_payload, BinaryObjectSerializationMode.Safe);
                 }
             });
 
@@ -174,6 +200,14 @@ namespace PowerCellStudio
                 }
             });
 
+            RunPerformanceTest($"BinarySerializer Safe Deserialize x{DeserializeIterations}", () =>
+            {
+                for (int i = 0; i < DeserializeIterations; i++)
+                {
+                    SerializeUtils.DeserializeFromBinary<PerformancePayload>(_binarySerializerSafeBytes, 0, -1, BinaryObjectSerializationMode.Safe);
+                }
+            });
+
             RunPerformanceTest($"SerializeUtils DeserializeFromBinary x{DeserializeIterations}", () =>
             {
                 for (int i = 0; i < DeserializeIterations; i++)
@@ -191,6 +225,15 @@ namespace PowerCellStudio
                 {
                     byte[] bytes = BinarySerializer.Serialize(_payload);
                     BinarySerializer.Deserialize<PerformancePayload>(bytes);
+                }
+            });
+
+            RunPerformanceTest($"BinarySerializer Safe RoundTrip x{RoundTripIterations}", () =>
+            {
+                for (int i = 0; i < RoundTripIterations; i++)
+                {
+                    byte[] bytes = SerializeUtils.SerializeToBinary(_payload, BinaryObjectSerializationMode.Safe);
+                    SerializeUtils.DeserializeFromBinary<PerformancePayload>(bytes, 0, -1, BinaryObjectSerializationMode.Safe);
                 }
             });
 

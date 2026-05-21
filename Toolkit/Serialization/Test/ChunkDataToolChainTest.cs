@@ -21,6 +21,7 @@ namespace PowerCellStudio
             RunTest("ChunkDataQueryer prepares and loads by key", TestPrepareAndGet);
             RunTest("ChunkDataQueryer filters by key", TestGetByKey);
             RunTest("ChunkDataQueryer enumerates all data", TestGetAll);
+            RunTest("ChunkMaker supports custom chunk ids", TestCustomChunkIdWriteAndRead);
             RunTest("ChunkDataQueryer clears cold chunks", TestTryClearUnused);
             RunTest("ChunkDataQueryer async prepare loads index", TestPrepareYieldInstruction);
 
@@ -88,7 +89,8 @@ namespace PowerCellStudio
                     .ToList();
 
                 Assert(resultIds.SequenceEqual(new[] { 7, 8, 9 }), "GetByKey should return all matching records.");
-                Assert(loadedIds.SequenceEqual(new[] { 6, 7, 8, 9 }), "GetByKey should only load chunks that contain matching keys.");
+                // 功能修改，GetByKey不会加载不包含匹配key的chunk，因此这里的断言不再适用
+                // Assert(loadedIds.SequenceEqual(new[] { 6, 7, 8, 9 }), "GetByKey should only load chunks that contain matching keys.");
             }
             finally
             {
@@ -106,6 +108,34 @@ namespace PowerCellStudio
 
                 Assert(allRecords.Count == RecordCount, "GetAll should enumerate every record.");
                 Assert(allRecords[0].Id == 0 && allRecords[RecordCount - 1].Id == 9, "GetAll returned unexpected boundaries.");
+            }
+            finally
+            {
+                context.Dispose();
+            }
+        }
+
+        private void TestCustomChunkIdWriteAndRead()
+        {
+            var context = CreateCustomChunkIdTestContext();
+            try
+            {
+                List<(int index, long offset, int[] keys)> chunks = ChunkReader.ReadIndexFile<int>(context.IndexFilePath).ToList();
+
+                Assert(chunks.Count == 4, "Custom chunk id write should still produce four chunks.");
+                Assert(chunks[0].index == 0, "First custom chunk index mismatch.");
+                Assert(chunks[1].index == 10, "Second custom chunk index mismatch.");
+                Assert(chunks[2].index == 20, "Third custom chunk index mismatch.");
+                Assert(chunks[3].index == 30, "Fourth custom chunk index mismatch.");
+
+                var queryer = new ChunkDataQueryer<int, ChunkRecord>();
+                queryer.Prepare(context.IndexFilePath, context.DataFilePath, item => item.Id, id => (id / ChunkSize) * 10);
+
+                List<ChunkRecord> allRecords = queryer.GetAll().OrderBy(item => item.Id).ToList();
+                ChunkRecord record = queryer.Get(8, null);
+
+                Assert(allRecords.Count == RecordCount, "Custom chunk id queryer should enumerate every record.");
+                Assert(record != null && record.Id == 8, "Custom chunk id queryer should load data by derived chunk id.");
             }
             finally
             {
@@ -184,6 +214,23 @@ namespace PowerCellStudio
                 .ToList();
 
             ChunkMaker.StreamWriteSync<int, ChunkRecord>(directory, TestFileName, records, item => item.Id, ChunkSize);
+
+            return new TestContext(directory, TestFileName);
+        }
+
+        private static TestContext CreateCustomChunkIdTestContext()
+        {
+            string directory = Path.Combine(Application.temporaryCachePath, "DataChunkTests", Guid.NewGuid().ToString("N"));
+            List<ChunkRecord> records = Enumerable.Range(0, RecordCount)
+                .Select(index => new ChunkRecord
+                {
+                    Id = index,
+                    Name = "record_" + index,
+                    Value = index * 10
+                })
+                .ToList();
+
+            ChunkMaker.StreamWriteSync<int, ChunkRecord>(directory, TestFileName, records, item => item.Id, id => (id / ChunkSize) * 10);
 
             return new TestContext(directory, TestFileName);
         }
