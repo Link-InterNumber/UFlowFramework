@@ -135,6 +135,7 @@ namespace PowerCellStudio
         {
             var page = GetOrCreatePage<T>();
             if (page == null) return null;
+            _newPagePushing = true;
             page.pushMode = pushMode;
             UIUtils.OpenUI(page, data);
             if (currentPage != null && currentPage.GetHashCode() == page.GetHashCode())
@@ -319,8 +320,16 @@ namespace PowerCellStudio
             currentPage.OpenUI<T>(data, () => BeforeOpenWindow(beforeOpen));
         }
 
+        private bool _newPagePushing = false;
+
         private void BeforeOpenWindow(Action beforeOpen)
         {
+            if (!_newPagePushing)
+            {
+                beforeOpen?.Invoke();
+                return;
+            }
+            _newPagePushing = false;
             switch (currentPage.pushMode)
             {
                 case PagePushMode.CloseOther:
