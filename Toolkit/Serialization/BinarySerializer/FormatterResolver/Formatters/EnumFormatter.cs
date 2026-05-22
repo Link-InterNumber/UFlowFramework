@@ -19,35 +19,36 @@ namespace PowerCellStudio
 
         public override void Write(BinaryWriter writer, T value, Encoding encoding)
         {
+            object boxedValue = value;
+
             switch (_underlyingTypeCode)
             {
                 case TypeCode.Byte:
-                    writer.Write(EnumUnsafeCaster<T, byte>.Cast(value));
+                    writer.Write(Convert.ToByte(boxedValue));
                     return;
                 case TypeCode.SByte:
-                    writer.Write(EnumUnsafeCaster<T, sbyte>.Cast(value));
+                    writer.Write(Convert.ToSByte(boxedValue));
                     return;
                 case TypeCode.Int16:
-                    writer.Write(EnumUnsafeCaster<T, short>.Cast(value));
+                    writer.Write(Convert.ToInt16(boxedValue));
                     return;
                 case TypeCode.UInt16:
-                    writer.Write(EnumUnsafeCaster<T, ushort>.Cast(value));
+                    writer.Write(Convert.ToUInt16(boxedValue));
                     return;
                 case TypeCode.Int32:
-                    writer.Write(EnumUnsafeCaster<T, int>.Cast(value));
+                    writer.Write(Convert.ToInt32(boxedValue));
                     return;
                 case TypeCode.UInt32:
-                    writer.Write(EnumUnsafeCaster<T, uint>.Cast(value));
+                    writer.Write(Convert.ToUInt32(boxedValue));
                     return;
                 case TypeCode.Int64:
-                    writer.Write(EnumUnsafeCaster<T, long>.Cast(value));
+                    writer.Write(Convert.ToInt64(boxedValue));
                     return;
                 case TypeCode.UInt64:
-                    writer.Write(EnumUnsafeCaster<T, ulong>.Cast(value));
+                    writer.Write(Convert.ToUInt64(boxedValue));
                     return;
                 default:
-                    _underlyingFormatter.Write(writer, value, encoding);
-                    return;
+                    throw new NotSupportedException($"Unsupported enum underlying type '{_underlyingType}'.");
             }
         }
 

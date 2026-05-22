@@ -1,13 +1,10 @@
 using System;
-using System.Collections;
 using UnityEditor;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 using Newtonsoft.Json;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Math;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -212,12 +209,12 @@ namespace PowerCellStudio
             if (_isEncrypt)
             {
                 var json = EncryptUtils.Base64Decrypt(jsonEn);
-                dynamic parsedJson = JsonConvert.DeserializeObject(json);
+                var parsedJson = JsonConvert.DeserializeObject(json);
                 return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
             }
             else
             {
-                dynamic parsedJson = JsonConvert.DeserializeObject(jsonEn);
+                var parsedJson = JsonConvert.DeserializeObject(jsonEn);
                 return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
             }
         }
@@ -247,12 +244,12 @@ namespace PowerCellStudio
                 if (_isEncrypt)
                 {
                     var decryptedPref = EncryptUtils.Base64Decrypt(prefValue);
-                    dynamic parsedJson = JsonConvert.DeserializeObject(decryptedPref);
+                    var parsedJson = JsonConvert.DeserializeObject(decryptedPref);
                     return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
                 }
                 else
                 {
-                    dynamic parsedJson = JsonConvert.DeserializeObject(prefValue);
+                    var parsedJson = JsonConvert.DeserializeObject(prefValue);
                     return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
                 }
             }

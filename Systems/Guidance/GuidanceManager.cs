@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 
 namespace PowerCellStudio
 {
@@ -256,7 +255,10 @@ namespace PowerCellStudio
             }
 
             _nextIndex = 0;
-            _executedIndex.AddRange(_currentIndex);
+            for (var i = 0; i < _currentIndex.Count; i++)
+            {
+                _currentIndex.Add(_currentIndex[i]);
+            }
             _currentIndex.Clear();
             UIManager.instance.CloseWindow<GuidanceWindow>();
             SaveExecutedIndex();

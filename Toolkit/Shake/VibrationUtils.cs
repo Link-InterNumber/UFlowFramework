@@ -84,7 +84,7 @@ namespace PowerCellStudio
                 _RumbleCoroutine = null;
             }
             var gamepads = UnityEngine.InputSystem.Gamepad.all;
-            if (gamepads.IsUnityNull() || gamepads.Count == 0)
+            if (gamepads.Equals(default) || gamepads.Count == 0)
             {
                 // No gamepad connected
                 return;
@@ -101,7 +101,7 @@ namespace PowerCellStudio
         {
             // Acquire gamepads from the new Input System at runtime
             var gamepads = UnityEngine.InputSystem.Gamepad.all;
-            if (gamepads.IsUnityNull() || gamepads.Count == 0)
+            if (gamepads.Equals(default) || gamepads.Count == 0)
             {
                 // No gamepad connected
                 yield break;
