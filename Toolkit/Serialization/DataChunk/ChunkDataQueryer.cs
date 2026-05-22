@@ -31,7 +31,7 @@ namespace PowerCellStudio
             _options = options;
             var indexer = new ChunkCustomIndexer<TKey>(keyPredicate, keyToChunkIndex);
             _dataMap = new ChunkCustomDataMap<TKey, TData>();
-            var reader = ChunkReader.ReadIndexFile<TKey>(indexFilePath, options);
+            var reader = ChunkReader.ReadIndexFileWithoutKeyBytes<TKey>(indexFilePath, options);
             indexer.Init(reader);
             _indexer = indexer;
             _dataMap.Init(_indexer.chunkCount);

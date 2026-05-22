@@ -204,11 +204,11 @@ namespace PowerCellStudio
             if (_guidanceId > 0)
             {
                 var config = _owner.confProvider(_guidanceId);
-                _guidanceDecs = config.decs.rawString;
-                _touchScreenToSkip = config.touchScreenToSkip;
-                _blockInteraction = config.blockInteraction;
-                _uiPrefab = config.uiPrefab.assetName != null
-                    ? AssetDatabase.LoadAssetAtPath<GameObject>(config.uiPrefab.assetName)
+                _guidanceDecs = config?.decs.rawString;
+                _touchScreenToSkip = config?.touchScreenToSkip ?? false;
+                _blockInteraction = config?.blockInteraction ?? false;
+                _uiPrefab = config?.uiPrefab.assetName != null
+                    ? AssetDatabase.LoadAssetAtPath<GameObject>(config?.uiPrefab.assetName)
                     : null;
             }
 

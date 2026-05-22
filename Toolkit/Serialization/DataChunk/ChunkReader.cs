@@ -127,5 +127,43 @@ namespace PowerCellStudio
             }
             ArrayPool<byte>.Shared.Return(lengthBuffer);
         }
+
+        public static IEnumerable<(int index, long offset, TKey[] keys)> ReadIndexFileWithoutKeyBytes<TKey>(string filePath, ChunkDataOptions options = null)
+        {
+            if (!File.Exists(filePath)) yield break;
+            ChunkDataOptions resolvedOptions = ChunkDataOptions.Resolve(options);
+            using var idxFile = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var lengthBuffer = ArrayPool<byte>.Shared.Rent(4);
+            while (idxFile.CanRead)
+            {
+                var headCount = idxFile.Read(lengthBuffer, 0, 4);
+                if (headCount != 4) yield break;
+                
+                var dataLength = System.BitConverter.ToInt32(lengthBuffer, 0);
+                if (dataLength == 0) yield break;
+                
+                var dataBytes = ArrayPool<byte>.Shared.Rent(dataLength);
+                var readDataLength = idxFile.Read(dataBytes, 0, dataLength);
+                if (readDataLength != dataLength) yield break;
+                
+                if (resolvedOptions.ResolvedEncryptor != null)
+                {
+                    var decryptedBytes = resolvedOptions.ResolvedEncryptor.Decrypt(dataBytes, 0, dataLength);
+                    ArrayPool<byte>.Shared.Return(dataBytes);
+                    dataBytes = decryptedBytes;
+                    var chunkInfo = resolvedOptions.ResolvedSerializer.Read<ChunkInfo>(dataBytes, 0, dataBytes.Length);
+                    var keys = Array.Empty<TKey>();
+                    yield return (chunkInfo.index, chunkInfo.offset, keys);
+                }
+                else
+                {
+                    var chunkInfo = resolvedOptions.ResolvedSerializer.Read<ChunkInfo>(dataBytes, 0, dataLength);
+                    var keys = Array.Empty<TKey>();
+                    ArrayPool<byte>.Shared.Return(dataBytes);
+                    yield return (chunkInfo.index, chunkInfo.offset, keys);
+                }
+            }
+            ArrayPool<byte>.Shared.Return(lengthBuffer);
+        }
     }
 }
