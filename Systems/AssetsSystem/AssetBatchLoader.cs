@@ -10,9 +10,9 @@ namespace PowerCellStudio
         private IAssetLoader _assetLoader;
 
         private int _totalCount;
-        public float progress => _labels != null && _labels.Length > 0 ? _totalCount / (float)_labels.Length : 0f;
+        public float progress => _labels != null && _labels.Count > 0 ? _totalCount / (float)_labels.Count : 0f;
 
-        private string[] _labels;
+        private IList<string> _labels;
         private bool _canceled;
         private HashSet<string> _loadedLabels = new HashSet<string>();
 
@@ -24,7 +24,7 @@ namespace PowerCellStudio
         /// <param name="onComplete">准备完成回调。<para>Callback when preparation is complete.</para></param>
         /// <param name="isConcurrent">是否并发加载。<para>Whether to load concurrently.</para></param>
         /// <returns>准备处理句柄。<para>Prepare handler.</para></returns>
-        public void Prepare(IAssetLoader assetLoader, string[] labels, Action onComplete, bool isConcurrent = false)
+        public void Prepare(IAssetLoader assetLoader, IList<string> labels, Action onComplete, bool isConcurrent = false)
         {
             if (assetLoader == null)
             {
@@ -36,7 +36,7 @@ namespace PowerCellStudio
                 AssetLog.LogError("Labels array is null, cannot prepare assets.");
                 return;
             }
-            if (labels.Length == 0)
+            if (labels.Count == 0)
             {
                 AssetLog.LogWarning("Labels array is empty, nothing to prepare.");
                 onComplete?.Invoke();
@@ -54,7 +54,7 @@ namespace PowerCellStudio
             _loadedLabels = HashSetPool<string>.Get();
             if (isConcurrent)
             {
-                for (int i = 0; i < labels.Length; i++)
+                for (int i = 0; i < labels.Count; i++)
                 {
                     var label = labels[i];
                     _assetLoader.LoadAsync<UnityEngine.Object>(label, _ =>
@@ -66,7 +66,7 @@ namespace PowerCellStudio
                         }
                         _totalCount++;
                         _loadedLabels.Add(label);
-                        if (labels != null && _totalCount >= labels.Length)
+                        if (labels != null && _totalCount >= labels.Count)
                         {
                             onComplete?.Invoke();
                         }
@@ -74,7 +74,7 @@ namespace PowerCellStudio
                     {
                         if (_canceled) return;
                         _totalCount++;
-                        if (labels != null && _totalCount >= labels.Length)
+                        if (labels != null && _totalCount >= labels.Count)
                         {
                             onComplete?.Invoke();
                         }
@@ -95,7 +95,7 @@ namespace PowerCellStudio
                 _canceled = true;
                 return;
             }
-            if (index >= _labels.Length)
+            if (index >= _labels.Count)
             {
                 onComplete?.Invoke();
                 return;
@@ -137,7 +137,7 @@ namespace PowerCellStudio
 
         public IEnumerator WaitForCompletion()
         {
-            while (!_canceled && _labels != null && _totalCount < _labels.Length)
+            while (!_canceled && _labels != null && _totalCount < _labels.Count)
             {
                 yield return null;
             }

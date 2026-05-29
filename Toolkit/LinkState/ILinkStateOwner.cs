@@ -2,7 +2,7 @@ using System;
 
 namespace LinkState
 {
-   public interface ILinkStateOwner
+   public interface ILinkStateOwner : IDisposable
    {
       public int StateIndex { get; set; }
    }

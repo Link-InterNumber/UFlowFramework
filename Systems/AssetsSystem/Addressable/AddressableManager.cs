@@ -177,8 +177,9 @@ namespace PowerCellStudio
         /// </summary>
         /// <param name="sceneName">场景名</param>
         /// <param name="onComplete">完成回调</param>
+        /// <param name="onFailed">加载失败回调</param>
         /// <param name="unLoadOtherScene">卸载其他场景</param>
-        public void LoadScene(string sceneName, Action onComplete, bool unLoadOtherScene = false)
+        public void LoadScene(string sceneName, Action onComplete, Action onFailed, bool unLoadOtherScene = false)
         {
             if (_sceneInstances.Any(o => o.Result.Scene.name.Equals(sceneName)))
                 return;
@@ -186,7 +187,12 @@ namespace PowerCellStudio
             var handle = Addressables.LoadSceneAsync(sceneName, unLoadOtherScene ? LoadSceneMode.Single : LoadSceneMode.Additive);
             if (unLoadOtherScene) handle.Completed += UnLoadOtherScene;
             else handle.Completed += OnSceneLoaded;
-            if (onComplete != null) handle.Completed += (a) => { onComplete.Invoke(); };
+            if (onComplete != null) 
+                handle.Completed += (a) => 
+                    {
+                        if (a.Status == AsyncOperationStatus.Succeeded) onComplete?.Invoke();
+                        else onFailed?.Invoke();
+                    };
         }
 
         private void UnLoadOtherScene(AsyncOperationHandle<SceneInstance> handle)

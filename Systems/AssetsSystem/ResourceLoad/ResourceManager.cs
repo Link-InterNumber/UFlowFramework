@@ -32,12 +32,12 @@ namespace PowerCellStudio
             return new ResourceAssetLoader();
         }
 
-        public void LoadScene(string sceneName, Action onComplete, bool unLoadOtherScene = false)
+        public void LoadScene(string sceneName, Action onComplete, Action onFailed, bool unLoadOtherScene = false)
         {
-            coroutineRunner.StartCoroutine(LoadSceneCoroutine(sceneName, onComplete, unLoadOtherScene));
+            coroutineRunner.StartCoroutine(LoadSceneCoroutine(sceneName, onComplete, onFailed, unLoadOtherScene));
         }
 
-        private IEnumerator LoadSceneCoroutine(string sceneName, Action onComplete, bool unLoadOtherScene)
+        private IEnumerator LoadSceneCoroutine(string sceneName, Action onComplete, Action onFailed, bool unLoadOtherScene)
         {
             if (unLoadOtherScene)
             {
@@ -52,7 +52,14 @@ namespace PowerCellStudio
             }
             var async = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
             yield return async;
-            onComplete?.Invoke();
+            if (async.isDone)
+            {
+                onComplete?.Invoke();
+            }
+            else
+            {
+                onFailed?.Invoke();
+            }
         }
 
         public void UnloadScene(string name)

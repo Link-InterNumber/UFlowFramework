@@ -42,8 +42,9 @@ namespace PowerCellStudio
         /// </summary>
         /// <param name="sceneName">场景名称。<para>Scene name.</para></param>
         /// <param name="onComplete">加载完成回调。<para>Callback when loading is complete.</para></param>
+        /// <param name="onFailed">加载失败回调。<para>Callback when loading fails.</para></param>
         /// <param name="unLoadOtherScene">是否卸载其他场景。<para>Whether to unload other scenes.</para></param>
-        void LoadScene(string sceneName, Action onComplete, bool unLoadOtherScene = false);
+        void LoadScene(string sceneName, Action onComplete, Action onFailed, bool unLoadOtherScene = false);
 
         /// <summary>
         /// 卸载指定名称的场景。

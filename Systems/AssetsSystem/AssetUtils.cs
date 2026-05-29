@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -96,10 +97,10 @@ namespace PowerCellStudio
             _assetLoaderPool?.DeSpawnLoaderByTag(tag);
         }
 
-        public static void LoadScene(string sceneName, Action onComplete, bool unLoadOtherScene = false)
+        public static void LoadScene(string sceneName, Action onComplete, Action onFailed = null, bool unLoadOtherScene = false)
         {
             if(_assetManager != null) 
-                _assetManager.LoadScene(sceneName, onComplete, unLoadOtherScene);
+                _assetManager.LoadScene(sceneName, onComplete, onFailed, unLoadOtherScene);
             else 
                 SceneManager.LoadScene(sceneName, unLoadOtherScene ? LoadSceneMode.Single : LoadSceneMode.Additive);
         }
@@ -120,7 +121,7 @@ namespace PowerCellStudio
         /// <param name="onComplete">下载完成回调。<para>Callback when download is complete.</para></param>
         /// <param name="isConcurrent">是否并发下载。<para>Whether to download concurrently.</para></param>
         /// <returns>下载处理句柄。<para>Download handler.</para></returns>
-        public static AssetBatchLoader SpawnBatchLoader(IAssetLoader loader, string[] labels, Action onComplete, bool isConcurrent = false)
+        public static AssetBatchLoader SpawnBatchLoader(IAssetLoader loader, IList<string> labels, Action onComplete, bool isConcurrent = false)
         {
             var handler = _batchLoaderPool.Get() as AssetBatchLoader;
             handler.Prepare(loader, labels, onComplete, isConcurrent);

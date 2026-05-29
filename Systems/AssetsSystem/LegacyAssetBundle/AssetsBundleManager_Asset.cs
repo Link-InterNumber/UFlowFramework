@@ -246,12 +246,19 @@ namespace PowerCellStudio
             }
         }
 
-        public void LoadScene(string sceneName, Action onComplete, bool unLoadOtherScene = false)
+        public void LoadScene(string sceneName, Action onComplete, Action onFailed, bool unLoadOtherScene = false)
         {
             var handler = SceneManager.LoadSceneAsync(sceneName, unLoadOtherScene ? LoadSceneMode.Single : LoadSceneMode.Additive);
             handler.completed += (operation) =>
             {
-                onComplete?.Invoke();
+                if (operation.isDone)
+                {
+                    onComplete?.Invoke();
+                }
+                else
+                {
+                    onFailed?.Invoke();
+                }
             };
         }
 

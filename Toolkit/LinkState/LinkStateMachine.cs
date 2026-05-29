@@ -8,9 +8,9 @@ namespace LinkState
     /// Represents a state machine for managing states and transitions.
     /// 表示一个用于管理状态和过渡的状态机。
     /// </summary>
-    /// <typeparam name="T">The owner type which must implement ILinkStateOwner and IDisposable.
+    /// <typeparam name="T">The owner type which must implement ILinkStateOwner 
     /// 拥有者类型，必须实现 ILinkStateOwner 和 IDisposable。</typeparam>
-    public class LinkStateMachine<T> where T : class, ILinkStateOwner, IDisposable
+    public class LinkStateMachine<T> : IDisposable where T : class, ILinkStateOwner
     {
         private T _owner;
         private bool _inExecution;
@@ -41,11 +41,21 @@ namespace LinkState
             _owner = dataSource;
             _statesTransition = new List<TriggerBehavior<T>>[size];
             _statesExecute = new ExecuteBehavior<T>[size];
+            _statesEnter = new Action<T>[size];
+            _statesExit = new Action<T>[size];
         }
 
         private List<TriggerBehavior<T>>[]  _statesTransition;
         private ExecuteBehavior<T>[] _statesExecute;
+        private Action<T>[] _statesEnter;
+        private Action<T>[] _statesExit;
         private int _currentStateIndex;
+
+        public bool executeOnUpdate
+        {
+            get => _doExecute;
+            set => _doExecute = value;
+        }
 
         /// <summary>
         /// Sets the entry condition function.
@@ -62,6 +72,16 @@ namespace LinkState
             return this;
         }
 
+        private bool ChechIndex(int index)
+        {
+            if (index < 0 || index > _statesTransition.Length - 1)
+            {
+                LinkLog.LogError($"index out of state range, got index = {index}, set range = [0, {_statesTransition.Length - 1}]");
+                return false;
+            }
+            return true;
+        }
+
         /// <summary>
         /// Sets the execute action for a specific state.
         /// 为特定状态设置执行动作。
@@ -74,11 +94,54 @@ namespace LinkState
         /// 当前状态机实例。</returns>
         public LinkStateMachine<T> SetExecute(int stateIndex, Action<T, float> executeAction)
         {
+            if (!ChechIndex(stateIndex)) return this;
             if (_statesExecute[stateIndex] != null)
             {
                 LinkLog.LogWarning("StateMachine has been set execute, Make sure you are not overwriting it");
             }
             _statesExecute[stateIndex] = new ExecuteBehavior<T>(executeAction);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the enter action for a specific state.
+        /// 为特定状态设置进入动作。
+        /// </summary>
+        /// <param name="stateIndex">The index of the state.
+        /// 状态的索引。</param>
+        /// <param name="enterAction">The action to execute when entering the state.
+        /// 进入状态时执行的动作。</param>
+        /// <returns>The current state machine instance.
+        /// 当前状态机实例。</returns>
+        public LinkStateMachine<T> SetEnter(int stateIndex, Action<T> enterAction)
+        {
+            if (!ChechIndex(stateIndex)) return this;
+            if (_statesEnter[stateIndex] != null)
+            {
+                LinkLog.LogWarning("StateMachine has been set enter, Make sure you are not overwriting it");
+            }
+            _statesEnter[stateIndex] = enterAction;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the exit action for a specific state.
+        /// 为特定状态设置退出动作。
+        /// </summary>
+        /// <param name="stateIndex">The index of the state.
+        /// 状态的索引。</param>
+        /// <param name="exitAction">The action to execute when exiting the state.
+        /// 退出状态时执行的动作。</param>
+        /// <returns>The current state machine instance.
+        /// 当前状态机实例。</returns>
+        public LinkStateMachine<T> SetExit(int stateIndex, Action<T> exitAction)
+        {
+            if (!ChechIndex(stateIndex)) return this;
+            if (_statesExit[stateIndex] != null)
+            {
+                LinkLog.LogWarning("StateMachine has been set exit, Make sure you are not overwriting it");
+            }
+            _statesExit[stateIndex] = exitAction;
             return this;
         }
 
@@ -121,6 +184,7 @@ namespace LinkState
         /// 当前状态机实例。</returns>
         public LinkStateMachine<T> SetTrigger(int stateIndex, Func<T, bool> trigger, Func<T, int> transition, TriggerPriority priority = TriggerPriority.Default)
         {
+            if (!ChechIndex(stateIndex)) return this;
             if (_statesTransition[stateIndex] == null)
                 _statesTransition[stateIndex] = new List<TriggerBehavior<T>>();
             _statesTransition[stateIndex].Add(new TriggerBehavior<T>(trigger, transition, priority));
@@ -143,6 +207,7 @@ namespace LinkState
         /// 当前状态机实例。</returns>
         public LinkStateMachine<T> SetEscape(int stateIndex, Func<T, bool> trigger, Func<T, int> transition, TriggerPriority priority = TriggerPriority.Default)
         {
+            if (!ChechIndex(stateIndex)) return this;
             if (_statesTransition[stateIndex] == null)
                 _statesTransition[stateIndex] = new List<TriggerBehavior<T>>();
             _statesTransition[stateIndex].Add(new TriggerBehavior<T>((a) => {
@@ -164,7 +229,14 @@ namespace LinkState
             if (_statesTransition == null) return;
             foreach (var triggers in _statesTransition)
             {
-                triggers.Sort((a, b) => a.Priority.CompareTo(b.Priority));
+                if (triggers == null) continue;
+                triggers.Sort((a, b) =>
+                {
+                    if (a == null) return -1;
+                    if (b == null) return 1;
+                    if (a.Priority == b.Priority) return 0;
+                    return a.Priority > b.Priority ? -1 : 1;
+                } );
             }
             _inExecution = true;
         }
@@ -173,7 +245,14 @@ namespace LinkState
         /// Stops the state machine execution.
         /// 停止状态机执行。
         /// </summary>
-        public void Stop() { _inExecution = false; }
+        public void Stop()
+        {
+            if (_inExecution && _inited)
+            {
+                InvokeExit(_currentStateIndex);
+            }
+            _inExecution = false;
+        }
         
         /// <summary>
         /// Restarts the state machine execution.
@@ -192,8 +271,7 @@ namespace LinkState
             if (!_inExecution) return;
             if (!_inited)
             {
-                _currentStateIndex = _initCondition?.Invoke(_owner) ?? 0;
-                _owner.StateIndex = _currentStateIndex;
+                ChangeState(_initCondition?.Invoke(_owner) ?? 0, false);
                 _inited = true;
             }
             if (!VerifyIndex(_currentStateIndex)) return;
@@ -208,8 +286,7 @@ namespace LinkState
             {
                 var trigger = triggers[i];
                 if (!trigger.Check(_owner)) continue;
-                _currentStateIndex = trigger.DoTransfer(_owner);
-                _owner.StateIndex = _currentStateIndex;
+                ChangeState(trigger.DoTransfer(_owner), true);
                 break;
             }
         }
@@ -225,9 +302,42 @@ namespace LinkState
         public void UpdateManually(int state, float dt)
         {
             if (!VerifyIndex(state)) return;
-            _currentStateIndex = state;
-            _owner.StateIndex = state;
+            if (!_inited)
+            {
+                _inited = true;
+            }
+            ChangeState(state, _inExecution || _inited);
             Update(dt);
+        }
+
+        private void ChangeState(int nextStateIndex, bool invokeExit)
+        {
+            if (!VerifyIndex(nextStateIndex)) return;
+
+            var previousStateIndex = _currentStateIndex;
+            var hasPreviousState = _inited && VerifyIndex(previousStateIndex);
+            if (hasPreviousState && invokeExit && previousStateIndex != nextStateIndex)
+            {
+                InvokeExit(previousStateIndex);
+            }
+
+            _currentStateIndex = nextStateIndex;
+            _owner.StateIndex = _currentStateIndex;
+
+            if (!hasPreviousState || previousStateIndex != nextStateIndex)
+            {
+                InvokeEnter(_currentStateIndex);
+            }
+        }
+
+        private void InvokeEnter(int stateIndex)
+        {
+            _statesEnter[stateIndex]?.Invoke(_owner);
+        }
+
+        private void InvokeExit(int stateIndex)
+        {
+            _statesExit[stateIndex]?.Invoke(_owner);
         }
 
         /// <summary>
@@ -255,11 +365,17 @@ namespace LinkState
         /// </summary>
         public void Dispose()
         {
+            if (_inExecution && _inited && VerifyIndex(_currentStateIndex))
+            {
+                InvokeExit(_currentStateIndex);
+            }
             _inExecution = false;
             _inited = false;
             _owner = null;
             _statesTransition = null;
             _statesExecute = null;
+            _statesEnter = null;
+            _statesExit = null;
             
         }
     }
