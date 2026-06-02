@@ -86,10 +86,10 @@ namespace RVO
             {
                 for (int index = start; index < end; ++index)
                 {
-                    if (index % 3 != simulator.StepIndex)
-                    {
-                        continue;
-                    }
+                    // if (index % 3 != simulator.StepIndex)
+                    // {
+                    //     continue;
+                    // }
                     simulator.agents[index].computeNeighbors();
                     simulator.agents[index].computeNewVelocity();
                 }
@@ -106,10 +106,10 @@ namespace RVO
             {
                 for (int index = start; index < end; ++index)
                 {
-                    if (index % 3 != simulator.StepIndex)
-                    {
-                        continue;
-                    }
+                    // if (index % 3 != simulator.StepIndex)
+                    // {
+                    //     continue;
+                    // }
                     simulator.agents[index].update();
                 }
         
@@ -348,8 +348,8 @@ namespace RVO
             SetNumWorkers(0);
         }
 
-        private int _stepIndex;
-        public int StepIndex => _stepIndex;
+        // private int _stepIndex;
+        // public int StepIndex => _stepIndex;
 
         /**
          * <summary>Performs a simulation step and updates the two-dimensional
@@ -403,25 +403,25 @@ namespace RVO
 #else
             for (int index = 0; index < agents.Count; ++index)
             {
-                if (index % 3 != _stepIndex)
-                {
-                    continue;
-                }
+                // if (index % 3 != _stepIndex)
+                // {
+                //     continue;
+                // }
                 agents[index].computeNeighbors();
                 agents[index].computeNewVelocity();
             }
 
             for (int index = 0; index < agents.Count; ++index)
             {
-                if (index % 3 != _stepIndex)
-                {
-                    continue;
-                }
+                // if (index % 3 != _stepIndex)
+                // {
+                //     continue;
+                // }
                 agents[index].update();
             }
-            _stepIndex++;
-            _stepIndex = _stepIndex % 3;
 #endif
+            // _stepIndex++;
+            // _stepIndex = _stepIndex % 3;
             globalTime += timeStep;
 
             return globalTime;
