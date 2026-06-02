@@ -86,6 +86,11 @@ namespace PowerCellStudio
             Debug.Log(Application.dataPath);
             _bindingCsFileField.RegisterValueChangedCallback(evt =>
             {
+                if (evt.newValue == null)
+                {
+                    _graphView.ClearGraph();
+                    return;
+                }
                 var path = AssetDatabase.GetAssetPath(evt.newValue);
                 var fileName = Path.GetFileNameWithoutExtension(path);
                 if (!fileName.StartsWith("NotifyPreset_"))

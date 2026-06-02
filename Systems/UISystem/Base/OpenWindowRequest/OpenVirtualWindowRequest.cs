@@ -17,36 +17,15 @@ namespace PowerCellStudio
             path = null;
             ignoreRaycast = false;
             standaloneCanvas = false;
-            // 反射获取windowType的UIVirtualWindow<T>的父类泛型参数T
-            Type virtualWindowType = null;
-            Type currentType = windowType;
-            while (currentType != null)
-            {
-                var baseType = currentType.BaseType;
-                if (baseType == null) break;
-                if (baseType.IsGenericType && baseType.GetGenericTypeDefinition() == typeof(UIVirtualWindow<>))
-                {
-                    virtualWindowType = baseType;
-                    break;
-                }
-                currentType = baseType;
-            }
-            if (virtualWindowType == null)
-            {
-                UILog.LogError($"{windowType.Name}不是UIVirtualWindow的子类");
+            _bindWindowType = WindowInfoCache.GetBindWindowType(windowType);
+            if (_bindWindowType == null)
                 return;
-            }
-            _bindWindowType = virtualWindowType.GetGenericArguments()[0];
-            object[] attributes = _bindWindowType.GetCustomAttributes(true);
-            foreach (var attribute in attributes)
-            {
-                WindowInfo windowInfo = attribute as WindowInfo;
-                if (windowInfo == null) continue;
-                path = windowInfo.path;
-                ignoreRaycast = windowInfo.ignoreRaycast;
-                standaloneCanvas = windowInfo.standaloneCanvas;
-                break;
-            }
+            var windowInfo = WindowInfoCache.GetInfo(_bindWindowType);
+            if (windowInfo == null)
+                return;
+            path = windowInfo.path;
+            ignoreRaycast = windowInfo.ignoreRaycast;
+            standaloneCanvas = windowInfo.standaloneCanvas;
         }
 
         protected override IUIChild GetWindowInstance(Type windowType, GameObject instanceWindow)
@@ -57,7 +36,7 @@ namespace PowerCellStudio
                 UILog.LogError($"{_bindWindowType.Name}没有挂载在预制体上");
                 return null;
             }
-            instanceWindow.name = instanceWindow.name + $"({windowType.Name})";
+            instanceWindow.name = $"{instanceWindow.name}({windowType.Name})";
             var virtualWindowInstance = Activator.CreateInstance(windowType);
             ReflectionUtils.InvokeMethod(virtualWindowInstance, "BindWindow", windowInstance);
             _bindWindowType = null;

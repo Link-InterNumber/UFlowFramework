@@ -15,16 +15,13 @@ namespace PowerCellStudio
             path = null;
             ignoreRaycast = false;
             standaloneCanvas = false;
-            object[] attributes = windowType.GetCustomAttributes(true);
-            foreach (var attribute in attributes)
-            {
-                WindowInfo windowInfo = attribute as WindowInfo;
-                if (windowInfo == null) continue;
-                path = windowInfo.path;
-                ignoreRaycast = windowInfo.ignoreRaycast;
-                standaloneCanvas = windowInfo.standaloneCanvas;
-                break;
-            }
+            var windowInfo = WindowInfoCache.GetInfo(windowType);
+            if (windowInfo == null)
+                return;
+            
+            path = windowInfo.path;
+            ignoreRaycast = windowInfo.ignoreRaycast;
+            standaloneCanvas = windowInfo.standaloneCanvas;
         }
 
         protected override IUIChild GetWindowInstance(Type windowType, GameObject instanceWindow)
