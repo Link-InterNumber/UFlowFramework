@@ -6,6 +6,8 @@ namespace PowerCellStudio
 {
     public interface IConfBaseCollections
     {
+        string assetPath { get; }
+        string idxFilePath { get; }
         AssetLoadStatus loadStatus { get; }
         void Prepare();
         IEnumerator PrepareAsync();
@@ -18,7 +20,9 @@ namespace PowerCellStudio
         public AssetLoadStatus loadStatus => _loadStatus;
         protected AssetLoadStatus _loadStatus = AssetLoadStatus.Unload;
         protected string _assetPath;
+        public string assetPath => _assetPath;
         protected string _idxFilePath;
+        public string idxFilePath => _idxFilePath;
         protected ChunkDataQueryer<TKey, TData> _confQueryer;
         protected int _refCount = 0;
 

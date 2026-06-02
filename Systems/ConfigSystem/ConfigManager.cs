@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEngine;
@@ -12,13 +13,16 @@ namespace PowerCellStudio
 
         private bool _inited = false;
         /// <summary>
-        /// 初始化需要的配置表
-        /// configData for Init.
+        /// 初始化需要的配置表，会一直存在在内存中，直到游戏结束。
+        /// Init config tables that are needed and will exist in memory until the end of the game
         /// </summary>
         private ConfigGroup _initConfig;
 
         public static IEnumerator CopyConfigToPersistentDataPath()
         {
+#if UNITY_EDITOR
+            yield break;
+#endif
             var saveKey = "ConfigFirstLoadComplete";
             var complete = PlayerPrefs.GetInt(saveKey, 0);
             if (complete > 0) // 已经完成过复制，直接返回
@@ -38,7 +42,7 @@ namespace PowerCellStudio
             }
             if (Application.platform == RuntimePlatform.Android)
             {
-                var listFilePath = $"{assetFolderPath}{configAssetListName}";
+                var listFilePath = $"file://{assetFolderPath}{configAssetListName}";
                 using var wepRequest = UnityEngine.Networking.UnityWebRequest.Get(listFilePath);
                 wepRequest.downloadHandler = new UnityEngine.Networking.DownloadHandlerFile(Path.Combine(folder, configAssetListName));
                 var asyncOp = wepRequest.SendWebRequest();
@@ -52,7 +56,7 @@ namespace PowerCellStudio
                 wepRequest.Dispose();
                 foreach (var assetFile in assetFiles)
                 {
-                    var assetPath = $"{assetFolderPath}{assetFile}";
+                    var assetPath = $"file://{assetFolderPath}{assetFile}";
                     var destPath = Path.Combine(folder, assetFile);
                     using var assetRequest = UnityEngine.Networking.UnityWebRequest.Get(assetPath);
                     assetRequest.downloadHandler = new UnityEngine.Networking.DownloadHandlerFile(destPath);

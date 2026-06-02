@@ -2,9 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.AddressableAssets.ResourceLocators;
+using UnityEngine.Networking;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using UnityEngine.ResourceManagement.ResourceProviders;
 using UnityEngine.SceneManagement;
@@ -109,6 +111,10 @@ namespace PowerCellStudio
 #if !UNITY_EDITOR
             yield return Addressables.CleanBundleCache();
 #endif
+            // Load Custom Remote Asset
+            var remoteAssetIndexer = new RemoteAssetIndexer(AssetUtils.remotePath);
+            yield return remoteAssetIndexer.Initialize(null, null); 
+            
             _inited = true;
             initState = AssetInitState.Complete;
             callback?.Invoke();

@@ -8,19 +8,19 @@ using UnityEngine.Networking;
 
 namespace PowerCellStudio
 {
-    public class RemoteBundleIndexer
+    public class RemoteAssetIndexer
     {
         private Dictionary<string, BundleInfo> _remoteManifest;
         private Dictionary<string, BundleInfo> _clientManifest;
         private string _remotePath = "http://localhost:8000/StreamingAssets/";
         public static bool simulateRemoteBundleInEditor = false;
 
-        private readonly string _bundleFoldName;
+        // private readonly string _bundleFoldName;
 
-        public RemoteBundleIndexer(string remotePath, string bundleFoldName)
+        public RemoteAssetIndexer(string remotePath)
         {
             _remotePath = remotePath;
-            _bundleFoldName = bundleFoldName;
+            // _bundleFoldName = bundleFoldName;
         }
 
         public IEnumerator Initialize(Action onDownloadStarted = null, Action<float> onDownloadProgress = null)
@@ -33,26 +33,6 @@ namespace PowerCellStudio
         public bool IsBundleRemote(string bundleName)
         {
             return _clientManifest != null && _clientManifest.ContainsKey(bundleName);
-        }
-
-        public string BuildRemoteUrl(string fileName)
-        {
-            if (string.IsNullOrWhiteSpace(fileName) || Path.IsPathRooted(fileName))
-            {
-                return null;
-            }
-            var normalizedPath = fileName.Replace('\\', '/').Trim('/');
-            var segments = normalizedPath.Split('/');
-            for (var i = 0; i < segments.Length; i++)
-            {
-                var segment = segments[i];
-                if (string.IsNullOrWhiteSpace(segment) || segment == "." || segment == "..")
-                {
-                    return null;
-                }
-                segments[i] = Uri.EscapeDataString(segment);
-            }
-            return $"{_remotePath.TrimEnd('/')}/{string.Join("/", segments)}";
         }
 
         public bool IsBundleNeedLoadFromRemote(string bundleName)
@@ -78,7 +58,7 @@ namespace PowerCellStudio
 
         private void GetClientRemoteManifest()
         {
-            var path = Path.Combine(Application.persistentDataPath, _bundleFoldName, "remoteManifest.json");
+            var path = Path.Combine(Application.persistentDataPath, "remoteManifest.json");
             if (!File.Exists(path))
             {
                 _clientManifest = new Dictionary<string, BundleInfo>();
@@ -107,7 +87,7 @@ namespace PowerCellStudio
                 foreach (var keyValuePair in result)
                 {
                     var bundleName = keyValuePair.Key;
-                    var bundlePath = Path.Combine(Application.persistentDataPath, _bundleFoldName, bundleName);
+                    var bundlePath = Path.Combine(Application.persistentDataPath, bundleName);
                     if (File.Exists(bundlePath))
                     {
                         _clientManifest.Add(bundleName, keyValuePair.Value);
@@ -121,13 +101,13 @@ namespace PowerCellStudio
         {
 #if UNITY_EDITOR
             var url = simulateRemoteBundleInEditor
-                ? BuildRemoteUrl("remoteManifest.json")
+                ? AssetUtils.BuildRemoteUrl("remoteManifest.json")
                 : $"file://{Application.streamingAssetsPath}/remoteManifest.json";
 #else
-            var url = BuildRemoteUrl("remoteManifest.json");
+            var url = AssetUtils.BuildRemoteUrl("remoteManifest.json");
 #endif
             using UnityWebRequest request = UnityWebRequest.Get(url);
-            request.timeout = 30;
+            request.timeout = 10;
             yield return request.SendWebRequest();
             if (request.result == UnityWebRequest.Result.Success)
             {
@@ -157,16 +137,16 @@ namespace PowerCellStudio
             // if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
             // PlayerDataUtils.ReadJson<RemoteManifest>(manifest);
             string json = JsonConvert.SerializeObject(manifest);
-            string savePath = Path.Combine(Application.persistentDataPath, _bundleFoldName, "remoteManifest.json");
-            var directory = Path.Combine(Application.persistentDataPath, _bundleFoldName);
+            string savePath = Path.Combine(Application.persistentDataPath, "remoteManifest.json");
+            var directory = Path.Combine(Application.persistentDataPath);
             if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
             File.WriteAllText(savePath, json);
         }
 
         public void LoadRemoteBundle(string bundleName, Action<bool> onLoaded = null)
         {
-            var url = BuildRemoteUrl(bundleName);
-            var path = Path.Combine(Application.persistentDataPath, _bundleFoldName, bundleName);
+            var url = AssetUtils.BuildRemoteUrl(bundleName);
+            var path = Path.Combine(Application.persistentDataPath, bundleName);
             var webRequest = UnityWebRequest.Get(url);
             webRequest.downloadHandler = new DownloadHandlerFile(path);
             var operation = webRequest.SendWebRequest();
@@ -189,8 +169,8 @@ namespace PowerCellStudio
 
         public IEnumerator LoadRemoteBundle(string bundleName, YieldInstructionCompletionSource<bool> handler = null)
         {
-            var url = BuildRemoteUrl(bundleName);
-            var path = Path.Combine(Application.persistentDataPath, _bundleFoldName, bundleName);
+            var url = AssetUtils.BuildRemoteUrl(bundleName);
+            var path = Path.Combine(Application.persistentDataPath, bundleName);
             using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
             {
                 webRequest.downloadHandler = new DownloadHandlerFile(path);
@@ -233,40 +213,43 @@ namespace PowerCellStudio
             if (loadList.Count == 0) yield break;
             onDownloadStarted?.Invoke();
             
-            // 下载新的AssetMap文件
-            var indexFileUrl = BuildRemoteUrl($"{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}Index.bytes" );
-            var dataFileUrl = BuildRemoteUrl($"{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}Data.bytes" );
-            // 保存的本地位置
-            var indexFilePath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Index.bytes" );
-            var dataFilePath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Data.bytes" );
-            var folder = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder);
-            if (!Directory.Exists(folder))
+            if (AssetUtils.loadMode == AssetUtils.LoadMode.AssetBundle)
             {
-                Directory.CreateDirectory(folder);
-            }
-            var assetMapLoaded = true;
-            using (UnityWebRequest webRequest = UnityWebRequest.Get(indexFileUrl))
-            {
-                webRequest.downloadHandler = new DownloadHandlerFile(indexFilePath);
-                yield return webRequest.SendWebRequest();
-                if (webRequest.result != UnityWebRequest.Result.Success)
+                // 下载新的AssetMap文件
+                var indexFileUrl = AssetUtils.BuildRemoteUrl($"{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}Index.bytes" );
+                var dataFileUrl = AssetUtils.BuildRemoteUrl($"{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}Data.bytes" );
+                // 保存的本地位置
+                var indexFilePath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Index.bytes" );
+                var dataFilePath = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder, $"{ConstSetting.BundleAssetConfigName}Data.bytes" );
+                var folder = Path.Combine(Application.persistentDataPath, ConstSetting.BundleAssetConfigFolder);
+                if (!Directory.Exists(folder))
                 {
-                    assetMapLoaded = false;
+                    Directory.CreateDirectory(folder);
                 }
-            }
-            using (UnityWebRequest webRequest = UnityWebRequest.Get(dataFileUrl))
-            {
-                webRequest.downloadHandler = new DownloadHandlerFile(dataFilePath);
-                yield return webRequest.SendWebRequest();
-                if (webRequest.result != UnityWebRequest.Result.Success)
+                var assetMapLoaded = true;
+                using (UnityWebRequest webRequest = UnityWebRequest.Get(indexFileUrl))
                 {
-                    assetMapLoaded = false;
+                    webRequest.downloadHandler = new DownloadHandlerFile(indexFilePath);
+                    yield return webRequest.SendWebRequest();
+                    if (webRequest.result != UnityWebRequest.Result.Success)
+                    {
+                        assetMapLoaded = false;
+                    }
                 }
-            }
-            if (assetMapLoaded)
-            {
-                PlayerPrefs.SetInt(AssetBundleIndex.hasAssetBundleMapMovedKey, 1);
-                PlayerPrefs.Save();
+                using (UnityWebRequest webRequest = UnityWebRequest.Get(dataFileUrl))
+                {
+                    webRequest.downloadHandler = new DownloadHandlerFile(dataFilePath);
+                    yield return webRequest.SendWebRequest();
+                    if (webRequest.result != UnityWebRequest.Result.Success)
+                    {
+                        assetMapLoaded = false;
+                    }
+                }
+                if (assetMapLoaded)
+                {
+                    PlayerPrefs.SetInt(AssetBundleIndex.hasAssetBundleMapMovedKey, 1);
+                    PlayerPrefs.Save();
+                }
             }
             
             var token = new YieldInstructionCompletionSource<bool>();

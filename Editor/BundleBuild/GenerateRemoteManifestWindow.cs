@@ -10,18 +10,18 @@ namespace PowerCellStudio
 {
     public class GenerateRemoteManifestWindow : EditorWindow
     {
-        [MenuItem("Build/AssetBundle/Bundle Manifest配置")]
+        [MenuItem("Build/Remote/Remote Manifest配置")]
         public static void ShowWindow()
         {
             var window = GetWindow<GenerateRemoteManifestWindow>();
-            window.titleContent = new GUIContent("Bundle Manifest配置");
+            window.titleContent = new GUIContent("Remote Manifest配置");
             window.Show();
         }
 
         public static void ShowWindowWithHandle(Action onCompleted)
         {
             var window = GetWindow<GenerateRemoteManifestWindow>();
-            window.titleContent = new GUIContent("Bundle Manifest配置");
+            window.titleContent = new GUIContent("Remote Manifest配置");
             window.onCompleted = onCompleted;
             window.Show();
         }
@@ -41,19 +41,21 @@ namespace PowerCellStudio
             }
 
             // 资源包目录（请根据实际路径修改）
-            var buildPath = Path.Combine(Application.streamingAssetsPath,
-                AssetsBundleBuildUtils.GetBuildFoldName(EditorUserBuildSettings.activeBuildTarget));
+            var buildPath = Application.streamingAssetsPath;
             string[] ignoredFiles = { ".manifest", ".meta" }; // 要忽略的文件
-            string[] files = Directory.GetFiles(buildPath)
+            // 递归获取目录下的所有文件，并过滤掉不需要的文件
+            string[] files = Directory.GetFiles(buildPath, "*", SearchOption.AllDirectories)
                 .Where(file => !ignoredFiles.Contains(Path.GetExtension(file)))
                 .ToArray();
             _remoteManifest = new RemoteManifest();
             foreach (var file in files)
             {
-                if (file.EndsWith(".manifest")) continue; // 跳过Unity生成的manifest文件
+                // 跳过Unity生成的remoteManifest.json文件
+                if (Path.GetFileName(file) == "remoteManifest.json") continue;
 
                 BundleInfo info = new BundleInfo();
-                info.name = Path.GetFileName(file);
+                // info.name 保存相对路径，方便后续加载时使用
+                info.name = file.Substring(buildPath.Length + 1).Replace("\\", "/");
                 info.size = new FileInfo(file).Length;
                 info.md5 = GetFileMD5(file);
                 if (exitRemoteManifest != null)
@@ -82,6 +84,10 @@ namespace PowerCellStudio
 
         private void OnGUI()
         {
+            EditorGUILayout.LabelField($"将资源放到{Application.streamingAssetsPath}后可进行配置", EditorStyles.boldLabel);
+            // in English
+            EditorGUILayout.LabelField($"Place the assets in {Application.streamingAssetsPath} for configuration", EditorStyles.boldLabel);
+            EditorGUILayout.Space();
             if (_remoteManifest == null) return;
             _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
             GUILayout.BeginVertical();
@@ -97,10 +103,10 @@ namespace PowerCellStudio
                 GUI.Box(new Rect(0, (totalHeight + 6) * i, position.width - 20, totalHeight), GUIContent.none);
                 
                 // 恢复背景颜色为空，以便绘制文本（重要）
-                EditorGUILayout.LabelField("Bundle Name", bundle.name);
+                EditorGUILayout.LabelField("Asset Name", bundle.name);
                 bundle.isRemote = EditorGUILayout.Toggle("IsRemote", bundle.isRemote);
-                EditorGUILayout.LabelField("Bundle md5", bundle.md5);
-                EditorGUILayout.LabelField("Bundle size", $"{bundle.size / 1024f / 1024f} MB");
+                EditorGUILayout.LabelField("Asset md5", bundle.md5);
+                EditorGUILayout.LabelField("Asset size", $"{bundle.size / 1024f / 1024f} MB");
                 EditorGUILayout.Space();
             }
             GUILayout.EndVertical();

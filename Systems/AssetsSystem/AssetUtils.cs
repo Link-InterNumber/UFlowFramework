@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.IO;
 
 namespace PowerCellStudio
 {
@@ -25,6 +26,9 @@ namespace PowerCellStudio
         public static AssetInitState initState => _assetManager?.initState ?? AssetInitState.Complete;
 
         public static float initProcess => _assetManager?.initProcess ?? 0f;
+
+        private static string _remotePath = "http://localhost:8000/StreamingAssets/";
+        public static string remotePath => _remotePath;
         
         public static void Init(MonoBehaviour coroutineRunner, Action callBack, LoadMode loadMode = LoadMode.Addressable)
         {
@@ -234,6 +238,25 @@ namespace PowerCellStudio
             Resources.UnloadUnusedAssets();
         }
 
+        public static string BuildRemoteUrl(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName) || Path.IsPathRooted(fileName))
+            {
+                return null;
+            }
+            var normalizedPath = fileName.Replace('\\', '/').Trim('/');
+            var segments = normalizedPath.Split('/');
+            for (var i = 0; i < segments.Length; i++)
+            {
+                var segment = segments[i];
+                if (string.IsNullOrWhiteSpace(segment) || segment == "." || segment == "..")
+                {
+                    return null;
+                }
+                segments[i] = Uri.EscapeDataString(segment);
+            }
+            return $"{_remotePath.TrimEnd('/')}/{string.Join("/", segments)}";
+        }
         public static bool TryGetSubAssetName(string path, out string mainPath, out string subAssetName)
         {
             mainPath = null;

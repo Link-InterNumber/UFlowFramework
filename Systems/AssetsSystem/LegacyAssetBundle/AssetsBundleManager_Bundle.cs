@@ -338,7 +338,7 @@ namespace PowerCellStudio
                 };
                 return;
             }
-            _remoteBundleIndexer.LoadRemoteBundle(bundleName, result =>
+            _remoteBundleIndexer.LoadRemoteBundle($"{_bundleFoldName}/{bundleName}" , result =>
             {
                 if (!result) 
                 {
