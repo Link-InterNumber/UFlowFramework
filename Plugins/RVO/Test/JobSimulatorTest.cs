@@ -77,14 +77,14 @@ namespace RVO.JobSystem
 
             for (var step = 0; step < simulationSteps; step++)
             {
-                simulator.doStep();
+                simulator.DoStep();
 
                 for (var i = 0; i < ids.Count; i++)
                 {
                     var id = ids[i];
-                    var pos = simulator.getAgentPosition(id);
-                    var vel = simulator.getAgentVelocity(id);
-                    var neighborNum = simulator.getAgentNumAgentNeighbors(id);
+                    var pos = simulator.GetAgentPosition(id);
+                    var vel = simulator.GetAgentVelocity(id);
+                    var neighborNum = simulator.GetAgentNumAgentNeighbors(id);
 
                     Ensure(IsFinite(pos), $"agent {id} position invalid at step {step}: {pos}");
                     Ensure(IsFinite(vel), $"agent {id} velocity invalid at step {step}: {vel}");
@@ -101,17 +101,17 @@ namespace RVO.JobSystem
             using var simulator = CreateSimulator();
             var ids = SpawnAgents(simulator, 32, spawnRadius * 0.5f, seed + 1);
 
-            simulator.doStep();
+            simulator.DoStep();
             var removeId = ids[ids.Count / 2];
-            simulator.delAgent(removeId);
-            simulator.doStep();
+            simulator.DelAgent(removeId);
+            simulator.DoStep();
 
-            Ensure(simulator.getNumAgents() == 31, $"delete flow failed, count={simulator.getNumAgents()}");
+            Ensure(simulator.GetNumAgents() == 31, $"delete flow failed, count={simulator.GetNumAgents()}");
 
             var removedLookupThrows = false;
             try
             {
-                simulator.getAgentPosition(removeId);
+                simulator.GetAgentPosition(removeId);
             }
             catch (KeyNotFoundException)
             {
@@ -126,20 +126,20 @@ namespace RVO.JobSystem
         {
             using var simulator = CreateSimulator();
 
-            simulator.setAgentDefaults(neighborDist, maxNeighbors, 2.0f, 2.0f, radius, maxSpeed, Vector3.zero);
+            simulator.SetAgentDefaults(neighborDist, maxNeighbors, 2.0f, 2.0f, radius, maxSpeed, Vector3.zero);
 
-            var idA = simulator.addAgent(new Vector3(0f, 0f, 0f));
-            var idB = simulator.addAgent(new Vector3(10f, 0f, 0f));
-            var idC = simulator.addAgent(new Vector3(0f, 10f, 0f));
+            var idA = simulator.AddAgent(new Vector3(0f, 0f, 0f));
+            var idB = simulator.AddAgent(new Vector3(10f, 0f, 0f));
+            var idC = simulator.AddAgent(new Vector3(0f, 10f, 0f));
 
-            simulator.setAgentPrefVelocity(idA, Vector3.zero);
-            simulator.setAgentPrefVelocity(idB, Vector3.zero);
-            simulator.setAgentPrefVelocity(idC, Vector3.zero);
+            simulator.SetAgentPrefVelocity(idA, Vector3.zero);
+            simulator.SetAgentPrefVelocity(idB, Vector3.zero);
+            simulator.SetAgentPrefVelocity(idC, Vector3.zero);
 
-            var nearest = simulator.queryNearAgent(new Vector3(0.4f, 0.2f, 0f), 2f);
+            var nearest = simulator.QueryNearAgent(new Vector3(0.4f, 0.2f, 0f), 2f);
             Ensure(nearest == idA, $"queryNearAgent mismatch, got={nearest}, expected={idA}");
 
-            var none = simulator.queryNearAgent(new Vector3(100f, 100f, 0f), 1f);
+            var none = simulator.QueryNearAgent(new Vector3(100f, 100f, 0f), 1f);
             Ensure(none == -1, $"queryNearAgent far range should return -1, got={none}");
 
             return "near/far query validation";
@@ -153,7 +153,7 @@ namespace RVO.JobSystem
             var throwsDisposed = false;
             try
             {
-                simulator.doStep();
+                simulator.DoStep();
             }
             catch (ObjectDisposedException)
             {
@@ -167,8 +167,8 @@ namespace RVO.JobSystem
         private JobSimulator CreateSimulator()
         {
             var simulator = new JobSimulator(maxNeighbors, 32);
-            simulator.setTimeStep(timeStep);
-            simulator.setAgentDefaults(neighborDist, maxNeighbors, 2.0f, 2.0f, radius, maxSpeed, Vector3.zero);
+            simulator.SetTimeStep(timeStep);
+            simulator.SetAgentDefaults(neighborDist, maxNeighbors, 2.0f, 2.0f, radius, maxSpeed, Vector3.zero);
             return simulator;
         }
 
@@ -183,7 +183,7 @@ namespace RVO.JobSystem
                 var r = (float)(random.NextDouble() * radiusRange);
                 var pos = new Vector3(Mathf.Cos(angle) * r, Mathf.Sin(angle) * r, 0f);
 
-                var id = simulator.addAgent(pos);
+                var id = simulator.AddAgent(pos);
                 ids.Add(id);
 
                 var toCenter = (-pos);
@@ -191,7 +191,7 @@ namespace RVO.JobSystem
                     ? toCenter.normalized * (maxSpeed * 0.85f)
                     : Vector3.zero;
 
-                simulator.setAgentPrefVelocity(id, prefVel);
+                simulator.SetAgentPrefVelocity(id, prefVel);
             }
 
             return ids;

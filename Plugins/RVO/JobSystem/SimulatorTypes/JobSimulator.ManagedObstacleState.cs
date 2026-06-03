@@ -1,4 +1,4 @@
-using UnityEngine;
+using Unity.Mathematics;
 
 namespace RVO.JobSystem
 {
@@ -7,8 +7,8 @@ namespace RVO.JobSystem
         private sealed class ManagedObstacleState
         {
             public int id;
-            public Vector3 point;
-            public Vector3 direction;
+            public float3 point;
+            public float3 direction;
             public int previous;
             public int next;
             public bool convex;

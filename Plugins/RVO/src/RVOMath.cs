@@ -54,9 +54,9 @@ namespace RVO
          * computed.</param>
          * <returns>The length of the two-dimensional vector.</returns>
          */
-        public static float abs(Vector3 vector)
+        public static float Abs(Vector3 vector)
         {
-            return sqrt(absSq(vector));
+            return Sqrt(AbsSq(vector));
         }
 
         /**
@@ -68,7 +68,7 @@ namespace RVO
          * <param name="vector">The two-dimensional vector whose squared length
          * is to be computed.</param>
          */
-        public static float absSq(Vector3 vector)
+        public static float AbsSq(Vector3 vector)
         {
             return Vector3.Dot(vector , vector);
         }
@@ -84,7 +84,7 @@ namespace RVO
          */
         public static Vector3 normalize(Vector3 vector)
         {
-            return vector / abs(vector);
+            return vector / Abs(vector);
         }
 
         /**
@@ -100,7 +100,7 @@ namespace RVO
          * <param name="vector2">The bottom row of the two-dimensional square
          * matrix.</param>
          */
-        internal static float det(Vector3 vector1, Vector3 vector2)
+        internal static float Det(Vector3 vector1, Vector3 vector2)
         {
             return vector1.x * vector2.y - vector1.y * vector2.x;
         }
@@ -118,21 +118,21 @@ namespace RVO
          * <param name="vector3">The point to which the squared distance is to
          * be calculated.</param>
          */
-        internal static float distSqPointLineSegment(Vector3 vector1, Vector3 vector2, Vector3 vector3)
+        internal static float DistSqPointLineSegment(Vector3 vector1, Vector3 vector2, Vector3 vector3)
         {
-            float r = (Vector3.Dot((vector3 - vector1) , (vector2 - vector1))) / absSq(vector2 - vector1);
+            float r = (Vector3.Dot((vector3 - vector1) , (vector2 - vector1))) / AbsSq(vector2 - vector1);
 
             if (r < 0.0f)
             {
-                return absSq(vector3 - vector1);
+                return AbsSq(vector3 - vector1);
             }
 
             if (r > 1.0f)
             {
-                return absSq(vector3 - vector2);
+                return AbsSq(vector3 - vector2);
             }
 
-            return absSq(vector3 - (vector1 + r * (vector2 - vector1)));
+            return AbsSq(vector3 - (vector1 + r * (vector2 - vector1)));
         }
 
         /**
@@ -143,7 +143,7 @@ namespace RVO
          * <param name="scalar">The float of which to compute the absolute
          * value.</param>
          */
-        internal static float fabs(float scalar)
+        internal static float Fabs(float scalar)
         {
             return Math.Abs(scalar);
         }
@@ -160,9 +160,9 @@ namespace RVO
          * <param name="c">The point to which the signed distance is to be
          * calculated.</param>
          */
-        internal static float leftOf(Vector3 a, Vector3 b, Vector3 c)
+        internal static float LeftOf(Vector3 a, Vector3 b, Vector3 c)
         {
-            return det(a - c, b - a);
+            return Det(a - c, b - a);
         }
 
         /**
@@ -172,7 +172,7 @@ namespace RVO
          *
          * <param name="scalar">The float to be squared.</param>
          */
-        internal static float sqr(float scalar)
+        internal static float Sqr(float scalar)
         {
             return scalar * scalar;
         }
@@ -185,7 +185,7 @@ namespace RVO
          * <param name="scalar">The float of which to compute the square root.
          * </param>
          */
-        internal static float sqrt(float scalar)
+        internal static float Sqrt(float scalar)
         {
             return (float)Math.Sqrt(scalar);
         }

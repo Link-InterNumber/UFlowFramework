@@ -1,3 +1,35 @@
+/*
+ * Simulator.cs
+ * RVO2 Library C#
+ *
+ * Copyright 2008 University of North Carolina at Chapel Hill
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Please send all bug reports to <geom@cs.unc.edu>.
+ *
+ * The authors may be contacted via:
+ *
+ * Jur van den Berg, Stephen J. Guy, Jamie Snape, Ming C. Lin, Dinesh Manocha
+ * Dept. of Computer Science
+ * 201 S. Columbia St.
+ * Frederick P. Brooks, Jr. Computer Science Bldg.
+ * Chapel Hill, N.C. 27599-3175
+ * United States of America
+ *
+ * <http://gamma.cs.unc.edu/RVO2/>
+ */
+
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
@@ -67,6 +99,9 @@ namespace RVO.JobSystem
         private int _nextAgentId;
         private float _globalTime;
         private float _timeStep = 0.1f;
+        private JobHandle _integrateHandle;
+        private bool _stepped;
+
         // private bool _obstaclesProcessed;
 
         public JobSimulator(int maxNeighborsCapacity = DefaultMaxNeighborsCapacity, int batchSize = DefaultBatchSize)
@@ -92,25 +127,46 @@ namespace RVO.JobSystem
         /// </summary>
         /// <param name="timeStep"></param>
         /// <returns>The global time after the simulation step.</returns>
-        public float doStep(float timeStep)
+        public float DoStep(float timeStep)
         {
-            if (timeStep > 0.0f)
-            {
-                _timeStep = timeStep;
-            }
-            else
-            {
-                _timeStep = math.max(RvoEpsilon, timeStep);
-            }
-            return doStep();
+            SetTimeStep(timeStep);
+            return DoStepInternal(true);
         }
 
         /// <summary>
         /// Performs a simulation step and updates the two-dimensional position and two-dimensional velocity of each agent.
         /// </summary>
         /// <returns>The global time after the simulation step.</returns>
-        public float doStep()
+        public float DoStep()
         {
+            return DoStepInternal(true);
+        }
+        
+        public float DoStepAsync(float timeStep)
+        {
+            SetTimeStep(timeStep);
+            return DoStepInternal(false);
+        }
+
+        public float DoStepAsync()
+        {
+            return DoStepInternal(false);
+        }
+
+        internal float DoStepInternal(bool completeRightNow)
+        {
+            if (_stepped)
+            {
+                if (completeRightNow)
+                {
+                    _integrateHandle.Complete();
+                    _integrateHandle = default;
+                    _stepped = false;
+                    CopyNativeBackToManaged();
+                    _globalTime += _timeStep;
+                }
+                return _globalTime;
+            }
             ThrowIfDisposed();
 
             UpdateDeletedAgents();
@@ -193,12 +249,36 @@ namespace RVO.JobSystem
                 Outputs = _outputs,
                 TimeStep = _timeStep,
             }.Schedule(_nativeAgents.Length, BatchSize, velocityHandle);
-
-            integrateHandle.Complete();
-
-            CopyNativeBackToManaged();
-            _globalTime += _timeStep;
+            if (completeRightNow)
+            {
+                integrateHandle.Complete();
+                CopyNativeBackToManaged();
+                _globalTime += _timeStep;
+                return _globalTime;
+            }
+            _integrateHandle = integrateHandle;
+            _stepped = true;
             return _globalTime;
+        }
+        
+        public bool IsJobRunning()
+        {
+            return _stepped;
+        }
+
+        /// <summary>
+        /// wait until job is completed, return false while job is running.
+        /// </summary>
+        public bool CheckJobCompletion()
+        {
+            if (!_stepped) return true;
+            if (!_integrateHandle.IsCompleted) return false;
+            _integrateHandle.Complete();
+            _integrateHandle = default;
+            _stepped = false;
+            _globalTime += _timeStep;
+            CopyNativeBackToManaged();
+            return true;
         }
 
         /**
@@ -232,6 +312,13 @@ namespace RVO.JobSystem
                 return;
             }
 
+            if (_stepped)
+            {
+                _integrateHandle.Complete();
+                _integrateHandle = default;
+                _stepped = false;
+            }
+
             ReleaseNativeState();
             _disposed = true;
             GC.SuppressFinalize(this);
@@ -247,7 +334,7 @@ namespace RVO.JobSystem
          * <param name="position">The two-dimensional starting position of this
          * agent.</param>
          */
-        public int addAgent(Vector3 position)
+        public int AddAgent(Vector3 position)
         {
             ThrowIfDisposed();
 
@@ -256,7 +343,7 @@ namespace RVO.JobSystem
                 return -1;
             }
 
-            return addAgent(
+            return AddAgent(
                 position,
                 _defaultAgent.neighborDist,
                 _defaultAgent.maxNeighbors,
@@ -301,7 +388,7 @@ namespace RVO.JobSystem
          * <param name="velocity">The initial two-dimensional linear velocity of
          * this agent.</param>
          */
-        public int addAgent(Vector3 position, float neighborDist, int maxNeighbors, float timeHorizon, float timeHorizonObst, float radius, float maxSpeed, Vector3 velocity)
+        public int AddAgent(Vector3 position, float neighborDist, int maxNeighbors, float timeHorizon, float timeHorizonObst, float radius, float maxSpeed, Vector3 velocity)
         {
             ThrowIfDisposed();
 
@@ -325,7 +412,7 @@ namespace RVO.JobSystem
             return agent.id;
         }
 
-        public void delAgent(int agentNo)
+        public void DelAgent(int agentNo)
         {
             ThrowIfDisposed();
 
@@ -348,7 +435,7 @@ namespace RVO.JobSystem
          * the environment, the vertices should be listed in clockwise order.
          * </remarks>
          */
-        public int addObstacle(IList<Vector3> vertices)
+        public int AddObstacle(IList<Vector3> vertices)
         {
             ThrowIfDisposed();
 
@@ -369,7 +456,7 @@ namespace RVO.JobSystem
                 {
                     id = _obstacles.Count,
                     point = vertices[i],
-                    direction = ToVector3(direction),
+                    direction = direction,
                     previous = obstacleNo + previous,
                     next = obstacleNo + next,
                     convex = vertices.Count == 2 || MathUtil.LeftOf(ToFloat3(vertices[previous]), ToFloat3(vertices[i]), ToFloat3(vertices[next])) >= 0.0f,
@@ -392,7 +479,7 @@ namespace RVO.JobSystem
          * <remarks>Obstacles added to the simulation after this function has
          * been called are not accounted for in the simulation.</remarks>
          */
-        public void processObstacles()
+        public void ProcessObstacles()
         {
             ThrowIfDisposed();
             EnsureObstacleVisibilityTree();
@@ -413,7 +500,7 @@ namespace RVO.JobSystem
          * the two points and the obstacles in order for the points to be
          * mutually visible (optional). Must be non-negative.</param>
          */
-        public bool queryVisibility(Vector3 point1, Vector3 point2, float radius)
+        public bool QueryVisibility(Vector3 point1, Vector3 point2, float radius)
         {
             ThrowIfDisposed();
             if (_obstacles == null || _obstacles.Count == 0)
@@ -434,7 +521,7 @@ namespace RVO.JobSystem
             return QueryVisibilityTree(q1, q2, radiusSq, _obstacleVisibilityTree);
         }
 
-        public int queryNearAgent(Vector3 point, float radius)
+        public int QueryNearAgent(Vector3 point, float radius)
         {
             ThrowIfDisposed();
 
@@ -465,7 +552,7 @@ namespace RVO.JobSystem
          * <param name="neighborNo">The number of the agent neighbor to be
          * retrieved.</param>
          */
-        public int getAgentAgentNeighbor(int agentNo, int neighborNo)
+        public int GetAgentAgentNeighbor(int agentNo, int neighborNo)
         {
             var index = GetAgentIndex(agentNo);
             if (!_neighborCounts.IsCreated || index >= _neighborCounts.Length)
@@ -492,7 +579,7 @@ namespace RVO.JobSystem
          * <param name="agentNo">The number of the agent whose maximum neighbor
          * count is to be retrieved.</param>
          */
-        public int getAgentMaxNeighbors(int agentNo)
+        public int GetAgentMaxNeighbors(int agentNo)
         {
             return _agents[GetAgentIndex(agentNo)].maxNeighbors;
         }
@@ -505,7 +592,7 @@ namespace RVO.JobSystem
          * <param name="agentNo">The number of the agent whose maximum speed is
          * to be retrieved.</param>
          */
-        public float getAgentMaxSpeed(int agentNo)
+        public float GetAgentMaxSpeed(int agentNo)
         {
             return _agents[GetAgentIndex(agentNo)].maxSpeed;
         }
@@ -520,7 +607,7 @@ namespace RVO.JobSystem
          * <param name="agentNo">The number of the agent whose maximum neighbor
          * distance is to be retrieved.</param>
          */
-        public float getAgentNeighborDist(int agentNo)
+        public float GetAgentNeighborDist(int agentNo)
         {
             return _agents[GetAgentIndex(agentNo)].neighborDist;
         }
@@ -535,7 +622,7 @@ namespace RVO.JobSystem
          * <param name="agentNo">The number of the agent whose count of agent
          * neighbors is to be retrieved.</param>
          */
-        public int getAgentNumAgentNeighbors(int agentNo)
+        public int GetAgentNumAgentNeighbors(int agentNo)
         {
             var index = GetAgentIndex(agentNo);
             if (!_neighborCounts.IsCreated || index >= _neighborCounts.Length)
@@ -556,7 +643,7 @@ namespace RVO.JobSystem
          * <param name="agentNo">The number of the agent whose count of obstacle
          * neighbors is to be retrieved.</param>
          */
-        public int getAgentNumObstacleNeighbors(int agentNo)
+        public int GetAgentNumObstacleNeighbors(int agentNo)
         {
             var index = GetAgentIndex(agentNo);
             if (!_obstacleNeighborCounts.IsCreated || index >= _obstacleNeighborCounts.Length)
@@ -579,7 +666,7 @@ namespace RVO.JobSystem
          * <param name="neighborNo">The number of the obstacle neighbor to be
          * retrieved.</param>
          */
-        public int getAgentObstacleNeighbor(int agentNo, int neighborNo)
+        public int GetAgentObstacleNeighbor(int agentNo, int neighborNo)
         {
             var index = GetAgentIndex(agentNo);
             if (!_obstacleNeighborCounts.IsCreated || index >= _obstacleNeighborCounts.Length)
@@ -606,7 +693,7 @@ namespace RVO.JobSystem
          * <param name="agentNo">The number of the agent whose two-dimensional
          * position is to be retrieved.</param>
          */
-        public Vector3 getAgentPosition(int agentNo)
+        public Vector3 GetAgentPosition(int agentNo)
         {
             return _agents[GetAgentIndex(agentNo)].position;
         }
@@ -621,7 +708,7 @@ namespace RVO.JobSystem
          * <param name="agentNo">The number of the agent whose two-dimensional
          * preferred velocity is to be retrieved.</param>
          */
-        public Vector3 getAgentPrefVelocity(int agentNo)
+        public Vector3 GetAgentPrefVelocity(int agentNo)
         {
             return _agents[GetAgentIndex(agentNo)].prefVelocity;
         }
@@ -634,7 +721,7 @@ namespace RVO.JobSystem
          * <param name="agentNo">The number of the agent whose radius is to be
          * retrieved.</param>
          */
-        public float getAgentRadius(int agentNo)
+        public float GetAgentRadius(int agentNo)
         {
             return _agents[GetAgentIndex(agentNo)].radius;
         }
@@ -647,7 +734,7 @@ namespace RVO.JobSystem
          * <param name="agentNo">The number of the agent whose time horizon is
          * to be retrieved.</param>
          */
-        public float getAgentTimeHorizon(int agentNo)
+        public float GetAgentTimeHorizon(int agentNo)
         {
             return _agents[GetAgentIndex(agentNo)].timeHorizon;
         }
@@ -662,7 +749,7 @@ namespace RVO.JobSystem
          * <param name="agentNo">The number of the agent whose time horizon with
          * respect to obstacles is to be retrieved.</param>
          */
-        public float getAgentTimeHorizonObst(int agentNo)
+        public float GetAgentTimeHorizonObst(int agentNo)
         {
             return _agents[GetAgentIndex(agentNo)].timeHorizonObst;
         }
@@ -677,7 +764,7 @@ namespace RVO.JobSystem
          * <param name="agentNo">The number of the agent whose two-dimensional
          * linear velocity is to be retrieved.</param>
          */
-        public Vector3 getAgentVelocity(int agentNo)
+        public Vector3 GetAgentVelocity(int agentNo)
         {
             return _agents[GetAgentIndex(agentNo)].velocity;
         }
@@ -688,7 +775,7 @@ namespace RVO.JobSystem
          * <returns>The present global time of the simulation (zero initially).
          * </returns>
          */
-        public float getGlobalTime()
+        public float GetGlobalTime()
         {
             return _globalTime;
         }
@@ -698,7 +785,7 @@ namespace RVO.JobSystem
          *
          * <returns>The count of agents in the simulation.</returns>
          */
-        public int getNumAgents()
+        public int GetNumAgents()
         {
             return _agents.Count;
         }
@@ -709,7 +796,7 @@ namespace RVO.JobSystem
          *
          * <returns>The count of obstacle vertices in the simulation.</returns>
          */
-        public int getNumObstacleVertices()
+        public int GetNumObstacleVertices()
         {
             return _obstacles.Count;
         }
@@ -724,7 +811,7 @@ namespace RVO.JobSystem
          * <param name="vertexNo">The number of the obstacle vertex to be
          * retrieved.</param>
          */
-        public Vector3 getObstacleVertex(int vertexNo)
+        public Vector3 GetObstacleVertex(int vertexNo)
         {
             ThrowIfDisposed();
 
@@ -746,7 +833,7 @@ namespace RVO.JobSystem
          * <param name="vertexNo">The number of the obstacle vertex whose
          * successor is to be retrieved.</param>
          */
-        public int getNextObstacleVertexNo(int vertexNo)
+        public int GetNextObstacleVertexNo(int vertexNo)
         {
             ThrowIfDisposed();
 
@@ -768,7 +855,7 @@ namespace RVO.JobSystem
          * <param name="vertexNo">The number of the obstacle vertex whose
          * predecessor is to be retrieved.</param>
          */
-        public int getPrevObstacleVertexNo(int vertexNo)
+        public int GetPrevObstacleVertexNo(int vertexNo)
         {
             ThrowIfDisposed();
 
@@ -785,7 +872,7 @@ namespace RVO.JobSystem
          *
          * <returns>The present time step of the simulation.</returns>
          */
-        public float getTimeStep()
+        public float GetTimeStep()
         {
             return _timeStep;
         }
@@ -822,7 +909,7 @@ namespace RVO.JobSystem
          * <param name="velocity">The default initial two-dimensional linear
          * velocity of a new agent.</param>
          */
-        public void setAgentDefaults(float neighborDist, int maxNeighbors, float timeHorizon, float timeHorizonObst, float radius, float maxSpeed, Vector3 velocity)
+        public void SetAgentDefaults(float neighborDist, int maxNeighbors, float timeHorizon, float timeHorizonObst, float radius, float maxSpeed, Vector3 velocity)
         {
             ThrowIfDisposed();
 
@@ -848,7 +935,7 @@ namespace RVO.JobSystem
          * <param name="maxNeighbors">The replacement maximum neighbor count.
          * </param>
          */
-        public void setAgentMaxNeighbors(int agentNo, int maxNeighbors)
+        public void SetAgentMaxNeighbors(int agentNo, int maxNeighbors)
         {
             var agent = _agents[GetAgentIndex(agentNo)];
             agent.maxNeighbors = math.max(0, maxNeighbors);
@@ -863,7 +950,7 @@ namespace RVO.JobSystem
          * <param name="maxSpeed">The replacement maximum speed. Must be
          * non-negative.</param>
          */
-        public void setAgentMaxSpeed(int agentNo, float maxSpeed)
+        public void SetAgentMaxSpeed(int agentNo, float maxSpeed)
         {
             var agent = _agents[GetAgentIndex(agentNo)];
             agent.maxSpeed = math.max(0.0f, maxSpeed);
@@ -879,7 +966,7 @@ namespace RVO.JobSystem
          * <param name="neighborDist">The replacement maximum neighbor distance.
          * Must be non-negative.</param>
          */
-        public void setAgentNeighborDist(int agentNo, float neighborDist)
+        public void SetAgentNeighborDist(int agentNo, float neighborDist)
         {
             var agent = _agents[GetAgentIndex(agentNo)];
             agent.neighborDist = neighborDist;
@@ -895,7 +982,7 @@ namespace RVO.JobSystem
          * <param name="position">The replacement of the two-dimensional
          * position.</param>
          */
-        public void setAgentPosition(int agentNo, Vector3 position)
+        public void SetAgentPosition(int agentNo, Vector3 position)
         {
             var index = GetAgentIndex(agentNo);
             var agent = _agents[index];
@@ -912,7 +999,7 @@ namespace RVO.JobSystem
          * <param name="prefVelocity">The replacement of the two-dimensional
          * preferred velocity.</param>
          */
-        public void setAgentPrefVelocity(int agentNo, Vector3 prefVelocity)
+        public void SetAgentPrefVelocity(int agentNo, Vector3 prefVelocity)
         {
             var index = GetAgentIndex(agentNo);
             var agent = _agents[index];
@@ -928,7 +1015,7 @@ namespace RVO.JobSystem
          * <param name="radius">The replacement radius. Must be non-negative.
          * </param>
          */
-        public void setAgentRadius(int agentNo, float radius)
+        public void SetAgentRadius(int agentNo, float radius)
         {
             var agent = _agents[GetAgentIndex(agentNo)];
             agent.radius = math.max(0.0f, radius);
@@ -944,7 +1031,7 @@ namespace RVO.JobSystem
          * <param name="timeHorizon">The replacement time horizon with respect
          * to other agents. Must be positive.</param>
          */
-        public void setAgentTimeHorizon(int agentNo, float timeHorizon)
+        public void SetAgentTimeHorizon(int agentNo, float timeHorizon)
         {
             var agent = _agents[GetAgentIndex(agentNo)];
             agent.timeHorizon = math.max(RvoEpsilon, timeHorizon);
@@ -960,7 +1047,7 @@ namespace RVO.JobSystem
          * <param name="timeHorizonObst">The replacement time horizon with
          * respect to obstacles. Must be positive.</param>
          */
-        public void setAgentTimeHorizonObst(int agentNo, float timeHorizonObst)
+        public void SetAgentTimeHorizonObst(int agentNo, float timeHorizonObst)
         {
             var agent = _agents[GetAgentIndex(agentNo)];
             agent.timeHorizonObst = math.max(RvoEpsilon, timeHorizonObst);
@@ -976,7 +1063,7 @@ namespace RVO.JobSystem
          * <param name="velocity">The replacement two-dimensional linear
          * velocity.</param>
          */
-        public void setAgentVelocity(int agentNo, Vector3 velocity)
+        public void SetAgentVelocity(int agentNo, Vector3 velocity)
         {
             var index = GetAgentIndex(agentNo);
             var agent = _agents[index];
@@ -989,7 +1076,7 @@ namespace RVO.JobSystem
          *
          * <param name="globalTime_">The global time of the simulation.</param>
          */
-        public void setGlobalTime(float globalTime)
+        public void SetGlobalTime(float globalTime)
         {
             _globalTime = globalTime;
         }
@@ -1000,7 +1087,7 @@ namespace RVO.JobSystem
          * <param name="timeStep">The time step of the simulation. Must be
          * positive.</param>
          */
-        public void setTimeStep(float timeStep)
+        public void SetTimeStep(float timeStep)
         {
             _timeStep = math.max(RvoEpsilon, timeStep);
         }
@@ -1531,11 +1618,6 @@ namespace RVO.JobSystem
         private static float3 ToFloat3(Vector3 value)
         {
             return new float3(value.x, value.y, value.z);
-        }
-
-        private static Vector3 ToVector3(float3 value)
-        {
-            return new Vector3(value.x, value.y, value.z);
         }
     }
 }

@@ -92,8 +92,8 @@ namespace RVO.JobSystem
             var parent = agentRoot != null ? agentRoot : transform;
 
             _simulator = new JobSimulator(maxNeighbors, batchSize);
-            _simulator.setTimeStep(timeStep);
-            _simulator.setAgentDefaults(neighborDist, maxNeighbors, timeHorizon, timeHorizonObst, radius, maxSpeed, Vector3.zero);
+            _simulator.SetTimeStep(timeStep);
+            _simulator.SetAgentDefaults(neighborDist, maxNeighbors, timeHorizon, timeHorizonObst, radius, maxSpeed, Vector3.zero);
 
             if (obstacles != null)
             {
@@ -108,10 +108,10 @@ namespace RVO.JobSystem
                     points[2] = new Vector3(maxPos.x, maxPos.y, worldPlaneZ);
                     points[3] = new Vector3(minPos.x, maxPos.y, worldPlaneZ);
 
-                    _simulator.addObstacle(points);
+                    _simulator.AddObstacle(points);
                 }
 
-                _simulator.processObstacles();
+                _simulator.ProcessObstacles();
             }
             var random = new System.Random(seed);
             _agentIds.Capacity = agentCount;
@@ -123,7 +123,7 @@ namespace RVO.JobSystem
                 var r = (float)(random.NextDouble() * spawnRadius);
                 var pos = new Vector3(Mathf.Cos(angle) * r, Mathf.Sin(angle) * r, worldPlaneZ);
 
-                var id = _simulator.addAgent(pos, neighborDist, maxNeighbors, timeHorizon, timeHorizonObst, radius, maxSpeed, Vector3.zero);
+                var id = _simulator.AddAgent(pos, neighborDist, maxNeighbors, timeHorizon, timeHorizonObst, radius, maxSpeed, Vector3.zero);
                 _agentIds.Add(id);
                 if (!showDisplay) continue;
                 var view = Instantiate(agentPrefab, pos, Quaternion.identity, parent).transform;
@@ -146,12 +146,15 @@ namespace RVO.JobSystem
                 return;
             }
 
+            if (!_simulator.CheckJobCompletion())
+            {
+                return;
+            }
             var mouseWorld = GetMouseWorldPosition();
-
             for (var i = 0; i < _agentIds.Count; i++)
             {
                 var id = _agentIds[i];
-                var pos = _simulator.getAgentPosition(id);
+                var pos = _simulator.GetAgentPosition(id);
                 var desired = mouseWorld - pos;
                 desired.z = 0f;
 
@@ -159,15 +162,15 @@ namespace RVO.JobSystem
                     ? desired.normalized * maxSpeed
                     : Vector3.zero;
 
-                _simulator.setAgentPrefVelocity(id, prefVelocity);
+                _simulator.SetAgentPrefVelocity(id, prefVelocity);
             }
 
-            _simulator.doStep();
+            _simulator.DoStepAsync();
             if (!showDisplay) return;
             for (var i = 0; i < _agentIds.Count; i++)
             {
                 var id = _agentIds[i];
-                var pos = _simulator.getAgentPosition(id);
+                var pos = _simulator.GetAgentPosition(id);
                 pos.z = worldPlaneZ;
                 _agentViews[i].position = pos;
             }

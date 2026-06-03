@@ -93,8 +93,8 @@ namespace RVO.JobSystem
             var parent = agentRoot != null ? agentRoot : transform;
 
             _simulator = new Simulator();
-            _simulator.setTimeStep(timeStep);
-            _simulator.setAgentDefaults(neighborDist, maxNeighbors, timeHorizon, timeHorizonObst, radius, maxSpeed, Vector3.zero);
+            _simulator.SetTimeStep(timeStep);
+            _simulator.SetAgentDefaults(neighborDist, maxNeighbors, timeHorizon, timeHorizonObst, radius, maxSpeed, Vector3.zero);
             if (obstacles != null)
             {
                 foreach (var obstacle in obstacles)
@@ -111,7 +111,7 @@ namespace RVO.JobSystem
                     _simulator.addObstacle(points);
                 }
 
-                _simulator.processObstacles();
+                _simulator.ProcessObstacles();
             }
             var random = new System.Random(seed);
             _agentIds.Capacity = agentCount;
@@ -145,13 +145,17 @@ namespace RVO.JobSystem
             {
                 return;
             }
+            if (!_simulator.CheckJobCompletion())
+            {
+                return;
+            }
 
             var mouseWorld = GetMouseWorldPosition();
 
             for (var i = 0; i < _agentIds.Count; i++)
             {
                 var id = _agentIds[i];
-                var pos = _simulator.getAgentPosition(id);
+                var pos = _simulator.GetAgentPosition(id);
                 var desired = mouseWorld - pos;
                 desired.z = 0f;
 
@@ -159,15 +163,15 @@ namespace RVO.JobSystem
                     ? desired.normalized * maxSpeed
                     : Vector3.zero;
 
-                _simulator.setAgentPrefVelocity(id, prefVelocity);
+                _simulator.SetAgentPrefVelocity(id, prefVelocity);
             }
 
-            _simulator.doStep();
+            _simulator.doStepAsync();
             if (!showDisplay) return;
             for (var i = 0; i < _agentIds.Count; i++)
             {
                 var id = _agentIds[i];
-                var pos = _simulator.getAgentPosition(id);
+                var pos = _simulator.GetAgentPosition(id);
                 pos.z = worldPlaneZ;
                 _agentViews[i].position = pos;
             }
