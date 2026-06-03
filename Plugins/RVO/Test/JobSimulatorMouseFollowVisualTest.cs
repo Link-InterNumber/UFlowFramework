@@ -12,6 +12,7 @@ namespace RVO.JobSystem
     {
         [Header("Prefab")]
         public GameObject agentPrefab;
+        public BoxCollider[] obstacles;
         public Transform agentRoot;
 
         [Header("Simulation")]
@@ -34,6 +35,7 @@ namespace RVO.JobSystem
         [Header("Run")]
         public bool runOnEnable = true;
         public bool simulateInFixedUpdate = false;
+        public bool showDisplay = true;
 
         private JobSimulator _simulator;
         private readonly List<int> _agentIds = new List<int>();
@@ -41,7 +43,7 @@ namespace RVO.JobSystem
 
         private void OnEnable()
         {
-            Application.targetFrameRate = 60;
+            // Application.targetFrameRate = 60;
 
             Initialize();
         }
@@ -93,6 +95,24 @@ namespace RVO.JobSystem
             _simulator.setTimeStep(timeStep);
             _simulator.setAgentDefaults(neighborDist, maxNeighbors, timeHorizon, timeHorizonObst, radius, maxSpeed, Vector3.zero);
 
+            if (obstacles != null)
+            {
+                foreach (var obstacle in obstacles)
+                {
+                    var points = new Vector3[4];
+                    var minPos = obstacle.bounds.min;
+                    var maxPos = obstacle.bounds.max;
+
+                    points[0] = new Vector3(minPos.x, minPos.y, worldPlaneZ);
+                    points[1] = new Vector3(maxPos.x, minPos.y, worldPlaneZ);
+                    points[2] = new Vector3(maxPos.x, maxPos.y, worldPlaneZ);
+                    points[3] = new Vector3(minPos.x, maxPos.y, worldPlaneZ);
+
+                    _simulator.addObstacle(points);
+                }
+
+                _simulator.processObstacles();
+            }
             var random = new System.Random(seed);
             _agentIds.Capacity = agentCount;
             _agentViews.Capacity = agentCount;
@@ -105,7 +125,7 @@ namespace RVO.JobSystem
 
                 var id = _simulator.addAgent(pos, neighborDist, maxNeighbors, timeHorizon, timeHorizonObst, radius, maxSpeed, Vector3.zero);
                 _agentIds.Add(id);
-
+                if (!showDisplay) continue;
                 var view = Instantiate(agentPrefab, pos, Quaternion.identity, parent).transform;
                 _agentViews.Add(view);
             }
@@ -143,7 +163,7 @@ namespace RVO.JobSystem
             }
 
             _simulator.doStep();
-
+            if (!showDisplay) return;
             for (var i = 0; i < _agentIds.Count; i++)
             {
                 var id = _agentIds[i];

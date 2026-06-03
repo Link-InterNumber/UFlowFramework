@@ -30,6 +30,7 @@
  * <http://gamma.cs.unc.edu/RVO2/>
  */
 
+using System;
 using System.Collections.Generic;
 
 #if ENABLE_RVO_WORKER
@@ -346,6 +347,19 @@ namespace RVO
             timeStep = 0.1f;
 
             SetNumWorkers(0);
+        }
+
+        public float doStep(float newTimeStep)
+        {
+            if (newTimeStep > 0.0f)
+            {
+                timeStep = newTimeStep;
+            }
+            else
+            {
+                timeStep = Math.Max(0.00001f, newTimeStep);
+            }
+            return doStep();
         }
 
         // private int _stepIndex;
