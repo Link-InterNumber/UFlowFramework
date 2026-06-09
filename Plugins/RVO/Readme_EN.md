@@ -233,6 +233,32 @@ When the simulator is no longer needed, call `Dispose()` to release native resou
 simulator.Dispose();
 ```
 
+### 9. AgentType Feature
+You can add type identifiers for agents, and in the **simulator**, use a one-dimensional `NativeArray<float>` to flatten and store the two-dimensional matrix, keeping the extra radius between agent types. 
+It is recommended to map an enum to represent type relationships and have it increment sequentially from 0 to avoid the two-dimensional matrix being too large.
+
+```csharp
+// define AgentType enum
+public enum TestAgentType
+{
+    Red = 0,
+    Blue,
+    Green
+}
+
+// register the number of AgentTypes with **simulator**
+simulator.ConfigAgentTypes(Enum.GetValues(typeof(TestAgentType)).Length); 
+
+// The radius of the registered agentType relative to other agentTypes
+simulator.ConfigAgentExtraRadii((int)TestAgentType.Red, (int)TestAgentType.Green, 0.7f);
+simulator.ConfigAgentExtraRadii((int)TestAgentType.Red, (int)TestAgentType.Blue, 2f);
+simulator.ConfigAgentExtraRadii((int)TestAgentType.Green, (int)TestAgentType.Blue, 1.5f);
+simulator.ConfigAgentExtraRadii((int)TestAgentType.Red, (int)TestAgentType.Red, 0.5f);
+simulator.ConfigAgentExtraRadii((int)TestAgentType.Blue, (int)TestAgentType.Red, 0.8f);
+
+```
+
+PS: If you only specify an extra radius from `agentTypeA` -> `agentTypeB`, during runtime, when `agentTypeA` and `agentTypeB` meet, A will avoid early while B continues to approach. To achieve better obstacle avoidance, it is best to also set the extra radius from `agentTypeB` -> `agentTypeA`.
 ---
 
 ## 📦 Public API Overview

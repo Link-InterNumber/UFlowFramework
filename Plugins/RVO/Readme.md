@@ -229,6 +229,33 @@ simulator.Clear();
 simulator.Dispose();
 ```
 
+### 9. AgentType Feature
+可以为agent添加配类型标识，在**simulator**中使用一维 `NativeArray<float>` 扁平化存二维矩阵，保存agentType之间的额外半径，推荐映射一个enum表示类型关系且从0开始顺序递增，避免二维矩阵过大。
+
+使用方法：
+```csharp
+// 定义AgentType枚举
+public enum TestAgentType
+{
+    Red = 0,
+    Blue,
+    Green
+}
+
+// 首先向**simulator**注册AgentType数量
+simulator.ConfigAgentTypes(Enum.GetValues(typeof(TestAgentType)).Length); 
+
+// 注册agentType对其他agentType的半径
+simulator.ConfigAgentExtraRadii((int)TestAgentType.Red, (int)TestAgentType.Green, 0.7f);
+simulator.ConfigAgentExtraRadii((int)TestAgentType.Red, (int)TestAgentType.Blue, 2f);
+simulator.ConfigAgentExtraRadii((int)TestAgentType.Green, (int)TestAgentType.Blue, 1.5f);
+simulator.ConfigAgentExtraRadii((int)TestAgentType.Red, (int)TestAgentType.Red, 0.5f);
+simulator.ConfigAgentExtraRadii((int)TestAgentType.Blue, (int)TestAgentType.Red, 0.8f);
+
+```
+
+PS：如果只指定 `agentTypeA` -> `agentTypeB` 有额外半径，在运行时会出现 `agentTypeA` 和 `agentTypeB` 相遇时，A提前避开而B继续靠近，如果想获得更好的避障效果，最好同时设置 `agentTypeB` -> `agentTypeA` 的额外半径。
+
 ---
 
 ## 📦 公开接口一览
