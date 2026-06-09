@@ -72,7 +72,7 @@ public class SparseSetComprehensiveTest : RunTestMono
             set.Add(item1);
             var foundItem = set.FindOrDefault(8);
             Assert(foundItem != null && foundItem.data == "D", "FindOrDefault should return the correct item.");
-            var indexedItem = set[8];
+            var indexedItem = set[0];
             Assert(indexedItem != null && indexedItem.data == "D", "Indexer should return the correct item.");
         });
     }

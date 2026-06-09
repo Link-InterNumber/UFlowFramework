@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -36,6 +37,7 @@ namespace RVO.JobSystem
         public bool runOnEnable = true;
         public bool simulateInFixedUpdate = false;
         public bool showDisplay = true;
+        public bool runInSync = true;
 
         private JobSimulator _simulator;
         private readonly List<int> _agentIds = new List<int>();
@@ -116,18 +118,42 @@ namespace RVO.JobSystem
             var random = new System.Random(seed);
             _agentIds.Capacity = agentCount;
             _agentViews.Capacity = agentCount;
+            _simulator.ConfigAgentTypes(Enum.GetValues(typeof(TestAgentType)).Length); // Assuming 3 agent types for testing
+
+            _simulator.ConfigAgentExtraRadii((int)TestAgentType.Red, (int)TestAgentType.Green, 0.7f);
+            _simulator.ConfigAgentExtraRadii((int)TestAgentType.Red, (int)TestAgentType.Blue, 2f);
+            _simulator.ConfigAgentExtraRadii((int)TestAgentType.Green, (int)TestAgentType.Blue, 1.5f);
+            _simulator.ConfigAgentExtraRadii((int)TestAgentType.Red, (int)TestAgentType.Red, 0.5f);
+            _simulator.ConfigAgentExtraRadii((int)TestAgentType.Blue, (int)TestAgentType.Red, 0.8f);
+            _simulator.ConfigAgentExtraRadii((int)TestAgentType.Blue, (int)TestAgentType.Green, 1.5f);
 
             for (var i = 0; i < agentCount; i++)
             {
                 var angle = (float)(random.NextDouble() * Mathf.PI * 2f);
                 var r = (float)(random.NextDouble() * spawnRadius);
                 var pos = new Vector3(Mathf.Cos(angle) * r, Mathf.Sin(angle) * r, worldPlaneZ);
-
-                var id = _simulator.AddAgent(pos, neighborDist, maxNeighbors, timeHorizon, timeHorizonObst, radius, maxSpeed, Vector3.zero);
+                var agentType = random.Next(0, 3); // Assuming 3 agent types for testing
+                var id = _simulator.AddAgent(pos, neighborDist, maxNeighbors, timeHorizon, timeHorizonObst, radius, maxSpeed, Vector3.zero, agentType);
                 _agentIds.Add(id);
                 if (!showDisplay) continue;
                 var view = Instantiate(agentPrefab, pos, Quaternion.identity, parent).transform;
                 _agentViews.Add(view);
+                var material = view.GetComponent<Renderer>().material;
+                var colorType = (TestAgentType)agentType;
+                switch (colorType)
+                {
+                    case TestAgentType.Red:
+                        material.SetColor("_BaseColor", Color.red);
+                        break;
+                    case TestAgentType.Green:
+                        material.SetColor("_BaseColor", Color.green);
+                        break;
+                    case TestAgentType.Blue:
+                        material.SetColor("_BaseColor", Color.deepSkyBlue);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
 
             Debug.Log($"[JobSimulatorMouseFollowVisualTest] Initialized with {agentCount} agents.");
@@ -146,7 +172,7 @@ namespace RVO.JobSystem
                 return;
             }
 
-            if (!_simulator.CheckJobCompletion())
+            if (!runInSync && !_simulator.CheckJobCompletion())
             {
                 return;
             }
@@ -165,7 +191,15 @@ namespace RVO.JobSystem
                 _simulator.SetAgentPrefVelocity(id, prefVelocity);
             }
 
-            _simulator.DoStepAsync();
+            if (runInSync)
+            {
+                _simulator.DoStep();
+            }
+            else
+            {
+                _simulator.DoStepAsync();
+            }
+            
             if (!showDisplay) return;
             for (var i = 0; i < _agentIds.Count; i++)
             {

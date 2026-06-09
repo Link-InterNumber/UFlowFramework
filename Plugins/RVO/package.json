@@ -1,0 +1,29 @@
+{
+	"name": "com.soar.rvo",
+	"displayName": "Fast RVO",
+	"version": "1.0.0",
+	"unity": "2020.3",
+	"description": "RVO-based multi-agent avoidance for Unity, with static obstacle support and JobSystem acceleration.",
+	"keywords": [
+		"rvo",
+		"avoidance",
+		"crowd",
+		"jobsystem",
+		"burst"
+	],
+	"license": "yongshi",
+    "author": {
+        "name": "Yongshi Technologies",
+        "email": "linyikai@ys4fun.com"
+    },
+	"type": "library",
+	"category": "AI",
+	"documentationUrl": "Readme.md",
+	"dependencies": {
+		"com.unity.burst": "1.8.13",
+		"com.unity.collections": "2.5.0",
+		"com.unity.jobs": "0.70.0",
+		"com.unity.mathematics": "1.2.6",
+        "com.unity.inputsystem": "1.5.0"
+	}
+}

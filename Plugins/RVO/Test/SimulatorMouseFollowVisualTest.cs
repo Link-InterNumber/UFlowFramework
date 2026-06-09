@@ -36,6 +36,7 @@ namespace RVO.JobSystem
         public bool runOnEnable = true;
         public bool simulateInFixedUpdate = false;
         public bool showDisplay = true;
+        public bool runInSync = true;
 
         private Simulator _simulator;
         private readonly List<int> _agentIds = new List<int>();
@@ -145,7 +146,8 @@ namespace RVO.JobSystem
             {
                 return;
             }
-            if (!_simulator.CheckJobCompletion())
+
+            if (!runInSync && !_simulator.CheckJobCompletion())
             {
                 return;
             }
@@ -165,8 +167,14 @@ namespace RVO.JobSystem
 
                 _simulator.SetAgentPrefVelocity(id, prefVelocity);
             }
-
-            _simulator.doStepAsync();
+            if (runInSync)
+            {
+                _simulator.DoStep();
+            }
+            else
+            {
+                _simulator.DoStepAsync();
+            }
             if (!showDisplay) return;
             for (var i = 0; i < _agentIds.Count; i++)
             {
