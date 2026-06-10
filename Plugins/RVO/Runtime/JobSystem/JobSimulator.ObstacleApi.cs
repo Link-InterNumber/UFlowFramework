@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using Unity.Mathematics;
 using UnityEngine;
 
 namespace RVO.JobSystem
 {
     public sealed partial class JobSimulator
     {
+        private int _obstacleId;
         public int AddObstacle(IList<Vector3> vertices)
         {
             ThrowIfDisposed();
@@ -26,7 +26,7 @@ namespace RVO.JobSystem
 
                 var obstacle = new ManagedObstacleState
                 {
-                    id = _obstacles.Count,
+                    id = _obstacleId++,
                     point = vertices[i],
                     direction = direction,
                     previous = obstacleNo + previous,
@@ -40,7 +40,38 @@ namespace RVO.JobSystem
             _nativeObstacleDirty = true;
             _obstacleTreeDirty = true;
             _obstacleVisibilityTree = null;
-            return obstacleNo;
+            return _obstacles[obstacleNo].id;
+        }
+
+        public void RemoveObstacle(int obstacleNo)
+        {
+            ThrowIfDisposed();
+            
+            // 二分查找
+            var index = MathUtil.BinarySearch(_obstacles, obstacleNo);
+            
+            var verticesCount = 0;
+            for (var i = index; i < _obstacles.Count; i++)
+            {
+                verticesCount++;
+                if (_obstacles[i].next == index)
+                {
+                    break;
+                }
+            }
+            _obstacles.RemoveRange(index, verticesCount);
+
+            for (var i = index; i < _obstacles.Count; i++)
+            {
+                var data = _obstacles[i];
+                data.previous -= verticesCount;
+                data.next -= verticesCount;
+                _obstacles[i] = data;
+            }
+
+            _nativeObstacleDirty = true;
+            _obstacleTreeDirty = true;
+            _obstacleVisibilityTree = null;
         }
 
         public void ProcessObstacles()

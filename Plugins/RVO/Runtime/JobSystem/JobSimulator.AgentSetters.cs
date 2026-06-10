@@ -18,18 +18,17 @@ namespace RVO.JobSystem
         public void SetAgentDefaults(float neighborDist, int maxNeighbors, float timeHorizon, float timeHorizonObst, float radius, float maxSpeed, Vector3 velocity)
         {
             ThrowIfDisposed();
-
-            _defaultAgent = new ManagedAgentState
-            {
-                neighborDist = neighborDist,
-                maxNeighbors = math.max(0, maxNeighbors),
-                timeHorizon = math.max(RvoEpsilon, timeHorizon),
-                timeHorizonObst = math.max(RvoEpsilon, timeHorizonObst),
-                radius = math.max(0.0f, radius),
-                maxSpeed = math.max(0.0f, maxSpeed),
-                velocity = velocity,
-                prefVelocity = velocity,
-            };
+            if (_defaultAgent == null) 
+                _defaultAgent = new ManagedAgentState();
+                
+            _defaultAgent.neighborDist = neighborDist;
+            _defaultAgent.maxNeighbors = math.max(0, maxNeighbors);
+            _defaultAgent.timeHorizon = math.max(RvoEpsilon, timeHorizon);
+            _defaultAgent.timeHorizonObst = math.max(RvoEpsilon, timeHorizonObst);
+            _defaultAgent.radius = math.max(0.0f, radius);
+            _defaultAgent.maxSpeed = math.max(0.0f, maxSpeed);
+            _defaultAgent.velocity = velocity;
+            _defaultAgent.prefVelocity = velocity;
         }
 
         public void SetAgentMaxNeighbors(int agentNo, int maxNeighbors)

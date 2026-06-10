@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Unity.Mathematics;
 
 namespace RVO.JobSystem
@@ -112,6 +115,111 @@ namespace RVO.JobSystem
             var closest1 = p1 + d1 * s;
             var closest2 = p2 + d2 * t;
             return AbsSq(closest1 - closest2);
+        }
+        
+        private static void Swap<T>(Span<T> list, int i, int j)
+        {
+            var temp = list[i];
+            list[i] = list[j];
+            list[j] = temp;
+        }
+        
+        private static void QuickSortRange<T>(Span<T> list, int left, int right, Comparison<T> comparison)
+        {
+            if (left >= right) return;
+            // 选择中间元素作为枢轴，并将其值与最左边的元素交换
+            // 这样枢轴元素就被移出了分区过程
+            int pivotIndex = left + ((right - left) >> 1);
+            var pivotValue = list[pivotIndex];
+
+            Swap(list, pivotIndex, left);
+
+            int i = left + 1;
+            int j = right;
+
+            // 分区过程
+            while (i <= j)
+            {
+                // 从左向右找到第一个大于等于 pivotValue 的元素
+                while (i <= j && comparison(list[i], pivotValue) < 0)
+                {
+                    i++;
+                }
+
+                // 从右向左找到第一个小于等于 pivotValue 的元素
+                while (i <= j && comparison(list[j], pivotValue) > 0)
+                {
+                    j--;
+                }
+
+                if (i <= j)
+                {
+                    Swap(list, i, j);
+                    i++;
+                    j--;
+                }
+            }
+
+            // 将枢轴元素放回正确的位置
+            Swap(list, left, j);
+
+            // 递归地对左右两个子分区进行排序
+            if (left < j - 1)
+            {
+                QuickSortRange(list, left, j - 1, comparison);
+            }
+
+            if (i < right)
+            {
+                QuickSortRange(list, i, right, comparison);
+            }
+        }
+
+        /// <summary>
+        /// 快速排序是一种高效的排序算法，平均时间复杂度为O(n log n)。它通过选择一个“枢轴”元素，将数组分成两部分，一部分比枢轴小，另一部分比枢轴大，然后递归地对这两部分进行排序，最终得到有序的结果。
+        /// </summary>
+        public static void QuickSort<T>(Span<T> list, Comparison<T> comparison)
+        {
+            if (list == null) throw new ArgumentNullException(nameof(list));
+            if (comparison == null) throw new ArgumentNullException(nameof(comparison));
+            if (list.Length < 2) return;
+            QuickSortRange(list, 0, list.Length - 1, comparison);
+        }
+
+
+        public static int BinarySearch(List<ManagedObstacleState> list, int id)
+        {
+            var left = 0;
+            var right = list.Count - 1;
+            if (list.Count == 0 || id < list[left].id || id > list[right].id)
+            {
+                return -1;
+            }
+            if (list[left].id == id)
+            {
+                return left;
+            }
+            if (list[right].id == id)
+            {
+                return right;
+            }
+            while (left <= right)
+            {
+                var mid = left + ((right - left) >> 1);
+                if (list[mid].id == id)
+                {
+                    return mid;
+                }
+                if (list[mid].id < id)
+                {
+                    left = mid + 1;
+                }
+                else
+                {
+                    right = mid - 1;
+                }
+            }
+            return -1;
         }
     }
 }

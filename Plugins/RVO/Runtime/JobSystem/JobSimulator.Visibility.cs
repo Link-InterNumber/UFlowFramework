@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
 
@@ -5,7 +6,7 @@ namespace RVO.JobSystem
 {
     public sealed partial class JobSimulator
     {
-        private sealed class ObstacleSegment
+        private struct ObstacleSegment
         {
             public float3 start;
             public float3 end;
@@ -24,7 +25,7 @@ namespace RVO.JobSystem
             if (_obstacles.Count == 0)
             {
                 _obstacleVisibilityTree = null;
-                _obstacleVisibilitySegments = null;
+                _obstacleVisibilitySegments?.Clear();
                 _obstacleTreeDirty = false;
                 return;
             }
@@ -65,19 +66,19 @@ namespace RVO.JobSystem
                 return;
             }
 
-            var indices = new List<int>(_obstacleVisibilitySegments.Count);
-            for (var index = 0; index < _obstacleVisibilitySegments.Count; index++)
+            Span<int> indices = stackalloc int[_obstacleVisibilitySegments.Count];
+            for (var i = 0; i < _obstacleVisibilitySegments.Count; i++)
             {
-                indices.Add(index);
+                indices[i] = i;
             }
 
             _obstacleVisibilityTree = BuildObstacleVisibilityTree(indices);
             _obstacleTreeDirty = false;
         }
 
-        private ObstacleVisibilityTreeNode BuildObstacleVisibilityTree(List<int> indices)
+        private ObstacleVisibilityTreeNode BuildObstacleVisibilityTree(Span<int> indices)
         {
-            if (indices == null || indices.Count == 0)
+            if (indices == null || indices.Length == 0)
             {
                 return null;
             }
@@ -88,14 +89,14 @@ namespace RVO.JobSystem
                 boundsMax = new float3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity),
             };
 
-            for (var i = 0; i < indices.Count; i++)
+            for (var i = 0; i < indices.Length; i++)
             {
                 var segment = _obstacleVisibilitySegments[indices[i]];
                 node.boundsMin = math.min(node.boundsMin, segment.boundsMin);
                 node.boundsMax = math.max(node.boundsMax, segment.boundsMax);
             }
 
-            if (indices.Count <= 8)
+            if (indices.Length <= 8)
             {
                 node.segmentIndices = indices.ToArray();
                 return node;
@@ -105,8 +106,8 @@ namespace RVO.JobSystem
             var axis = extents.x >= extents.y
                 ? (extents.x >= extents.z ? 0 : 2)
                 : (extents.y >= extents.z ? 1 : 2);
-
-            indices.Sort((lhs, rhs) =>
+            
+            MathUtil.QuickSort<int>(indices, (lhs, rhs) =>
             {
                 var lhsCenter = _obstacleVisibilitySegments[lhs].center;
                 var rhsCenter = _obstacleVisibilitySegments[rhs].center;
@@ -120,16 +121,16 @@ namespace RVO.JobSystem
                         return lhsCenter.z.CompareTo(rhsCenter.z);
                 }
             });
-
-            var split = indices.Count / 2;
-            if (split <= 0 || split >= indices.Count)
+            
+            var split = indices.Length / 2;
+            if (split <= 0 || split >= indices.Length)
             {
                 node.segmentIndices = indices.ToArray();
                 return node;
             }
 
-            var leftIndices = indices.GetRange(0, split);
-            var rightIndices = indices.GetRange(split, indices.Count - split);
+            var leftIndices = indices.Slice(0, split);
+            var rightIndices = indices.Slice(split, indices.Length - split);
 
             node.left = BuildObstacleVisibilityTree(leftIndices);
             node.right = BuildObstacleVisibilityTree(rightIndices);

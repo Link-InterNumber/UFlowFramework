@@ -48,7 +48,7 @@ namespace RVO.JobSystem
             UpdateDeletedAgents();
             EnsureNativeState();
 
-            if (_nativeAgents.Length == 0)
+            if (_agents.Count == 0)
             {
                 _globalTime += _timeStep;
                 return _globalTime;

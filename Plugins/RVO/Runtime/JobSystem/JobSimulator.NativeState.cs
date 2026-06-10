@@ -5,6 +5,7 @@ using KNN.Jobs;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using UnityEngine.Pool;
 
 namespace RVO.JobSystem
 {
@@ -128,9 +129,7 @@ namespace RVO.JobSystem
                 _nativeObstacleTreeNodes.Dispose();
             }
 
-            _nativeObstacles = _obstacles.Count > 0
-                ? new NativeArray<JobObstacleData>(_obstacles.Count, Allocator.Persistent)
-                : default;
+            _nativeObstacles = new NativeArray<JobObstacleData>(_obstacles.Count, Allocator.Persistent);
         }
 
         private void SyncNativeAgent(int index)
@@ -164,13 +163,13 @@ namespace RVO.JobSystem
                 return;
             }
 
-            var nodes = new List<JobObstacleTreeNode>(_nativeObstacles.Length * 2);
-            var indices = new List<int>(_nativeObstacles.Length);
-            for (var index = 0; index < _nativeObstacles.Length; index++)
+            var nodes = ListPool<JobObstacleTreeNode>.Get();
+            var indices = ListPool<int>.Get();
+            for (var i = 0; i < _nativeObstacles.Length; i++)
             {
-                if ((uint)_nativeObstacles[index].next < (uint)_nativeObstacles.Length)
+                if ((uint)_nativeObstacles[i].next < (uint)_nativeObstacles.Length)
                 {
-                    indices.Add(index);
+                    indices.Add(i);
                 }
             }
 
@@ -185,6 +184,8 @@ namespace RVO.JobSystem
             {
                 _nativeObstacleTreeNodes[index] = nodes[index];
             }
+            ListPool<JobObstacleTreeNode>.Release(nodes);
+            ListPool<int>.Release(indices);
         }
 
         private int BuildNativeObstacleTreeNode(List<int> indices, List<JobObstacleTreeNode> nodes)
@@ -327,7 +328,11 @@ namespace RVO.JobSystem
             if (_obstacleNeighborIndices.IsCreated) _obstacleNeighborIndices.Dispose();
             if (_obstacleNeighborDistances.IsCreated) _obstacleNeighborDistances.Dispose();
             if (_obstacleNeighborCounts.IsCreated) _obstacleNeighborCounts.Dispose();
-            if (_queryPositions.IsCreated) _queryPositions.Dispose();
+            if (_queryPositions.IsCreated)
+            {
+                _queryPositions.Dispose();
+                _agentKnnContainer.Dispose();
+            }
             if (_queryMaxNeighbors.IsCreated) _queryMaxNeighbors.Dispose();
             if (_queryNeighborDistances.IsCreated) _queryNeighborDistances.Dispose();
             if (_nativeObstacles.IsCreated) _nativeObstacles.Dispose();
@@ -338,7 +343,6 @@ namespace RVO.JobSystem
             if (_orcaLineCounts.IsCreated) _orcaLineCounts.Dispose();
             if (_obstacleOrcaLineCounts.IsCreated) _obstacleOrcaLineCounts.Dispose();
             if (_knnCandidateIndices.IsCreated) _knnCandidateIndices.Dispose();
-            if (_agentKnnContainer.Points.IsCreated) _agentKnnContainer.Dispose();
 
             _knnCandidateCapacity = 0;
         }

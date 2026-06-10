@@ -32,8 +32,9 @@ namespace RVO.JobSystem
         private void UpdateDeletedAgents()
         {
             var removeNoId = ListPool<ManagedAgentState>.Get();
-            foreach (var managedAgentState in _agents)
+            for (var i = 0; i < _agents.Count; i++)
             {
+                var managedAgentState = _agents[i];
                 if (managedAgentState.needDelete)
                 {
                     removeNoId.Add(managedAgentState);

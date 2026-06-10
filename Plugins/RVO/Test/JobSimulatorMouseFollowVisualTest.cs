@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Random = System.Random;
 
 namespace RVO.JobSystem
 {
@@ -42,6 +43,7 @@ namespace RVO.JobSystem
         private JobSimulator _simulator;
         private readonly List<int> _agentIds = new List<int>();
         private readonly List<Transform> _agentViews = new List<Transform>();
+        private Random _random;
 
         private void OnEnable()
         {
@@ -110,12 +112,14 @@ namespace RVO.JobSystem
                     points[2] = new Vector3(maxPos.x, maxPos.y, worldPlaneZ);
                     points[3] = new Vector3(minPos.x, maxPos.y, worldPlaneZ);
 
-                    _simulator.AddObstacle(points);
+                    var id = _simulator.AddObstacle(points);
+                    var mono = obstacle.gameObject.AddComponent<TestSimulatorRemoveObstacles>();
+                    mono.Setup(_simulator, id, worldPlaneZ);
                 }
 
                 _simulator.ProcessObstacles();
             }
-            var random = new System.Random(seed);
+            _random = new System.Random(seed);
             _agentIds.Capacity = agentCount;
             _agentViews.Capacity = agentCount;
             _simulator.ConfigAgentTypes(Enum.GetValues(typeof(TestAgentType)).Length); // Assuming 3 agent types for testing
@@ -129,10 +133,10 @@ namespace RVO.JobSystem
 
             for (var i = 0; i < agentCount; i++)
             {
-                var angle = (float)(random.NextDouble() * Mathf.PI * 2f);
-                var r = (float)(random.NextDouble() * spawnRadius);
+                var angle = (float)(_random.NextDouble() * Mathf.PI * 2f);
+                var r = (float)(_random.NextDouble() * spawnRadius);
                 var pos = new Vector3(Mathf.Cos(angle) * r, Mathf.Sin(angle) * r, worldPlaneZ);
-                var agentType = random.Next(0, 3); // Assuming 3 agent types for testing
+                var agentType = _random.Next(0, 3); // Assuming 3 agent types for testing
                 var id = _simulator.AddAgent(pos, neighborDist, maxNeighbors, timeHorizon, timeHorizonObst, radius, maxSpeed, Vector3.zero, agentType);
                 _agentIds.Add(id);
                 if (!showDisplay) continue;
@@ -167,7 +171,7 @@ namespace RVO.JobSystem
 
         private void TickSimulation()
         {
-            if (_simulator == null || _agentIds.Count == 0)
+            if (_simulator == null)
             {
                 return;
             }
@@ -177,6 +181,57 @@ namespace RVO.JobSystem
                 return;
             }
             var mouseWorld = GetMouseWorldPosition();
+
+            if (Mouse.current.scroll.ReadValue().y > 0f)
+            {
+                // 添加agent
+                var agentType = _random.Next(0, 3); // Assuming 3 agent types for testing
+                var id = _simulator.AddAgent(mouseWorld, neighborDist, maxNeighbors, timeHorizon, timeHorizonObst, radius, maxSpeed, Vector3.zero, agentType);
+                _agentIds.Add(id);
+                if (showDisplay)
+                {
+                    var parent = agentRoot != null ? agentRoot : transform;
+                    var view = Instantiate(agentPrefab, mouseWorld, Quaternion.identity, parent).transform;
+                    _agentViews.Add(view);
+                    var material = view.GetComponent<Renderer>().material;
+                    var colorType = (TestAgentType)agentType;
+                    switch (colorType)
+                    {
+                        case TestAgentType.Red:
+                            material.SetColor("_BaseColor", Color.red);
+                            break;
+                        case TestAgentType.Green:
+                            material.SetColor("_BaseColor", Color.green);
+                            break;
+                        case TestAgentType.Blue:
+                            material.SetColor("_BaseColor", Color.deepSkyBlue);
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+            }
+            else if(Mouse.current.scroll.ReadValue().y < 0)
+            {
+                // 删除agent
+                if (_agentIds.Count > 0)
+                {
+                    var lastId = _agentIds[_agentIds.Count - 1];
+                    _simulator.DelAgent(lastId);
+                    _agentIds.RemoveAt(_agentIds.Count - 1);
+                    if (showDisplay)
+                    {
+                        var lastView = _agentViews[_agentViews.Count - 1];
+                        if (lastView != null)
+                        {
+                            Destroy(lastView.gameObject);
+                        }
+                        _agentViews.RemoveAt(_agentViews.Count - 1);
+                    }
+                }
+            }
+            
+            
             for (var i = 0; i < _agentIds.Count; i++)
             {
                 var id = _agentIds[i];
@@ -244,6 +299,14 @@ namespace RVO.JobSystem
                 {
                     Destroy(_agentViews[i].gameObject);
                 }
+            }
+
+            foreach (var obstacle in obstacles)
+            {
+                if (!obstacle) continue;
+                var mono = obstacle.gameObject.GetComponent<TestSimulatorRemoveObstacles>();
+                if (mono)
+                    GameObject.Destroy(mono);
             }
 
             _agentViews.Clear();

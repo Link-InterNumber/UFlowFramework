@@ -2,7 +2,7 @@ using Unity.Mathematics;
 
 namespace RVO.JobSystem
 {
-    internal sealed class ManagedObstacleState
+    internal struct ManagedObstacleState
     {
         public int id;
         public float3 point;
