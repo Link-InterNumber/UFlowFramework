@@ -55,7 +55,7 @@ namespace PowerCellStudio
         
         public static int operator -(int v, RefCountBool i)
         {
-            return i.refCount - v;
+            return v - i.refCount;
         }
         
         public static RefCountBool operator --(RefCountBool i)
