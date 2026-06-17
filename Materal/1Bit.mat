@@ -67,12 +67,15 @@ Material:
     - _Dark: 0
     - _Density: 90.3
     - _DstBlend: 10
+    - _DstBlendAlpha: 10
     - _Edge: 0.95
     - _Light: 1
     - _QueueControl: 0
     - _QueueOffset: 0
     - _SrcBlend: 5
+    - _SrcBlendAlpha: 1
     - _Surface: 1
+    - _XRMotionVectorsPass: 1
     - _ZTest: 4
     - _ZWrite: 0
     - _ZWriteControl: 0

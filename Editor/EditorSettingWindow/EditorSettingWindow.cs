@@ -10,7 +10,7 @@ namespace PowerCellStudio
     public class EditorSettingWindow : EditorWindow
     {
         
-        [MenuItem("Tools/Editor Setting Window")]
+        [MenuItem("Tools/Editor Setting Window", false, 102)]
         static void OpenEditorSettingWindow()
         {
             EditorWindow.GetWindow<EditorSettingWindow>(false, "Editor Setting Window", true).Show();
@@ -30,7 +30,7 @@ namespace PowerCellStudio
         void OnEnable()
         {
             scrollPosition = Vector2.zero;
-            items = new List<IEditorSettingWindowItem>();
+            items = new List<IEditorSettingWindowItem>(); 
             _selectIndex = 0;
             
             var interfaceType = typeof(IEditorSettingWindowItem);

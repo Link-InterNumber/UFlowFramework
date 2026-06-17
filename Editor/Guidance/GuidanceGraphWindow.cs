@@ -8,7 +8,7 @@ namespace PowerCellStudio
 {
     public class GuidanceGraphWindow : EditorWindow
     {
-        [MenuItem("Tools/Guidance/Editor Graph")]
+        [MenuItem("Tools/UFlow/Guidance/Editor Graph")]
         public static void OpenWindow()
         {
             GuidanceGraphWindow window = GetWindow<GuidanceGraphWindow>();

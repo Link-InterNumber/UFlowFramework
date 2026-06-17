@@ -1,8 +1,8 @@
 Log Type,Generic Argument,Enable Log,Enable Warning,Enable Error,Log Color,Log Label,Warning Color,Warning Label,Error Color,Error Label,Exception Color,Exception Label
-Config,False,True,True,True,#ECF304FF,Log,#ECF304FF,Warning,#ECF304FF,Error,#ECF304FF,Exception
-App,False,True,True,True,#005BFFFF,Log,#005BFFFF,Warning,#005BFFFF,Error,#005BFFFF,Exception
-Asset,False,True,True,True,#FF8D15FF,Log,#FF8D15FF,Warning,#FF8D15FF,Error,#FF8D15FF,Exception
-UI,False,True,True,True,#FF6800FF,Log,#FF6800FF,Warning,#FF6800FF,Error,#FF6800FF,Exception
-NetWork,False,True,True,True,#009FFFFF,Log,#009FFFFF,Warning,#009FFFFF,Error,#009FFFFF,Exception
-Module,True,True,True,True,#FF00DFFF,Log,#FF00DFFF,Warning,#FF00DFFF,Error,#FF00DFFF,Exception
-Link,False,True,True,True,#00D1FFFF,|•'-'•) ✧,#00D1FFFF,(°⌓°),#00D1FFFF,(◓Д◒)✄╰⋃╯,#00D1FFFF,(✘Д✘๑ )
+Config,False,True,True,True,#ECF304FF,Log,#ECF304FF,Warning,#ECF304FF,Error,#ECF304FF,Exception
+App,False,True,True,True,#005BFFFF,Log,#005BFFFF,Warning,#005BFFFF,Error,#005BFFFF,Exception
+Asset,False,True,True,True,#FF8D15FF,Log,#FF8D15FF,Warning,#FF8D15FF,Error,#FF8D15FF,Exception
+UI,False,True,True,True,#FF6800FF,Log,#FF6800FF,Warning,#FF6800FF,Error,#FF6800FF,Exception
+NetWork,False,True,True,True,#009FFFFF,Log,#009FFFFF,Warning,#009FFFFF,Error,#009FFFFF,Exception
+Module,True,True,True,True,#FF00DFFF,Log,#FF00DFFF,Warning,#FF00DFFF,Error,#FF00DFFF,Exception
+Link,False,True,True,True,#00D1FFFF,|•'-'•) ✧,#00D1FFFF,(°⌓°),#00D1FFFF,(◓Д◒)✄╰⋃╯,#00D1FFFF,(✘Д✘๑ )

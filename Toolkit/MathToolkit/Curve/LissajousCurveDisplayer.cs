@@ -5,9 +5,10 @@ namespace PowerCellStudio
 {
     public class LissajousCurveDisplayer : MonoBehaviour
     {
+        public LissajousCurve curveData;
+        
 #if UNITY_EDITOR
         public Color debugColor = Color.magenta;
-        public LissajousCurve curveData;
         public bool useWorldPosition = false;
         [Min(365)] public int count = 365;
         

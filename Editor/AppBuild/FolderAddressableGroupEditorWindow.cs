@@ -6,6 +6,11 @@ using System.IO;
 using System;
 using UnityEngine.Serialization;
 using UnityEditor.AddressableAssets;
+#if UNITY_6000_2_OR_NEWER
+using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+#endif
 
 namespace PowerCellStudio
 {
@@ -140,7 +145,10 @@ namespace PowerCellStudio
             private float kRowHeights = 20f;
             private float kToggleWidth = 20f;
             private string[] _allGroupName;
+            private string[] _groupPopupOptions;
             private Dictionary<string, int> _groupNameToIndex = new Dictionary<string, int>();
+            private const string RemoveGroupOption = "<移除Group设置>";
+            private const string CreateGroupOption = "<新增Group...>";
 
             private UnityEditor.AddressableAssets.Settings.AddressableAssetSettings _settings;
 
@@ -165,24 +173,38 @@ namespace PowerCellStudio
                 _settings = AddressableAssetSettingsDefaultObject.GetSettings(true);
                 if (_settings != null)
                 {
-                    var tempList = new List<string>();
-                    tempList.Add(string.Empty);
-                    for (int i = 0; i < _settings.groups.Count; i++)
-                    {
-                        UnityEditor.AddressableAssets.Settings.AddressableAssetGroup group = _settings.groups[i];
-                        if (group != null && !string.IsNullOrEmpty(group.Name) && !group.Name.Equals("Built In Data"))
-                            tempList.Add(group.Name);
-                    }
-                    _allGroupName = tempList.ToArray();
-                    Array.Sort(_allGroupName);
-                    _groupNameToIndex.Clear();
-                    // _groupNameToIndex[string.Empty] = -1;
-                    for (int i = 0; i < _allGroupName.Length; i++)
-                    {
-                        _groupNameToIndex[_allGroupName[i]] = i;
-                    }
+                    RefreshGroupPopupOptions();
                 }
                 Reload();
+            }
+
+            private void RefreshGroupPopupOptions()
+            {
+                var tempList = new List<string>();
+                for (int i = 0; i < _settings.groups.Count; i++)
+                {
+                    UnityEditor.AddressableAssets.Settings.AddressableAssetGroup group = _settings.groups[i];
+                    if (group != null && !string.IsNullOrEmpty(group.Name) && !group.Name.Equals("Built In Data"))
+                        tempList.Add(group.Name);
+                }
+                tempList.Sort();
+                _allGroupName = new string[tempList.Count];
+                for (var i = 0; i < tempList.Count; i++)
+                {
+                    _allGroupName[i] = tempList[i];
+                }
+                
+                var popupOptions = new List<string> (){string.Empty};
+                popupOptions.AddRange(_allGroupName);
+                popupOptions.Add(RemoveGroupOption);
+                popupOptions.Add(CreateGroupOption);
+                _groupPopupOptions = popupOptions.ToArray();
+
+                _groupNameToIndex.Clear();
+                for (int i = 0; i < _allGroupName.Length; i++)
+                {
+                    _groupNameToIndex[_allGroupName[i]] = i + 1;
+                }
             }
 
             protected override TreeViewItem BuildRoot()
@@ -200,7 +222,7 @@ namespace PowerCellStudio
                 parent.children = new List<TreeViewItem>();
                 foreach (var dir in dirs)
                 {
-                    var adaptPath = AssetUtils.EditorCheckPath(dir);
+                    var adaptPath = dir.Replace('\\', '/');
                     var guid = AssetDatabase.AssetPathToGUID(dir);
                     var name = Path.GetFileName(dir);
                     var setGroup = GetFolderGroup(guid);
@@ -283,27 +305,15 @@ namespace PowerCellStudio
                     case 2:
                         {
                             int selected = _groupNameToIndex.TryGetValue(item.group, out var index) ? index : 0;
-                            int newSelected = EditorGUI.Popup(cellRect, selected, _allGroupName);
-                            var editValue = newSelected > -1 ? _allGroupName[newSelected] : string.Empty;
-                            if (editValue != item.group)
+                            int newSelected = EditorGUI.Popup(cellRect, selected, _groupPopupOptions);
+                            if (newSelected == _groupPopupOptions.Length - 1)
                             {
-                                var parent = item.parent as FolderTreeItem;
-                                if (parent != null && parent.inheritedGroup == editValue) break;
-                                if (string.IsNullOrEmpty(editValue))
-                                {
-                                    item.inheritedGroup = parent?.inheritedGroup ?? "";
-                                    AddParentGroupCount(item, -1);
-                                }
-                                else
-                                {
-                                    item.inheritedGroup = editValue;
-                                    AddParentGroupCount(item, 1);
-                                }
-
-                                item.group = editValue;
-                                ChangeInheritedGroupOfChildren(item, item.inheritedGroup);
-                                // editBuffer[item.id] = editValue;
+                                NewGroupNamePopup.Show(cellRect, newGroupName => CreateAndSelectGroup(item, newGroupName));
+                                break;
                             }
+
+                            var editValue = newSelected > 0 && newSelected < _groupPopupOptions.Length - 2 ? _groupPopupOptions[newSelected] : string.Empty;
+                            SetItemGroup(item, editValue);
 
                             break;
                         }
@@ -315,6 +325,75 @@ namespace PowerCellStudio
                         }
                     default:
                         break;
+                }
+            }
+
+            private void CreateAndSelectGroup(FolderTreeItem item, string groupName)
+            {
+                if (string.IsNullOrWhiteSpace(groupName)) return;
+                groupName = groupName.Trim();
+                if (groupName.Equals("Built In Data")) return;
+                if (_settings.FindGroup(groupName) == null)
+                {
+                    _settings.CreateGroup(groupName, false, false, false, null, null, null);
+                }
+                RefreshGroupPopupOptions();
+                SetItemGroup(item, groupName);
+                Repaint();
+            }
+
+            private void SetItemGroup(FolderTreeItem item, string editValue)
+            {
+                if (editValue == item.group) return;
+                var parent = item.parent as FolderTreeItem;
+                if (parent != null && !string.IsNullOrEmpty(parent.inheritedGroup) && parent.inheritedGroup == editValue)
+                {
+                    editValue = string.Empty;
+                }
+                var hadGroup = !string.IsNullOrEmpty(item.group);
+                var hasGroup = !string.IsNullOrEmpty(editValue);
+                if (string.IsNullOrEmpty(editValue))
+                {
+                    item.inheritedGroup = parent?.inheritedGroup ?? "";
+                }
+                else
+                {
+                    item.inheritedGroup = editValue;
+                }
+
+                if (hadGroup != hasGroup) AddParentGroupCount(item, hasGroup ? 1 : -1);
+
+                item.group = editValue;
+                ChangeInheritedGroupOfChildren(item, item.inheritedGroup);
+                // editBuffer[item.id] = editValue;
+            }
+
+            class NewGroupNamePopup : EditorWindow
+            {
+                private string _groupName = string.Empty;
+                private Action<string> _onConfirm;
+
+                public static void Show(Rect activatorRect, Action<string> onConfirm)
+                {
+                    var window = CreateInstance<NewGroupNamePopup>();
+                    window._onConfirm = onConfirm;
+                    window.ShowAsDropDown(activatorRect, new Vector2(260, 58));
+                    window.Focus();
+                }
+
+                private void OnGUI()
+                {
+                    EditorGUILayout.LabelField("新增Addressable Group");
+                    EditorGUILayout.BeginHorizontal();
+                    GUI.SetNextControlName("GroupNameField");
+                    _groupName = EditorGUILayout.TextField(_groupName);
+                    if (GUILayout.Button("确定", GUILayout.Width(50)))
+                    {
+                        _onConfirm?.Invoke(_groupName);
+                        Close();
+                    }
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUI.FocusTextInControl("GroupNameField");
                 }
             }
 
@@ -375,8 +454,8 @@ namespace PowerCellStudio
                     var group = _settings.FindGroup(groupName);
                     if (group == null)
                     {
+                        _settings.CreateGroup(groupName, false, false, false, null, null, null);
                         return;
-                        // group = _settings.CreateGroup(groupName, false, false, false, null, null, null);
                     }
                     var entry = _settings.CreateOrMoveEntry(AssetDatabase.AssetPathToGUID(item.path), group);
                     entry.address = item.path;

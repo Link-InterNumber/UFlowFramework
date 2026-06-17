@@ -5,7 +5,7 @@ using System.IO;
 
 public class SmoothNormalsProcessor : EditorWindow
 {
-   [MenuItem("Tools/Mesh/Smooth Normals for Outline")]
+   [MenuItem("Tools/UFlow/Mesh/Smooth Normals for Outline")]
    static void Init()
    {
       SmoothNormalsProcessor window = (SmoothNormalsProcessor)EditorWindow.GetWindow(typeof(SmoothNormalsProcessor));

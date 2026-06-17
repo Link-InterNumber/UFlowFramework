@@ -124,12 +124,12 @@ namespace RVO.JobSystem
             _agentViews.Capacity = agentCount;
             _simulator.ConfigAgentTypes(Enum.GetValues(typeof(TestAgentType)).Length); // Assuming 3 agent types for testing
 
-            _simulator.ConfigAgentExtraRadii((int)TestAgentType.Red, (int)TestAgentType.Green, 0.7f);
-            _simulator.ConfigAgentExtraRadii((int)TestAgentType.Red, (int)TestAgentType.Blue, 2f);
-            _simulator.ConfigAgentExtraRadii((int)TestAgentType.Green, (int)TestAgentType.Blue, 1.5f);
-            _simulator.ConfigAgentExtraRadii((int)TestAgentType.Red, (int)TestAgentType.Red, 0.5f);
-            _simulator.ConfigAgentExtraRadii((int)TestAgentType.Blue, (int)TestAgentType.Red, 0.8f);
-            _simulator.ConfigAgentExtraRadii((int)TestAgentType.Blue, (int)TestAgentType.Green, 1.5f);
+            // _simulator.ConfigAgentExtraRadii((int)TestAgentType.Red, (int)TestAgentType.Green, 0.7f);
+            // _simulator.ConfigAgentExtraRadii((int)TestAgentType.Red, (int)TestAgentType.Blue, 2f);
+            // _simulator.ConfigAgentExtraRadii((int)TestAgentType.Green, (int)TestAgentType.Blue, 1.5f);
+            // _simulator.ConfigAgentExtraRadii((int)TestAgentType.Red, (int)TestAgentType.Red, 0.5f);
+            // _simulator.ConfigAgentExtraRadii((int)TestAgentType.Blue, (int)TestAgentType.Red, 0.8f);
+            // _simulator.ConfigAgentExtraRadii((int)TestAgentType.Blue, (int)TestAgentType.Green, 1.5f);
 
             for (var i = 0; i < agentCount; i++)
             {
@@ -259,9 +259,10 @@ namespace RVO.JobSystem
             for (var i = 0; i < _agentIds.Count; i++)
             {
                 var id = _agentIds[i];
-                var pos = _simulator.GetAgentPosition(id);
-                pos.z = worldPlaneZ;
-                _agentViews[i].position = pos;
+                var velocity = _simulator.GetAgentVelocity(id);
+                
+                // pos.z = worldPlaneZ;
+                _agentViews[i].position = velocity * timeStep + _agentViews[i].position;
             }
         }
 

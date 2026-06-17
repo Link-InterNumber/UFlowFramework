@@ -77,6 +77,7 @@ Material:
     - _DissolveScale: 1
     - _DissolveValue: 0
     - _DstBlend: 10
+    - _DstBlendAlpha: 10
     - _EdgeSize: 0.487
     - _Matallic: 1
     - _OutSize: 0.22
@@ -86,9 +87,11 @@ Material:
     - _Scale: 11.5
     - _Smoothness: 0.479
     - _SrcBlend: 1
+    - _SrcBlendAlpha: 1
     - _Surface: 1
     - _UseTex: 1
     - _WorkflowMode: 0
+    - _XRMotionVectorsPass: 1
     - _ZTest: 4
     - _ZWrite: 1
     - _ZWriteControl: 1

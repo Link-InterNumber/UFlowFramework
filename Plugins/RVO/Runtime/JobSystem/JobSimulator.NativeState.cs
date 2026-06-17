@@ -20,7 +20,7 @@ namespace RVO.JobSystem
                 agent.position = native.position;
                 agent.velocity = native.velocity;
             }
-            ClearDynamicAgentDirty();
+            // ClearDynamicAgentDirty();
         }
 
         private void EnsureNativeState()

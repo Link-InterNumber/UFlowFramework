@@ -13,7 +13,7 @@ public class ThicknessMapGenerator : EditorWindow
     private bool showPreview = true;
     private Texture2D previewTexture;
     
-    [MenuItem("Tools/Mesh/Generate Thickness Map")]
+    [MenuItem("Tools/UFlow/Mesh/Generate Thickness Map")]
     public static void ShowWindow()
     {
         GetWindow<ThicknessMapGenerator>("Thickness Map Generator");

@@ -25,7 +25,7 @@ namespace PowerCellStudio
 
         #endregion
 
-        [MenuItem("Tools/Act/Act Editor")]
+        [MenuItem("Tools/UFlow/Act/Act Editor")]
         public static void Open()
         {
             GetWindow<ActEditorWindow>("Act Editor");

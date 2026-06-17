@@ -135,6 +135,7 @@ namespace RVO.JobSystem
             }
             _integrateHandle = integrateHandle;
             _stepped = true;
+            CheckJobCompletion();
             return _globalTime;
         }
 

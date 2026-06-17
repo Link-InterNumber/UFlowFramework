@@ -271,7 +271,10 @@ namespace PowerCellStudio
                         if (editValue != item.bundle)
                         {
                             var parent = item.parent as FolderTreeItem;
-                            if (parent != null && parent.inheritedBundle == editValue) break;
+                            if (parent != null && !string.IsNullOrEmpty(parent.inheritedBundle) && parent.inheritedBundle == editValue) 
+                            {
+                                editValue = string.Empty;
+                            }
                             if (string.IsNullOrEmpty(editValue))
                             {
                                 item.inheritedBundle = parent?.inheritedBundle ?? "";
