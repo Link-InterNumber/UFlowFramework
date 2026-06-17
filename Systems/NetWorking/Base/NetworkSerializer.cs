@@ -35,14 +35,14 @@ namespace PowerCellStudio
             // if (bytesRead != msgIdSize)
             if (size < msgIdSize)
             {
-                NetWorkLog.LogError("Incomplete message ID");
+                NetWorkLogger.LogError("Incomplete message ID");
                 messageType = null;
                 return null;
             }
             int msgId = BitConverter.ToInt32(data, 0);
             messageType = messageIdMap.IdToType(msgId);
             if (messageType == null) {
-                NetWorkLog.LogError($"未知消息ID: {msgId}");
+                NetWorkLogger.LogError($"未知消息ID: {msgId}");
                 return null;
             }
             // 直接用原始data，跳过前4字节，避免分配和拷贝

@@ -15,7 +15,7 @@ namespace PowerCellStudio
             _configProvider = configProvider;
             if (_configProvider == null)
             {
-                LinkLog.LogError("CustomLocalizationProvider requires a valid ILocalizationConfigProvider.");
+                LinkLogger.LogError("CustomLocalizationProvider requires a valid ILocalizationConfigProvider.");
             }
         }
 

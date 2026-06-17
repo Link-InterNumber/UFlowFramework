@@ -56,7 +56,7 @@ namespace PowerCellStudio
         {
             if (startPos.Equals(endPos))
             {
-                LinkLog.LogError("Parabola2D start position can not be same to end position!");
+                LinkLogger.LogError("Parabola2D start position can not be same to end position!");
                 return null;
             }
             return new Parabola2D(startPos, endPos, heightRelateTo2Point);

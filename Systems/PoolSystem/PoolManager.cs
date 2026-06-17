@@ -68,7 +68,7 @@ namespace PowerCellStudio
         /// </summary>
         public void OnGameStart()
         {
-            ModuleLog.Log<PoolManager>("Module Init!");
+            ModuleLogger.Log<PoolManager>("Module Init!");
         }
         
         #region IPoolable
@@ -136,7 +136,7 @@ namespace PowerCellStudio
             where T : class, IPoolable
         {
             var obj = GetGroup(groupName).Get<T>();
-            if (obj == null) ModuleLog.LogError<PoolManager>($"{typeof(T).Name} is null, {typeof(T).Name} was unregistered, groupName: " + groupName);
+            if (obj == null) ModuleLogger.LogError<PoolManager>($"{typeof(T).Name} is null, {typeof(T).Name} was unregistered, groupName: " + groupName);
             return obj;
         }
         
@@ -219,7 +219,7 @@ namespace PowerCellStudio
         public GameObject GetGameObject(string path, PoolGroupName groupName = PoolGroupName.Default)
         {
             var go = GetGroup(groupName).GetGameObject(path);
-            if (go == null) ModuleLog.LogError<PoolManager>("GameObject is null, path was unregistered, path: " + path + ", groupName: " + groupName);
+            if (go == null) ModuleLogger.LogError<PoolManager>("GameObject is null, path was unregistered, path: " + path + ", groupName: " + groupName);
             return go;
         }
         

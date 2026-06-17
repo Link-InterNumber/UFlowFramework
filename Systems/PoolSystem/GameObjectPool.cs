@@ -61,7 +61,7 @@ namespace PowerCellStudio
             {
                 _loadStatus = AssetLoadStatus.Unload;
                 AssetUtils.DeSpawnLoader(_assetLoader);
-                LinkLog.LogError($"Pool init failed, path: {path}");
+                LinkLogger.LogError($"Pool init failed, path: {path}");
                 yield break;
             }
 

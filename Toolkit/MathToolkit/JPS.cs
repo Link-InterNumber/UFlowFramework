@@ -49,7 +49,7 @@ namespace PowerCellStudio
                 var pos = new Vector2Int(value.x, value.y);
                 if (!map.Contains(pos))
                 {
-                    LinkLog.Log("设置错误");
+                    LinkLogger.Log("设置错误");
                 }
                 else
                 {
@@ -119,7 +119,7 @@ namespace PowerCellStudio
         {
             if (dir.magnitude == 0)
             {
-                LinkLog.Log("Error!");
+                LinkLogger.Log("Error!");
                 return null;
             }
 
@@ -227,7 +227,7 @@ namespace PowerCellStudio
         {
             if (dir.magnitude == 0)
             {
-                LinkLog.Log("Error");
+                LinkLogger.Log("Error");
                 return null;
             }
 

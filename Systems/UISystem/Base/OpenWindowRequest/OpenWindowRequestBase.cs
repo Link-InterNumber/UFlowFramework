@@ -53,7 +53,7 @@ namespace PowerCellStudio
             _assetLoadStatus = AssetLoadStatus.Loading;
             if (_windowPath == null)
             {
-                UILog.LogError($"{_windowType.Name}没有配置预制体路径");
+                UILogger.LogError($"{_windowType.Name}没有配置预制体路径");
                 _assetLoadStatus = AssetLoadStatus.Loaded;
                 return;
             }
@@ -69,7 +69,7 @@ namespace PowerCellStudio
             var ui = GetWindowInstance(_windowType, go);
             if (ui == null)
             {
-                UILog.LogError($"{_windowType.Name}实例化失败");
+                UILogger.LogError($"{_windowType.Name}实例化失败");
                 ApplicationManager.instance.DelayedNextFrame(() =>
                 {
                     GameObject.Destroy(go);
@@ -81,7 +81,7 @@ namespace PowerCellStudio
             ui.prefabPath = _windowPath;
             if (!_parent.transform || _parent.windowRequests == null)
             {
-                UILog.LogError($"正在打开【{_windowType.Name}】但【{_parent.GetType().Name}】已经被销毁");
+                UILogger.LogError($"正在打开【{_windowType.Name}】但【{_parent.GetType().Name}】已经被销毁");
                 ApplicationManager.instance.DelayedNextFrame(() =>
                 {
                     GameObject.Destroy(go);

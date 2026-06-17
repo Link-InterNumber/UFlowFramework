@@ -28,23 +28,23 @@ namespace PowerCellStudio
         {
             if (assetLoader == null)
             {
-                AssetLog.LogError("AssetLoader is null, cannot prepare assets.");
+                AssetLogger.LogError("AssetLoader is null, cannot prepare assets.");
                 return;
             }
             if (labels == null)
             {
-                AssetLog.LogError("Labels array is null, cannot prepare assets.");
+                AssetLogger.LogError("Labels array is null, cannot prepare assets.");
                 return;
             }
             if (labels.Count == 0)
             {
-                AssetLog.LogWarning("Labels array is empty, nothing to prepare.");
+                AssetLogger.LogWarning("Labels array is empty, nothing to prepare.");
                 onComplete?.Invoke();
                 return;
             }
             if (_assetLoader != null)
             {
-                AssetLog.LogError("This AssetPreLoader is already in use, cannot prepare assets.");
+                AssetLogger.LogError("This AssetPreLoader is already in use, cannot prepare assets.");
                 return;
             }
             _assetLoader = assetLoader;

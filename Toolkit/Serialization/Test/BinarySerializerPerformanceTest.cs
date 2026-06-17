@@ -52,7 +52,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"SerializeToBinary failed: {e.InnerException}");
+                LinkLogger.LogError($"SerializeToBinary failed: {e.InnerException}");
                 return Array.Empty<byte>();
             }
         }
@@ -86,7 +86,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"DeserializeFromBinary failed: {e.InnerException}");
+                LinkLogger.LogError($"DeserializeFromBinary failed: {e.InnerException}");
                 return default;
             }
         }

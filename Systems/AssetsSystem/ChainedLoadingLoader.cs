@@ -39,7 +39,7 @@ namespace PowerCellStudio
                 () =>
                 {
                     onFail?.Invoke();
-                    AssetLog.LogError($"Chained Loading failed at loading asset at address: {address}");
+                    AssetLogger.LogError($"Chained Loading failed at loading asset at address: {address}");
                     TriggerNext();
                 });
             });

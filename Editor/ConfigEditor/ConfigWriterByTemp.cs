@@ -56,7 +56,7 @@ namespace PowerCellStudio
         {
             if (!File.Exists(DataTemplatePath))
             {
-                ConfigLog.LogError($"找不到数据类模板: {DataTemplatePath}");
+                ConfigLogger.LogError($"找不到数据类模板: {DataTemplatePath}");
                 return;
             }
 
@@ -136,7 +136,7 @@ namespace PowerCellStudio
         {
             if (!File.Exists(EditorTemplatePath))
             {
-                ConfigLog.LogError($"找不到编辑器类模板: {EditorTemplatePath}");
+                ConfigLogger.LogError($"找不到编辑器类模板: {EditorTemplatePath}");
                 return;
             }
 

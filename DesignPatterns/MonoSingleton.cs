@@ -16,14 +16,14 @@ namespace PowerCellStudio
             if (!_instance)
             {
                 _instance = this as T;
-                ModuleLog.Log<T>($"{typeof(T).Name} Spwaned, GameObject Name: {gameObject.name}.");
+                ModuleLogger.Log<T>($"{typeof(T).Name} Spwaned, GameObject Name: {gameObject.name}.");
                 _isExist = true;
             }
             else if (_instance.GetInstanceID() != GetInstanceID())
             {
                 if(isExist)
                 {
-                    ModuleLog.LogError<T>(
+                    ModuleLogger.LogError<T>(
                         $"Delete redundant Singleton: {typeof(T).Name} \nGameObject Name: {gameObject.name}.");
                     Destroy(this);
                 }
@@ -31,7 +31,7 @@ namespace PowerCellStudio
                 {
                     Destroy(_instance);
                     _instance = this as T;
-                    ModuleLog.Log<T>($"{typeof(T).Name} Spwaned, GameObject Name: {gameObject.name}.");
+                    ModuleLogger.Log<T>($"{typeof(T).Name} Spwaned, GameObject Name: {gameObject.name}.");
                     _isExist = true;
                 }
             }

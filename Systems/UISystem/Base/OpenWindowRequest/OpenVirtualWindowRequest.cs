@@ -33,7 +33,7 @@ namespace PowerCellStudio
             var windowInstance = instanceWindow.GetComponent(_bindWindowType) as UIWindow;
             if (windowInstance == null)
             {
-                UILog.LogError($"{_bindWindowType.Name}没有挂载在预制体上");
+                UILogger.LogError($"{_bindWindowType.Name}没有挂载在预制体上");
                 return null;
             }
             instanceWindow.name = $"{instanceWindow.name}({windowType.Name})";

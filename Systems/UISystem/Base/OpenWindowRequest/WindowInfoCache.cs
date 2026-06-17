@@ -47,7 +47,7 @@ namespace PowerCellStudio
             }
             if (virtualWindowType == null)
             {
-                UILog.LogError($"{windowType.Name}不是UIVirtualWindow的子类");
+                UILogger.LogError($"{windowType.Name}不是UIVirtualWindow的子类");
                 return null;
             }
             var bindWindowType = virtualWindowType.GetGenericArguments()[0];

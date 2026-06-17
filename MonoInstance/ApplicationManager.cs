@@ -103,7 +103,7 @@ namespace PowerCellStudio
             enableWarning = false;
             enableError = false;
 #endif
-            AppLog.Log("AppStart");
+            AppLogger.Log("AppStart");
         }
 
         protected override void Awake()

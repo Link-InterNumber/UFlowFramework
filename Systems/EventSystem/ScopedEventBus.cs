@@ -14,7 +14,7 @@ namespace PowerCellStudio
                 var linkEvent = e as LinkEvent;
                 if (linkEvent == null)
                 {
-                    ModuleLog.LogError($"Event with id {eventId} is not of type LinkEvent");
+                    ModuleLogger.LogError($"Event with id {eventId} is not of type LinkEvent");
                     return;
                 }
                 linkEvent.AddListener(action);
@@ -34,7 +34,7 @@ namespace PowerCellStudio
                 var linkEvent = e as LinkEvent<T>;
                 if (linkEvent == null)
                 {
-                    ModuleLog.LogError($"Event with id {eventId} is not of type LinkEvent<{typeof(T).Name}>");
+                    ModuleLogger.LogError($"Event with id {eventId} is not of type LinkEvent<{typeof(T).Name}>");
                     return;
                 }
                 linkEvent.AddListener(action);
@@ -54,7 +54,7 @@ namespace PowerCellStudio
                 var linkEvent = e as LinkEvent<T, TK>;
                 if (linkEvent == null)
                 {
-                    ModuleLog.LogError($"Event with id {eventId} is not of type LinkEvent<{typeof(T).Name}, {typeof(TK).Name}>");
+                    ModuleLogger.LogError($"Event with id {eventId} is not of type LinkEvent<{typeof(T).Name}, {typeof(TK).Name}>");
                     return;
                 }
                 linkEvent.AddListener(action);
@@ -74,7 +74,7 @@ namespace PowerCellStudio
                 var linkEvent = e as LinkEvent<T, TK, TL>;
                 if (linkEvent == null)
                 {
-                    ModuleLog.LogError($"Event with id {eventId} is not of type LinkEvent<{typeof(T).Name}, {typeof(TK).Name}, {typeof(TL).Name}>");
+                    ModuleLogger.LogError($"Event with id {eventId} is not of type LinkEvent<{typeof(T).Name}, {typeof(TK).Name}, {typeof(TL).Name}>");
                     return;
                 }
                 linkEvent.AddListener(action);
@@ -106,7 +106,7 @@ namespace PowerCellStudio
                 var linkEvent = e as LinkEvent;
                 if (linkEvent == null)
                 {
-                    ModuleLog.LogError($"Event with id {eventId} is not of type LinkEvent");
+                    ModuleLogger.LogError($"Event with id {eventId} is not of type LinkEvent");
                     return;
                 }
                 linkEvent.RemoveListener(action);
@@ -120,7 +120,7 @@ namespace PowerCellStudio
                 var linkEvent = e as LinkEvent<T>;
                 if (linkEvent == null)
                 {
-                    ModuleLog.LogError($"Event with id {eventId} is not of type LinkEvent<{typeof(T).Name}>");
+                    ModuleLogger.LogError($"Event with id {eventId} is not of type LinkEvent<{typeof(T).Name}>");
                     return;
                 }
                 linkEvent.RemoveListener(action);
@@ -134,7 +134,7 @@ namespace PowerCellStudio
                 var linkEvent = e as LinkEvent<T, TK>;
                 if (linkEvent == null)
                 {
-                    ModuleLog.LogError($"Event with id {eventId} is not of type LinkEvent<{typeof(T).Name}, {typeof(TK).Name}>");
+                    ModuleLogger.LogError($"Event with id {eventId} is not of type LinkEvent<{typeof(T).Name}, {typeof(TK).Name}>");
                     return;
                 }
                 linkEvent.RemoveListener(action);
@@ -148,7 +148,7 @@ namespace PowerCellStudio
                 var linkEvent = e as LinkEvent<T, TK, TL>;
                 if (linkEvent == null)
                 {
-                    ModuleLog.LogError($"Event with id {eventId} is not of type LinkEvent<{typeof(T).Name}, {typeof(TK).Name}, {typeof(TL).Name}>");
+                    ModuleLogger.LogError($"Event with id {eventId} is not of type LinkEvent<{typeof(T).Name}, {typeof(TK).Name}, {typeof(TL).Name}>");
                     return;
                 }
                 linkEvent.RemoveListener(action);
@@ -175,14 +175,14 @@ namespace PowerCellStudio
                 var linkEvent = e as LinkEvent;
                 if (linkEvent == null)
                 {
-                    ModuleLog.LogError($"Event with id {eventId} is not of type LinkEvent");
+                    ModuleLogger.LogError($"Event with id {eventId} is not of type LinkEvent");
                     return;
                 }
                 linkEvent.Invoke();
             }
             else
             {
-                ModuleLog.LogError($"No event found with id {eventId} to invoke");
+                ModuleLogger.LogError($"No event found with id {eventId} to invoke");
             }
         }
 
@@ -193,14 +193,14 @@ namespace PowerCellStudio
                 var linkEvent = e as IInvolke<T>;
                 if (linkEvent == null)
                 {
-                    ModuleLog.LogError($"Event with id {eventId} is not of type IInvolke<{typeof(T).Name}>");
+                    ModuleLogger.LogError($"Event with id {eventId} is not of type IInvolke<{typeof(T).Name}>");
                     return;
                 }
                 linkEvent.Invoke(data);
             }
             else
             {
-                ModuleLog.LogError($"No event found with id {eventId} to invoke");
+                ModuleLogger.LogError($"No event found with id {eventId} to invoke");
             }
         }
 
@@ -211,14 +211,14 @@ namespace PowerCellStudio
                 var linkEvent = e as IInvolke<T, TK>;
                 if (linkEvent == null)
                 {
-                    ModuleLog.LogError($"Event with id {eventId} is not of type IInvolke<{typeof(T).Name}, {typeof(TK).Name}>");
+                    ModuleLogger.LogError($"Event with id {eventId} is not of type IInvolke<{typeof(T).Name}, {typeof(TK).Name}>");
                     return;
                 }
                 linkEvent.Invoke(data, data2);
             }
             else
             {
-                ModuleLog.LogError($"No event found with id {eventId} to invoke");
+                ModuleLogger.LogError($"No event found with id {eventId} to invoke");
             }
         }
 
@@ -229,14 +229,14 @@ namespace PowerCellStudio
                 var linkEvent = e as IInvolke<T, TK, TL>;
                 if (linkEvent == null)
                 {
-                    ModuleLog.LogError($"Event with id {eventId} is not of type IInvolke<{typeof(T).Name}, {typeof(TK).Name}, {typeof(TL).Name}>");
+                    ModuleLogger.LogError($"Event with id {eventId} is not of type IInvolke<{typeof(T).Name}, {typeof(TK).Name}, {typeof(TL).Name}>");
                     return;
                 }
                 linkEvent.Invoke(data, data2, data3);
             }
             else
             {
-                ModuleLog.LogError($"No event found with id {eventId} to invoke");
+                ModuleLogger.LogError($"No event found with id {eventId} to invoke");
             }
         }
 
@@ -283,7 +283,7 @@ namespace PowerCellStudio
                         Invoke(info.eventId, info.parameters[0], info.parameters[1], info.parameters[2]);
                         break;
                     default:
-                        ModuleLog.LogError($"Unsupported parameter count {info.parameters.Length} for event id {info.eventId}");
+                        ModuleLogger.LogError($"Unsupported parameter count {info.parameters.Length} for event id {info.eventId}");
                         break;
                 }
             }
@@ -329,7 +329,7 @@ namespace PowerCellStudio
                         Invoke(info.eventId, info.parameters[0], info.parameters[1], info.parameters[2]);
                         break;
                     default:
-                        ModuleLog.LogError($"Unsupported parameter count {info.parameters.Length} for event id {info.eventId}");
+                        ModuleLogger.LogError($"Unsupported parameter count {info.parameters.Length} for event id {info.eventId}");
                         break;
                 }
             }

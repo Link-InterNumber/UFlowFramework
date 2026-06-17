@@ -56,19 +56,19 @@ namespace PowerCellStudio
             // yield return checkForCatalogUpdates;
             if (checkForCatalogUpdates.Status != AsyncOperationStatus.Succeeded)
             {
-                AssetLog.LogWarning("Check Addressables Asset Fail!");
+                AssetLogger.LogWarning("Check Addressables Asset Fail!");
             }
             else
             {
                 var catLogs = checkForCatalogUpdates.Result;
                 if (catLogs == null || catLogs.Count <= 0)
                 {
-                    AssetLog.Log("Check Addressables Asset Succeeded! Assets Is In Last Version");
+                    AssetLogger.Log("Check Addressables Asset Succeeded! Assets Is In Last Version");
                 }
                 else
                 {
                     initState = AssetInitState.DownloadTheUpdateFile;
-                    AssetLog.Log("Check Addressables Asset Succeeded! Wait For Update");
+                    AssetLogger.Log("Check Addressables Asset Succeeded! Wait For Update");
                     var updateHandle = Addressables.UpdateCatalogs(catLogs, false);
                     yield return updateHandle;
                     var resourceList = updateHandle.Result;
@@ -90,11 +90,11 @@ namespace PowerCellStudio
                             // yield return downloadDependencies;
                             if (downloadDependencies.Status == AsyncOperationStatus.Succeeded)
                             {
-                                AssetLog.Log($"Addressables Download {resourceLocator.LocatorId} Completed!");
+                                AssetLogger.Log($"Addressables Download {resourceLocator.LocatorId} Completed!");
                             }
                             else
                             {
-                                AssetLog.LogWarning($"Addressables Download {resourceLocator.LocatorId} Fail!");
+                                AssetLogger.LogWarning($"Addressables Download {resourceLocator.LocatorId} Fail!");
                             }
 
                             Addressables.Release(downloadDependencies);
@@ -103,7 +103,7 @@ namespace PowerCellStudio
                     }
 
                     Addressables.Release(updateHandle);
-                    AssetLog.Log("Addressables Asset Update Completed!");
+                    AssetLogger.Log("Addressables Asset Update Completed!");
                 }
             }
             Addressables.Release(handle);

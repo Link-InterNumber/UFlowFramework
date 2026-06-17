@@ -103,7 +103,7 @@ namespace PowerCellStudio
             if (other == null || other.index == this.index || !other.spawned) return;
             if (other.IsAnyLoading())
             {
-                AssetLog.LogError($"Trying to merge loader {other.index} into {this.index} while it still has loading assets. This may cause unexpected behavior.");
+                AssetLogger.LogError($"Trying to merge loader {other.index} into {this.index} while it still has loading assets. This may cause unexpected behavior.");
                 return;
             }
             if (other is BundleAssetLoader otherLoader)
@@ -127,7 +127,7 @@ namespace PowerCellStudio
         {
             if(!asset)
             {
-                AssetLog.LogError($"Can not Find Asset, path:[{address}]");
+                AssetLogger.LogError($"Can not Find Asset, path:[{address}]");
                 return;
             }
             AddRef(address);
@@ -154,7 +154,7 @@ namespace PowerCellStudio
             
             if(!asset)
             {
-                AssetLog.LogError($"Can not Find Asset, path:<{address}>");
+                AssetLogger.LogError($"Can not Find Asset, path:<{address}>");
                 onLoadFailed?.Invoke();
                 return null;
             }
@@ -314,7 +314,7 @@ namespace PowerCellStudio
                 string[] assetPaths = AssetDatabase.GetAssetPathsFromAssetBundle(label);
                 if (assetPaths == null || assetPaths.Length == 0)
                 {
-                    AssetLog.LogError($"No assets found in bundle with label {label}");
+                    AssetLogger.LogError($"No assets found in bundle with label {label}");
                     onFail?.Invoke();
                     return;
                 }

@@ -23,7 +23,7 @@ namespace PowerCellStudio
                 Destroy(_instance.gameObject);
             }
             _instance = this as T;
-            ModuleLog.Log<T>($"{typeof(T).Name} Spwaned, GameObject Name: {gameObject.name}.");
+            ModuleLogger.Log<T>($"{typeof(T).Name} Spwaned, GameObject Name: {gameObject.name}.");
             _isExist = true;
         }
 
@@ -38,7 +38,7 @@ namespace PowerCellStudio
             StopAllCoroutines();
             if (_instance && _instance.GetInstanceID() == GetInstanceID())
             {
-                ModuleLog.Log<T>($"{typeof(T).Name} Deinited, GameObject Name: {gameObject.name}.");
+                ModuleLogger.Log<T>($"{typeof(T).Name} Deinited, GameObject Name: {gameObject.name}.");
                 _instance = null;
                 _isExist = false;
             }

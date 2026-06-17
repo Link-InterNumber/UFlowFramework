@@ -216,13 +216,13 @@ namespace PowerCellStudio
             if (roadMap == null) return;
             if (roadMap.entryFlow == null)
             {
-                ModuleLog.LogError<FlowManager>("roadMap has no entryFlow!");
+                ModuleLogger.LogError<FlowManager>("roadMap has no entryFlow!");
                 return;
             }
 
             if (roadMap.context == null)
             {
-                ModuleLog.LogError<FlowManager>("roadMap has no context!");
+                ModuleLogger.LogError<FlowManager>("roadMap has no context!");
                 return;
             }
             var processor = GetTransitionProcessor();

@@ -35,7 +35,7 @@ namespace PowerCellStudio
                     yield return request.SendWebRequest();
                     if (request.result != UnityWebRequest.Result.Success)
                     {
-                        AssetLog.LogError(
+                        AssetLogger.LogError(
                             "AssetsBundleManager initialization failed for coping AssetBundleMap file to persistentDataPath");
                         yield break;
                     }
@@ -46,7 +46,7 @@ namespace PowerCellStudio
                     yield return request.SendWebRequest();
                     if (request.result != UnityWebRequest.Result.Success)
                     {
-                        AssetLog.LogError("AssetsBundleManager initialization failed for coping AssetBundleMap file to persistentDataPath");
+                        AssetLogger.LogError("AssetsBundleManager initialization failed for coping AssetBundleMap file to persistentDataPath");
                         yield break;
                     }
                 }
@@ -77,7 +77,7 @@ namespace PowerCellStudio
             var assetData = _assetPathMap.Get(path, null);
             if (assetData == default)
             {
-                AssetLog.LogError($"Can not find Bundle Name of [{path}]");
+                AssetLogger.LogError($"Can not find Bundle Name of [{path}]");
                 return string.Empty;
             }
             return assetData.assetBundle;

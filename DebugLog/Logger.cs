@@ -1,9 +1,11 @@
 using System;
+using System.Diagnostics;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace PowerCellStudio
 {
-    public static class ConfigLog
+    public static class ConfigLogger
     {
         public static bool enableLog = true;
         public static bool enableWarning = true;
@@ -37,7 +39,7 @@ namespace PowerCellStudio
         }
     }
 
-    public static class AppLog
+    public static class AppLogger
     {
         public static bool enableLog = true;
         public static bool enableWarning = true;
@@ -71,7 +73,7 @@ namespace PowerCellStudio
         }
     }
 
-    public static class AssetLog
+    public static class AssetLogger
     {
         public static bool enableLog = true;
         public static bool enableWarning = true;
@@ -105,7 +107,7 @@ namespace PowerCellStudio
         }
     }
 
-    public static class UILog
+    public static class UILogger
     {
         public static bool enableLog = true;
         public static bool enableWarning = true;
@@ -139,7 +141,7 @@ namespace PowerCellStudio
         }
     }
 
-    public static class NetWorkLog
+    public static class NetWorkLogger
     {
         public static bool enableLog = true;
         public static bool enableWarning = true;
@@ -173,7 +175,7 @@ namespace PowerCellStudio
         }
     }
 
-    public static class ModuleLog
+    public static class ModuleLogger
     {
         public static bool enableLog = true;
         public static bool enableWarning = true;
@@ -235,7 +237,7 @@ namespace PowerCellStudio
         }
     }
 
-    public static class LinkLog
+    public static class LinkLogger
     {
         public static bool enableLog = true;
         public static bool enableWarning = true;

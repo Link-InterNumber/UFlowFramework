@@ -31,12 +31,12 @@ namespace PowerCellStudio
                 {
                     File.WriteAllText(filePath, versionedJson);
                 }
-                LinkLog.Log($"Save a Json at {filePath}");
+                LinkLogger.Log($"Save a Json at {filePath}");
                 return true;
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"Failed to save json data: {e.Message}");
+                LinkLogger.LogError($"Failed to save json data: {e.Message}");
                 return false;
             }
         }
@@ -75,12 +75,12 @@ namespace PowerCellStudio
                         await File.WriteAllTextAsync(filePath, versionedJson);
                     }
                 });
-                LinkLog.Log($"Save a Json at {filePath}");
+                LinkLogger.Log($"Save a Json at {filePath}");
                 onComplete?.Invoke(true);
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"Failed to save json data: {e.Message}");
+                LinkLogger.LogError($"Failed to save json data: {e.Message}");
                 onComplete?.Invoke(false);
             }
         }
@@ -116,7 +116,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"Failed to read json data: {e.Message}");
+                LinkLogger.LogError($"Failed to read json data: {e.Message}");
             }
             return result;
         }
@@ -178,14 +178,14 @@ namespace PowerCellStudio
                     }
                     catch (Exception e)
                     {
-                        LinkLog.LogError($"Failed to read json data: {e.Message}");
+                        LinkLogger.LogError($"Failed to read json data: {e.Message}");
                     }
                 });
                 onComplete?.Invoke(data);
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"Failed to read json data: {e.Message}");
+                LinkLogger.LogError($"Failed to read json data: {e.Message}");
                 onComplete?.Invoke(default);
             }
         }

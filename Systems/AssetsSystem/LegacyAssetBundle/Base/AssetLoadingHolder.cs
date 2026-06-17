@@ -36,7 +36,7 @@ namespace PowerCellStudio
         {
             if (handler == null)
             {
-                AssetLog.LogError($"Trying to add null handler for asset {assetPath}");
+                AssetLogger.LogError($"Trying to add null handler for asset {assetPath}");
                 return;
             }
             if (_onloading.TryGetValue(assetPath, out var handlerChain))

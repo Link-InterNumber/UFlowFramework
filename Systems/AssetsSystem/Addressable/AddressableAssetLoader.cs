@@ -103,7 +103,7 @@ namespace PowerCellStudio
             if (other == null || other.index == this.index || !other.spawned) return;
             if (other.IsAnyLoading())
             {
-                AssetLog.LogError($"Trying to merge loader {other.index} into {this.index} while it still has loading assets. This may cause unexpected behavior.");
+                AssetLogger.LogError($"Trying to merge loader {other.index} into {this.index} while it still has loading assets. This may cause unexpected behavior.");
                 return;
             }
             if (other is AddressableAssetLoader otherLoader)
@@ -185,7 +185,7 @@ namespace PowerCellStudio
                 else
                 {
                     _manager.Release(handle);
-                    AssetLog.LogError($"Load Prefab [{address}] Fail!");
+                    AssetLogger.LogError($"Load Prefab [{address}] Fail!");
                     onFail?.Invoke();
                 }
             };
@@ -210,7 +210,7 @@ namespace PowerCellStudio
                 else
                 {
                     _manager.Release(handle);
-                    AssetLog.LogError($"Load Prefab [{address}] Fail!");
+                    AssetLogger.LogError($"Load Prefab [{address}] Fail!");
                     onFail?.Invoke();
                 }
             };
@@ -321,7 +321,7 @@ namespace PowerCellStudio
                     onSuccess?.Invoke(handle.Result);
                 else
                 {
-                    AssetLog.LogError($"Load {typeof(T).Name} Asset Fail!");
+                    AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
                     onFail?.Invoke();
                 }
                 return;
@@ -332,7 +332,7 @@ namespace PowerCellStudio
                     onSuccess?.Invoke(operationHandle.Result);
                 else
                 {
-                    AssetLog.LogError($"Load {typeof(T).Name} Asset [{address}] Fail!");
+                    AssetLogger.LogError($"Load {typeof(T).Name} Asset [{address}] Fail!");
                     onFail?.Invoke();
                 }
             };
@@ -379,7 +379,7 @@ namespace PowerCellStudio
                 }
                 else
                 {
-                    AssetLog.LogError($"Load {typeof(T).Name} Asset Fail!");
+                    AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
                     _manager.Release(handle);
                     instruction.SetAsset(null);
                 }
@@ -409,7 +409,7 @@ namespace PowerCellStudio
                 }
                 else
                 {
-                    AssetLog.LogError($"Load Assets With Label [{label}] Fail!");
+                    AssetLogger.LogError($"Load Assets With Label [{label}] Fail!");
                     onFail?.Invoke();
                 }
             };
@@ -458,14 +458,14 @@ namespace PowerCellStudio
             {
                 if(handle.Status == AsyncOperationStatus.Succeeded) 
                     action?.Invoke(handle.Result);
-                else AssetLog.LogError($"Load {typeof(T).Name} Asset Fail!");
+                else AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
                 return;
             }
             handle.Completed += operationHandle =>
             {
                 if(operationHandle.Status == AsyncOperationStatus.Succeeded) 
                     action?.Invoke(operationHandle.Result);
-                else AssetLog.LogError($"Load {typeof(T).Name} Asset Fail!");
+                else AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
             };
         }
         
@@ -485,7 +485,7 @@ namespace PowerCellStudio
                     onSuccess?.Invoke(handle.Result);
                 else
                 {
-                    AssetLog.LogError($"Load {typeof(T).Name} Asset Fail!");
+                    AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
                     onFail?.Invoke();
                 }
                 return;
@@ -496,7 +496,7 @@ namespace PowerCellStudio
                     onSuccess?.Invoke(operationHandle.Result);
                 else
                 {
-                    AssetLog.LogError($"Load {typeof(T).Name} Asset Fail!");
+                    AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
                     onFail?.Invoke();
                 }
             };
@@ -538,7 +538,7 @@ namespace PowerCellStudio
                 }
                 else
                 {
-                    AssetLog.LogError($"Load {typeof(T).Name} Asset Fail!");
+                    AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
                     _manager.Release(handle);
                     instruction.SetAsset(null);
                 }

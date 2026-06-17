@@ -22,7 +22,7 @@ namespace PowerCellStudio
                 {
                     var fun2 = eve as BaseLinkAction;
                     if (fun2 != fun) continue;
-                    ModuleLog.LogError<EventManager>($"重复添加监听:[{fun.Method.Name}]");
+                    ModuleLogger.LogError<EventManager>($"重复添加监听:[{fun.Method.Name}]");
                     return;
                 }
             }
@@ -78,7 +78,7 @@ namespace PowerCellStudio
                 {
                     var fun2 = eve as BaseLinkAction<T>;
                     if (fun2 != fun) continue;
-                    ModuleLog.LogError<EventManager>($"重复添加监听:[{fun.Method.Name}]");
+                    ModuleLogger.LogError<EventManager>($"重复添加监听:[{fun.Method.Name}]");
                     return;
                 }
             }
@@ -133,7 +133,7 @@ namespace PowerCellStudio
                 {
                     var fun2 = eve as BaseLinkAction<T, TK>;
                     if (fun2 != fun) continue;
-                    ModuleLog.LogError<EventManager>($"重复添加监听:[{fun.Method.Name}]");
+                    ModuleLogger.LogError<EventManager>($"重复添加监听:[{fun.Method.Name}]");
                     return;
                 }
             }
@@ -189,7 +189,7 @@ namespace PowerCellStudio
                 {
                     var fun2 = eve as BaseLinkAction<T, TK, TL>;
                     if (fun2 != fun) continue;
-                    ModuleLog.LogError<EventManager>($"重复添加监听:[{fun.Method.Name}]");
+                    ModuleLogger.LogError<EventManager>($"重复添加监听:[{fun.Method.Name}]");
                     return;
                 }
             }

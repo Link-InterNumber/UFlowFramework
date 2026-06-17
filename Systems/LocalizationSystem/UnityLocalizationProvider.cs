@@ -42,7 +42,7 @@ namespace PowerCellStudio
                 }
                 else
                 {
-                    AssetLog.LogError($"Failed to load localized asset for key: {key}\n{op.OperationException}");
+                    AssetLogger.LogError($"Failed to load localized asset for key: {key}\n{op.OperationException}");
                     _loaderYieldInstruction.SetAsset(null);
                 }
             };
@@ -97,7 +97,7 @@ namespace PowerCellStudio
             _stringTable = operationHandle.Result;
             if (!_stringTable)
             {
-                AssetLog.LogError($"Can not load Localization string table: [{ConstSetting.LocalizationStringTable}]\n{operationHandle.OperationException}");
+                AssetLogger.LogError($"Can not load Localization string table: [{ConstSetting.LocalizationStringTable}]\n{operationHandle.OperationException}");
             }
         }
 
@@ -108,7 +108,7 @@ namespace PowerCellStudio
             _assetTable = operationHandle.Result;
             if (!_assetTable)
             {
-                AssetLog.LogError($"Can not load Localization string table: [{ConstSetting.LocalizationAssetTable}]\n{operationHandle.OperationException}");
+                AssetLogger.LogError($"Can not load Localization string table: [{ConstSetting.LocalizationAssetTable}]\n{operationHandle.OperationException}");
             }
         }
     }

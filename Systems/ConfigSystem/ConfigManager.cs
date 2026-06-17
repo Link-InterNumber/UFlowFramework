@@ -112,12 +112,12 @@ namespace PowerCellStudio
                         sb.Append(initConfigFailLoadConfig);
                         sb.Append("\n");
                     }
-                    ConfigLog.LogError($"Config Load Failed, Failed Configs: \n {sb}");
+                    ConfigLogger.LogError($"Config Load Failed, Failed Configs: \n {sb}");
                     break;
                 }
                 default:
                     _inited = true;
-                    ConfigLog.Log("Config Load successfully");
+                    ConfigLogger.Log("Config Load successfully");
                     // Do something
                     // ...
                     break;

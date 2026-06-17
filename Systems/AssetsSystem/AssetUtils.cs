@@ -147,7 +147,7 @@ namespace PowerCellStudio
         {
             if (paths.Contains('\\'))
             {
-                AssetLog.LogError("\\ exists in the asset path, replace Path.Combine() with AssetUtils.CombinePaths()");
+                AssetLogger.LogError("\\ exists in the asset path, replace Path.Combine() with AssetUtils.CombinePaths()");
                 var result = paths.Replace('\\', '/');
                 return result;
             }
@@ -220,7 +220,7 @@ namespace PowerCellStudio
             if (item == null) return;
             if (item.autoRelease)
             {
-                AssetLog.LogError("Trying to release a handler that is already set to auto-release. This may indicate a logic error.");
+                AssetLogger.LogError("Trying to release a handler that is already set to auto-release. This may indicate a logic error.");
                 item.Dispose();
                 return;
             }

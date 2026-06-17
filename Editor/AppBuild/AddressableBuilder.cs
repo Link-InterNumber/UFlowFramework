@@ -32,7 +32,7 @@ namespace PowerCellStudio
         {
             string profileId = settings.profileSettings.GetProfileId(profile);
             if (String.IsNullOrEmpty(profileId))
-                LinkLog.LogWarning($"Couldn't find a profile named, {profile}, using current profile instead.");
+                LinkLogger.LogWarning($"Couldn't find a profile named, {profile}, using current profile instead.");
             else
                 settings.activeProfileId = profileId;
         }
@@ -44,7 +44,7 @@ namespace PowerCellStudio
             if (index > 0)
                 settings.ActivePlayerDataBuilderIndex = index;
             else
-                LinkLog.LogWarning($"{builder} must be added to the DataBuilders list before it can be made active. Using last run builder instead.");
+                LinkLogger.LogWarning($"{builder} must be added to the DataBuilders list before it can be made active. Using last run builder instead.");
         }
 
         static bool BuildAddressableContent()
@@ -52,7 +52,7 @@ namespace PowerCellStudio
             AddressableAssetSettings.BuildPlayerContent(out AddressablesPlayerBuildResult result);
             bool success = string.IsNullOrEmpty(result.Error);
             if (!success)
-                LinkLog.LogError("Addressables build error encountered: " + result.Error);
+                LinkLogger.LogError("Addressables build error encountered: " + result.Error);
             return success;
         }
 

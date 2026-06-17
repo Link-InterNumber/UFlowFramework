@@ -162,7 +162,7 @@ namespace PowerCellStudio
             // }
             if (_pageStack.Count < 2)
             {
-                UILog.LogError("You must keep at least one page!");
+                UILogger.LogError("You must keep at least one page!");
                 return;
             }
             var page = _pageStack.Pop();
@@ -216,7 +216,7 @@ namespace PowerCellStudio
         {
             if (_pageStack.Count < 2)
             {
-                UILog.LogError("You must keep at least one page!");
+                UILogger.LogError("You must keep at least one page!");
                 return;
             }
             if (currentPage.GetType() == typeof(T))

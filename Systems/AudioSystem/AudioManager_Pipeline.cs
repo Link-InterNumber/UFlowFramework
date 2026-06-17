@@ -98,7 +98,7 @@ namespace PowerCellStudio
         {
             if (_masterPipeline == null) return;
             if (_masterPipeline.PushRequest(request)) return;
-            ModuleLog.LogError<AudioManager>($"Play audio request failed, pipeline id: {request.pipelineId}");
+            ModuleLogger.LogError<AudioManager>($"Play audio request failed, pipeline id: {request.pipelineId}");
         }
 
         private void DisposePipeline(int pipelineId)

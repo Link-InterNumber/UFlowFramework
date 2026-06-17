@@ -201,16 +201,13 @@ namespace PowerCellStudio
             );
             if (string.IsNullOrEmpty(outputFilePath)) return;
 
-            using (var writer = new StreamWriter(outputFilePath))
+            using (var csWriter = new CsWriter())
             {
-                // 写入文件头部
-                writer.WriteLine("using System;");
-                writer.WriteLine("using UnityEngine;");
-                writer.WriteLine("");
-                writer.WriteLine("namespace PowerCellStudio");
-                writer.WriteLine("{");
+                csWriter.WriteUsing("System", "UnityEngine")
+                    .WriteLine("namespace PowerCellStudio")
+                    .StartWriteBody();
 
-                for (var i= 0; i < _loggerFormats.Count; i ++)
+                for (var i = 0; i < _loggerFormats.Count; i++)
                 {
                     var format = _loggerFormats[i];
                     string logType = format.logType;
@@ -223,79 +220,70 @@ namespace PowerCellStudio
                     string exceptionColor = format.ExceptionColor.FormatHex();
                     string exceptionLabel = format.ExceptionLabel;
 
-                    writer.WriteLine($"    public static class {logType}Log");
-                    writer.WriteLine("    {");
+                    csWriter.WriteLine($"public static class {logType}Logger")
+                        .StartWriteBody()
+                        .WriteField(CsWriter.FieldSign.Public, "bool", "enableLog", format.enableLog.ToString().ToLowerInvariant(), CsWriter.FieldSign2.Static)
+                        .WriteField(CsWriter.FieldSign.Public, "bool", "enableWarning", format.enableWarning.ToString().ToLowerInvariant(), CsWriter.FieldSign2.Static)
+                        .WriteField(CsWriter.FieldSign.Public, "bool", "enableError", format.enableError.ToString().ToLowerInvariant(), CsWriter.FieldSign2.Static)
+                        .Space();
 
-                    writer.WriteLine($"        public static bool enableLog = {format.enableLog.ToString().ToLower()};");
-                    writer.WriteLine($"        public static bool enableWarning = {format.enableWarning.ToString().ToLower()};");
-                    writer.WriteLine($"        public static bool enableError = {format.enableError.ToString().ToLower()};");
+                    csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "Log", "object message")
+                        .WriteLine("if (!enableLog) return;")
+                        .WriteLine("if(Application.isPlaying && !ApplicationManager.enableLog) return;")
+                        .WriteLine($"Debug.Log($\"[<color={logColor}>{logType} {logLabel}</color>] {{message}}\");")
+                        .EndWriteMethod();
 
-                    writer.WriteLine($"        public static void Log(object message)");
-                    writer.WriteLine("        {");
-                    writer.WriteLine("            if (!enableLog) return;");
-                    writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableLog) return;");
-                    writer.WriteLine($"            Debug.Log($\"[<color={logColor}>{logType} {logLabel}</color>] {{message}}\");");
-                    writer.WriteLine("        }");
-                    writer.WriteLine("");
-                    writer.WriteLine($"        public static void LogWarning(object message)");
-                    writer.WriteLine("        {");
-                    writer.WriteLine("            if (!enableWarning) return;");
-                    writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableWarning) return;");
-                    writer.WriteLine($"            Debug.LogWarning($\"[<color={warningColor}>{logType} {warningLabel}</color>] {{message}}\");");
-                    writer.WriteLine("        }");
-                    writer.WriteLine("");
-                    writer.WriteLine($"        public static void LogError(object message)");
-                    writer.WriteLine("        {");
-                    writer.WriteLine("            if (!enableError) return;");
-                    writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableError) return;");
-                    writer.WriteLine($"            Debug.LogError($\"[<color={errorColor}>{logType} {errorLabel}</color>] {{message}}\");");
-                    writer.WriteLine("        }");
-                    writer.WriteLine("");
-                    writer.WriteLine($"        public static Exception Exception(object message)");
-                    writer.WriteLine("        {");
-                    writer.WriteLine("            if (!enableError) return null;");
-                    writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableError) return null;");
-                    writer.WriteLine($"            return new Exception($\"[<color={exceptionColor}>{logType} {exceptionLabel}</color>] {{message}}\");");
-                    writer.WriteLine("        }");
+                    csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "LogWarning", "object message")
+                        .WriteLine("if (!enableWarning) return;")
+                        .WriteLine("if(Application.isPlaying && !ApplicationManager.enableWarning) return;")
+                        .WriteLine($"Debug.LogWarning($\"[<color={warningColor}>{logType} {warningLabel}</color>] {{message}}\");")
+                        .EndWriteMethod();
+
+                    csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "LogError", "object message")
+                        .WriteLine("if (!enableError) return;")
+                        .WriteLine("if(Application.isPlaying && !ApplicationManager.enableError) return;")
+                        .WriteLine($"Debug.LogError($\"[<color={errorColor}>{logType} {errorLabel}</color>] {{message}}\");")
+                        .EndWriteMethod();
+
+                    csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "Exception", "Exception", "object message")
+                        .WriteLine("if (!enableError) return null;")
+                        .WriteLine("if(Application.isPlaying && !ApplicationManager.enableError) return null;")
+                        .WriteLine($"return new Exception($\"[<color={exceptionColor}>{logType} {exceptionLabel}</color>] {{message}}\");")
+                        .EndWriteMethod();
 
                     if (format.genericArgument)
                     {
-                        writer.WriteLine("");
-                        writer.WriteLine($"        public static void Log<T>(object message)");
-                        writer.WriteLine("        {");
-                        writer.WriteLine("            if (!enableLog) return;");
-                        writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableLog) return;");
-                        writer.WriteLine($"            Debug.Log($\"[<color={logColor}>{logType} {logLabel}</color>:{{typeof(T).Name}}] {{message}}\");");
-                        writer.WriteLine("        }");
-                        writer.WriteLine("");
-                        writer.WriteLine($"        public static void LogWarning<T>(object message)");
-                        writer.WriteLine("        {");
-                        writer.WriteLine("            if (!enableWarning) return;");
-                        writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableWarning) return;");
-                        writer.WriteLine($"            Debug.LogWarning($\"[<color={warningColor}>{logType} {warningLabel}</color>:{{typeof(T).Name}}] {{message}}\");");
-                        writer.WriteLine("        }");
-                        writer.WriteLine("");
-                        writer.WriteLine($"        public static void LogError<T>(object message)");
-                        writer.WriteLine("        {");
-                        writer.WriteLine("            if (!enableError) return;");
-                        writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableError) return;");
-                        writer.WriteLine($"            Debug.LogError($\"[<color={errorColor}>{logType} {errorLabel}</color>:{{typeof(T).Name}}] {{message}}\");");
-                        writer.WriteLine("        }");
-                        writer.WriteLine("");
-                        writer.WriteLine($"        public static Exception Exception<T>(object message)");
-                        writer.WriteLine("        {");
-                        writer.WriteLine("            if (!enableError) return null;");
-                        writer.WriteLine($"            if(Application.isPlaying && !ApplicationManager.enableError) return null;");
-                        writer.WriteLine($"            return new Exception($\"[<color={exceptionColor}>{logType} {exceptionLabel}</color>:{{typeof(T).Name}}] {{message}}\");");
-                        writer.WriteLine("        }");
+                        csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "Log<T>", "object message")
+                            .WriteLine("if (!enableLog) return;")
+                            .WriteLine("if(Application.isPlaying && !ApplicationManager.enableLog) return;")
+                            .WriteLine($"Debug.Log($\"[<color={logColor}>{logType} {logLabel}</color>:{{typeof(T).Name}}] {{message}}\");")
+                            .EndWriteMethod();
+
+                        csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "LogWarning<T>", "object message")
+                            .WriteLine("if (!enableWarning) return;")
+                            .WriteLine("if(Application.isPlaying && !ApplicationManager.enableWarning) return;")
+                            .WriteLine($"Debug.LogWarning($\"[<color={warningColor}>{logType} {warningLabel}</color>:{{typeof(T).Name}}] {{message}}\");")
+                            .EndWriteMethod();
+
+                        csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "LogError<T>", "object message")
+                            .WriteLine("if (!enableError) return;")
+                            .WriteLine("if(Application.isPlaying && !ApplicationManager.enableError) return;")
+                            .WriteLine($"Debug.LogError($\"[<color={errorColor}>{logType} {errorLabel}</color>:{{typeof(T).Name}}] {{message}}\");")
+                            .EndWriteMethod();
+
+                        csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "Exception", "Exception<T>", "object message")
+                            .WriteLine("if (!enableError) return null;")
+                            .WriteLine("if(Application.isPlaying && !ApplicationManager.enableError) return null;")
+                            .WriteLine($"return new Exception($\"[<color={exceptionColor}>{logType} {exceptionLabel}</color>:{{typeof(T).Name}}] {{message}}\");")
+                            .EndWriteMethod();
                     }
 
-
-                    writer.WriteLine("    }");
-                    writer.WriteLine("");
+                    csWriter.EndWriteBody()
+                        .Space();
                 }
 
-                writer.WriteLine("}");
+                csWriter.EndWriteBody();
+                File.WriteAllText(outputFilePath, csWriter.ToString());
             }
         }
     }

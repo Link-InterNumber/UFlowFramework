@@ -23,7 +23,7 @@ namespace PowerCellStudio
         {
             if (clips == null)
             {
-                LinkLog.LogError("未指定AnimationClip！");
+                LinkLogger.LogError("未指定AnimationClip！");
                 return;
             }
 
@@ -46,21 +46,21 @@ namespace PowerCellStudio
                 Play(i);
                 return;
             }
-            LinkLog.LogWarning($"clips do not contains [{clipName}]!");
+            LinkLogger.LogWarning($"clips do not contains [{clipName}]!");
         }
 
         public void Play(int index)
         {
             if (clips == null || index < 0 || index > clips.Length - 1)
             {
-                LinkLog.LogError("index out of clips length!");
+                LinkLogger.LogError("index out of clips length!");
                 return;
             }
             if (_currentIndex == index) return;
             var clip = clips[index];
             if (!clip)
             {
-                LinkLog.LogWarning($"clips[{index}] is null!");
+                LinkLogger.LogWarning($"clips[{index}] is null!");
                 return;
             }
             _currentIndex = index;

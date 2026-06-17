@@ -53,7 +53,7 @@ namespace PowerCellStudio
         {
             if (!File.Exists(path))
             {
-                ConfigLog.LogError("Cannot find file " + path);
+                ConfigLogger.LogError("Cannot find file " + path);
                 return;
             }
 
@@ -99,7 +99,7 @@ namespace PowerCellStudio
                 {
                     if(typeInfo.isKey)
                     {
-                        ConfigLog.LogError($"[{_workbook.Names}]配置的Key {fieldComment} 字段不能重复");
+                        ConfigLogger.LogError($"[{_workbook.Names}]配置的Key {fieldComment} 字段不能重复");
                         continue;
                     };
                     typeInfo.columns.Add(column);

@@ -28,7 +28,7 @@ namespace PowerCellStudio
         {
             if (_inited)
             {
-                AssetLog.LogWarning("AssetsBundleManager has been initialized");
+                AssetLogger.LogWarning("AssetsBundleManager has been initialized");
                 callBack?.Invoke();
                 return;
             }
@@ -46,7 +46,7 @@ namespace PowerCellStudio
                 _inited = true;
                 initState = AssetInitState.Complete;
                 initProcess = 1f;
-                AssetLog.Log("AssetsBundleManager inited successfully");
+                AssetLogger.Log("AssetsBundleManager inited successfully");
                 callBack?.Invoke();
                 return;
             }
@@ -78,11 +78,11 @@ namespace PowerCellStudio
             _loadedBundles.TryGetCache("default", out var loaded);
             if (!loaded)
             {
-                AssetLog.LogError("default bundle did not exit!");
+                AssetLogger.LogError("default bundle did not exit!");
             }
             AddBundleRef("default");
             _inited = true;
-            AssetLog.Log("AssetsBundleManager inited successfully");
+            AssetLogger.Log("AssetsBundleManager inited successfully");
             initProcess = 1f;
             initState = AssetInitState.Complete;
             callBack?.Invoke();

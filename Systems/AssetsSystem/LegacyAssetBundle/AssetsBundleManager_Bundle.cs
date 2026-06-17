@@ -101,7 +101,7 @@ namespace PowerCellStudio
             _loadingBundles.SetLoaded(mainBundleName, bundle);
             if (!bundle)
             {
-                AssetLog.LogError($"MainBundle Name Error: {mainBundleName}");
+                AssetLogger.LogError($"MainBundle Name Error: {mainBundleName}");
                 yield break;
             }
             var manifest = bundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
@@ -164,7 +164,7 @@ namespace PowerCellStudio
             {
                 _loadingBundles.SetLoaded(bundleName, null);
                 var path = GetBundlePath(bundleName);
-                AssetLog.LogError($"Bundle: {bundleName} Load Fail, path: {path}");
+                AssetLogger.LogError($"Bundle: {bundleName} Load Fail, path: {path}");
                 return;
             }
             _loadedBundles.AddCache(bundleName, loadedBundle);
@@ -252,7 +252,7 @@ namespace PowerCellStudio
             {
                 if (!_loadedBundles.IsLoaded(dependency))
                 {
-                    AssetLog.LogError($"Load Bundle [{bundleName}] Failed, because dependency bundle [{dependency}] load failed");
+                    AssetLogger.LogError($"Load Bundle [{bundleName}] Failed, because dependency bundle [{dependency}] load failed");
                 }
             }
             if (_loadedBundles.IsLoaded(bundleName))
@@ -373,7 +373,7 @@ namespace PowerCellStudio
         {
             if (_loadingBundles.IsLoading(bundleName))
             {
-                AssetLog.LogWarning($"Bundle [{bundleName}] is loading, please wait");
+                AssetLogger.LogWarning($"Bundle [{bundleName}] is loading, please wait");
                 return null;
             }
             _loadingBundles.AddLoadingHandle(bundleName, null);
@@ -389,7 +389,7 @@ namespace PowerCellStudio
                     }
                     else
                     {
-                        AssetLog.LogError($"Bundle [{bundleName}] does not exit in Application.persistentDataPath!\nUse GetAssetsBundleAsync() to load it.");
+                        AssetLogger.LogError($"Bundle [{bundleName}] does not exit in Application.persistentDataPath!\nUse GetAssetsBundleAsync() to load it.");
                     }
                 }
                 else
@@ -400,7 +400,7 @@ namespace PowerCellStudio
             catch (Exception e)
             {
                 loadedBundle = null;
-                AssetLog.LogError($"Bundle [{bundleName}] do not exist on local");
+                AssetLogger.LogError($"Bundle [{bundleName}] do not exist on local");
                 Debug.LogError(e);
             }
             finally

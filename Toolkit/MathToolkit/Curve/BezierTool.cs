@@ -137,7 +137,7 @@ namespace PowerCellStudio
         {
             if (points == null || points.Count == 0)
             {
-                LinkLog.LogError("控制点列表不能为空");
+                LinkLogger.LogError("控制点列表不能为空");
                 return Vector3.zero;
             }
 
@@ -146,7 +146,7 @@ namespace PowerCellStudio
 
             if (points.Count == 1)
             {
-                LinkLog.LogError("控制点数量需要大于1");
+                LinkLogger.LogError("控制点数量需要大于1");
                 return points[0];
             }
             if (points.Count == 2)
@@ -241,7 +241,7 @@ namespace PowerCellStudio
             if (poss == null || result == null) return;
             if (poss.Count < 2)
             {
-                LinkLog.LogError("控制点数量需要大于1");
+                LinkLogger.LogError("控制点数量需要大于1");
                 return;
             }
             if (result.Length < 2)

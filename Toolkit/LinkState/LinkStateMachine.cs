@@ -32,7 +32,7 @@ namespace LinkState
         {
             if (dataSource == null)
             {
-                LinkLog.LogError("StateMachine Got Null Source");
+                LinkLogger.LogError("StateMachine Got Null Source");
                 return;
             }
             _inExecution = false;
@@ -76,7 +76,7 @@ namespace LinkState
         {
             if (index < 0 || index > _statesTransition.Length - 1)
             {
-                LinkLog.LogError($"index out of state range, got index = {index}, set range = [0, {_statesTransition.Length - 1}]");
+                LinkLogger.LogError($"index out of state range, got index = {index}, set range = [0, {_statesTransition.Length - 1}]");
                 return false;
             }
             return true;
@@ -97,7 +97,7 @@ namespace LinkState
             if (!ChechIndex(stateIndex)) return this;
             if (_statesExecute[stateIndex] != null)
             {
-                LinkLog.LogWarning("StateMachine has been set execute, Make sure you are not overwriting it");
+                LinkLogger.LogWarning("StateMachine has been set execute, Make sure you are not overwriting it");
             }
             _statesExecute[stateIndex] = new ExecuteBehavior<T>(executeAction);
             return this;
@@ -118,7 +118,7 @@ namespace LinkState
             if (!ChechIndex(stateIndex)) return this;
             if (_statesEnter[stateIndex] != null)
             {
-                LinkLog.LogWarning("StateMachine has been set enter, Make sure you are not overwriting it");
+                LinkLogger.LogWarning("StateMachine has been set enter, Make sure you are not overwriting it");
             }
             _statesEnter[stateIndex] = enterAction;
             return this;
@@ -139,7 +139,7 @@ namespace LinkState
             if (!ChechIndex(stateIndex)) return this;
             if (_statesExit[stateIndex] != null)
             {
-                LinkLog.LogWarning("StateMachine has been set exit, Make sure you are not overwriting it");
+                LinkLogger.LogWarning("StateMachine has been set exit, Make sure you are not overwriting it");
             }
             _statesExit[stateIndex] = exitAction;
             return this;
@@ -352,7 +352,7 @@ namespace LinkState
         {
             if (index < 0 || index > _statesTransition.Length - 1)
             {
-                LinkLog.LogError(
+                LinkLogger.LogError(
                     $"index out of state range, got index = {index}, set range = [0, {_statesTransition.Length - 1}]");
                 return false;
             }

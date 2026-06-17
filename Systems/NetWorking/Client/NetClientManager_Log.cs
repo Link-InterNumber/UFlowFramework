@@ -24,13 +24,13 @@ namespace PowerCellStudio
                 switch (log.logLevel)
                 {
                     case QueueLogLevel.Info:
-                        NetWorkLog.Log(log.logMessage);
+                        NetWorkLogger.Log(log.logMessage);
                         break;
                     case QueueLogLevel.Warning:
-                        NetWorkLog.LogWarning(log.logMessage);
+                        NetWorkLogger.LogWarning(log.logMessage);
                         break;
                     case QueueLogLevel.Error:
-                        NetWorkLog.LogError(log.logMessage);
+                        NetWorkLogger.LogError(log.logMessage);
                         break;
                 }
             }

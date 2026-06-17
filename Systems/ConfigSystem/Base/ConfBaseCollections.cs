@@ -39,10 +39,10 @@ namespace PowerCellStudio
                 case AssetLoadStatus.Loaded:
                     return true;
                 case AssetLoadStatus.Loading:
-                    ConfigLog.LogError($"{GetType().Name} is loading, please wait for it to be loaded!");
+                    ConfigLogger.LogError($"{GetType().Name} is loading, please wait for it to be loaded!");
                     break;
                 case AssetLoadStatus.Unload:
-                    ConfigLog.LogError($"{GetType().Name} is not loaded yet!");
+                    ConfigLogger.LogError($"{GetType().Name} is not loaded yet!");
                     break;
             }
             return false;

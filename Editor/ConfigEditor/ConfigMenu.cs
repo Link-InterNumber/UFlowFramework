@@ -80,7 +80,7 @@ namespace PowerCellStudio
                     
                     var editorCsFilePath = Path.Combine(editorCsFold, $"{reader.fileName}Creator.cs");
                     File.WriteAllText(editorCsFilePath, editorCode, Encoding.UTF8);
-                    ConfigLog.Log($"Create Cs Files From [{reader.fileName}]");
+                    ConfigLogger.Log($"Create Cs Files From [{reader.fileName}]");
                 }
                 EditorUtility.DisplayProgressBar("Create Cs Files", $"Running ConfigManager", 1f * (filePaths.Length -1) / filePaths.Length);
                 var managerCode = ConfigWriter.GenerateManagerCSString(collectionList);
@@ -89,7 +89,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                ConfigLog.LogError($"{e.Message}\n{e.StackTrace}");
+                ConfigLogger.LogError($"{e.Message}\n{e.StackTrace}");
             }
             finally
             {
@@ -167,7 +167,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                ConfigLog.LogError($"{e.Message}\n{e.StackTrace}");
+                ConfigLogger.LogError($"{e.Message}\n{e.StackTrace}");
             }
             finally
             { 
@@ -249,7 +249,7 @@ namespace PowerCellStudio
             }
             catch (Exception ex)
             {
-                ConfigLog.LogError($"Calc MD5 failed, exception:{ex.Message}\n{ex.StackTrace}");
+                ConfigLogger.LogError($"Calc MD5 failed, exception:{ex.Message}\n{ex.StackTrace}");
             }
             return string.Empty;
         }
@@ -315,7 +315,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                ConfigLog.LogError($"{e.Message}\n{e.StackTrace}");
+                ConfigLogger.LogError($"{e.Message}\n{e.StackTrace}");
             }
             finally
             {

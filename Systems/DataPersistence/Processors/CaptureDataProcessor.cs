@@ -63,7 +63,7 @@ namespace PowerCellStudio
                         onComplete?.Invoke(sprite);
                         yield break;
                     }
-                    LinkLog.LogError("加载图片失败: " + request.error);
+                    LinkLogger.LogError("加载图片失败: " + request.error);
                     onComplete?.Invoke(null);
                 }
             }
@@ -80,7 +80,7 @@ namespace PowerCellStudio
                         onComplete?.Invoke(sprite);
                         yield break;
                     }
-                    LinkLog.LogError("加载图片失败: " + request.error);
+                    LinkLogger.LogError("加载图片失败: " + request.error);
                     onComplete?.Invoke(null);
                 }
             }

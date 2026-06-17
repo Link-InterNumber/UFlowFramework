@@ -30,7 +30,7 @@ namespace PowerCellStudio
             {
                 return constructor.Invoke(new object[] { this }) as IUIVariableCtrl;
             }
-            UILog.LogError($"Unable to create controller instance, type: {ctrlType.Name}, please ensure that the type has a constructor that accepts an IUIComponent parameter.");
+            UILogger.LogError($"Unable to create controller instance, type: {ctrlType.Name}, please ensure that the type has a constructor that accepts an IUIComponent parameter.");
             return null;
         }
 

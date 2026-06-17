@@ -52,13 +52,13 @@ namespace PowerCellStudio
                         {
                             _persistenceDataProcessors[index] = instance;
 #if UNITY_EDITOR
-                            LinkLog.Log($"[PlayerDataUtils] Registered {type.Name} for {attribute.DataType}");
+                            LinkLogger.Log($"[PlayerDataUtils] Registered {type.Name} for {attribute.DataType}");
 #endif
                         }
                     }
                     catch (Exception e)
                     {
-                        LinkLog.LogError($"[PlayerDataUtils] Failed to instantiate processor for {attribute.DataType}: {e.Message}");
+                        LinkLogger.LogError($"[PlayerDataUtils] Failed to instantiate processor for {attribute.DataType}: {e.Message}");
                     }
                 }
             }
@@ -67,7 +67,7 @@ namespace PowerCellStudio
             {
                 if (_persistenceDataProcessors[i] == null && Enum.IsDefined(typeof(PlayerDataType), i))
                 {
-                    LinkLog.LogWarning($"[PlayerDataUtils] No processor registered for PlayerDataType: {(PlayerDataType)i}");
+                    LinkLogger.LogWarning($"[PlayerDataUtils] No processor registered for PlayerDataType: {(PlayerDataType)i}");
                 }
             }
 #endif

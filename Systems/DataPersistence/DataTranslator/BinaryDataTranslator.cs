@@ -27,7 +27,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"Failed to read binary data: {e.Message}");
+                LinkLogger.LogError($"Failed to read binary data: {e.Message}");
                 return null;
             }
         }

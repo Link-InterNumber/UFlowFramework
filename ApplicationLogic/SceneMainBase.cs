@@ -67,7 +67,7 @@ namespace PowerCellStudio
             // UIManager.Instance.PushPage<DebugPage>();
             // var mapModule = ModuleManager.Instance.Get<MapModule>();
             // mapModule.CreatStageMap(1);
-            AssetLog.Log("AddressableManager Inited!");
+            AssetLogger.Log("AddressableManager Inited!");
             ModuleManager.Create();
             StartCoroutine(OnAddressableInited());
 

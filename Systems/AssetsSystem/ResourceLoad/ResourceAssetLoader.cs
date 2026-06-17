@@ -73,7 +73,7 @@ namespace PowerCellStudio
             if (other == null || other.index == this.index || !other.spawned) return;
             if (other.IsAnyLoading())
             {
-                AssetLog.LogError($"Trying to merge loader {other.index} into {this.index} while it still has loading assets. This may cause unexpected behavior.");
+                AssetLogger.LogError($"Trying to merge loader {other.index} into {this.index} while it still has loading assets. This may cause unexpected behavior.");
                 return;
             }
             if (other is ResourceAssetLoader resourceLoader)

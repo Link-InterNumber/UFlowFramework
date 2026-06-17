@@ -22,7 +22,7 @@ namespace PowerCellStudio
             {
                 if (_instance != null)
                 {
-                    LinkLog.LogError($"SingletonBase {typeof(T).Name} instance already set");
+                    LinkLogger.LogError($"SingletonBase {typeof(T).Name} instance already set");
                     return;
                 }
                 _instance = value;

@@ -29,7 +29,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"SerializeToJson failed: {e.Message}\n {e.InnerException}");
+                LinkLogger.LogError($"SerializeToJson failed: {e.Message}\n {e.InnerException}");
                 return "{}";
             }
         }
@@ -46,7 +46,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"DeserializeFromJson failed: {e.Message}\n {e.InnerException}");
+                LinkLogger.LogError($"DeserializeFromJson failed: {e.Message}\n {e.InnerException}");
                 return default;
             }
         }
@@ -84,7 +84,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"SerializeToBinary failed: {e.Message}\n {e.InnerException}");
+                LinkLogger.LogError($"SerializeToBinary failed: {e.Message}\n {e.InnerException}");
                 return Array.Empty<byte>();
             }
         }
@@ -123,7 +123,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"DeserializeFromBinary failed: {e.Message}\n {e.InnerException}");
+                LinkLogger.LogError($"DeserializeFromBinary failed: {e.Message}\n {e.InnerException}");
                 return default;
             }
         }

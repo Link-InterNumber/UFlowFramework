@@ -21,7 +21,7 @@ namespace PowerCellStudio
             {
                var fun2 = eve as ScreenInputEventHandler;
                if (fun2 != action) continue;
-               LinkLog.LogError($"重复添加监听:[{action.Method.Name}]");
+               LinkLogger.LogError($"重复添加监听:[{action.Method.Name}]");
                return;
             }
          }

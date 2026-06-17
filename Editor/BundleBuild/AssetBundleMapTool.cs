@@ -61,7 +61,7 @@ namespace PowerCellStudio
                     if (Path.GetExtension(name) == "shader") continue;
                     if (allAssets.Contains(name))
                     {
-                        AssetLog.LogError($"Duplicate packaged assets: {name}");
+                        AssetLogger.LogError($"Duplicate packaged assets: {name}");
                         continue;
                     }
                     allAssets.Add(name);

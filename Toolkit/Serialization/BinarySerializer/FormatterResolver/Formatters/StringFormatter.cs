@@ -93,7 +93,7 @@ namespace PowerCellStudio
                 int read = reader.Read(buffer.Slice(offset));
                 if (read <= 0)
                 {
-                    LinkLog.LogError("Unexpected end of stream while reading string data.");
+                    LinkLogger.LogError("Unexpected end of stream while reading string data.");
                     return;
                 }
 

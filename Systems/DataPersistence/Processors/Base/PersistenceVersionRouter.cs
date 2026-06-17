@@ -75,7 +75,7 @@ namespace PowerCellStudio
 
                     if (currentData is not T typedData)
                     {
-                        LinkLog.LogError($"[PlayerDataUtils] Invalid migration result for {typeof(T).Name}: {selected.method.Name}");
+                        LinkLogger.LogError($"[PlayerDataUtils] Invalid migration result for {typeof(T).Name}: {selected.method.Name}");
                         return false;
                     }
 

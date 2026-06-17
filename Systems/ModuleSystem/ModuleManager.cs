@@ -89,7 +89,7 @@ namespace PowerCellStudio
                 var dependType = dependAttribute.DependModuleType;
                 if (!CreateModule(dependType))
                 {
-                    ModuleLog.LogError($"Failed to create module {type.Name} because dependency {dependType.Name} failed to create.");
+                    ModuleLogger.LogError($"Failed to create module {type.Name} because dependency {dependType.Name} failed to create.");
                     return false;
                 }
             }
@@ -104,7 +104,7 @@ namespace PowerCellStudio
                     // 非静态的单例类，直接实例化
                     if (!autoInit)
                     {
-                        ModuleLog.LogWarning($"Module {type.Name} is marked with DonotInitModuleAutoly, but it does not have an instance property. Skipping initialization.");
+                        ModuleLogger.LogWarning($"Module {type.Name} is marked with DonotInitModuleAutoly, but it does not have an instance property. Skipping initialization.");
                         return false;
                     }
                     if (isMonoBehavior)
@@ -140,7 +140,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                ModuleLog.LogError($"Failed to create module {type.Name}: {e}");
+                ModuleLogger.LogError($"Failed to create module {type.Name}: {e}");
                 return false;
             }
 
@@ -271,7 +271,7 @@ namespace PowerCellStudio
             {
                 return module as T;
             }
-            ModuleLog.LogError<T>($"Module {type.Name} not found.");
+            ModuleLogger.LogError<T>($"Module {type.Name} not found.");
             return null;
         }
 

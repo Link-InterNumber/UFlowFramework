@@ -15,7 +15,7 @@ namespace PowerCellStudio
         {
             if (stateIndex < 0)
             {
-                LinkLog.LogError($"State index must be non-negative: {stateIndex}");
+                LinkLogger.LogError($"State index must be non-negative: {stateIndex}");
                 return;
             }
 
@@ -27,7 +27,7 @@ namespace PowerCellStudio
         {
             if (stateIndex < 0)
             {
-                LinkLog.LogError($"State index must be non-negative: {stateIndex}");
+                LinkLogger.LogError($"State index must be non-negative: {stateIndex}");
                 return false;
             }
 

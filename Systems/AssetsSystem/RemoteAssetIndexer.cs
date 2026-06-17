@@ -78,7 +78,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                AssetLog.LogError(e);
+                AssetLogger.LogError(e);
             }
             finally
             {
@@ -260,7 +260,7 @@ namespace PowerCellStudio
                 onDownloadProgress?.Invoke((i + 1f) / loadList.Count);
                 if (!token.Result)
                 {
-                    AssetLog.LogError($"下载远程Bundle失败: {bundleName}");
+                    AssetLogger.LogError($"下载远程Bundle失败: {bundleName}");
                 }
                 token.Reset();
             }

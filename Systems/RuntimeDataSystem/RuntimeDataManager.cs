@@ -232,7 +232,7 @@ namespace PowerCellStudio
         
         public void OnGameStart()
         {
-            ModuleLog.Log<RuntimeDataManager>("Module Init!");
+            ModuleLogger.Log<RuntimeDataManager>("Module Init!");
         }
         
         public void OnInit()

@@ -24,11 +24,11 @@ namespace PowerCellStudio
                 bytes = PersistenceEnvelopeUtility.PackBinary(GetCurrentVersion<T>(), bytes);
                 if (encrypt) bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
                 File.WriteAllBytes(filePath, bytes);
-                LinkLog.Log($"Save a Binary at {filePath}");
+                LinkLogger.Log($"Save a Binary at {filePath}");
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"Failed to save binary data: {e.Message}");
+                LinkLogger.LogError($"Failed to save binary data: {e.Message}");
                 return false;
             }
             return true;
@@ -66,12 +66,12 @@ namespace PowerCellStudio
                     await File.WriteAllBytesAsync(filePath, bytes);
                 });
 
-                LinkLog.Log($"Save a Binary at {filePath}");
+                LinkLogger.Log($"Save a Binary at {filePath}");
                 onComplete?.Invoke(true);
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"Failed to save binary data: {e.Message}");
+                LinkLogger.LogError($"Failed to save binary data: {e.Message}");
                 onComplete?.Invoke(false);
             }
         }
@@ -110,7 +110,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"Failed to read binary data: {e.Message}");
+                LinkLogger.LogError($"Failed to read binary data: {e.Message}");
                 return default;
             }
         }
@@ -170,7 +170,7 @@ namespace PowerCellStudio
             }
             catch (Exception e)
             {
-                LinkLog.LogError($"Failed to read binary data: {e.Message}");
+                LinkLogger.LogError($"Failed to read binary data: {e.Message}");
                 onComplete?.Invoke(default);
             }
         }

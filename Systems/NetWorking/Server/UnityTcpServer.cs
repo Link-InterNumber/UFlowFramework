@@ -45,7 +45,7 @@ namespace PowerCellStudio
                     var size = gameSession.GetNextPackage(ref _buffer);
                     if (size <= 0) continue;
                     var message = serializer.Deserialize(_buffer, size, out var messageType);
-                    NetWorkLog.Log($"Received from {session.Id}: {message}");
+                    NetWorkLogger.Log($"Received from {session.Id}: {message}");
                     DealWithSR(messageType, gameSession);
                 }
             }

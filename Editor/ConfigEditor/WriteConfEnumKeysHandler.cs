@@ -24,7 +24,7 @@ namespace PowerCellStudio
                 var valueString  = keyCell.ToString();
                 if (enumValues.Contains(valueString))
                 {
-                    ConfigLog.LogError($"配置的Key {valueString} 字段不能重复");
+                    ConfigLogger.LogError($"配置的Key {valueString} 字段不能重复");
                     continue;
                 }
                 enumValues.Add(valueString);

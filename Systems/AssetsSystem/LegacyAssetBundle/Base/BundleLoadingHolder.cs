@@ -49,7 +49,7 @@ namespace PowerCellStudio
             }
             else
             {
-                AssetLog.LogError($"Bundle {bundleName} is not loading");
+                AssetLogger.LogError($"Bundle {bundleName} is not loading");
             }
             _onloading.Remove(bundleName);
         }
