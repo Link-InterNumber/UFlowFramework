@@ -6,6 +6,26 @@ namespace PowerCellStudio
 {
     public static class ColorExtension
     {
+        public static Color WithR(this Color color, float r)
+        {
+            return new Color(r, color.g, color.b, color.a);
+        }
+
+        public static Color WithG(this Color color, float g)
+        {
+            return new Color(color.r, g, color.b, color.a);
+        }
+
+        public static Color WithB(this Color color, float b)
+        {
+            return new Color(color.r, color.g, b, color.a);
+        }
+
+        public static Color WithAlpha(this Color color, float alpha)
+        {
+            return new Color(color.r, color.g, color.b, alpha);
+        }
+
         /// <summary>
         /// 将Color对象格式化为十六进制字符串。
         /// Converts a Color object to a hexadecimal string.
@@ -61,6 +81,11 @@ namespace PowerCellStudio
                 Debug.LogError($"Failed to parse hex string '{hex}': {e.Message} / 解析十六进制字符串失败");
                 return Color.white;
             }
+        }
+
+        public static float GetBrightness(this Color color)
+        {
+            return 0.299f * color.r + 0.587f * color.g + 0.114f * color.b;
         }
     }
 }

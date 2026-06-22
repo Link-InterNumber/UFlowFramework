@@ -5,6 +5,129 @@ namespace PowerCellStudio
     public static class Vector3Extension
     {
         /// <summary>
+        /// 返回一个新的三维向量，并将 X 分量替换为指定值。
+        /// Returns a new Vector3 with the X component replaced by the specified value.
+        /// </summary>
+        /// <param name="v">原始向量。</param>
+        /// <param name="x">新的 X 分量值。</param>
+        /// <returns>替换 X 分量后的三维向量。</returns>
+        public static Vector3 WithX(this Vector3 v, float x)
+        {
+            v.x = x;
+            return v;
+        }
+
+        /// <summary>
+        /// 返回一个新的三维向量，并将 Y 分量替换为指定值。
+        /// Returns a new Vector3 with the Y component replaced by the specified value.
+        /// </summary>
+        /// <param name="v">原始向量。</param>
+        /// <param name="y">新的 Y 分量值。</param>
+        /// <returns>替换 Y 分量后的三维向量。</returns>
+        public static Vector3 WithY(this Vector3 v, float y)
+        {
+            v.y = y;
+            return v;
+        }
+
+        /// <summary>
+        /// 返回一个新的三维向量，并将 Z 分量替换为指定值。
+        /// Returns a new Vector3 with the Z component replaced by the specified value.
+        /// </summary>
+        /// <param name="v">原始向量。</param>
+        /// <param name="z">新的 Z 分量值。</param>
+        /// <returns>替换 Z 分量后的三维向量。</returns>
+        public static Vector3 WithZ(this Vector3 v, float z)
+        {
+            v.z = z;
+            return v;
+        }
+
+        /// <summary>
+        /// 返回一个新的三维向量，并在 X 分量上增加指定值。
+        /// Returns a new Vector3 with the specified value added to the X component.
+        /// </summary>
+        /// <param name="v">原始向量。</param>
+        /// <param name="x">要增加到 X 分量的值。</param>
+        /// <returns>增加 X 分量后的三维向量。</returns>
+        public static Vector3 AddX(this Vector3 v, float x)
+        {
+            v.x += x;
+            return v;
+        }
+
+        /// <summary>
+        /// 返回一个新的三维向量，并在 Y 分量上增加指定值。
+        /// Returns a new Vector3 with the specified value added to the Y component.
+        /// </summary>
+        /// <param name="v">原始向量。</param>
+        /// <param name="y">要增加到 Y 分量的值。</param>
+        /// <returns>增加 Y 分量后的三维向量。</returns>
+        public static Vector3 AddY(this Vector3 v, float y)
+        {
+            v.y += y;
+            return v;
+        }
+
+        /// <summary>
+        /// 返回一个新的三维向量，并在 Z 分量上增加指定值。
+        /// Returns a new Vector3 with the specified value added to the Z component.
+        /// </summary>
+        /// <param name="v">原始向量。</param>
+        /// <param name="z">要增加到 Z 分量的值。</param>
+        /// <returns>增加 Z 分量后的三维向量。</returns>
+        public static Vector3 AddZ(this Vector3 v, float z)
+        {
+            v.z += z;
+            return v;
+        }
+
+        /// <summary>
+        /// 返回向量在 XZ 平面上的投影，并将 Y 分量设为 0。
+        /// Returns the projection of the vector onto the XZ plane with the Y component set to 0.
+        /// </summary>
+        /// <param name="v">原始向量。</param>
+        /// <returns>位于 XZ 平面上的三维向量。</returns>
+        public static Vector3 XZ(this Vector3 v)
+        {
+            return new Vector3(v.x, 0f, v.z);
+        }
+
+        /// <summary>
+        /// 将三维向量的 X 和 Y 分量转换为二维向量。
+        /// Converts the X and Y components of a Vector3 to a Vector2.
+        /// </summary>
+        /// <param name="v">原始三维向量。</param>
+        /// <returns>由 X 和 Y 分量组成的二维向量。</returns>
+        public static Vector2 ToVector2XY(this Vector3 v)
+        {
+            return new Vector2(v.x, v.y);
+        }
+
+        /// <summary>
+        /// 将三维向量的 X 和 Z 分量转换为二维向量。
+        /// Converts the X and Z components of a Vector3 to a Vector2.
+        /// </summary>
+        /// <param name="v">原始三维向量。</param>
+        /// <returns>由 X 和 Z 分量组成的二维向量。</returns>
+        public static Vector2 ToVector2XZ(this Vector3 v)
+        {
+            return new Vector2(v.x, v.z);
+        }
+
+        /// <summary>
+        /// 将向量长度限制在指定最大长度内。
+        /// Clamps the vector magnitude to the specified maximum length.
+        /// </summary>
+        /// <param name="v">要限制长度的向量。</param>
+        /// <param name="maxLength">最大长度。</param>
+        /// <returns>长度被限制后的三维向量。</returns>
+        public static Vector3 ClampMagnitude(this Vector3 v, float maxLength)
+        {
+            return Vector3.ClampMagnitude(v, maxLength);
+        }
+
+        /// <summary>
         /// 如果向量为零则返回默认值，否则返回归一化的向量。
         /// Returns a normalized vector or a default value if the vector is zero.
         /// </summary>
@@ -101,6 +224,79 @@ namespace PowerCellStudio
     
     public static class Vector2Extension
     {
+        /// <summary>
+        /// 返回一个新的二维向量，并将 X 分量替换为指定值。
+        /// Returns a new Vector2 with the X component replaced by the specified value.
+        /// </summary>
+        /// <param name="v">原始向量。</param>
+        /// <param name="x">新的 X 分量值。</param>
+        /// <returns>替换 X 分量后的二维向量。</returns>
+        public static Vector2 WithX(this Vector2 v, float x)
+        {
+            v.x = x;
+            return v;
+        }
+
+        /// <summary>
+        /// 返回一个新的二维向量，并将 Y 分量替换为指定值。
+        /// Returns a new Vector2 with the Y component replaced by the specified value.
+        /// </summary>
+        /// <param name="v">原始向量。</param>
+        /// <param name="y">新的 Y 分量值。</param>
+        /// <returns>替换 Y 分量后的二维向量。</returns>
+        public static Vector2 WithY(this Vector2 v, float y)
+        {
+            v.y = y;
+            return v;
+        }
+
+        /// <summary>
+        /// 将二维向量作为 X、Y 分量转换为三维向量，并使用指定的 Z 分量。
+        /// Converts a Vector2 to a Vector3 using the vector as X and Y components and the specified Z component.
+        /// </summary>
+        /// <param name="v">原始二维向量。</param>
+        /// <param name="z">三维向量的 Z 分量。</param>
+        /// <returns>转换后的三维向量。</returns>
+        public static Vector3 ToVector3XY(this Vector2 v, float z = 0f)
+        {
+            return new Vector3(v.x, v.y, z);
+        }
+
+        /// <summary>
+        /// 将二维向量作为 X、Z 分量转换为三维向量，并使用指定的 Y 分量。
+        /// Converts a Vector2 to a Vector3 using the vector as X and Z components and the specified Y component.
+        /// </summary>
+        /// <param name="v">原始二维向量。</param>
+        /// <param name="y">三维向量的 Y 分量。</param>
+        /// <returns>转换后的三维向量。</returns>
+        public static Vector3 ToVector3XZ(this Vector2 v, float y = 0f)
+        {
+            return new Vector3(v.x, y, v.y);
+        }
+
+        /// <summary>
+        /// 将角度转换为二维方向向量。
+        /// Converts an angle in degrees to a 2D direction vector.
+        /// </summary>
+        /// <param name="angle">角度（度）。</param>
+        /// <returns>由角度表示的二维方向向量。</returns>
+        public static Vector2 AngleToDirection(float angle)
+        {
+            float rad = angle * Mathf.Deg2Rad;
+            return new Vector2(Mathf.Cos(rad), Mathf.Sin(rad));
+        }
+
+        /// <summary>
+        /// 将二维方向向量转换为角度。
+        /// Converts a 2D direction vector to an angle in degrees.
+        /// </summary>
+        /// <param name="direction">二维方向向量。</param>
+        /// <returns>方向向量对应的角度（度）。</returns>
+        public static float ToAngle(this Vector2 direction)
+        {
+            return Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        }
+
         /// <summary>
         /// 如果向量为零则返回默认值，否则返回归一化的向量。
         /// Returns a normalized vector or a default value if the vector is zero.
