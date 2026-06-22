@@ -1,0 +1,29 @@
+{
+    "name": "com.powercellstudio.uflowframework",
+    "version": "1.7.1",
+    "displayName": "UFlow Framework",
+    "description": "A Unity client framework providing UI, module management, event dispatching, localization, configuration tools, persistence, pooling, FSM, async utilities, editor tools, and build helpers.",
+    "unity": "2022.3",
+    "keywords": [
+        "unity",
+        "framework",
+        "uflow",
+        "ui",
+        "localization",
+        "addressables",
+        "event",
+        "fsm",
+        "pool",
+        "editor tools"
+    ],
+    "author": {
+        "name": "PowerCell Studio",
+        "email": "1012060308@qq.com"
+    },
+    "dependencies": {
+        "com.unity.addressables": "1.21.4",
+        "com.unity.textmeshpro": "3.0.6",
+        "com.unity.localization": "1.4.2",
+        "com.unity.ugui": "1.0.0"
+    }
+}
