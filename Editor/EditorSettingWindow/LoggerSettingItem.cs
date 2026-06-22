@@ -245,10 +245,10 @@ namespace PowerCellStudio
                         .WriteLine($"Debug.LogError($\"[<color={errorColor}>{logType} {errorLabel}</color>] {{message}}\");")
                         .EndWriteMethod();
 
-                    csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "Exception", "Exception", "object message")
-                        .WriteLine("if (!enableError) return null;")
-                        .WriteLine("if(Application.isPlaying && !ApplicationManager.enableError) return null;")
-                        .WriteLine($"return new Exception($\"[<color={exceptionColor}>{logType} {exceptionLabel}</color>] {{message}}\");")
+                    csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "ThrowException", "object message")
+                        .WriteLine("if (!enableError) return;")
+                        .WriteLine("if(Application.isPlaying && !ApplicationManager.enableError) return;")
+                        .WriteLine($"throw new Exception($\"[<color={exceptionColor}>{logType} {exceptionLabel}</color>] {{message}}\");")
                         .EndWriteMethod();
 
                     if (format.genericArgument)
@@ -271,10 +271,10 @@ namespace PowerCellStudio
                             .WriteLine($"Debug.LogError($\"[<color={errorColor}>{logType} {errorLabel}</color>:{{typeof(T).Name}}] {{message}}\");")
                             .EndWriteMethod();
 
-                        csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "Exception", "Exception<T>", "object message")
-                            .WriteLine("if (!enableError) return null;")
-                            .WriteLine("if(Application.isPlaying && !ApplicationManager.enableError) return null;")
-                            .WriteLine($"return new Exception($\"[<color={exceptionColor}>{logType} {exceptionLabel}</color>:{{typeof(T).Name}}] {{message}}\");")
+                        csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "ThrowException<T>", "object message")
+                            .WriteLine("if (!enableError) return;")
+                            .WriteLine("if(Application.isPlaying && !ApplicationManager.enableError) return;")
+                            .WriteLine($"throw new Exception($\"[<color={exceptionColor}>{logType} {exceptionLabel}</color>:{{typeof(T).Name}}] {{message}}\");")
                             .EndWriteMethod();
                     }
 

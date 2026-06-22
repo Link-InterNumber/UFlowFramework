@@ -31,11 +31,11 @@ namespace PowerCellStudio
             Debug.LogError($"[<color=#ECF304FF>Config Error</color>] {message}");
         }
 
-        public static Exception Exception(object message)
+        public static void ThrowException(object message)
         {
-            if (!enableError) return null;
-            if(Application.isPlaying && !ApplicationManager.enableError) return null;
-            return new Exception($"[<color=#ECF304FF>Config Exception</color>] {message}");
+            if (!enableError) return;
+            if(Application.isPlaying && !ApplicationManager.enableError) return;
+            throw new Exception($"[<color=#ECF304FF>Config Exception</color>] {message}");
         }
     }
 
@@ -65,11 +65,11 @@ namespace PowerCellStudio
             Debug.LogError($"[<color=#005BFFFF>App Error</color>] {message}");
         }
 
-        public static Exception Exception(object message)
+        public static void ThrowException(object message)
         {
-            if (!enableError) return null;
-            if(Application.isPlaying && !ApplicationManager.enableError) return null;
-            return new Exception($"[<color=#005BFFFF>App Exception</color>] {message}");
+            if (!enableError) return;
+            if(Application.isPlaying && !ApplicationManager.enableError) return;
+            throw new Exception($"[<color=#005BFFFF>App Exception</color>] {message}");
         }
     }
 
@@ -99,11 +99,11 @@ namespace PowerCellStudio
             Debug.LogError($"[<color=#FF8D15FF>Asset Error</color>] {message}");
         }
 
-        public static Exception Exception(object message)
+        public static void ThrowException(object message)
         {
-            if (!enableError) return null;
-            if(Application.isPlaying && !ApplicationManager.enableError) return null;
-            return new Exception($"[<color=#FF8D15FF>Asset Exception</color>] {message}");
+            if (!enableError) return;
+            if(Application.isPlaying && !ApplicationManager.enableError) return;
+            throw new Exception($"[<color=#FF8D15FF>Asset Exception</color>] {message}");
         }
     }
 
@@ -133,11 +133,11 @@ namespace PowerCellStudio
             Debug.LogError($"[<color=#FF6800FF>UI Error</color>] {message}");
         }
 
-        public static Exception Exception(object message)
+        public static void ThrowException(object message)
         {
-            if (!enableError) return null;
-            if(Application.isPlaying && !ApplicationManager.enableError) return null;
-            return new Exception($"[<color=#FF6800FF>UI Exception</color>] {message}");
+            if (!enableError) return;
+            if(Application.isPlaying && !ApplicationManager.enableError) return;
+            throw new Exception($"[<color=#FF6800FF>UI Exception</color>] {message}");
         }
     }
 
@@ -167,11 +167,11 @@ namespace PowerCellStudio
             Debug.LogError($"[<color=#009FFFFF>NetWork Error</color>] {message}");
         }
 
-        public static Exception Exception(object message)
+        public static void ThrowException(object message)
         {
-            if (!enableError) return null;
-            if(Application.isPlaying && !ApplicationManager.enableError) return null;
-            return new Exception($"[<color=#009FFFFF>NetWork Exception</color>] {message}");
+            if (!enableError) return;
+            if(Application.isPlaying && !ApplicationManager.enableError) return;
+            throw new Exception($"[<color=#009FFFFF>NetWork Exception</color>] {message}");
         }
     }
 
@@ -201,11 +201,11 @@ namespace PowerCellStudio
             Debug.LogError($"[<color=#FF00DFFF>Module Error</color>] {message}");
         }
 
-        public static Exception Exception(object message)
+        public static void ThrowException(object message)
         {
-            if (!enableError) return null;
-            if(Application.isPlaying && !ApplicationManager.enableError) return null;
-            return new Exception($"[<color=#FF00DFFF>Module Exception</color>] {message}");
+            if (!enableError) return;
+            if(Application.isPlaying && !ApplicationManager.enableError) return;
+            throw new Exception($"[<color=#FF00DFFF>Module Exception</color>] {message}");
         }
 
         public static void Log<T>(object message)
@@ -229,11 +229,11 @@ namespace PowerCellStudio
             Debug.LogError($"[<color=#FF00DFFF>Module Error</color>:{typeof(T).Name}] {message}");
         }
 
-        public static Exception Exception<T>(object message)
+        public static void ThrowException<T>(object message)
         {
-            if (!enableError) return null;
-            if(Application.isPlaying && !ApplicationManager.enableError) return null;
-            return new Exception($"[<color=#FF00DFFF>Module Exception</color>:{typeof(T).Name}] {message}");
+            if (!enableError) return;
+            if(Application.isPlaying && !ApplicationManager.enableError) return;
+            throw new Exception($"[<color=#FF00DFFF>Module Exception</color>:{typeof(T).Name}] {message}");
         }
     }
 
@@ -263,11 +263,11 @@ namespace PowerCellStudio
             Debug.LogError($"[<color=#00D1FFFF>Link (◓Д◒)✄╰⋃╯</color>] {message}");
         }
 
-        public static Exception Exception(object message)
+        public static void ThrowException(object message)
         {
-            if (!enableError) return null;
-            if(Application.isPlaying && !ApplicationManager.enableError) return null;
-            return new Exception($"[<color=#00D1FFFF>Link (✘Д✘๑ )</color>] {message}");
+            if (!enableError) return;
+            if(Application.isPlaying && !ApplicationManager.enableError) return;
+            throw new Exception($"[<color=#00D1FFFF>Link (✘Д✘๑ )</color>] {message}");
         }
     }
 
