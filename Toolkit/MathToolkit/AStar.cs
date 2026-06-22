@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -14,38 +12,22 @@ namespace PowerCellStudio
 
         public AStarNode parent;
 
-        public int Depth
-        {
-            get
-            {
-                var parent = this.parent;
-                var depth = 1;
-                while (parent != null)
-                {
-                    depth++;
-                    parent = parent.parent;
-                }
-
-                return depth;
-            }
-        }
-
         /// <summary>
         /// 深度
         /// </summary>
-        public float G;
+        public int G;
 
         /// <summary>
         /// 距离终点长度
         /// </summary>
-        public float H;
+        public int H;
 
         /// <summary>
         /// 从起点到这里，有几次拐弯
         /// </summary>
-        public float I;
+        public int I;
 
-        public float F => G + H + I;
+        public int F => G + H + I;
 
         public AStarNode(Vector2Int pos, Vector2Int endPos, AStarNode parent = null)
         {
@@ -54,14 +36,14 @@ namespace PowerCellStudio
             this.parent = parent;
             Pos = pos;
 
-            G = Depth;
+            G = parent == null ? 1 : parent.G + 1;
             H = Mathf.Abs(pos.x - endPos.x) + Mathf.Abs(pos.y - endPos.y);
-            I = parent?.I ?? 0f;
+            I = parent?.I ?? 0;
 
             if (parent == null || parent.parent == null) return;
-            if (ToVector3(parent.Pos - Pos).normalized != ToVector3(parent.parent.Pos - parent.Pos).normalized)
+            if ((parent.Pos - Pos) != (parent.parent.Pos - parent.Pos))
             {
-                I += 1f;
+                I += 1;
             }
         }
 
@@ -76,10 +58,10 @@ namespace PowerCellStudio
             var parent = this;
             while (parent != null)
             {
-                list.Insert(0, parent.Pos);
+                list.Add(parent.Pos);
                 parent = parent.parent;
             }
-
+            list.Reverse();
             return list;
         }
 
@@ -99,7 +81,7 @@ namespace PowerCellStudio
 
         public override int GetHashCode()
         {
-            return base.GetHashCode();
+            return Pos.GetHashCode();
         }
 
         public int CompareTo(object obj)
@@ -132,8 +114,10 @@ namespace PowerCellStudio
         public bool checkEndInGround = true; //检查终点是否在地图上
         public Vector2Int cardSize = Vector2Int.one;
         public HashSet<Vector2Int> grounds = new HashSet<Vector2Int>();
-        public HashSet<AStarNode> openList = new HashSet<AStarNode>();
-        public HashSet<AStarNode> closeList = new HashSet<AStarNode>();
+        public Dictionary<Vector2Int, AStarNode> openList = new Dictionary<Vector2Int, AStarNode>();
+        public List<AStarNode> orderOpenList = new List<AStarNode>();
+        private readonly Dictionary<Vector2Int, int> _openHeapIndexMap = new Dictionary<Vector2Int, int>();
+        public HashSet<Vector2Int> closeList = new HashSet<Vector2Int>();
 
         private static readonly Vector2Int[] evenRowDir = new[]
         {
@@ -197,6 +181,8 @@ namespace PowerCellStudio
         {
             openList.Clear();
             closeList.Clear();
+            orderOpenList.Clear();
+            _openHeapIndexMap.Clear();
             AddToOpenList(from, to, parent);
 
             return NextNode(to);
@@ -204,24 +190,28 @@ namespace PowerCellStudio
 
         private List<Vector2Int> NextNode(Vector2Int to)
         {
-            if (!openList.Any()) return null;
+            while (openList.Count > 0)
+            {
+                var node = GetNextNode(to);
+                if (node.Pos == to)
+                {
+                    return node.ToList();
+                }
+            }
 
-            var node = GetNextNode(to);
-            if (node.Pos == to) return node.ToList();
-
-            return NextNode(to);
+            return null;
         }
 
-        public AStarNode GetNextNode(Vector2Int to)
+        private AStarNode GetNextNode(Vector2Int to)
         {
-            if (!openList.Any()) return null;
+            // if (openList.Count == 0 || orderOpenList.Count == 0) return null;
 
 //            var nearest = openList.OrderBy(o => o.F).First(); //O(nlogn)
-            var nearest = openList.Min(); //O(n)
+            var nearest = PopOpenHeap();
+            openList.Remove(nearest.Pos);
             if (nearest.Pos == to) return nearest;
 
-            openList.Remove(nearest);
-            closeList.Add(nearest);
+            closeList.Add(nearest.Pos);
 
             if (IsHex)
             {
@@ -233,7 +223,7 @@ namespace PowerCellStudio
                 var nextPos = nearest.Pos + dir;
                 if (checkEndInGround && nextPos == to && !IsValidPosForCard(nextPos)) continue;
 
-                if (closeList.Any(o => o.Pos == nextPos) ||
+                if (closeList.Contains(nextPos) ||
                     (nextPos != to && !IsValidPosForCard(nextPos))) continue;
 
                 AddToOpenList(nextPos, to, nearest);
@@ -244,6 +234,10 @@ namespace PowerCellStudio
 
         private bool IsValidPosForCard(Vector2Int pos)
         {
+            if (cardSize == Vector2Int.one)
+            {
+                return grounds.Contains(pos);
+            }
             for (var x = 0; x < cardSize.x; x++)
             {
                 for (var y = 0; y < cardSize.y; y++)
@@ -260,17 +254,117 @@ namespace PowerCellStudio
 
         public void AddToOpenList(Vector2Int from, Vector2Int to, AStarNode parent)
         {
-            var node = openList.FirstOrDefault(o => o.Pos == from);
-            if (node == null)
+            if (!openList.TryGetValue(from, out var node))
             {
-                //TODO: new AStarNode 改用Pool
                 node = new AStarNode(from, to, parent);
-                openList.Add(node);
+                openList.Add(from, node);
+                PushOpenHeap(node);
             }
             else if (parent != null && node.parent != parent)
             {
-                if (parent.G + 1 < node.G) node.parent = parent;
+                if (parent.G + 1 < node.G) 
+                {
+                    node.parent = parent;
+                    node.G = parent.G + 1;
+                    node.I = parent.I;
+                    if (parent.parent != null && (parent.Pos - node.Pos) != (parent.parent.Pos - parent.Pos))
+                    {
+                        node.I += 1;
+                    }
+                    if (_openHeapIndexMap.TryGetValue(node.Pos, out var heapIndex))
+                    {
+                        SiftUp(heapIndex);
+                        SiftDown(heapIndex);
+                    }
+                }
             }
+        }
+
+        private void PushOpenHeap(AStarNode node)
+        {
+            orderOpenList.Add(node);
+            var index = orderOpenList.Count - 1;
+            _openHeapIndexMap[node.Pos] = index;
+            SiftUp(index);
+        }
+
+        private AStarNode PopOpenHeap()
+        {
+            var result = orderOpenList[0];
+            var lastIndex = orderOpenList.Count - 1;
+            _openHeapIndexMap.Remove(result.Pos);
+            if (lastIndex == 0)
+            {
+                orderOpenList.RemoveAt(0);
+                return result;
+            }
+
+            orderOpenList[0] = orderOpenList[lastIndex];
+            orderOpenList.RemoveAt(lastIndex);
+            _openHeapIndexMap[orderOpenList[0].Pos] = 0;
+            SiftDown(0);
+            return result;
+        }
+
+        private void SiftUp(int index)
+        {
+            while (index > 0)
+            {
+                var parentIndex = (index - 1) >> 1;
+                if (!IsBetter(orderOpenList[index], orderOpenList[parentIndex]))
+                {
+                    break;
+                }
+
+                SwapOpenHeap(index, parentIndex);
+                index = parentIndex;
+            }
+        }
+
+        private void SiftDown(int index)
+        {
+            while (true)
+            {
+                var leftIndex = index * 2 + 1;
+                if (leftIndex >= orderOpenList.Count)
+                {
+                    break;
+                }
+
+                var rightIndex = leftIndex + 1;
+                var bestIndex = leftIndex;
+                if (rightIndex < orderOpenList.Count && IsBetter(orderOpenList[rightIndex], orderOpenList[leftIndex]))
+                {
+                    bestIndex = rightIndex;
+                }
+
+                if (!IsBetter(orderOpenList[bestIndex], orderOpenList[index]))
+                {
+                    break;
+                }
+
+                SwapOpenHeap(index, bestIndex);
+                index = bestIndex;
+            }
+        }
+
+        private bool IsBetter(AStarNode a, AStarNode b)
+        {
+            if (a.F != b.F)
+            {
+                return a.F < b.F;
+            }
+
+            return a.H < b.H;
+        }
+
+        private void SwapOpenHeap(int indexA, int indexB)
+        {
+            var temp = orderOpenList[indexA];
+            orderOpenList[indexA] = orderOpenList[indexB];
+            orderOpenList[indexB] = temp;
+            _openHeapIndexMap[orderOpenList[indexA].Pos] = indexA;
+            _openHeapIndexMap[orderOpenList[indexB].Pos] = indexB;
         }
     }
 }
