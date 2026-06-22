@@ -5,21 +5,21 @@ using System.Collections.Generic;
 namespace UFlowFramework
 {
     /// <summary>
-    /// List实现的二叉最小堆。
-    /// Binary min heap backed by a List.
+    /// List实现的二叉最大堆。
+    /// Binary max heap backed by a List.
     /// </summary>
-    public class MinHeap<T> : ICollection<T>
+    public class MaxHeap<T> : ICollection<T>
         where T : IComparable<T>
     {
         private const int DefaultCapacity = 4;
 
         private readonly List<T> _items;
 
-        public MinHeap() : this(DefaultCapacity)
+        public MaxHeap() : this(DefaultCapacity)
         {
         }
 
-        public MinHeap(int capacity)
+        public MaxHeap(int capacity)
         {
             if (capacity < 0)
             {
@@ -29,7 +29,7 @@ namespace UFlowFramework
             _items = new List<T>(capacity);
         }
 
-        public MinHeap(IEnumerable<T> collection)
+        public MaxHeap(IEnumerable<T> collection)
         {
             if (collection == null)
             {
@@ -172,7 +172,7 @@ namespace UFlowFramework
             }
 
             RemoveAt(index);
-            
+
             return true;
         }
 
@@ -259,7 +259,7 @@ namespace UFlowFramework
 
         private void FixHeapAt(int index)
         {
-            if (index > 0 && Less(_items[index], _items[(index - 1) >> 1]))
+            if (index > 0 && Greater(_items[index], _items[(index - 1) >> 1]))
             {
                 SiftUp(index);
             }
@@ -276,7 +276,7 @@ namespace UFlowFramework
             {
                 var parentIndex = (index - 1) >> 1;
                 var parent = _items[parentIndex];
-                if (!Less(item, parent))
+                if (!Greater(item, parent))
                 {
                     break;
                 }
@@ -298,13 +298,13 @@ namespace UFlowFramework
                 var rightIndex = childIndex + 1;
                 var child = _items[childIndex];
 
-                if (rightIndex < Count && Less(_items[rightIndex], child))
+                if (rightIndex < Count && Greater(_items[rightIndex], child))
                 {
                     childIndex = rightIndex;
                     child = _items[childIndex];
                 }
 
-                if (!Less(child, item))
+                if (!Greater(child, item))
                 {
                     break;
                 }
@@ -316,9 +316,9 @@ namespace UFlowFramework
             _items[index] = item;
         }
 
-        private bool Less(T a, T b)
+        private bool Greater(T a, T b)
         {
-            return a.CompareTo(b) < 0;
+            return a.CompareTo(b) > 0;
         }
 
         private void CheckIndex(int index)
