@@ -270,8 +270,10 @@ namespace PowerCellStudio
             float unscaledTime = Time.unscaledTime;
             int frameCount = Time.frameCount;
             _schedulerRunner?.Tick(time, unscaledTime, frameCount);
+#if !UNITY_WEBGL
             _threadedTasksRunner?.Tick();
             _jobRunner?.Tick();
+#endif
         }
 
         private void FixedUpdate()

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
+#endif
 using Random = System.Random;
 
 namespace RVO.JobSystem
@@ -181,8 +183,9 @@ namespace RVO.JobSystem
                 return;
             }
             var mouseWorld = GetMouseWorldPosition();
+            var mouseScroll = GetMouseScroll();
 
-            if (Mouse.current.scroll.ReadValue().y > 0f)
+            if (mouseScroll > 0f)
             {
                 // 添加agent
                 var agentType = _random.Next(0, 3); // Assuming 3 agent types for testing
@@ -211,7 +214,7 @@ namespace RVO.JobSystem
                     }
                 }
             }
-            else if(Mouse.current.scroll.ReadValue().y < 0)
+            else if(mouseScroll < 0)
             {
                 // 删除agent
                 if (_agentIds.Count > 0)
@@ -274,7 +277,11 @@ namespace RVO.JobSystem
                 return new Vector3(0f, 0f, worldPlaneZ);
             }
 
+#if ENABLE_INPUT_SYSTEM
             var ray = cam.ScreenPointToRay(Mouse.current.position.ReadValue());
+#else
+            var ray = cam.ScreenPointToRay(Input.mousePosition);
+#endif
             var plane = new Plane(Vector3.forward, new Vector3(0f, 0f, worldPlaneZ));
             if (plane.Raycast(ray, out var enter))
             {
@@ -284,6 +291,15 @@ namespace RVO.JobSystem
             }
 
             return new Vector3(0f, 0f, worldPlaneZ);
+        }
+
+        private float GetMouseScroll()
+        {
+#if ENABLE_INPUT_SYSTEM
+            return Mouse.current.scroll.ReadValue().y;
+#else
+            return Input.mouseScrollDelta.y;
+#endif
         }
 
         private void Shutdown()

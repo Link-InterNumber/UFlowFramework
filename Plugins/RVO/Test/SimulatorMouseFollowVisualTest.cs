@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
+#endif
 
 namespace RVO.JobSystem
 {
@@ -193,7 +195,11 @@ namespace RVO.JobSystem
                 return new Vector3(0f, 0f, worldPlaneZ);
             }
 
+#if ENABLE_INPUT_SYSTEM
             var ray = cam.ScreenPointToRay(Mouse.current.position.ReadValue());
+#else
+            var ray = cam.ScreenPointToRay(Input.mousePosition);
+#endif
             var plane = new Plane(Vector3.forward, new Vector3(0f, 0f, worldPlaneZ));
             if (plane.Raycast(ray, out var enter))
             {
@@ -203,6 +209,15 @@ namespace RVO.JobSystem
             }
 
             return new Vector3(0f, 0f, worldPlaneZ);
+        }
+
+        private float GetMouseScroll()
+        {
+#if ENABLE_INPUT_SYSTEM
+            return Mouse.current.scroll.ReadValue().y;
+#else
+            return Input.mouseScrollDelta.y;
+#endif
         }
 
         private void Shutdown()
