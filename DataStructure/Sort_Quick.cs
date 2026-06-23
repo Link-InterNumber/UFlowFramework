@@ -10,6 +10,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 快速排序是一种高效的排序算法，平均时间复杂度为O(n log n)。它通过选择一个“枢轴”元素，将数组分成两部分，一部分比枢轴小，另一部分比枢轴大，然后递归地对这两部分进行排序，最终得到有序的结果。
+        /// 时间复杂度：O(n log n)
+        /// 空间复杂度：O(log n)（递归栈空间）
         /// </summary>
         public static void QuickSort<T>(IList<T> list, Sort.ValueMethod<T> valueMethod,
             int startIndex = 0, int length = -1)
@@ -72,6 +74,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 快速排序是一种高效的排序算法，平均时间复杂度为O(n log n)。它通过选择一个“枢轴”元素，将数组分成两部分，一部分比枢轴小，另一部分比枢轴大，然后递归地对这两部分进行排序，最终得到有序的结果。
+        /// 时间复杂度：O(n log n)
+        /// 空间复杂度：O(log n)（递归栈空间）
         /// </summary>
         public static T[] QuickSort<T>(IEnumerable<T> list, Sort.ValueMethod<T> valueMethod)
         {
@@ -84,6 +88,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 快速排序是一种高效的排序算法，平均时间复杂度为O(n log n)。它通过选择一个“枢轴”元素，将数组分成两部分，一部分比枢轴小，另一部分比枢轴大，然后递归地对这两部分进行排序，最终得到有序的结果。
+        /// 时间复杂度：O(n log n)
+        /// 空间复杂度：O(log n)（递归栈空间）
         /// </summary>
         public static void QuickSort<T>(Span<T> span, Sort.ValueMethod<T> valueMethod,
             int startIndex = 0, int length = -1)
@@ -139,6 +145,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 快速排序是一种高效的排序算法，平均时间复杂度为O(n log n)。它通过选择一个“枢轴”元素，将数组分成两部分，一部分比枢轴小，另一部分比枢轴大，然后递归地对这两部分进行排序，最终得到有序的结果。
+        /// 时间复杂度：O(n log n)
+        /// 空间复杂度：O(log n)（递归栈空间）
         /// </summary>
         public static void QuickSort<T>(IList<T> list, Comparison<T> comparison,
             int startIndex = 0, int length = -1)
@@ -201,6 +209,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 快速排序是一种高效的排序算法，平均时间复杂度为O(n log n)。它通过选择一个“枢轴”元素，将数组分成两部分，一部分比枢轴小，另一部分比枢轴大，然后递归地对这两部分进行排序，最终得到有序的结果。
+        /// 时间复杂度：O(n log n)
+        /// 空间复杂度：O(log n)（递归栈空间）
         /// </summary>
         public static T[] QuickSort<T>(IEnumerable<T> list, Comparison<T> comparison,
             int startIndex = 0, int length = -1)
@@ -214,6 +224,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 快速排序是一种高效的排序算法，平均时间复杂度为O(n log n)。它通过选择一个“枢轴”元素，将数组分成两部分，一部分比枢轴小，另一部分比枢轴大，然后递归地对这两部分进行排序，最终得到有序的结果。
+        /// 时间复杂度：O(n log n)
+        /// 空间复杂度：O(log n)（递归栈空间）
         /// </summary>
         public static void QuickSort<T>(Span<T> span, Comparison<T> comparison,
             int startIndex = 0, int length = -1)
@@ -269,6 +281,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 快速排序是一种高效的排序算法，平均时间复杂度为O(n log n)。它通过选择一个“枢轴”元素，将数组分成两部分，一部分比枢轴小，另一部分比枢轴大，然后递归地对这两部分进行排序，最终得到有序的结果。
+        /// 时间复杂度：O(n log n)
+        /// 空间复杂度：O(log n)（递归栈空间）
         /// </summary>
         public static void QuickSort<T>(IList<T> list, int startIndex = 0, int length = -1)
             where T : IComparable<T>
@@ -332,6 +346,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 快速排序是一种高效的排序算法，平均时间复杂度为O(n log n)。它通过选择一个“枢轴”元素，将数组分成两部分，一部分比枢轴小，另一部分比枢轴大，然后递归地对这两部分进行排序，最终得到有序的结果。
+        /// 时间复杂度：O(n log n)
+        /// 空间复杂度：O(log n)（递归栈空间）
         /// </summary>
         public static T[] QuickSort<T>(IEnumerable<T> list)
             where T : IComparable<T>
@@ -344,6 +360,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 快速排序是一种高效的排序算法，平均时间复杂度为O(n log n)。它通过选择一个“枢轴”元素，将数组分成两部分，一部分比枢轴小，另一部分比枢轴大，然后递归地对这两部分进行排序，最终得到有序的结果。
+        /// 时间复杂度：O(n log n)
+        /// 空间复杂度：O(log n)（递归栈空间）
         /// </summary>
         public static void QuickSort<T>(Span<T> span, int startIndex = 0, int length = -1)
             where T : IComparable<T>

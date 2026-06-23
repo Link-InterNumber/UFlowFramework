@@ -10,6 +10,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 对大量数据且范围较小的整数进行排序时，计数排序是一种非常高效的算法。它通过统计每个整数出现的次数来实现排序，而不是比较元素之间的大小关系。
+        /// 时间复杂度：O(n + k)，其中n是元素数量，k是元素取值范围
+        /// 空间复杂度：O(k)，需要额外的计数数组
         /// </summary>
         public static void CountingSort<T>(IList<T> list, ValueMethod<T> valueMethod,
             int startIndex = 0, int length = -1)
@@ -62,6 +64,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 对大量数据且范围较小的整数进行排序时，计数排序是一种非常高效的算法。它通过统计每个整数出现的次数来实现排序，而不是比较元素之间的大小关系。
+        /// 时间复杂度：O(n + k)，其中n是元素数量，k是元素取值范围
+        /// 空间复杂度：O(k)，需要额外的计数数组
         /// </summary>
         public static T[] CountingSort<T>(IEnumerable<T> list, ValueMethod<T> valueMethod,
             int startIndex = 0, int length = -1)
@@ -75,6 +79,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 对大量数据且范围较小的整数进行排序时，计数排序是一种非常高效的算法。它通过统计每个整数出现的次数来实现排序，而不是比较元素之间的大小关系。
+        /// 时间复杂度：O(n + k)，其中n是元素数量，k是元素取值范围
+        /// 空间复杂度：O(k)，需要额外的计数数组
         /// </summary>
         public static void CountingSort<T>(Span<T> span, ValueMethod<T> valueMethod,
             int startIndex = 0, int length = -1)

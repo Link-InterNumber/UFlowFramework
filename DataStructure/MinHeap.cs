@@ -77,11 +77,6 @@ namespace UFlowFramework
 
         public T Peek()
         {
-            if (Count == 0)
-            {
-                throw new InvalidOperationException("Heap is empty.");
-            }
-
             return _items[0];
         }
 
@@ -178,26 +173,15 @@ namespace UFlowFramework
 
         public int IndexOf(T item)
         {
-            var comparer = EqualityComparer<T>.Default;
             for (var i = 0; i < Count; i++)
             {
-                if (comparer.Equals(_items[i], item))
+                if (item.Equals(_items[i]))
                 {
                     return i;
                 }
             }
 
             return -1;
-        }
-
-        public void Insert(int index, T item)
-        {
-            if (index < 0 || index > Count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
-
-            Add(item);
         }
 
         public void RemoveAt(int index)

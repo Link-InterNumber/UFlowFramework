@@ -10,6 +10,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 冒泡排序是一种简单的排序算法，平均时间复杂度为O(n^2)。它通过重复地遍历要排序的元素，比较相邻的元素并交换它们的位置，直到整个序列有序。
+        /// 时间复杂度：O(n^2)
+        /// 空间复杂度：O(1)
         /// </summary>
         public static void BubbleSort<T>(IList<T> list, ValueMethod<T> valueMethod,
             int startIndex = 0, int length = -1, int takeCount = -1)
@@ -72,6 +74,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 冒泡排序是一种简单的排序算法，平均时间复杂度为O(n^2)。它通过重复地遍历要排序的元素，比较相邻的元素并交换它们的位置，直到整个序列有序。
+        /// 时间复杂度：O(n^2)
+        /// 空间复杂度：O(1)
         /// </summary>
         public static T[] BubbleSort<T>(IEnumerable<T> list, ValueMethod<T> valueMethod,
             int startIndex = 0, int length = -1, int takeCount = -1)
@@ -85,6 +89,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 冒泡排序是一种简单的排序算法，平均时间复杂度为O(n^2)。它通过重复地遍历要排序的元素，比较相邻的元素并交换它们的位置，直到整个序列有序。
+        /// 时间复杂度：O(n^2)
+        /// 空间复杂度：O(1)
         /// </summary>
         public static void BubbleSort<T>(Span<T> span, ValueMethod<T> valueMethod,
             int startIndex = 0, int length = -1, int takeCount = -1)
@@ -147,6 +153,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 冒泡排序是一种简单的排序算法，平均时间复杂度为O(n^2)。它通过重复地遍历要排序的元素，比较相邻的元素并交换它们的位置，直到整个序列有序。
+        /// 时间复杂度：O(n^2)
+        /// 空间复杂度：O(1)
         /// </summary>
         public static void BubbleSort<T>(IList<T> list, Comparison<T> comparison,
             int startIndex = 0, int length = -1, int takeCount = -1)
@@ -197,6 +205,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 冒泡排序是一种简单的排序算法，平均时间复杂度为O(n^2)。它通过重复地遍历要排序的元素，比较相邻的元素并交换它们的位置，直到整个序列有序。
+        /// 时间复杂度：O(n^2)
+        /// 空间复杂度：O(1)
         /// </summary>
         public static T[] BubbleSort<T>(IEnumerable<T> list, Comparison<T> comparison,
             int startIndex = 0, int length = -1, int takeCount = -1)
@@ -210,6 +220,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 冒泡排序是一种简单的排序算法，平均时间复杂度为O(n^2)。它通过重复地遍历要排序的元素，比较相邻的元素并交换它们的位置，直到整个序列有序。
+        /// 时间复杂度：O(n^2)
+        /// 空间复杂度：O(1)
         /// </summary>
         public static void BubbleSort<T>(Span<T> span, Comparison<T> comparison,
             int startIndex = 0, int length = -1, int takeCount = -1)

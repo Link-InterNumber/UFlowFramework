@@ -10,6 +10,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 堆排序最坏情况也能保证效率。它首先将待排序的元素构建成一个最大堆（或最小堆），然后依次将堆顶元素与最后一个元素交换，并对剩余的元素重新调整为堆，直到所有元素都被排序。
+        /// 时间复杂度：O(nlogn)
+        /// 空间复杂度：O(1)
         /// </summary>
         public static void HeapSort<T>(IList<T> list, ValueMethod<T> valueMethod,
             int startIndex = 0, int length = -1, int takeCount = -1)
@@ -40,6 +42,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 堆排序最坏情况也能保证效率。它首先将待排序的元素构建成一个最大堆（或最小堆），然后依次将堆顶元素与最后一个元素交换，并对剩余的元素重新调整为堆，直到所有元素都被排序。
+        /// 时间复杂度：O(nlogn)
+        /// 空间复杂度：O(1)
         /// </summary>
         public static void HeapSort<T>(IList<T> list, Comparison<T> comparison,
             int startIndex = 0, int length = -1, int takeCount = -1)
@@ -179,6 +183,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 堆排序最坏情况也能保证效率。它首先将待排序的元素构建成一个最大堆（或最小堆），然后依次将堆顶元素与最后一个元素交换，并对剩余的元素重新调整为堆，直到所有元素都被排序。
+        /// 时间复杂度：O(nlogn)
+        /// 空间复杂度：O(1)
         /// </summary>
         public static T[] HeapSort<T>(IEnumerable<T> list, ValueMethod<T> valueMethod, int takeCount = -1)
         {
@@ -191,6 +197,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 堆排序最坏情况也能保证效率。它首先将待排序的元素构建成一个最大堆（或最小堆），然后依次将堆顶元素与最后一个元素交换，并对剩余的元素重新调整为堆，直到所有元素都被排序。
+        /// 时间复杂度：O(nlogn)
+        /// 空间复杂度：O(1)
         /// </summary>
         public static void HeapSort<T>(Span<T> span, ValueMethod<T> valueMethod,
             int startIndex = 0, int length = -1, int takeCount = -1)
@@ -221,6 +229,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 堆排序最坏情况也能保证效率。它首先将待排序的元素构建成一个最大堆（或最小堆），然后依次将堆顶元素与最后一个元素交换，并对剩余的元素重新调整为堆，直到所有元素都被排序。
+        /// 时间复杂度：O(nlogn)
+        /// 空间复杂度：O(1)
         /// </summary>
         public static T[] HeapSort<T>(IEnumerable<T> list, Comparison<T> comparison, int takeCount = -1)
         {
@@ -233,6 +243,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 堆排序最坏情况也能保证效率。它首先将待排序的元素构建成一个最大堆（或最小堆），然后依次将堆顶元素与最后一个元素交换，并对剩余的元素重新调整为堆，直到所有元素都被排序。
+        /// 时间复杂度：O(nlogn)
+        /// 空间复杂度：O(1)
         /// </summary>
         public static void HeapSort<T>(Span<T> span, Comparison<T> comparison,
             int startIndex = 0, int length = -1, int takeCount = -1)

@@ -10,6 +10,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 对大量数据且位数较小的整数进行排序时，基数排序是一种非常高效的算法。它通过将整数分解为不同的位来进行排序，从最低有效位到最高有效位依次进行排序，最终得到有序的结果。
+        /// 时间复杂度：O(nk)，其中 n 是元素数量，k 是最大值的位数
+        /// 空间复杂度：O(n + k)
         /// </summary>
         public static void RadixSort<T>(IList<T> list, ValueMethod<T> valueMethod,
             int startIndex = 0, int length = -1)
@@ -126,6 +128,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 对大量数据且位数较小的整数进行排序时，基数排序是一种非常高效的算法。它通过将整数分解为不同的位来进行排序，从最低有效位到最高有效位依次进行排序，最终得到有序的结果。
+        /// 时间复杂度：O(nk)，其中 n 是元素数量，k 是最大值的位数
+        /// 空间复杂度：O(n + k)
         /// </summary>
         public static T[] RadixSort<T>(IEnumerable<T> list, ValueMethod<T> valueMethod,
             int startIndex = 0, int length = -1)
@@ -139,6 +143,8 @@ namespace UFlowFramework.DataStructure
 
         /// <summary>
         /// 对大量数据且位数较小的整数进行排序时，基数排序是一种非常高效的算法。它通过将整数分解为不同的位来进行排序，从最低有效位到最高有效位依次进行排序，最终得到有序的结果。
+        /// 时间复杂度：O(nk)，其中 n 是元素数量，k 是最大值的位数
+        /// 空间复杂度：O(n + k)
         /// </summary>
         public static void RadixSort<T>(Span<T> span, ValueMethod<T> valueMethod,
             int startIndex = 0, int length = -1)
