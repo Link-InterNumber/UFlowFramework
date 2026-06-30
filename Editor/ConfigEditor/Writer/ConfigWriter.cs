@@ -26,7 +26,7 @@ namespace PowerCellStudio
                 .Space();
         }
         
-        public void GenerateRuntimeCsString(ExcelReader reader)
+        public void GenerateRuntimeCsString(IConfigReader reader)
         {
             var confName = reader.fileName;
             var configTypeInfoList = reader.fieldMap.Values.ToArray();
@@ -57,7 +57,7 @@ namespace PowerCellStudio
             _csFile.EndWriteBody();
         }
         
-        public void GenerateEditorCsString(ExcelReader reader)
+        public void GenerateEditorCsString(IConfigReader reader)
         {
             var confName = reader.fileName;
             var configTypeInfoList = reader.fieldMap.Values.ToArray();

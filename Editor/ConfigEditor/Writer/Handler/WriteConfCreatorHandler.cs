@@ -19,30 +19,38 @@
                 return md5;
             }
 
+#if isExcel
             using (var reader = new ExcelReader(path))
+#else
+            using (var reader = new CsvReader(path))
+#endif
             {
-                var ws = reader.workbook.Worksheets[1];
-                var rowCount = ws.Dimension.Rows;
-                IEnumerable<{{ConfName}}> readYieldInstruction = (Worksheet ws, int rowCount) => 
+                IEnumerable<{{ConfName}}> ReadYieldInstruction()
                 {
                     var fileName = "{{ConfName}}";
-                    for (int raw = 4; raw <= rowCount; raw++)
+                    reader.StartReadLine(3);
+                    var stringDataList = reader.GetNextLine();
+                    while (stringDataList != null)
                     {
-                        var firstCell = ws.Cells[raw, {{MiniColumn}}].Value;
-                        if (firstCell == null || string.IsNullOrEmpty(firstCell.ToString())) continue;
-
+                        var firstCell = stringDataList[{{MiniColumn}}];
+                        if (firstCell == null || string.IsNullOrEmpty(firstCell.ToString()))
+                        {
+                            stringDataList = reader.GetNextLine();
+                            continue;
+                        }
 #for {{ParseStatements}}
                         {{ParseStatement}}
 #forend
-
                         var data = new {{ConfName}}(
 #for {{CtorArguments}}
                             {{ArgumentValue}}
 #forend
                         );
                         yield return data;
+                        stringDataList = reader.GetNextLine();
                     }
                 }
+
         
 #if isEnumKey
                 var keySelector = new Func<{{ConfName}}, {{KeyType}}>(conf => Enum.TryParse<{{ConfName}}Key>(conf.{{keyName}}, out var enumKey) ? enumKey : 0;
@@ -73,7 +81,7 @@ namespace PowerCellStudio
 {
     public class WriteConfCreatorHandler
     {
-        public static void Write(in CsWriter csWriter, in ExcelReader reader, in ConfigTypeInfo[] configTypeInfoList,
+        public static void Write(in CsWriter csWriter, in IConfigReader reader, in ConfigTypeInfo[] configTypeInfoList,
             in string confName)
         {
             var keys = new List<ConfigTypeInfo>();
@@ -115,7 +123,7 @@ namespace PowerCellStudio
             csWriter.EndWriteBody();
         }
 
-        private static void WriteCreateAssetMethod(CsWriter csWriter, ExcelReader reader,
+        private static void WriteCreateAssetMethod(CsWriter csWriter, IConfigReader reader,
             ConfigTypeInfo[] configTypeInfoList, string confName, List<ConfigTypeInfo> keys, string keyType,
             bool isEnumKey, bool isMultiKey)
         {
@@ -135,33 +143,37 @@ namespace PowerCellStudio
                 .WriteLine("ConfigLog.LogError(\"Cannot find file \" + path);")
                 .WriteLine("return string.Empty;")
                 .EndWriteIf();
-
             csWriter.WriteVar("md5", "ConfigMenu.CalFileMD5(path)");
 
             csWriter.StartWriteIf("md5 == oldMd5 && File.Exists(indexAssetPath) && File.Exists(dataAssetPath)")
                 .WriteLine("return md5;")
                 .EndWriteIf();
-
-            csWriter.WriteLine("using (var reader = new ExcelReader(path))");
+            
+            if (Path.GetExtension(excelFileName) == ".xlsx")
+                csWriter.WriteLine("using (var reader = new ExcelReader(path))");
+            else
+                csWriter.WriteLine("using (var reader = new CsvReader(path))");
                 
             csWriter.StartWriteBody();
-
-            csWriter.WriteVar("ws", "reader.workbook.Worksheets[1]")
-                .WriteVar("rowCount", "ws.Dimension.Rows")
-                .WriteLine($"IEnumerable<{confName}> ReadYieldInstruction()");
-            
+            csWriter.WriteLine($"IEnumerable<{confName}> ReadYieldInstruction()");
             csWriter.StartWriteBody();
             csWriter.WriteVar("fileName", $"\"{confName}\"");
-            csWriter.WriteLine("for (int raw = 4; raw <= rowCount; raw++)");
+            csWriter.WriteLine("configReader.StartReadLine(3);");
+            csWriter.WriteLine("var stringDataList = reader.GetNextLine();");
+            csWriter.WriteLine("while (stringDataList != null)");
             csWriter.StartWriteBody();
 
-            csWriter.WriteVar("firstCell", $"ws.Cells[raw, {miniColumn}].Value")
-                .WriteLine("if (firstCell == null || string.IsNullOrEmpty(firstCell.ToString())) continue;");
+            csWriter.WriteVar("firstCell", $"stringDataList[{miniColumn}]")
+                .StartWriteIf("firstCell == null || string.IsNullOrEmpty(firstCell.ToString())")
+                .WriteLine("stringDataList = reader.GetNextLine();")
+                .WriteLine("continue;")
+                .EndWriteIf();
 
             WriteParseStatements(csWriter, configTypeInfoList);
             WriteCreateDataStatement(csWriter, confName, configTypeInfoList);
 
             csWriter.WriteLine("yield return data;");
+            csWriter.WriteLine("stringDataList = reader.GetNextLine();");
             csWriter.EndWriteBody();
             csWriter.EndWriteBody();
 
@@ -212,8 +224,8 @@ namespace PowerCellStudio
                     csWriter.WriteVar(fieldName, $"new List<{configTypeInfo.typeName}>()");
                     foreach (var column in configTypeInfo.columns)
                     {
-                        csWriter.StartWriteIf($"ws.Cells[raw, {column}].Value != null")
-                            .WriteLine($"{fieldName}.Add({configTypeInfo.refTypeName}.Parse(ws.Cells[raw, {column}].Value?.ToString(), fileName, raw, {column}));")
+                        csWriter.StartWriteIf($"stringDataList[{column}] != null")
+                            .WriteLine($"{fieldName}.Add({configTypeInfo.refTypeName}.Parse(stringDataList[{column}], fileName, row, {column}));")
                             .EndWriteIf();
                     }
                 }
@@ -221,7 +233,7 @@ namespace PowerCellStudio
                 {
                     var column = configTypeInfo.columns[0];
                     csWriter.WriteLine(
-                        $"var {fieldName} = {configTypeInfo.refTypeName}.Parse(ws.Cells[raw, {column}].Value?.ToString(), fileName, raw, {column});");
+                        $"var {fieldName} = {configTypeInfo.refTypeName}.Parse(stringDataList[{column}], fileName, row, {column});");
                 }
             }
         }

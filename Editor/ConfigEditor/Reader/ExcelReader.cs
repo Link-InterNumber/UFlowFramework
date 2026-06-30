@@ -5,10 +5,12 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using OfficeOpenXml;
+using UnityEngine;
+using UnityEngine.Pool;
 
 namespace PowerCellStudio
 {
-    public class ExcelReader: IDisposable
+    public class ExcelReader: IConfigReader
     {
         private ExcelWorkbook _workbook;
         public ExcelWorkbook workbook => _workbook;
@@ -20,33 +22,15 @@ namespace PowerCellStudio
         public string fileName => _fileName;
         // private StringBuilder _csFile;
         
-        private List<TypeRef> _typeResolvers = new List<TypeRef>();
         private readonly string _path;
         public string path => _path;
-
+        
         public ExcelReader(string path)
         {
             _fileName = Path.GetFileNameWithoutExtension(path).Split('_')[0].Trim() + "Conf";
             _path = path;
-            InitTypeResolvers();
             LoadExcel(path);
             GetFieldMap();
-        }
-
-        private void InitTypeResolvers()
-        {
-            if (_typeResolvers.Any()) return;
-        
-            var types = Assembly.GetAssembly(typeof(TypeRef)).GetTypes().Where(t => 
-                !t.IsAbstract &&
-                t.IsClass &&
-                t.IsSubclassOf(typeof(TypeRef)));
-
-            foreach (var type in types)
-            {
-                var resolver = (TypeRef)Activator.CreateInstance(type);
-                _typeResolvers.Add(resolver);
-            }
         }
         
         private void LoadExcel(string path)
@@ -66,8 +50,9 @@ namespace PowerCellStudio
         {
             var sheet = _workbook.Worksheets[1];
             var columnCount = sheet.Dimension.Columns;
-
+            
             _fieldMap = new Dictionary<string, ConfigTypeInfo>();
+            var typeResolvers = ResolversTypeBuffer.buffer;
             for (var column = 1; column <= columnCount; column++)
             {
                 if (sheet.Cells[2, column].Value == null) continue;
@@ -82,7 +67,7 @@ namespace PowerCellStudio
 
                 var refTypeName = "StringRef";
                 var fieldType = "string";
-                foreach (var typeResolver in _typeResolvers)
+                foreach (var typeResolver in typeResolvers)
                 {
                     if (typeResolver.isMatch(fieldTypeTemp.ToLower()))
                     {
@@ -120,14 +105,65 @@ namespace PowerCellStudio
             }
         }
 
+        public List<string> GetEnumList(int keyColumn)
+        {
+            var enumValues = HashSetPool<string>.Get();
+            var list = new List<string>();
+            
+            var ws = workbook.Worksheets[1];
+            var rowCount = ws.Dimension.Rows;
+            for (int raw = 4; raw <= rowCount; raw++)
+            {
+                var keyCell = ws.Cells[raw, keyColumn].Value;
+                if (keyCell == null || string.IsNullOrEmpty(keyCell.ToString())) continue;
+                var valueString  = keyCell.ToString();
+                if (enumValues.Contains(valueString))
+                {
+                    ConfigLogger.LogError($"配置的Key {valueString} 字段不能重复");
+                    continue;
+                }
+                enumValues.Add(valueString);
+                list.Add(valueString);
+            }
+            HashSetPool<string>.Release(enumValues);
+            return list;
+        }
+
+        private int _currentRow;
+        private List<string> _buffer;
+        public void StartReadLine(int startLine)
+        {
+            startLine = Math.Max(startLine, 0);
+            startLine++;
+            _currentRow = startLine;
+        }
+
+        public List<string> GetNextLine()
+        {
+            var ws = workbook.Worksheets[1];
+            var rowCount = ws.Dimension.Rows;
+            var columnCount = ws.Dimension.Columns;
+            if (_currentRow < 1 || _currentRow > rowCount)
+                return null;
+            _buffer.Clear();
+            for (int column = 1; column <= columnCount; column++)
+            {
+                var cell = ws.Cells[_currentRow, column].Value;
+                var stringValue = cell?.ToString() ?? string.Empty;
+                _buffer.Add(stringValue);
+            }
+            _currentRow++;
+            return _buffer;
+        }
+
         public void Dispose()
         {
+            _buffer?.Clear();
+            _buffer = null;
             _workbook.Dispose();
             _ep.Dispose();
             _fieldMap.Clear();
             _fieldMap = null;
-            _typeResolvers.Clear();
-            _typeResolvers = null;
         }
     }
 }

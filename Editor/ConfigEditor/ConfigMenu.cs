@@ -57,13 +57,21 @@ namespace PowerCellStudio
                 var filePaths = Directory.GetFiles(excelPath);
                 var collectionList = new List<string>();
                 EditorUtility.DisplayProgressBar("Create Cs Files", "Start Running", 0f);
+                ResolversTypeBuffer.InitBuffer();
                 for (var i = 0; i < filePaths.Length; i++)
                 {
                     var filePath = filePaths[i];
                     var fileName = Path.GetFileName(filePath);
-                    if (fileName.StartsWith("~$") || Path.GetExtension(filePath) != ".xlsx") continue;
-                    using var reader = new ExcelReader(filePath);
-                    if(reader.fieldMap.Count == 0) continue;
+                    if (fileName.StartsWith("~$")) continue;
+                    var extension = Path.GetExtension(filePath);
+                    
+                    IConfigReader reader = null;
+                    if (extension == ".xlsx")
+                        reader = new ExcelReader(filePath);
+                    else if (extension == ".csv")
+                        reader = new CsvReader(filePath);
+                    
+                    if(reader == null || reader.fieldMap.Count == 0) continue;
                     
                     var writer = new ConfigWriter();
                     writer.GenerateRuntimeCsString(reader);
@@ -81,6 +89,7 @@ namespace PowerCellStudio
                     var editorCsFilePath = Path.Combine(editorCsFold, $"{reader.fileName}Creator.cs");
                     File.WriteAllText(editorCsFilePath, editorCode, Encoding.UTF8);
                     ConfigLogger.Log($"Create Cs Files From [{reader.fileName}]");
+                    reader.Dispose();
                 }
                 EditorUtility.DisplayProgressBar("Create Cs Files", $"Running ConfigManager", 1f * (filePaths.Length -1) / filePaths.Length);
                 var managerCode = ConfigWriter.GenerateManagerCSString(collectionList);
@@ -93,6 +102,7 @@ namespace PowerCellStudio
             }
             finally
             {
+                ResolversTypeBuffer.ClearBuffer();
                 EditorUtility.ClearProgressBar();
                 AssetDatabase.Refresh();
             }

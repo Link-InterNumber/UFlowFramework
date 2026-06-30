@@ -55,7 +55,7 @@ namespace PowerCellStudio
 {
     public class WriteConfBaseCollectionsHandler
     {
-        public static void Write(in CsWriter csWriter, in ExcelReader reader, in ConfigTypeInfo[] configTypeInfoList, in string confName)
+        public static void Write(in CsWriter csWriter, in IConfigReader reader, in ConfigTypeInfo[] configTypeInfoList, in string confName)
         {
             var keys = new List<ConfigTypeInfo>();
             foreach (var info in configTypeInfoList
@@ -163,32 +163,10 @@ namespace PowerCellStudio
         }
 
 
-        private static void WriteConfEnumKeys(CsWriter csWriter, ExcelReader excelReader, ConfigTypeInfo keyInfo, string confName)
+        private static void WriteConfEnumKeys(CsWriter csWriter, IConfigReader reader, ConfigTypeInfo keyInfo, string confName)
         {
-            var p = excelReader.path.Replace("\\", "/");
-            var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingLogic.SaveKey.excelPath, "");
-            string path = Path.Combine(excelPath, p.Split('/').LastOrDefault() ?? string.Empty);
-            var enumValues = new HashSet<string>();
-            var list = new List<string>();
-
-            var ws = excelReader.workbook.Worksheets[1];
-            var rowCount = ws.Dimension.Rows;
-            var keyColumn = keyInfo.columns[0];
-            for (int raw = 4; raw <= rowCount; raw++)
-            {
-                var keyCell = ws.Cells[raw, keyColumn].Value;
-                if (keyCell == null || string.IsNullOrEmpty(keyCell.ToString())) continue;
-                var valueString  = keyCell.ToString();
-                if (enumValues.Contains(valueString))
-                {
-                    ConfigLogger.LogError($"配置的Key {valueString} 字段不能重复");
-                    continue;
-                }
-                enumValues.Add(valueString);
-                list.Add(valueString);
-            }
-            
-            if(enumValues.Count == 0) return;
+            var list = reader.GetEnumList(keyInfo.columns[0]);
+            if(list.Count == 0) return;
             csWriter.WriteLine("public enum " + confName + "Key");
             csWriter.StartWriteBody();
             foreach (var enumValue in list)

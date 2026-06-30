@@ -24,7 +24,7 @@ namespace PowerCellStudio
 {
     public class WriteConfBaseHandler
     {
-        public static void Write(in CsWriter csWriter, in ExcelReader reader, in ConfigTypeInfo[] configTypeInfoList, in string confName)
+        public static void Write(in CsWriter csWriter, in IConfigReader reader, in ConfigTypeInfo[] configTypeInfoList, in string confName)
         {
             csWriter.WriteLine("[Serializable]")
                 .WriteLine("public partial class " + confName + " : ConfBase")
