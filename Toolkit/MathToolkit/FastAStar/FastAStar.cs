@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
@@ -89,10 +88,14 @@ namespace PowerCellStudio
             return astar.Path(from, to);
         }
 
-        public static FastAStarJobContext PathAsync(IEnumerable<Vector2Int> grounds, Vector2Int from, Vector2Int to, bool isHex)
+        public static void PathAsync(IEnumerable<Vector2Int> grounds, Vector2Int from, Vector2Int to, bool isHex, Action<Vector2Int[]> onCompleted)
         {
-            using var astar = new FastAStar(grounds, new Vector2Int(1, 1), isHex);
-            return astar.PathAsync(from, to);
+            var astar = new FastAStar(grounds, new Vector2Int(1, 1), isHex);
+            astar.PathAsync(from, to, ints =>
+            {
+                onCompleted?.Invoke(ints);
+                astar.Dispose();
+            });
         }
 
         public Vector2Int[] Path(Vector2Int from, Vector2Int to)
@@ -114,20 +117,21 @@ namespace PowerCellStudio
             }
         }
 
-        public FastAStarJobContext PathAsync(Vector2Int from, Vector2Int to)
+        public void PathAsync(Vector2Int from, Vector2Int to, Action<Vector2Int[]> onCompleted)
         {
             if (from == to)
             {
-                return default;
+                onCompleted?.Invoke(new []{ from });
+                return;
             }
 
-            var context = CreateJobContext(from, to, Allocator.Persistent, false);
-            // _runningJobs.Add((context, onCompleted));
-            // if (_runningJobs.Count == 1)
-            // {
-            //     ApplicationManager.instance.StartCoroutine(CheckPathJobCompletion());
-            // }
-            return context;
+            var context = CreateJobContext(from, to, Allocator.Persistent);
+            if (!_runner)
+            {
+                _runner = new GameObject("FastAstarAsyncRunner").AddComponent<FastAstarAsyncRunner>();
+            }
+            _runner.AddRef(this);
+            _runner.Push(context, onCompleted);
         }
 
         // private List<(FastAStarJobContext, Action<Vector2Int[]>)> _runningJobs = new List<(FastAStarJobContext, Action<Vector2Int[]>)>();
@@ -236,7 +240,9 @@ namespace PowerCellStudio
             }
         }
 
-        private static Vector2Int[] BuildPathResult(NativeList<int2> nodes, NativeArray<int> nodeCount)
+        internal static FastAstarAsyncRunner _runner;
+
+        internal static Vector2Int[] BuildPathResult(NativeList<int2> nodes, NativeArray<int> nodeCount)
         {
             if (nodeCount[0] < 0)
             {
@@ -271,9 +277,10 @@ namespace PowerCellStudio
             {
                 _hexOddRowDirections.Dispose();
             }
+            _runner?.RemoveRef(this);
         }
 
-        public struct FastAStarJobContext : IDisposable
+        internal struct FastAStarJobContext : IDisposable
         {
             public NativeList<int2> Nodes;
             public NativeArray<int> NodeCount;
@@ -303,12 +310,12 @@ namespace PowerCellStudio
 
             public bool IsCompleted => PathJobHandle.IsCompleted;
 
-            public void WaitForCompletion(out Vector2Int[] result)
+            public bool WaitForCompletion(out Vector2Int[] result)
             {
                 result = null;
                 if (!IsCompleted)
                 {
-                    return;
+                    return false;
                 }
                 PathJobHandle.Complete();
                 result = new Vector2Int[Nodes.Length];
@@ -317,6 +324,7 @@ namespace PowerCellStudio
                     result[i] = new Vector2Int(Nodes[i].x, Nodes[i].y);
                 }
                 Dispose();
+                return true;
             }
 
             public void Dispose()

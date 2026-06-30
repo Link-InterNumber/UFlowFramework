@@ -12,6 +12,7 @@ namespace PowerCellStudio
         {
             // 融合closeList
             // map: 0不可走，1可走，2已走过
+            [ReadOnly]
             public NativeArray<bool> map;
             public NativeList<int2> nodes;
             public bool isHex;
@@ -22,8 +23,11 @@ namespace PowerCellStudio
             public int2 mapMin;
             public int2 mapMax;
 
+            [ReadOnly]
             public NativeArray<int2> squareDirections;
+            [ReadOnly]
             public NativeArray<int2> hexEvenRowDirections;
+            [ReadOnly]
             public NativeArray<int2> hexOddRowDirections;
             public NativeList<FastAStarNode> openList;
             public NativeArray<FastAStarNode> closeList;
