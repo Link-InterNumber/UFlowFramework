@@ -9,7 +9,7 @@ namespace PowerCellStudio
     }
     
     public interface IRuntimeDataHandler<T> : IRuntimeDataHandler
-        where T : ICloneT<T>
+        where T : struct //, ICloneT<T>
     {
         // private sealed class BagData : RuntimeDataDic<int, RItem> { }
 
@@ -29,7 +29,7 @@ namespace PowerCellStudio
     }
 
     public abstract class RuntimeDataHandlerBase<T, KT> : IRuntimeDataHandler<T>
-        where T : struct, ICloneT<T>
+        where T : struct //, ICloneT<T>
         where KT : RuntimeDataManager.RuntimeDataDic<int,T>, new()
     {
         public virtual void InitData()

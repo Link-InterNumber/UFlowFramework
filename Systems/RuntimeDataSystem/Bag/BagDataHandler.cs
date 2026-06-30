@@ -6,18 +6,18 @@ using System.Linq;
 namespace PowerCellStudio
 {
     [Serializable]
-    public struct RItem: ICloneT<RItem>
+    public struct RItem //: ICloneT<RItem>
     {
         public int id;
         public int num;
-        public RItem Clone()
-        {
-            return new RItem
-            {
-                id = this.id,
-                num = this.num
-            };
-        }
+        // public RItem Clone()
+        // {
+        //     return new RItem
+        //     {
+        //         id = this.id,
+        //         num = this.num
+        //     };
+        // }
     }
 
     public class BagDataHandler: IRuntimeDataHandler<RItem>
