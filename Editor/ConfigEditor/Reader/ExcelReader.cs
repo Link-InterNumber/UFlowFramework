@@ -2,13 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using OfficeOpenXml;
-using UnityEngine;
 using UnityEngine.Pool;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class ExcelReader: IConfigReader
     {

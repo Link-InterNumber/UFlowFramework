@@ -5,7 +5,7 @@ using System.Linq;
 using System;
 using System.Xml.Linq;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class StripLinkConfigItem : IEditorSettingWindowItem
     {

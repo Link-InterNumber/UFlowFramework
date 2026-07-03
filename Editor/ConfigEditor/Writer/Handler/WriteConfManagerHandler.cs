@@ -19,7 +19,7 @@
 
 using System.Collections.Generic;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class WriteConfManagerHandler
     {

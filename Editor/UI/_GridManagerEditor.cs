@@ -4,7 +4,7 @@
 // using UnityEngine;
 // using UnityEngine.UI;
 //
-// namespace PowerCellStudio
+// namespace PowerCellStudio.Editor
 // {
 //     [CustomEditor(typeof(GridManager), true)]
 //     public sealed class GridManagerEditor : Editor

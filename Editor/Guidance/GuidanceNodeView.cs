@@ -6,7 +6,7 @@ using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class GuidanceNodeView : Node
     {

@@ -9,7 +9,7 @@ using System.Text;
 using Color = UnityEngine.Color;
 using Object = UnityEngine.Object;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class LoggerSettingItem : IEditorSettingWindowItem
     {
@@ -144,13 +144,13 @@ namespace PowerCellStudio
                         enableWarning = parts[3].Trim() == "True",
                         enableError = parts[4].Trim() == "True",
                         logColor = ColorExtension.ParseHex(parts[5].Trim()),
-                        loglabel = parts[6],
+                        loglabel = parts[6].TrimEnd('\r', '\n'),
                         warningColor = ColorExtension.ParseHex(parts[7].Trim()),
-                        warningLabel = parts[8],
+                        warningLabel = parts[8].TrimEnd('\r', '\n'),
                         errorColor = ColorExtension.ParseHex(parts[9].Trim()),
-                        ErrorLabel = parts[10],
+                        ErrorLabel = parts[10].TrimEnd('\r', '\n'),
                         ExceptionColor = ColorExtension.ParseHex(parts[11].Trim()),
-                        ExceptionLabel = parts[12]
+                        ExceptionLabel = parts[12].TrimEnd('\r', '\n')
                     };
                     _loggerFormats.Add(format);
                 }
@@ -178,7 +178,8 @@ namespace PowerCellStudio
                 csvBuilder.Append($"{ColorExtension.FormatHex(format.errorColor)},");
                 csvBuilder.Append($"{format.ErrorLabel},");
                 csvBuilder.Append($"{ColorExtension.FormatHex(format.ExceptionColor)},");
-                csvBuilder.AppendLine($"{format.ExceptionLabel}");
+                csvBuilder.Append($"{format.ExceptionLabel}");
+                csvBuilder.Append("\n");
             }
 
             string csvFilePath = AssetDatabase.GetAssetPath(_csvTextAsset);
@@ -204,6 +205,7 @@ namespace PowerCellStudio
             using (var csWriter = new CsWriter())
             {
                 csWriter.WriteUsing("System", "UnityEngine")
+                    .Space()
                     .WriteLine("namespace PowerCellStudio")
                     .StartWriteBody();
 
@@ -229,25 +231,25 @@ namespace PowerCellStudio
 
                     csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "Log", "object message")
                         .WriteLine("if (!enableLog) return;")
-                        .WriteLine("if(Application.isPlaying && !ApplicationManager.enableLog) return;")
+                        .WriteLine("if (Application.isPlaying && !ApplicationManager.enableLog) return;")
                         .WriteLine($"Debug.Log($\"[<color={logColor}>{logType} {logLabel}</color>] {{message}}\");")
                         .EndWriteMethod();
 
                     csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "LogWarning", "object message")
                         .WriteLine("if (!enableWarning) return;")
-                        .WriteLine("if(Application.isPlaying && !ApplicationManager.enableWarning) return;")
+                        .WriteLine("if (Application.isPlaying && !ApplicationManager.enableWarning) return;")
                         .WriteLine($"Debug.LogWarning($\"[<color={warningColor}>{logType} {warningLabel}</color>] {{message}}\");")
                         .EndWriteMethod();
 
                     csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "LogError", "object message")
                         .WriteLine("if (!enableError) return;")
-                        .WriteLine("if(Application.isPlaying && !ApplicationManager.enableError) return;")
+                        .WriteLine("if (Application.isPlaying && !ApplicationManager.enableError) return;")
                         .WriteLine($"Debug.LogError($\"[<color={errorColor}>{logType} {errorLabel}</color>] {{message}}\");")
                         .EndWriteMethod();
 
                     csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "ThrowException", "object message")
                         .WriteLine("if (!enableError) return;")
-                        .WriteLine("if(Application.isPlaying && !ApplicationManager.enableError) return;")
+                        .WriteLine("if (Application.isPlaying && !ApplicationManager.enableError) return;")
                         .WriteLine($"throw new Exception($\"[<color={exceptionColor}>{logType} {exceptionLabel}</color>] {{message}}\");")
                         .EndWriteMethod();
 
@@ -255,25 +257,25 @@ namespace PowerCellStudio
                     {
                         csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "Log<T>", "object message")
                             .WriteLine("if (!enableLog) return;")
-                            .WriteLine("if(Application.isPlaying && !ApplicationManager.enableLog) return;")
+                            .WriteLine("if (Application.isPlaying && !ApplicationManager.enableLog) return;")
                             .WriteLine($"Debug.Log($\"[<color={logColor}>{logType} {logLabel}</color>:{{typeof(T).Name}}] {{message}}\");")
                             .EndWriteMethod();
 
                         csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "LogWarning<T>", "object message")
                             .WriteLine("if (!enableWarning) return;")
-                            .WriteLine("if(Application.isPlaying && !ApplicationManager.enableWarning) return;")
+                            .WriteLine("if (Application.isPlaying && !ApplicationManager.enableWarning) return;")
                             .WriteLine($"Debug.LogWarning($\"[<color={warningColor}>{logType} {warningLabel}</color>:{{typeof(T).Name}}] {{message}}\");")
                             .EndWriteMethod();
 
                         csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "LogError<T>", "object message")
                             .WriteLine("if (!enableError) return;")
-                            .WriteLine("if(Application.isPlaying && !ApplicationManager.enableError) return;")
+                            .WriteLine("if (Application.isPlaying && !ApplicationManager.enableError) return;")
                             .WriteLine($"Debug.LogError($\"[<color={errorColor}>{logType} {errorLabel}</color>:{{typeof(T).Name}}] {{message}}\");")
                             .EndWriteMethod();
 
                         csWriter.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Static, "void", "ThrowException<T>", "object message")
                             .WriteLine("if (!enableError) return;")
-                            .WriteLine("if(Application.isPlaying && !ApplicationManager.enableError) return;")
+                            .WriteLine("if (Application.isPlaying && !ApplicationManager.enableError) return;")
                             .WriteLine($"throw new Exception($\"[<color={exceptionColor}>{logType} {exceptionLabel}</color>:{{typeof(T).Name}}] {{message}}\");")
                             .EndWriteMethod();
                     }

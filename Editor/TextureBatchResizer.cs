@@ -11,7 +11,7 @@ using System.Drawing.Imaging;
 using Newtonsoft.Json;
 using UnityEngine.Pool;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class TextureBatchResizer : EditorWindow
     {

@@ -4,10 +4,10 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     [CustomEditor(typeof(RecycleScrollRect), true)]
-    public sealed class ListManagerEditor : Editor
+    public sealed class ListManagerEditor : UnityEditor.Editor
     {
         private SerializedProperty _layoutGroup;
         private SerializedProperty _scroll;

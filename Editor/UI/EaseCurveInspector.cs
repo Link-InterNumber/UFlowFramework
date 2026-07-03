@@ -3,10 +3,10 @@ using System;
 using UnityEditor;
 using UnityEngine;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     [CustomEditor(typeof(EaseCurveDisplayer))]
-    public class EaseCurveInspector: Editor
+    public class EaseCurveInspector: UnityEditor.Editor
     {
         private EaseCurveDisplayer _curve;
         private SerializedProperty _curveDataProp;

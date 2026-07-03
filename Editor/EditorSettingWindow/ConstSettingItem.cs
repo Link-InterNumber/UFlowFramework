@@ -4,9 +4,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Text;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class ConstSettingItem : IEditorSettingWindowItem
     {
@@ -147,7 +146,7 @@ namespace PowerCellStudio
             string path = "Assets/UFlowFramework/Define/ConstSetting.cs";
             // if (string.IsNullOrEmpty(path)) return;
 
-            var writer = new PowerCellStudio.CsWriter();
+            var writer = new CsWriter();
 
             // using
             writer.WriteUsing("System.Collections.Generic", "System.IO", "UnityEngine");

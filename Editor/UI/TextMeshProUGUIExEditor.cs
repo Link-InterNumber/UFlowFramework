@@ -9,7 +9,7 @@ using UnityEngine;
 using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class TextMeshProExMenu
     {

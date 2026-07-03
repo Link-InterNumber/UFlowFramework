@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public interface IConfigReader : IDisposable
     {

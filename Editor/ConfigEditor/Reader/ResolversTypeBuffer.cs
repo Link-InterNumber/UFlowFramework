@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
+﻿using System.Collections.Generic;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public static class ResolversTypeBuffer
     {
@@ -17,17 +14,7 @@ namespace PowerCellStudio
             {
                 return _buffer;
             }
-            _buffer = new List<TypeRef>();
-            var types = Assembly.GetAssembly(typeof(TypeRef)).GetTypes().Where(t => 
-                !t.IsAbstract &&
-                t.IsClass &&
-                t.IsSubclassOf(typeof(TypeRef)));
-
-            foreach (var type in types)
-            {
-                var resolver = (TypeRef)Activator.CreateInstance(type);
-                _buffer.Add(resolver);
-            }
+            _buffer = ReflectionUtils.GetInstantiableSubtypeInstance<TypeRef>();
             return _buffer;
         }
         

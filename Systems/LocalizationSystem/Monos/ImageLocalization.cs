@@ -1,11 +1,12 @@
 using UnityEngine;
-using UnityEngine.ResourceManagement.AsyncOperations;
+using UnityEngine.UI;
 
 namespace PowerCellStudio
 {
-    public class SpriteRendererLocalization : AssetLocalizationSwitch
+    [RequireComponent(typeof(Image))]
+    public class ImageLocalization : AssetLocalizationSwitch
     {
-        public SpriteRenderer img;
+        public Image img;
         
         protected override void BeforeLoaded()
         {
@@ -20,7 +21,7 @@ namespace PowerCellStudio
         
         protected override void OnLoadFailed()
         {
-            
+            // img.enabled = true;
         }
     }
 }

@@ -20,7 +20,7 @@
 
 using System.Linq;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class WriteConfBaseHandler
     {

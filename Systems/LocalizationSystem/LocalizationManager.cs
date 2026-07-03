@@ -48,7 +48,8 @@ namespace PowerCellStudio
                 result = string.Empty;
                 return false;
             }
-            return _localizationProvider.TryGetString(key, out result, param);
+            var found = _localizationProvider.TryGetString(key, out result, param);
+            return !string.IsNullOrEmpty(result) && found;
         }
         
         public LoaderYieldInstruction<T> GetAssetAsync<T>(string key) where T : UnityEngine.Object

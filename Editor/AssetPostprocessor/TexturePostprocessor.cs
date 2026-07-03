@@ -3,7 +3,7 @@
 using System.Linq;
 using UnityEditor;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class TexturePostprocessor : AssetPostprocessor
     {

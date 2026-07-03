@@ -10,7 +10,7 @@ using UnityEditor.Compilation;
 using UnityEngine.UI;
 using Assembly = System.Reflection.Assembly;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class UICodeGenerator 
     {

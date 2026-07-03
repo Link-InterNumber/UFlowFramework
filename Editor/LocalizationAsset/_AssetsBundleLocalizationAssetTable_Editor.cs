@@ -4,7 +4,7 @@
 // using UnityEngine;
 // using UnityEngine.Localization.Settings;
 //
-// namespace PowerCellStudio
+// namespace PowerCellStudio.Editor
 // {
 //     public class AssetsBundleLocalizationAssetTable_Editor
 //     {

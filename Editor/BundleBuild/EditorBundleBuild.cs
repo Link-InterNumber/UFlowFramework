@@ -1,13 +1,11 @@
 #if UNITY_EDITOR
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
 using System;
 using UnityEditor;
-using static PowerCellStudio.ConfigSettingItem;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class EditorBundleBuild
     {

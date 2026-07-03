@@ -3,7 +3,7 @@ using TMPro;
 using UnityEditor;
 using UnityEngine;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class FontSettingItem: IEditorSettingWindowItem
     {

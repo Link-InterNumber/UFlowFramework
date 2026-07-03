@@ -6,7 +6,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public partial class AdvancedUICodeGeneratorWindow
     {

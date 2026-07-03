@@ -1,7 +1,7 @@
 using System;
 using System.Text;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public partial class AdvancedUICodeGeneratorWindow
     {

@@ -14,6 +14,7 @@ namespace PowerCellStudio
     {
         public override string Get()
         {
+            if (string.IsNullOrEmpty(rawString)) return string.Empty;
             if (LocalizationManager.instance.TryGetAssetGuid(localizationKey, out string guid))
             {
                 return guid;
@@ -33,14 +34,6 @@ namespace PowerCellStudio
         {
             return "LocalizationAssetRef";
         }
-
-#if UNITY_EDITOR
-        private static AssetTable assetTable;
-        public static void ClearCache()
-        {
-            assetTable = null;
-        }
-#endif
         
         public static LocalizationAssetRef Parse(string stringValue, string confName, int rowIndex, int colIndex)
         {
@@ -49,14 +42,12 @@ namespace PowerCellStudio
                 rawString = stringValue,
                 localizationKey = $"{confName}_{rowIndex}_{colIndex}"
             };
-#if UNITY_EDITOR
-            if (assetTable == null)
+            if (string.IsNullOrEmpty(stringValue))
             {
-                assetTable = LocalizationSettings.AssetDatabase.GetTable(ConstSetting.LocalizationAssetTable);
+                return result;
             }
-            var entry = assetTable?.AddEntry(result.localizationKey, UnityEditor.AssetDatabase.AssetPathToGUID(result.rawString));
-            assetTable?.SharedData.AddKey(entry.Key, entry.KeyId);
-            UnityEditor.EditorUtility.SetDirty(assetTable);
+#if UNITY_EDITOR
+            LocalizationConfigBuffer.AddAssetRef(result);
 #endif
             return result;
         }

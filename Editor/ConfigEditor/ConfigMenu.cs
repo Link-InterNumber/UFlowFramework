@@ -1,22 +1,14 @@
 ﻿#if UNITY_EDITOR
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using Newtonsoft.Json;
 using UnityEditor;
-using UnityEditor.Localization;
-using UnityEditor.Localization.Plugins.CSV;
-using UnityEditor.Localization.Plugins.CSV.Columns;
-using UnityEngine;
-using UnityEngine.Localization.Settings;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public static class ConfigMenu
     {
@@ -139,13 +131,19 @@ namespace PowerCellStudio
                 {
                     Directory.CreateDirectory(assetFilePath);
                 }
-                var types = Assembly.GetAssembly(typeof(ConfCreator)).GetTypes().Where(t => 
-                    !t.IsAbstract &&
-                    t.IsClass &&
-                    t.IsSubclassOf(typeof(ConfCreator))).ToArray();
+                var types = Assembly.GetAssembly(typeof(ConfCreator))
+                    .GetTypes()
+                    .Where(t => 
+                        !t.IsAbstract &&
+                        t.IsClass &&
+                        t.IsSubclassOf(typeof(ConfCreator)))
+                    .ToArray();
                 EditorUtility.DisplayProgressBar("Create Config Assets", "Start Running", 0f);
+                LocalizationConfigBuffer.PrepareBuffer();
+                var paramsArray = new object[1];
                 for (var i = 0; i < types.Length; i++)
                 {
+                    LocalizationConfigBuffer.ClearBuffer();
                     var type = types[i];
                     EditorUtility.DisplayProgressBar("Create Config Assets", $"Running {type.Name}", 1f * i / types.Length);
                     var mathod = type.GetMethod("CreatAsset", BindingFlags.Static | BindingFlags.Public);
@@ -155,16 +153,27 @@ namespace PowerCellStudio
                     {
                         historyMap.TryGetValue(type.Name, out oldMd5);
                     }
-                    var md5String = (string) mathod.Invoke(null, new object[]{oldMd5});
+
+                    paramsArray[0] = oldMd5;
+                    var md5String = (string) mathod.Invoke(null, paramsArray);
                     if (!force)
                     {
                         historyMap[type.Name] = md5String;
                     }
+                    if (!LocalizationConfigBuffer.hasBuffer) continue;
+                    UnityLocalizationWriter.AddToLocalizationFile(LocalizationConfigBuffer.GetStringRefs());
+                    UnityLocalizationWriter.AddToLocalizationFile(LocalizationConfigBuffer.GetAssetRefs());
                 }
                 if (!force)
                 {
                     SaveHistoryFile(excelPath, historyMap);
                 }
+                UnityLocalizationCsvExporter.Export();
+                // ConfigLocalizationCsvToAsset.Produce();
+                // var csvDirectory = Path.Combine(excelPath, ConfigSettingLogic.LocalizationFolderName);
+                // TODO 解析csv文件，生成本地化资源
+                
+                
                 // 获取assetFilePath下的文件列表，保存为一个txt文件，命名为ConfigAssetList.txt，内容为每行一个文件名
                 var sb = new StringBuilder();
                 var assetFiles = Directory.GetFiles(assetFilePath).Select(Path.GetFileName);
@@ -172,8 +181,18 @@ namespace PowerCellStudio
                 {
                     sb.AppendLine(assetFile);
                 }
+                
+                // var configLocalizationDirectory = Path.Combine(assetFilePath, ConfigSettingLogic.LocalizationFolderName);
+                // var configLocalizationAssets = Directory.GetFiles(configLocalizationDirectory, "*.csv").Select(Path.GetFileName);
+                // foreach (var assets in configLocalizationAssets)
+                // {
+                //     sb.AppendLine($"{ConfigSettingLogic.LocalizationFolderName}/{assets}");
+                // }
                 var listFilePath = Path.Combine(assetFilePath, ConfigManager.configAssetListName);
+                
                 File.WriteAllText(listFilePath, sb.ToString(), Encoding.UTF8);
+                LocalizationConfigBuffer.DisposeBuffer();
+                UnityLocalizationWriter.ClearCache();
             }
             catch (Exception e)
             {
@@ -286,52 +305,6 @@ namespace PowerCellStudio
             SaveHistoryFile(excelPath, new Dictionary<string, string>());
             EditorUtility.ClearProgressBar();
             AssetDatabase.Refresh();
-        }
-        
-        [MenuItem("Tools/Config/Create Localization csv", false, 103)]
-        public static void CreateLocalizationCsv()
-        {
-            try
-            {
-                // var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingLogic.SaveKey.excelPath);
-                var csvPath = EditorSaveUtils.GetEditorPref(ConfigSettingLogic.SaveKey.localizationCSVPath, Path.Combine(Environment.CurrentDirectory, "ExcelFiles/Localization")); //Path.Combine(excelPath, "Localization");
-                if (!Directory.Exists(csvPath))
-                {
-                    Directory.CreateDirectory(csvPath);
-                }
-                AssetDatabase.SaveAssets();
-                EditorUtility.DisplayProgressBar("Config", "Export csv file", 0f);
-                var date = DateTime.Now;
-                var fileName = Path.Combine(csvPath, $"{date:yyyy-MM-dd-HH-mm-ss}.csv");//文件名
-                using var sw = new StreamWriter(fileName, true, Encoding.UTF8);
-                var columnMappings = new List<CsvColumns>();
-                columnMappings.Add(new KeyIdColumns()
-                {
-                    IncludeId = false,
-                    IncludeSharedComments = false
-                });
-                foreach (var locale in LocalizationEditorSettings.GetLocales())
-                {
-                    columnMappings.Add(new LocaleColumns()
-                    {
-                        LocaleIdentifier = locale.Identifier,
-                        IncludeComments = false
-                    });
-                }
-                Csv.Export(sw, LocalizationEditorSettings.GetStringTableCollection(ConstSetting.LocalizationStringTable), columnMappings);
-                sw.Close();
-                var fullPath = Path.GetFullPath(csvPath);
-                System.Diagnostics.Process.Start(fullPath);
-            }
-            catch (Exception e)
-            {
-                ConfigLogger.LogError($"{e.Message}\n{e.StackTrace}");
-            }
-            finally
-            {
-                EditorUtility.ClearProgressBar();
-                AssetDatabase.Refresh();
-            }
         }
     }
 }

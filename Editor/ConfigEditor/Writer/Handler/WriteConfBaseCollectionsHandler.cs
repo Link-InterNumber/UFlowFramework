@@ -51,7 +51,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class WriteConfBaseCollectionsHandler
     {

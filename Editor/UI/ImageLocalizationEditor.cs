@@ -7,10 +7,10 @@ using UnityEngine.Localization.Settings;
 using UnityEngine.Localization.Tables;
 using UnityEngine.UI;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     [CustomEditor(typeof(ImageLocalization), true)]
-    public class ImageLocalizationEditor : Editor
+    public class ImageLocalizationEditor : UnityEditor.Editor
     {
         private SerializedProperty m_img;
         private SerializedProperty m_localizationKey;

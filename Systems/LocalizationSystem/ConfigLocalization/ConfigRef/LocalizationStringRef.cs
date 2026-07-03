@@ -15,6 +15,7 @@ namespace PowerCellStudio
     {
         public override string Get()
         {
+            if (string.IsNullOrEmpty(rawString)) return string.Empty;
             if (LocalizationManager.instance.TryGetString(localizationKey, out string localizationString))
             {
                 return localizationString;
@@ -42,13 +43,6 @@ namespace PowerCellStudio
             return "LocalizationStringRef";
         }
         
-#if UNITY_EDITOR
-        private static StringTable stringTable;
-        public static void ClearCache()
-        {
-            stringTable = null;
-        }
-#endif
         public static LocalizationStringRef Parse(string stringValue, string confName, int rowIndex, int colIndex)
         {
             var result = new LocalizationStringRef()
@@ -56,14 +50,12 @@ namespace PowerCellStudio
                 rawString = stringValue,
                 localizationKey = $"{confName}_{rowIndex}_{colIndex}"
             };
-#if UNITY_EDITOR
-            if (stringTable == null)
+            if (string.IsNullOrEmpty(stringValue))
             {
-                stringTable = LocalizationSettings.StringDatabase.GetTable(ConstSetting.LocalizationStringTable);
+                return result;
             }
-            var entry = stringTable?.AddEntry(result.localizationKey, result.rawString);
-            stringTable?.SharedData.AddKey(entry.Key, entry.KeyId);
-            UnityEditor.EditorUtility.SetDirty(stringTable);
+#if UNITY_EDITOR
+            LocalizationConfigBuffer.AddStringRef(result);
 #endif
             return result;
         }

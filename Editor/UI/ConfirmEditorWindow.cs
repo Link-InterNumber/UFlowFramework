@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEditor;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class ConfirmEditorWindow : EditorWindow
     {

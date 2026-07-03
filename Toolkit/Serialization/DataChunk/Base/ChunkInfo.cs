@@ -9,6 +9,7 @@ namespace PowerCellStudio
     {
         public int index;
         public long offset;
+        // public long length;
         /// <summary>
         /// 原始数据为TKey[]
         /// The original data is TKey[]

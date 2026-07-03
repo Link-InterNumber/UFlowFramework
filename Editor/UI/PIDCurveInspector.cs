@@ -2,10 +2,10 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     [CustomEditor(typeof(PIDCurveDisplayer))]
-    public class PIDCurveInspector: Editor
+    public class PIDCurveInspector: UnityEditor.Editor
     {
         private PIDCurveDisplayer _curve;
         private SerializedProperty _curveDataProp;

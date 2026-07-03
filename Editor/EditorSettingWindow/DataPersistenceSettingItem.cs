@@ -7,7 +7,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using Newtonsoft.Json;
 using UnityEngine;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class DataPersistenceSettingItem : IEditorSettingWindowItem
     {

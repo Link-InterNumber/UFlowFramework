@@ -4,7 +4,7 @@ using System.Text;
 using UnityEditor;
 using UnityEngine;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class FindBundleWindow : FolderEditorWindow
     {

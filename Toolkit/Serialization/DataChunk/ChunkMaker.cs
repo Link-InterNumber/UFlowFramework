@@ -94,6 +94,7 @@ namespace PowerCellStudio
                     {
                         index = index,
                         offset = offset,
+                        // length = offsetCounter - offset,
                         keyData = keys.Count > 0 ? options.ResolvedSerializer.Write(keys.ToArray()).ToArray() : Array.Empty<byte>(),
                     };
                     keys.Clear();
@@ -112,6 +113,7 @@ namespace PowerCellStudio
                 {
                     index = index,
                     offset = offset,
+                    // length = offsetCounter - offset,
                     keyData = keys.Count > 0 ? options.ResolvedSerializer.Write(keys.ToArray()).ToArray() : Array.Empty<byte>(),
                 };
                 keys.Clear();
@@ -178,6 +180,7 @@ namespace PowerCellStudio
                 {
                     index = chunkIndex,
                     offset = offset,
+                    // length = dataFile.Position - offset,
                     keyData = groupedKeys[chunkIndex].Count > 0
                         ? options.ResolvedSerializer.Write(groupedKeys[chunkIndex].ToArray()).ToArray()
                         : Array.Empty<byte>(),
@@ -185,7 +188,6 @@ namespace PowerCellStudio
 
                 offset = dataFile.Position;
             }
-
             dataFile.Flush();
         }
         

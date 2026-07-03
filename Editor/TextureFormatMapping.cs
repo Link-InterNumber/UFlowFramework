@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class TextureFormatMapping
     {

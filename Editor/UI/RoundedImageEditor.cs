@@ -2,7 +2,7 @@
 using UnityEditor;
 using UnityEditor.UI;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     [CustomEditor(typeof(RoundedImage), true)]
     public class RoundedImageEditor : ImageEditor
