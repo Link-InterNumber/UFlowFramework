@@ -78,24 +78,24 @@ namespace PowerCellStudio
             { Language.Japanese, "Assets/UFlowFramework/Fonts/AlibabaPuHuiTi-2-85-Bold.ttf" },
         };
         
-        // public static readonly Dictionary<Language, string> LanguageTMPFont = new Dictionary<Language, string>()
-        // {
-        //     { Language.ChineseSimplified, "Assets/UFlowFramework/Fonts/ZiHunBianTaoTiSDF.asset" },
-        //     { Language.English, "Assets/UFlowFramework/Fonts/ZiHunBianTaoTiSDF.asset" },
-        //     { Language.ChineseTraditional, "Assets/UFlowFramework/Fonts/ZiHunBianTaoTiSDF.asset" },
-        //     { Language.Japanese, "Assets/UFlowFramework/Fonts/AlibabaPuHuiTi_2_85_Bold_SDF.asset" },
-        // };
+        public static readonly Dictionary<Language, string> LanguageTMPFont = new Dictionary<Language, string>()
+        {
+            { Language.ChineseSimplified, "Assets/UFlowFramework/Fonts/ZiHunBianTaoTiSDF.asset" },
+            { Language.English, "Assets/UFlowFramework/Fonts/ZiHunBianTaoTiSDF.asset" },
+            { Language.ChineseTraditional, "Assets/UFlowFramework/Fonts/ZiHunBianTaoTiSDF.asset" },
+            { Language.Japanese, "Assets/UFlowFramework/Fonts/AlibabaPuHuiTi_2_85_Bold_SDF.asset" },
+        };
 
-        /// <summary>
-        /// 配置保存模式
-        /// <para>Configuration save mode</para>
-        /// </summary>
-        public enum ConfigSaveMode { ScriptableObject, Json, Binary }
+        // /// <summary>
+        // /// 配置保存模式
+        // /// <para>Configuration save mode</para>
+        // /// </summary>
+        // public enum ConfigSaveMode { ScriptableObject, Json, Binary }
 
-        /// <summary>
-        /// 配置保存模式（默认二进制）
-        /// <para>Configuration save mode (default: Binary)</para>
-        /// </summary>
-        public static readonly ConfigSaveMode ConfigConfigSaveMode = ConfigSaveMode.Binary;
+        // /// <summary>
+        // /// 配置保存模式（默认二进制）
+        // /// <para>Configuration save mode (default: Binary)</para>
+        // /// </summary>
+        // public static readonly ConfigSaveMode ConfigConfigSaveMode = ConfigSaveMode.Binary;
     }
 }

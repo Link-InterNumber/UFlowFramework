@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,6 +13,7 @@ namespace PowerCellStudio.Editor
         private const string MenuPath = "Tools/UFlow/Advanced UI Code Generator";
         private const string NamespaceEditorPrefsKey = "PowerCellStudio.AdvancedUICodeGeneratorWindow.Namespace";
         private const string PrefabPathEditorPrefsKey = "PowerCellStudio.AdvancedUICodeGeneratorWindow.PrefabPath";
+        private const string PendingBindInfoSessionStateKey = "PowerCellStudio.AdvancedUICodeGeneratorWindow.PendingBindInfo";
 
         private static readonly Type[] TargetComponentTypes =
         {
@@ -19,7 +21,17 @@ namespace PowerCellStudio.Editor
             typeof(Toggle),
             typeof(Slider),
             typeof(InputField),
-            typeof(IListUpdater)
+            typeof(IListUpdater),
+        };
+
+        private static readonly HashSet<Type> IgnoredComponentTypes = new HashSet<Type>
+        {
+            typeof(CanvasRenderer),
+            typeof(Outline),
+            typeof(Shadow),
+            typeof(LayoutElement),
+            typeof(ContentSizeFitter),
+            typeof(Scrollbar),
         };
 
         private static readonly string[] NamePrefixes =
@@ -34,7 +46,10 @@ namespace PowerCellStudio.Editor
             { "Slider", "Sld" },
             { "InputField", "Ipf" },
             { "IListUpdater", "Lst" },
-            { "RectTransform", "Rect" }
+            { "RectTransform", "Rect" },
+            { "Image", "Img" },
+            { "Text", "Txt" },
+            { "TextMeshProUGUI", "Txt"}
         };
 
         private GameObject _prefab;
@@ -59,17 +74,7 @@ namespace PowerCellStudio.Editor
         {
             _namespaceName = EditorPrefs.GetString(NamespaceEditorPrefsKey, string.Empty);
 
-            // Restore previous prefab after domain reload/recompile.
-            var cachedPrefabPath = EditorPrefs.GetString(PrefabPathEditorPrefsKey, string.Empty);
-            if (!string.IsNullOrEmpty(cachedPrefabPath))
-            {
-                var cachedPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(cachedPrefabPath);
-                if (cachedPrefab != null)
-                {
-                    SetPrefab(cachedPrefab);
-                    return;
-                }
-            }
+            if (TryRestoreCachedPrefab()) return;
 
             if (Selection.activeObject is GameObject selected && PrefabUtility.GetPrefabAssetType(selected) != PrefabAssetType.NotAPrefab)
             {
@@ -79,49 +84,13 @@ namespace PowerCellStudio.Editor
 
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("Advanced UI Script Generator", EditorStyles.boldLabel);
-            EditorGUILayout.Space();
-
-            EditorGUI.BeginChangeCheck();
-            var prefab = EditorGUILayout.ObjectField("UI Prefab", _prefab, typeof(GameObject), false) as GameObject;
-            if (EditorGUI.EndChangeCheck() || (_prefab == null && prefab != null))
-            {
-                SetPrefab(prefab);
-            }
+            DrawHeader();
+            DrawPrefabField();
 
             using (new EditorGUI.DisabledScope(_prefab == null))
             {
-                EditorGUI.BeginChangeCheck();
-                _namespaceName = EditorGUILayout.TextField("Namespace", _namespaceName);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    EditorPrefs.SetString(NamespaceEditorPrefsKey, _namespaceName);
-                }
-                _className = EditorGUILayout.TextField("UIWindow Class", _className);
-
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.TextField("Output Folder", _outputFolder);
-                if (GUILayout.Button("Select", GUILayout.Width(70)))
-                {
-                    SelectOutputFolder();
-                }
-                EditorGUILayout.EndHorizontal();
-
-                EditorGUI.BeginChangeCheck();
-                _generateVariableWindow = EditorGUILayout.ToggleLeft("Generate UIVariableWindow script", _generateVariableWindow);
-                if (EditorGUI.EndChangeCheck() && _generateVariableWindow)
-                {
-                    _generateVirtualWindow = false;
-                }
-
-                using (new EditorGUI.DisabledScope(_generateVariableWindow))
-                {
-                    _generateVirtualWindow = EditorGUILayout.ToggleLeft("Generate UIVirtualWindow script", _generateVirtualWindow);
-                }
-                if (_generateVariableWindow)
-                {
-                    EditorGUILayout.HelpBox("UIVariableWindow mode only generates variable window and ctrl partial scripts.", MessageType.Info);
-                }
+                DrawSettings();
+                DrawGenerationOptions();
 
                 EditorGUILayout.Space();
                 DrawToolbar();
@@ -129,19 +98,92 @@ namespace PowerCellStudio.Editor
                 DrawNodeTree();
                 EditorGUILayout.Space();
 
-                using (new EditorGUI.DisabledScope(!CanGenerate()))
-                {
-                    if (GUILayout.Button("Generate Scripts", GUILayout.Height(30)))
-                    {
-                        GenerateScripts();
-                    }
-                }
+                DrawActionButtons();
+            }
+        }
 
-                if (GUILayout.Button("Add/Bind UIWindow Script To Prefab", GUILayout.Height(26)))
+        private void DrawHeader()
+        {
+            EditorGUILayout.LabelField("Advanced UI Script Generator", EditorStyles.boldLabel);
+            EditorGUILayout.Space();
+        }
+
+        private void DrawPrefabField()
+        {
+            EditorGUI.BeginChangeCheck();
+            var prefab = EditorGUILayout.ObjectField("UI Prefab", _prefab, typeof(GameObject), false) as GameObject;
+            if (EditorGUI.EndChangeCheck() || (_prefab == null && prefab != null))
+            {
+                SetPrefab(prefab);
+            }
+        }
+
+        private void DrawSettings()
+        {
+            EditorGUI.BeginChangeCheck();
+            _namespaceName = EditorGUILayout.TextField("Namespace", _namespaceName);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorPrefs.SetString(NamespaceEditorPrefsKey, _namespaceName);
+            }
+
+            _className = EditorGUILayout.TextField("UIWindow Class", _className);
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.TextField("Output Folder", _outputFolder);
+            if (GUILayout.Button("Select", GUILayout.Width(70)))
+            {
+                SelectOutputFolder();
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawGenerationOptions()
+        {
+            EditorGUI.BeginChangeCheck();
+            _generateVariableWindow = EditorGUILayout.ToggleLeft("Generate UIVariableWindow script", _generateVariableWindow);
+            if (EditorGUI.EndChangeCheck() && _generateVariableWindow)
+            {
+                _generateVirtualWindow = false;
+            }
+
+            using (new EditorGUI.DisabledScope(_generateVariableWindow))
+            {
+                _generateVirtualWindow = EditorGUILayout.ToggleLeft("Generate UIVirtualWindow script", _generateVirtualWindow);
+            }
+
+            if (_generateVariableWindow)
+            {
+                EditorGUILayout.HelpBox("UIVariableWindow mode only generates variable window and ctrl partial scripts.", MessageType.Info);
+            }
+        }
+
+        private void DrawActionButtons()
+        {
+            using (new EditorGUI.DisabledScope(!CanGenerate()))
+            {
+                if (GUILayout.Button("Generate Scripts", GUILayout.Height(30)))
                 {
-                    TryBindCurrentPrefabComponent();
+                    GenerateScripts();
                 }
             }
+
+            if (GUILayout.Button("Add/Bind UIWindow Script To Prefab", GUILayout.Height(26)))
+            {
+                TryBindCurrentPrefabComponent();
+            }
+        }
+
+        private bool TryRestoreCachedPrefab()
+        {
+            var cachedPrefabPath = EditorPrefs.GetString(PrefabPathEditorPrefsKey, string.Empty);
+            if (string.IsNullOrEmpty(cachedPrefabPath)) return false;
+
+            var cachedPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(cachedPrefabPath);
+            if (cachedPrefab == null) return false;
+
+            SetPrefab(cachedPrefab);
+            return true;
         }
 
         private void SetPrefab(GameObject prefab)

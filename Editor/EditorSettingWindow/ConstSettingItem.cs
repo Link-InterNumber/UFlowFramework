@@ -20,8 +20,8 @@ namespace PowerCellStudio.Editor
         private string localizationStringTable;
         private string localizationAssetTable;
         private Dictionary<Language, string> languageFont = new Dictionary<Language, string>();
-        // private Dictionary<Language, string> languageTMPFont = new Dictionary<Language, string>();
-        private ConstSetting.ConfigSaveMode configSaveMode;
+        private Dictionary<Language, string> languageTMPFont = new Dictionary<Language, string>();
+        // private ConstSetting.ConfigSaveMode configSaveMode;
         private Language[] _languages;
 
         public void InitSave()
@@ -90,17 +90,17 @@ namespace PowerCellStudio.Editor
                 var dict = langFontField.GetValue(null) as Dictionary<Language, string>;
                 languageFont = dict != null ? new Dictionary<Language, string>(dict) : new Dictionary<Language, string>();
             }
-            // var langTMPFontField = type.GetField("LanguageTMPFont", BindingFlags.Static | BindingFlags.Public);
-            // if (langTMPFontField != null)
-            // {
-            //     var dict = langTMPFontField.GetValue(null) as Dictionary<Language, string>;
-            //     languageTMPFont = dict != null ? new Dictionary<Language, string>(dict) : new Dictionary<Language, string>();
-            // }
+            var langTMPFontField = type.GetField("LanguageTMPFont", BindingFlags.Static | BindingFlags.Public);
+            if (langTMPFontField != null)
+            {
+                var dict = langTMPFontField.GetValue(null) as Dictionary<Language, string>;
+                languageTMPFont = dict != null ? new Dictionary<Language, string>(dict) : new Dictionary<Language, string>();
+            }
 
             // ConfigConfigSaveMode
-            var configSaveModeField = type.GetField("ConfigConfigSaveMode", BindingFlags.Static | BindingFlags.Public);
-            if (configSaveModeField != null)
-                configSaveMode = (ConstSetting.ConfigSaveMode)configSaveModeField.GetValue(null);
+            // var configSaveModeField = type.GetField("ConfigConfigSaveMode", BindingFlags.Static | BindingFlags.Public);
+            // if (configSaveModeField != null)
+            //     configSaveMode = (ConstSetting.ConfigSaveMode)configSaveModeField.GetValue(null);
         }
 
         public void OnGUI(EditorWindow window)
@@ -140,15 +140,16 @@ namespace PowerCellStudio.Editor
                 font = EditorGUILayout.TextField(lang.ToString(), font);
                 languageFont[lang] = font;
             }
-            // GUILayout.Label("Language TMP Fonts Table", EditorStyles.boldLabel);
-            // foreach (var lang in _languages)
-            // {
-            //     string font = languageTMPFont.TryGetValue(lang, out var value) ? value : string.Empty;
-            //     font = EditorGUILayout.TextField(lang.ToString(), font);
-            //     languageTMPFont[lang] = font;
-            // }
+            EditorGUILayout.Space();
+            GUILayout.Label("Language TMP Fonts Table", EditorStyles.boldLabel);
+            foreach (var lang in _languages)
+            {
+                string font = languageTMPFont.TryGetValue(lang, out var value) ? value : string.Empty;
+                font = EditorGUILayout.TextField(lang.ToString(), font);
+                languageTMPFont[lang] = font;
+            }
 
-            configSaveMode = (ConstSetting.ConfigSaveMode)EditorGUILayout.EnumPopup("Config Save Mode", configSaveMode);
+            // configSaveMode = (ConstSetting.ConfigSaveMode)EditorGUILayout.EnumPopup("Config Save Mode", configSaveMode);
 
             GUILayout.Space(20);
             if (GUILayout.Button("Save Settings"))
@@ -249,12 +250,12 @@ namespace PowerCellStudio.Editor
             writer.EndWriteBody();
             writer.WriteLine(";");
 
-            writer.WriteLine("public enum ConfigSaveMode { ScriptableObject, Json, Binary }");
-            writer.WriteLine("/// <summary>");
-            writer.WriteLine("/// 配置保存模式（默认二进制）");
-            writer.WriteLine("/// <para>Configuration save mode (default: Binary)</para>");
-            writer.WriteLine("/// </summary>");
-            writer.WriteLine($"public static readonly ConfigSaveMode ConfigConfigSaveMode = ConfigSaveMode.{configSaveMode};");
+            // writer.WriteLine("public enum ConfigSaveMode { ScriptableObject, Json, Binary }");
+            // writer.WriteLine("/// <summary>");
+            // writer.WriteLine("/// 配置保存模式（默认二进制）");
+            // writer.WriteLine("/// <para>Configuration save mode (default: Binary)</para>");
+            // writer.WriteLine("/// </summary>");
+            // writer.WriteLine($"public static readonly ConfigSaveMode ConfigConfigSaveMode = ConfigSaveMode.{configSaveMode};");
 
             writer.EndWriteBody(); // end class
             writer.EndWriteBody(); // end namespace

@@ -292,7 +292,7 @@ namespace PowerCellStudio.Editor
                 return;
             }
             Selection.activeObject = null;
-            var guids = AssetDatabase.FindAssets($"t:{(ConstSetting.ConfigConfigSaveMode == ConstSetting.ConfigSaveMode.ScriptableObject ? "ScriptableObject" : "TextAsset")} ConfAsset", new[] {assetPath}).ToArray();
+            var guids = AssetDatabase.FindAssets($"t:TextAsset ConfAsset", new[] {assetPath}).ToArray();
             var paths = guids.Select(AssetDatabase.GUIDToAssetPath).ToArray();
             EditorUtility.DisplayProgressBar("Clear Config Assets", "Start Running", 0f);
             for (var i = 0; i < paths.Length; i++)

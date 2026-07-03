@@ -11,7 +11,7 @@ namespace PowerCellStudio.Editor
     {
         private ScriptFileInfo CreateScriptFileInfo(string className, string content, bool openAfterGenerate)
         {
-            return new ScriptFileInfo(className, $"{_outputFolder}/{className}.cs", content, openAfterGenerate);
+            return new ScriptFileInfo($"{_outputFolder}/{className}.cs", content, openAfterGenerate);
         }
 
         private void TryWriteScriptFiles(List<ScriptFileInfo> scriptFiles)
@@ -37,6 +37,7 @@ namespace PowerCellStudio.Editor
                     {
                         _pendingScriptFiles = null;
                         _pendingBindInfo = null;
+                        ClearPendingBindInfo();
                         Debug.Log("UI script generation canceled because target files already exist.");
                     },
                     "Overwrite UI Scripts",
@@ -58,6 +59,7 @@ namespace PowerCellStudio.Editor
                 if (scriptFile.openAfterGenerate) openFile = scriptFile;
             }
 
+            SavePendingBindInfo(_pendingBindInfo);
             AssetDatabase.Refresh();
             if (openFile != null)
             {
@@ -67,7 +69,10 @@ namespace PowerCellStudio.Editor
 
             if (_pendingBindInfo != null)
             {
-                TryBindPrefabComponent(_pendingBindInfo, false);
+                if (TryBindPrefabComponent(_pendingBindInfo, false))
+                {
+                    ClearPendingBindInfo();
+                }
             }
 
             Debug.Log($"UI scripts generated in: {_outputFolder}");
