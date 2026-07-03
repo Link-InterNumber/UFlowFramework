@@ -4,11 +4,11 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     [CustomEditor(typeof(AudioSetter), true)]
     [CanEditMultipleObjects]
-    public class AudioSetterEditor: Editor
+    public class AudioSetterEditor: UnityEditor.Editor
     {
         private SerializedProperty m_audioClip;
         private SerializedProperty m_audioType;

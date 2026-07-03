@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     /// 负责在编辑器里预览 ActAsset：
     //// - 控制播放、暂停、停止、速度、循环

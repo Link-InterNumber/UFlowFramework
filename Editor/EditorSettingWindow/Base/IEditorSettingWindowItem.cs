@@ -2,7 +2,7 @@ using UnityEditor;
 
 #if UNITY_EDITOR
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public interface IEditorSettingWindowItem
     {

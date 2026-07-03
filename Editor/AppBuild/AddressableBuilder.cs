@@ -4,9 +4,8 @@ using UnityEditor.AddressableAssets.Build;
 using UnityEditor.AddressableAssets.Settings;
 using System;
 using UnityEngine;
-using static PowerCellStudio.ConfigSettingItem;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     internal class AddressableBuilder
     {

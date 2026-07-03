@@ -1,4 +1,4 @@
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class GuidanceGraphEditorConfigGroup : IGuidanceGraphConfigProvider
     {

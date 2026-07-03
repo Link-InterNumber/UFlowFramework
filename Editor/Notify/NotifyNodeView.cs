@@ -5,7 +5,7 @@ using UnityEditor.Experimental.GraphView;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class NotifyNodeView : Node
     {

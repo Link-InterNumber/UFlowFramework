@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor.UIElements;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class NotifyGraphWindow : EditorWindow
     {

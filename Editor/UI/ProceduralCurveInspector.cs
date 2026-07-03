@@ -2,10 +2,10 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     [CustomEditor(typeof(ProceduralCurveDisplayer))]
-    public class ProceduralCurveInspector: Editor
+    public class ProceduralCurveInspector: UnityEditor.Editor
     {
         private ProceduralCurveDisplayer _curve;
         private SerializedProperty _curveDataProp;

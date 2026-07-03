@@ -1,6 +1,6 @@
 using UnityEditor;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public static class EditorSaveUtils
     {

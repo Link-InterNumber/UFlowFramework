@@ -1,7 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     [CustomPropertyDrawer(typeof(SpaceAfterAttribute))]
     public class SpaceAfterDrawer : PropertyDrawer

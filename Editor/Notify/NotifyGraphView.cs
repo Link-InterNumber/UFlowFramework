@@ -9,7 +9,7 @@ using Unity.VisualScripting;
 using System;
 using UFlowFramework.DataStructure;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class NotifyGraphView : GraphView
     {

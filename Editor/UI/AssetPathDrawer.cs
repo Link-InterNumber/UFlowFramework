@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEditor;
 using Object = UnityEngine.Object;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     [CustomPropertyDrawer(typeof(AssetPath<>))]
     public class AssetPathDrawer : PropertyDrawer

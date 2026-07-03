@@ -1,11 +1,12 @@
 #if UNITY_EDITOR
 
+using PowerCellStudio;
 using UnityEditor;
 using UnityEditor.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     [CustomEditor(typeof(Image), true)]
     [CanEditMultipleObjects]

@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using Color = UnityEngine.Color;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class TextureFormatSetterItem : IEditorSettingWindowItem
     {

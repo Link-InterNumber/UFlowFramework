@@ -5,7 +5,7 @@
 // using System;
 // using System.Xml.Linq;
 
-// namespace PowerCellStudio
+// namespace PowerCellStudio.Editor
 // {
 //     public class StripLinkConfigEditor : EditorWindow
 //     {

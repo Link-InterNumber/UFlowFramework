@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using TreeView = UnityEditor.IMGUI.Controls.TreeView;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     [Serializable]
     public class NotifyTreeElement : TreeViewItem

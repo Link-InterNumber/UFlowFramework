@@ -3,34 +3,86 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
+using UnityEditor.Callbacks;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public partial class AdvancedUICodeGeneratorWindow
     {
-        private PendingBindInfo CreateBindInfo(string className, List<NodeInfo> selectedNodes)
+        [DidReloadScripts]
+        private static void OnScriptsReloaded()
+        {
+            EditorApplication.delayCall += TryBindPendingPrefabComponent;
+        }
+
+        private static void TryBindPendingPrefabComponent()
+        {
+            var pendingBind = LoadPendingBindInfo();
+            if (pendingBind == null) return;
+
+            if (TryBindPrefabComponent(pendingBind, false))
+            {
+                ClearPendingBindInfo();
+            }
+        }
+
+        private static void SavePendingBindInfo(PendingBindInfo pendingBind)
+        {
+            if (pendingBind == null)
+            {
+                ClearPendingBindInfo();
+                return;
+            }
+
+            SessionState.SetString(PendingBindInfoSessionStateKey, EditorJsonUtility.ToJson(pendingBind));
+        }
+
+        private static PendingBindInfo LoadPendingBindInfo()
+        {
+            var json = SessionState.GetString(PendingBindInfoSessionStateKey, string.Empty);
+            if (string.IsNullOrEmpty(json)) return null;
+
+            try
+            {
+                return JsonUtility.FromJson<PendingBindInfo>(json);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"Failed to load pending UI prefab bind info: {exception.Message}");
+                ClearPendingBindInfo();
+                return null;
+            }
+        }
+
+        private static void ClearPendingBindInfo()
+        {
+            SessionState.EraseString(PendingBindInfoSessionStateKey);
+        }
+
+        private PendingBindInfo CreateBindInfo(string className, List<GeneratedFieldInfo> selectedFields)
         {
             return new PendingBindInfo
             {
                 prefabPath = _prefabPath,
                 namespaceName = _namespaceName,
                 className = className,
-                nodes = selectedNodes.Select(node => new PendingBindNodeInfo
+                nodes = selectedFields.Select(node => new PendingBindNodeInfo
                 {
                     relativePath = node.relativePath,
                     fieldName = node.fieldName,
                     fieldTypeName = GetTypeName(node.fieldType),
-                    isCloseButton = node.fieldType == typeof(Button) && node.fieldName.Contains("close", StringComparison.OrdinalIgnoreCase)
+                    fieldTypeAssemblyQualifiedName = node.fieldType.AssemblyQualifiedName,
+                    isCloseButton = IsCloseButton(node)
                 }).ToList()
             };
         }
 
         private void TryBindCurrentPrefabComponent()
         {
-            var selectedNodes = _nodes.Where(node => node.selected).ToList();
-            var bindInfo = CreateBindInfo(MakeValidTypeName(_className), selectedNodes);
+            var selectedFields = GetSelectedFields();
+            var bindInfo = CreateBindInfo(MakeValidTypeName(_className), selectedFields);
             TryBindPrefabComponent(bindInfo, true);
         }
 
@@ -77,7 +129,7 @@ namespace PowerCellStudio
                 var nodeTransform = prefab.transform.Find(node.relativePath);
                 if (nodeTransform == null) continue;
 
-                var component = GetBindComponent(nodeTransform, node.fieldTypeName);
+                var component = GetBindComponent(nodeTransform, node.fieldTypeName, node.fieldTypeAssemblyQualifiedName);
                 if (component == null) continue;
 
                 var field = windowType.GetField(node.fieldName, BindingFlags.Public | BindingFlags.Instance);
@@ -130,7 +182,7 @@ namespace PowerCellStudio
             return true;
         }
 
-        private static Component GetBindComponent(Transform transform, string fieldTypeName)
+        private static Component GetBindComponent(Transform transform, string fieldTypeName, string fieldTypeAssemblyQualifiedName)
         {
             if (fieldTypeName == nameof(RectTransform)) return transform as RectTransform;
             if (fieldTypeName == nameof(Button)) return transform.GetComponent<Button>();
@@ -138,7 +190,11 @@ namespace PowerCellStudio
             if (fieldTypeName == nameof(Slider)) return transform.GetComponent<Slider>();
             if (fieldTypeName == nameof(InputField)) return transform.GetComponent<InputField>();
             if (fieldTypeName == nameof(IListUpdater)) return transform.GetComponents<Component>().FirstOrDefault(component => component is IListUpdater);
-            return null;
+            if (fieldTypeName == nameof(Image)) return transform.GetComponent<Image>();
+            if (fieldTypeName == nameof(Text)) return transform.GetComponent<Text>();
+            if (fieldTypeName == nameof(TMPro.TextMeshProUGUI)) return transform.GetComponent<TMPro.TextMeshProUGUI>();
+            var fieldType = Type.GetType(fieldTypeAssemblyQualifiedName);
+            return fieldType == null ? null : transform.GetComponent(fieldType);
         }
 
         private static Type FindWindowType(string fullClassName, string className)

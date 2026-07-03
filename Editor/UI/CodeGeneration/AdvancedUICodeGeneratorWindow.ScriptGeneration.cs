@@ -4,13 +4,13 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine.UI;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public partial class AdvancedUICodeGeneratorWindow
     {
         private bool CanGenerate()
         {
-            return _prefab != null && !string.IsNullOrEmpty(_className) && !string.IsNullOrEmpty(_outputFolder) && _nodes.Any(node => node.selected);
+            return _prefab != null && !string.IsNullOrEmpty(_className) && !string.IsNullOrEmpty(_outputFolder) && _nodes.Any(node => node.HasSelectedField);
         }
 
         private void GenerateScripts()
@@ -21,10 +21,10 @@ namespace PowerCellStudio
                 return;
             }
 
-            var selectedNodes = _nodes.Where(node => node.selected).ToList();
-            if (selectedNodes.Count == 0)
+            var selectedFields = GetSelectedFields();
+            if (selectedFields.Count == 0)
             {
-                EditorUtility.DisplayDialog("No Node Selected", "Please select at least one prefab node.", "OK");
+                EditorUtility.DisplayDialog("No Component Selected", "Please select at least one component.", "OK");
                 return;
             }
 
@@ -33,25 +33,25 @@ namespace PowerCellStudio
 
             if (_generateVariableWindow)
             {
-                scriptFiles.Add(CreateScriptFileInfo(mainClassName, GenerateUIVariableWindowScript(mainClassName, selectedNodes), true));
-                scriptFiles.Add(CreateScriptFileInfo($"{mainClassName}Ctrl", GenerateUIVariableCtrlScript(mainClassName, selectedNodes), false));
+                scriptFiles.Add(CreateScriptFileInfo(mainClassName, GenerateUIVariableWindowScript(mainClassName, selectedFields), true));
+                scriptFiles.Add(CreateScriptFileInfo($"{mainClassName}Ctrl", GenerateUIVariableCtrlScript(mainClassName, selectedFields), false));
             }
             else
             {
-                scriptFiles.Add(CreateScriptFileInfo(mainClassName, GenerateUIWindowScript(mainClassName, selectedNodes), true));
+                scriptFiles.Add(CreateScriptFileInfo(mainClassName, GenerateUIWindowScript(mainClassName, selectedFields), true));
 
                 if (_generateVirtualWindow)
                 {
                     var virtualClassName = $"{mainClassName}VirtualWindow";
-                    scriptFiles.Add(CreateScriptFileInfo(virtualClassName, GenerateUIVirtualWindowScript(virtualClassName, mainClassName, selectedNodes), false));
+                    scriptFiles.Add(CreateScriptFileInfo(virtualClassName, GenerateUIVirtualWindowScript(virtualClassName, mainClassName, selectedFields), false));
                 }
             }
 
-            _pendingBindInfo = CreateBindInfo(mainClassName, selectedNodes);
+            _pendingBindInfo = CreateBindInfo(mainClassName, selectedFields);
             TryWriteScriptFiles(scriptFiles);
         }
 
-        private string GenerateUIWindowScript(string className, List<NodeInfo> selectedNodes)
+        private string GenerateUIWindowScript(string className, List<GeneratedFieldInfo> selectedFields)
         {
             var sb = CreateWriterWithUsings();
             StartNamespace(sb);
@@ -60,7 +60,7 @@ namespace PowerCellStudio
                 .WriteLine($"public class {className} : UIWindow")
                 .StartWriteBody();
 
-            WriteFields(sb, selectedNodes);
+            WriteFields(sb, selectedFields);
 
             if (_generateVirtualWindow)
             {
@@ -68,8 +68,8 @@ namespace PowerCellStudio
             }
             else
             {
-                WriteWindowLifecycle(sb, selectedNodes);
-                WriteEventMethods(sb, selectedNodes, string.Empty);
+                WriteWindowLifecycle(sb, selectedFields);
+                WriteEventMethods(sb, selectedFields, string.Empty);
             }
 
             sb.EndWriteBody();
@@ -77,7 +77,7 @@ namespace PowerCellStudio
             return sb.ToString();
         }
 
-        private string GenerateUIVariableWindowScript(string className, List<NodeInfo> selectedNodes)
+        private string GenerateUIVariableWindowScript(string className, List<GeneratedFieldInfo> selectedFields)
         {
             var sb = CreateWriterWithUsings();
             StartNamespace(sb);
@@ -86,7 +86,7 @@ namespace PowerCellStudio
                 .WriteLine($"public partial class {className} : UIVariableWindow")
                 .StartWriteBody();
 
-            WriteFields(sb, selectedNodes);
+            WriteFields(sb, selectedFields);
 
             sb.StartWriteMethod(CsWriter.MethodSign.Protected, CsWriter.MethodSign.Override, "Type", "GetCtrlType", "object data")
                 .WriteLine("return typeof(DefaultCtrl);")
@@ -97,7 +97,7 @@ namespace PowerCellStudio
             return sb.ToString();
         }
 
-        private string GenerateUIVariableCtrlScript(string className, List<NodeInfo> selectedNodes)
+        private string GenerateUIVariableCtrlScript(string className, List<GeneratedFieldInfo> selectedFields)
         {
             var sb = CreateWriterWithUsings();
             StartNamespace(sb);
@@ -112,14 +112,14 @@ namespace PowerCellStudio
                 .Space();
 
             sb.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Override, "void", "BindUIEvent");
-            foreach (var node in selectedNodes)
+            foreach (var node in selectedFields)
             {
                 WriteAddListener(sb, node, "ctrlUI.");
             }
             sb.EndWriteMethod();
 
             sb.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Override, "void", "DisbindUIEvent");
-            foreach (var node in selectedNodes)
+            foreach (var node in selectedFields)
             {
                 WriteRemoveListener(sb, node, "ctrlUI.");
             }
@@ -141,7 +141,7 @@ namespace PowerCellStudio
             return sb.ToString();
         }
 
-        private string GenerateUIVirtualWindowScript(string className, string windowClassName, List<NodeInfo> selectedNodes)
+        private string GenerateUIVirtualWindowScript(string className, string windowClassName, List<GeneratedFieldInfo> selectedFields)
         {
             var sb = CreateWriterWithUsings();
             StartNamespace(sb);
@@ -151,7 +151,7 @@ namespace PowerCellStudio
 
             sb.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Override, "void", "RegisterEvent")
                 .WriteLine("base.RegisterEvent();");
-            foreach (var node in selectedNodes)
+            foreach (var node in selectedFields)
             {
                 WriteAddListener(sb, node, "window.");
             }
@@ -159,7 +159,7 @@ namespace PowerCellStudio
 
             sb.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Override, "void", "DeregisterEvent")
                 .WriteLine("base.DeregisterEvent();");
-            foreach (var node in selectedNodes)
+            foreach (var node in selectedFields)
             {
                 WriteRemoveListener(sb, node, "window.");
             }
@@ -174,7 +174,7 @@ namespace PowerCellStudio
             sb.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Override, "void", "OnClose")
                 .Space()
                 .EndWriteMethod();
-            WriteEventMethods(sb, selectedNodes, string.Empty);
+            WriteEventMethods(sb, selectedFields, string.Empty);
 
             sb.EndWriteBody();
             EndNamespace(sb);
@@ -187,6 +187,7 @@ namespace PowerCellStudio
             sb.WriteLine("using System;");
             sb.WriteLine("using UnityEngine;");
             sb.WriteLine("using UnityEngine.UI;");
+            sb.WriteLine("using TMPro;");
             sb.WriteLine("using PowerCellStudio;");
             sb.Space();
             return sb;
@@ -204,9 +205,9 @@ namespace PowerCellStudio
             if (!string.IsNullOrEmpty(_namespaceName)) sb.EndWriteBody();
         }
 
-        private void WriteFields(CsWriter sb, List<NodeInfo> selectedNodes)
+        private void WriteFields(CsWriter sb, List<GeneratedFieldInfo> selectedFields)
         {
-            foreach (var node in selectedNodes)
+            foreach (var node in selectedFields)
             {
                 sb.WriteLine($"// Path: {node.relativePath}")
                     .WriteLine($"public {GetTypeName(node.fieldType)} {node.fieldName};")
@@ -214,11 +215,11 @@ namespace PowerCellStudio
             }
         }
 
-        private void WriteWindowLifecycle(CsWriter sb, List<NodeInfo> selectedNodes)
+        private void WriteWindowLifecycle(CsWriter sb, List<GeneratedFieldInfo> selectedFields)
         {
             sb.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Override, "void", "RegisterEvent")
                 .WriteLine("base.RegisterEvent();");
-            foreach (var node in selectedNodes)
+            foreach (var node in selectedFields)
             {
                 WriteAddListener(sb, node, string.Empty);
             }
@@ -226,7 +227,7 @@ namespace PowerCellStudio
 
             sb.StartWriteMethod(CsWriter.MethodSign.Public, CsWriter.MethodSign.Override, "void", "DeregisterEvent")
                 .WriteLine("base.DeregisterEvent();");
-            foreach (var node in selectedNodes)
+            foreach (var node in selectedFields)
             {
                 WriteRemoveListener(sb, node, string.Empty);
             }
@@ -248,9 +249,10 @@ namespace PowerCellStudio
                 .EndWriteMethod();
         }
 
-        private void WriteAddListener(CsWriter sb, NodeInfo node, string fieldPrefix)
+        private void WriteAddListener(CsWriter sb, GeneratedFieldInfo node, string fieldPrefix)
         {
-            if (node.interactionComponentType == typeof(Button) && node.fieldName.Contains("close", StringComparison.OrdinalIgnoreCase)) return;
+            if (node.interactionComponentType == null) return;
+            if (IsCloseButton(node)) return;
             if (node.interactionComponentType == typeof(Button))
                 sb.WriteLine($"{fieldPrefix}{node.fieldName}.onClick.AddListener(On{node.methodName}Clicked);");
             else if (node.interactionComponentType == typeof(Toggle))
@@ -259,13 +261,14 @@ namespace PowerCellStudio
                 sb.WriteLine($"{fieldPrefix}{node.fieldName}.onValueChanged.AddListener(On{node.methodName}ValueChanged);");
             else if (node.interactionComponentType == typeof(InputField))
                 sb.WriteLine($"{fieldPrefix}{node.fieldName}.onValueChanged.AddListener(On{node.methodName}ValueChanged);");
-            else if (node.interactionComponentType == typeof(IListUpdater))
+            else if (IsListUpdaterType(node.interactionComponentType))
                 sb.WriteLine($"{fieldPrefix}{node.fieldName}.AddInteractionListener(On{node.methodName}Interaction);");
         }
 
-        private void WriteRemoveListener(CsWriter sb, NodeInfo node, string fieldPrefix)
+        private void WriteRemoveListener(CsWriter sb, GeneratedFieldInfo node, string fieldPrefix)
         {
-            if (node.interactionComponentType == typeof(Button) && node.fieldName.Contains("close", StringComparison.OrdinalIgnoreCase)) return;
+            if (node.interactionComponentType == null) return;
+            if (IsCloseButton(node)) return;
             if (node.interactionComponentType == typeof(Button))
                 sb.WriteLine($"{fieldPrefix}{node.fieldName}.onClick.RemoveListener(On{node.methodName}Clicked);");
             else if (node.interactionComponentType == typeof(Toggle))
@@ -274,15 +277,16 @@ namespace PowerCellStudio
                 sb.WriteLine($"{fieldPrefix}{node.fieldName}.onValueChanged.RemoveListener(On{node.methodName}ValueChanged);");
             else if (node.interactionComponentType == typeof(InputField))
                 sb.WriteLine($"{fieldPrefix}{node.fieldName}.onValueChanged.RemoveListener(On{node.methodName}ValueChanged);");
-            else if (node.interactionComponentType == typeof(IListUpdater))
+            else if (IsListUpdaterType(node.interactionComponentType))
                 sb.WriteLine($"{fieldPrefix}{node.fieldName}.RemoveInteractionListener(On{node.methodName}Interaction);");
         }
 
-        private void WriteEventMethods(CsWriter sb, List<NodeInfo> selectedNodes, string methodPrefix)
+        private void WriteEventMethods(CsWriter sb, List<GeneratedFieldInfo> selectedFields, string methodPrefix)
         {
-            foreach (var node in selectedNodes)
+            foreach (var node in selectedFields)
             {
-                if (node.interactionComponentType == typeof(Button) && node.fieldName.Contains("close", StringComparison.OrdinalIgnoreCase)) continue;
+                if (node.interactionComponentType == null) continue;
+                if (IsCloseButton(node)) continue;
                 if (node.interactionComponentType == typeof(Button))
                     sb.StartWriteMethod(CsWriter.MethodSign.Private, CsWriter.MethodSign.None, "void", $"{methodPrefix}On{node.methodName}Clicked")
                         .Space()
@@ -299,7 +303,7 @@ namespace PowerCellStudio
                     sb.StartWriteMethod(CsWriter.MethodSign.Private, CsWriter.MethodSign.None, "void", $"{methodPrefix}On{node.methodName}ValueChanged", "string input")
                         .Space()
                         .EndWriteMethod();
-                else if (node.interactionComponentType == typeof(IListUpdater))
+                else if (IsListUpdaterType(node.interactionComponentType))
                     sb.StartWriteMethod(CsWriter.MethodSign.Private, CsWriter.MethodSign.None, "void", $"{methodPrefix}On{node.methodName}Interaction", "IListItem item", "int index", "object passData")
                         .Space()
                         .EndWriteMethod();

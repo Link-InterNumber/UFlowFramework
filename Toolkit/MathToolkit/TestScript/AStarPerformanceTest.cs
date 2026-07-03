@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -24,12 +25,18 @@ namespace PowerCellStudio
 
         public void Trigger()
         {
+            StartCoroutine(TriggerRoutine());
+        }
+
+        private IEnumerator TriggerRoutine()
+        {
             Debug.Log("========== AStar Performance Test Started ==========");
 
             BuildTestMap();
             BuildPathRequests();
             WarmUp();
             ValidatePathFinding();
+            yield return ValidateFastAStarAsyncPathFinding();
             RunBenchmarks();
 
             Debug.Log($"========== AStar Performance Test Finished. checksum: {_lastChecksum} ==========");
@@ -124,6 +131,63 @@ namespace PowerCellStudio
                     Assert(fastJPSPath != null && fastJPSPath.Length > 0, $"FastJPS path is null or empty. from:{request.From}, to:{request.To}");
                 }
             });
+        }
+
+        private IEnumerator ValidateFastAStarAsyncPathFinding()
+        {
+            var testName = "FastAStar PathAsync path finding result";
+            var asyncResults = new Vector2Int[_requests.Count][];
+            var expectedResults = new Vector2Int[_requests.Count][];
+            var completedCount = 0;
+            var waitFrameCount = 0;
+            const int maxWaitFrameCount = 300;
+
+            var fastAStar = new FastAStar(_grounds, Vector2Int.one, false);
+            try
+            {
+                for (var i = 0; i < _requests.Count; i++)
+                {
+                    var index = i;
+                    var request = _requests[index];
+                    expectedResults[index] = fastAStar.Path(request.From, request.To);
+                    fastAStar.PathAsync(request.From, request.To, path =>
+                    {
+                        asyncResults[index] = path;
+                        completedCount++;
+                    });
+                }
+
+                while (completedCount < _requests.Count && waitFrameCount < maxWaitFrameCount)
+                {
+                    waitFrameCount++;
+                    yield return null;
+                }
+
+                RunTest(testName, () =>
+                {
+                    Assert(completedCount == _requests.Count, $"FastAStar PathAsync timeout. completed:{completedCount}/{_requests.Count}, waited frames:{waitFrameCount}");
+
+                    for (var i = 0; i < _requests.Count; i++)
+                    {
+                        var request = _requests[i];
+                        var expectedPath = expectedResults[i];
+                        var asyncPath = asyncResults[i];
+                        Assert(asyncPath != null && asyncPath.Length > 0, $"FastAStar PathAsync path is null or empty. from:{request.From}, to:{request.To}");
+                        Assert(expectedPath != null && expectedPath.Length == asyncPath.Length, $"FastAStar PathAsync path length mismatch. from:{request.From}, to:{request.To}, expected:{expectedPath?.Length ?? 0}, actual:{asyncPath.Length}");
+
+                        for (var j = 0; j < asyncPath.Length; j++)
+                        {
+                            Assert(expectedPath[j] == asyncPath[j], $"FastAStar PathAsync path node mismatch. from:{request.From}, to:{request.To}, index:{j}, expected:{expectedPath[j]}, actual:{asyncPath[j]}");
+                        }
+
+                        _lastChecksum += asyncPath.Length;
+                    }
+                });
+            }
+            finally
+            {
+                fastAStar.Dispose();
+            }
         }
 
         private void RunBenchmarks()

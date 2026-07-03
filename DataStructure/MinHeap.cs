@@ -158,6 +158,10 @@ namespace UFlowFramework
             _items.CopyTo(0, array, arrayIndex, Count);
         }
 
+        /// <summary>
+        /// 移除性能较差，谨慎使用。
+        /// Remove is a slow operation, use with caution.
+        /// </summary>
         public bool Remove(T item)
         {
             var index = IndexOf(item);
@@ -169,6 +173,15 @@ namespace UFlowFramework
             RemoveAt(index);
             
             return true;
+        }
+
+        /// <summary>
+        /// 重新构建堆，用于元素内部值被外部修改后主动恢复堆结构。
+        /// Rebuilds the heap, allowing callers to restore heap order after mutating contained item values.
+        /// </summary>
+        public void RebuildHeap()
+        {
+            Heapify();
         }
 
         public int IndexOf(T item)

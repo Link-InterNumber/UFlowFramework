@@ -11,6 +11,7 @@ namespace PowerCellStudio
         public struct FastAStarFindNearestJob : IJob
         {
             // map: 0不可走，1可走，2已走过
+            [ReadOnly]
             public NativeArray<bool> map;
             public bool isHex;
             public int2 cardSize;
@@ -19,8 +20,11 @@ namespace PowerCellStudio
             public int2 mapMax;
             public NativeArray<int2> result;
 
+            [ReadOnly]
             public NativeArray<int2> squareDirections;
+            [ReadOnly]
             public NativeArray<int2> hexEvenRowDirections;
+            [ReadOnly]
             public NativeArray<int2> hexOddRowDirections;
              
             public void Execute()

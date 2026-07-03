@@ -42,6 +42,7 @@ namespace PowerCellStudio
             }
 
             var lengthBuffer = ArrayPool<byte>.Shared.Rent(4);
+            byte[] dataBytes = ArrayPool<byte>.Shared.Rent(2048);
             while (dataFile.CanRead)
             {
                 // 4 bytes for the length of the data
@@ -53,9 +54,13 @@ namespace PowerCellStudio
                 // 如果dataLength为0，表示数据块末尾
                 if (dataLength == 0) yield break;
                 
+                if (dataBytes.Length < dataLength)
+                {
+                    ArrayPool<byte>.Shared.Return(dataBytes, true);
+                    dataBytes = ArrayPool<byte>.Shared.Rent(dataLength);
+                }
                 // dataLength bytes for the data
                 // dataLength字节为数据
-                byte[] dataBytes = ArrayPool<byte>.Shared.Rent(dataLength);
                 var readDataLength = dataFile.Read(dataBytes, 0, dataLength);
                 if (readDataLength != dataLength) yield break;
                 // deserialize the data
@@ -63,19 +68,17 @@ namespace PowerCellStudio
                 if (resolvedOptions.ResolvedEncryptor != null)
                 {
                     var decryptedBytes = resolvedOptions.ResolvedEncryptor.Decrypt(dataBytes, 0, dataLength);
-                    ArrayPool<byte>.Shared.Return(dataBytes);
-                    dataBytes = decryptedBytes;
-                    var data = resolvedOptions.ResolvedSerializer.Read<TData>(dataBytes, 0, dataBytes.Length);
+                    var data = resolvedOptions.ResolvedSerializer.Read<TData>(decryptedBytes, 0, decryptedBytes.Length);
                     yield return data;
                 }
                 else
                 {
                     var data = resolvedOptions.ResolvedSerializer.Read<TData>(dataBytes, 0, dataLength);
-                    ArrayPool<byte>.Shared.Return(dataBytes);
                     yield return data;
                 }
             }
-            ArrayPool<byte>.Shared.Return(lengthBuffer);
+            ArrayPool<byte>.Shared.Return(dataBytes, true);
+            ArrayPool<byte>.Shared.Return(lengthBuffer, true);
         }
 
         /// <summary>
@@ -92,6 +95,7 @@ namespace PowerCellStudio
             ChunkDataOptions resolvedOptions = ChunkDataOptions.Resolve(options);
             using var idxFile = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             var lengthBuffer = ArrayPool<byte>.Shared.Rent(4);
+            byte[] dataBytes = ArrayPool<byte>.Shared.Rent(2048);
             while (idxFile.CanRead)
             {
                 var headCount = idxFile.Read(lengthBuffer, 0, 4);
@@ -100,16 +104,18 @@ namespace PowerCellStudio
                 var dataLength = System.BitConverter.ToInt32(lengthBuffer, 0);
                 if (dataLength == 0) yield break;
                 
-                var dataBytes = ArrayPool<byte>.Shared.Rent(dataLength);
+                if (dataBytes.Length < dataLength)
+                {
+                    ArrayPool<byte>.Shared.Return(dataBytes, true);
+                    dataBytes = ArrayPool<byte>.Shared.Rent(dataLength);
+                }
                 var readDataLength = idxFile.Read(dataBytes, 0, dataLength);
                 if (readDataLength != dataLength) yield break;
                 
                 if (resolvedOptions.ResolvedEncryptor != null)
                 {
                     var decryptedBytes = resolvedOptions.ResolvedEncryptor.Decrypt(dataBytes, 0, dataLength);
-                    ArrayPool<byte>.Shared.Return(dataBytes);
-                    dataBytes = decryptedBytes;
-                    var chunkInfo = resolvedOptions.ResolvedSerializer.Read<ChunkInfo>(dataBytes, 0, dataBytes.Length);
+                    var chunkInfo = resolvedOptions.ResolvedSerializer.Read<ChunkInfo>(decryptedBytes, 0, decryptedBytes.Length);
                     var keys = (chunkInfo.keyData != null && chunkInfo.keyData.Length > 0) 
                             ? resolvedOptions.ResolvedSerializer.Read<TKey[]>(chunkInfo.keyData, 0, chunkInfo.keyData.Length)
                             : Array.Empty<TKey>();
@@ -121,11 +127,12 @@ namespace PowerCellStudio
                     var keys = (chunkInfo.keyData != null && chunkInfo.keyData.Length > 0) 
                             ? resolvedOptions.ResolvedSerializer.Read<TKey[]>(chunkInfo.keyData, 0, chunkInfo.keyData.Length)
                             : Array.Empty<TKey>();
-                    ArrayPool<byte>.Shared.Return(dataBytes);
                     yield return (chunkInfo.index, chunkInfo.offset, keys);
                 }
             }
-            ArrayPool<byte>.Shared.Return(lengthBuffer);
+
+            ArrayPool<byte>.Shared.Return(dataBytes, true);
+            ArrayPool<byte>.Shared.Return(lengthBuffer, true);
         }
 
         public static IEnumerable<(int index, long offset, TKey[] keys)> ReadIndexFileWithoutKeyBytes<TKey>(string filePath, ChunkDataOptions options = null)
@@ -134,6 +141,7 @@ namespace PowerCellStudio
             ChunkDataOptions resolvedOptions = ChunkDataOptions.Resolve(options);
             using var idxFile = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             var lengthBuffer = ArrayPool<byte>.Shared.Rent(4);
+            byte[] dataBytes = ArrayPool<byte>.Shared.Rent(2048);
             while (idxFile.CanRead)
             {
                 var headCount = idxFile.Read(lengthBuffer, 0, 4);
@@ -142,16 +150,18 @@ namespace PowerCellStudio
                 var dataLength = System.BitConverter.ToInt32(lengthBuffer, 0);
                 if (dataLength == 0) yield break;
                 
-                var dataBytes = ArrayPool<byte>.Shared.Rent(dataLength);
+                if (dataBytes.Length < dataLength)
+                {
+                    ArrayPool<byte>.Shared.Return(dataBytes, true);
+                    dataBytes = ArrayPool<byte>.Shared.Rent(dataLength);
+                }
                 var readDataLength = idxFile.Read(dataBytes, 0, dataLength);
                 if (readDataLength != dataLength) yield break;
                 
                 if (resolvedOptions.ResolvedEncryptor != null)
                 {
                     var decryptedBytes = resolvedOptions.ResolvedEncryptor.Decrypt(dataBytes, 0, dataLength);
-                    ArrayPool<byte>.Shared.Return(dataBytes);
-                    dataBytes = decryptedBytes;
-                    var chunkInfo = resolvedOptions.ResolvedSerializer.Read<ChunkInfo>(dataBytes, 0, dataBytes.Length);
+                    var chunkInfo = resolvedOptions.ResolvedSerializer.Read<ChunkInfo>(decryptedBytes, 0, decryptedBytes.Length);
                     var keys = Array.Empty<TKey>();
                     yield return (chunkInfo.index, chunkInfo.offset, keys);
                 }
@@ -159,11 +169,12 @@ namespace PowerCellStudio
                 {
                     var chunkInfo = resolvedOptions.ResolvedSerializer.Read<ChunkInfo>(dataBytes, 0, dataLength);
                     var keys = Array.Empty<TKey>();
-                    ArrayPool<byte>.Shared.Return(dataBytes);
                     yield return (chunkInfo.index, chunkInfo.offset, keys);
                 }
             }
-            ArrayPool<byte>.Shared.Return(lengthBuffer);
+
+            ArrayPool<byte>.Shared.Return(dataBytes, true);
+            ArrayPool<byte>.Shared.Return(lengthBuffer, true);
         }
     }
 }

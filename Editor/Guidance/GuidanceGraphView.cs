@@ -9,7 +9,7 @@ using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class GuidanceGraphView : GraphView
     {

@@ -5,10 +5,10 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     [CustomEditor(typeof(MonoBehaviour), true)]
-    public class TestAttributeInspector : Editor
+    public class TestAttributeInspector : UnityEditor.Editor
     {
         private List<MethodInfo> _buttonMethods;
         private List<MethodInfo> _sliderMethods;

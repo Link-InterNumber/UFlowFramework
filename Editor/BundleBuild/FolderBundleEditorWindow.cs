@@ -6,7 +6,7 @@ using System.IO;
 using System;
 using UnityEngine.Serialization;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class FolderBundleEditorWindow : EditorWindow
     {

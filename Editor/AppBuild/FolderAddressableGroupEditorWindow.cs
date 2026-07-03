@@ -12,7 +12,7 @@ using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 #endif
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class FolderAddressableGroupEditorWindow : EditorWindow
     {

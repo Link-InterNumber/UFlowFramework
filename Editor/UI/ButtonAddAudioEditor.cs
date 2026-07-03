@@ -5,7 +5,7 @@ using UnityEditor.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     [CustomEditor(typeof(Button), true)]
     [CanEditMultipleObjects]

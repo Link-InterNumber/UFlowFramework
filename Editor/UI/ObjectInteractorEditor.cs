@@ -1,11 +1,11 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     [CustomEditor(typeof(ObjectInteractor), true)]
 
-    public class ObjectInteractorEditor: Editor
+    public class ObjectInteractorEditor: UnityEditor.Editor
     {
         private static string _helpContent =
             "未检测到碰撞体。该对象可能无法参与物交互。\nNo collider detected. This object may not be able to participate in physical interactions.";

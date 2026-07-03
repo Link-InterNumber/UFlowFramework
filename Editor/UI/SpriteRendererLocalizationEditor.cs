@@ -6,10 +6,10 @@ using UnityEngine;
 using UnityEngine.Localization.Settings;
 using UnityEngine.Localization.Tables;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     [CustomEditor(typeof(SpriteRendererLocalization), true)]
-    public class SpriteRendererLocalizationEditor : Editor
+    public class SpriteRendererLocalizationEditor : UnityEditor.Editor
     {
         private SerializedProperty m_img;
         private SerializedProperty m_localizationKey;

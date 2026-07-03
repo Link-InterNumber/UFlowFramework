@@ -15,7 +15,7 @@ namespace PowerCellStudio
         /// </summary>
         /// <typeparam name="T"></typeparam>
         public class RuntimeData<T> : IRuntimeData
-            where T : struct, ICloneT<T>
+            where T : struct //, ICloneT<T>
         {
             public RuntimeData(T data) { _rawData = data; }
             public Type dataType { get { return typeof(T); } }
@@ -23,13 +23,13 @@ namespace PowerCellStudio
             private T _rawData;
             public event OnRuntimeDataChange<T> onRuntimeDataChange;
 
-            public T GetData() { return _rawData.Clone(); }
+            public T GetData() { return _rawData; }
 
             public void ReplaceData(T newData)
             {
-                var temp = _rawData.Clone();
+                var temp = _rawData;
                 _rawData = newData;
-                onRuntimeDataChange?.Invoke(temp, newData.Clone());
+                onRuntimeDataChange?.Invoke(temp, newData);
             }
 
             public void AddListener(OnRuntimeDataChange<T> action)
@@ -99,7 +99,7 @@ namespace PowerCellStudio
         /// <typeparam name="K">key</typeparam>
         /// <typeparam name="T">value</typeparam>
         public class RuntimeDataDic<K,T> : IRuntimeData, IEnumerable<T> 
-            where T : struct, ICloneT<T>
+            where T : struct //, ICloneT<T>
         {
             // ReSharper disable once UnusedMember.Local
             public RuntimeDataDic() { _rawData = new Dictionary<K, T>(); }
@@ -115,7 +115,7 @@ namespace PowerCellStudio
             {
                 if (_rawData.TryGetValue(key, out var data))
                 {
-                    return data.Clone();
+                    return data;
                 }
                 return default;
             }
@@ -125,16 +125,21 @@ namespace PowerCellStudio
                 T temp = default;
                 if (_rawData.TryGetValue(key, out var oldData))
                 {
-                    temp = oldData.Clone();
+                    temp = oldData;
                 }
                 _rawData[key] = newData;
-                onRuntimeDataChange?.Invoke(temp, newData.Clone());
+                onRuntimeDataChange?.Invoke(temp, newData);
             }
 
             // ReSharper disable once UnusedMethodReturnValue.Local
             public bool Remove(K key)
             {
-                return _rawData.Remove(key);
+                if (_rawData.Remove(key, out var t))
+                {
+                    onRuntimeDataChange?.Invoke(t, default);
+                    return true;
+                }
+                return false;
             }
             
             public void AddListener(OnRuntimeDataChange<T> action)
@@ -149,7 +154,7 @@ namespace PowerCellStudio
 
             public IEnumerator<T> GetEnumerator()
             {
-                return _rawData.Values.Select(o => o.Clone()).GetEnumerator();
+                return _rawData.Values.Select(o => o).GetEnumerator();
             }
 
             IEnumerator IEnumerable.GetEnumerator()
@@ -180,7 +185,7 @@ namespace PowerCellStudio
                 _datas[typeof(T)] = data;
             }
 
-            public IRuntimeData GetDataByElementType<T>() where T : struct, ICloneT<T>
+            public IRuntimeData GetDataByElementType<T>() where T : struct //, ICloneT<T>
             {
                 var key = typeof(T);
                 var datas = _datas.Values;
@@ -256,15 +261,22 @@ namespace PowerCellStudio
         private void OnStartGame()
         {
             _handlers = new Dictionary<Type, IRuntimeDataHandler>();
-            // 反射查找所可以实例化的IRuntimeDataHandler
-            var instantiableHandler = ReflectionUtils.GetInstantiableSubtype(typeof(IRuntimeDataHandler));
+            // 反射查找所可以实例化的IRuntimeDataHandler<T>
+            var instantiableHandler = ReflectionUtils.GetInstantiableSubtype(typeof(IRuntimeDataHandler<>));
             for (var i = 0; i < instantiableHandler.Count; i++)
             {
                 var handlerType = instantiableHandler[i];
+                // 从实现的接口中找到 IRuntimeDataHandler<>
+                var genericInterface = handlerType.GetInterfaces()
+                    .FirstOrDefault(iFace => iFace.IsGenericType && iFace.GetGenericTypeDefinition() == typeof(IRuntimeDataHandler<>));
+                if (genericInterface == null) continue; // 没实现该接口则跳过
+
+                var genericType = genericInterface.GetGenericArguments()[0];
+
                 var handler = ReflectionUtils.CreateInstance(handlerType) as IRuntimeDataHandler;
                 if (handler == null) continue;
                 handler.InitData();
-                _handlers.Add(handlerType, handler);
+                _handlers.Add(genericType, handler);
             }
             InitRuntimeData();
         }
@@ -322,7 +334,7 @@ namespace PowerCellStudio
             _storage.Clear();
         }
 
-        public T GetData<T>(int key) where T : struct, ICloneT<T>
+        public T GetData<T>(int key) where T : struct //, ICloneT<T>
         {
             var t = typeof(T);
             if (_handlers.TryGetValue(t, out var handler) && handler is IRuntimeDataHandler<T> handlerData)
@@ -340,7 +352,7 @@ namespace PowerCellStudio
             return default(T);
         }
 
-        public void AddData<T>(T data) where T : struct, ICloneT<T>
+        public void AddData<T>(T data) where T : struct //, ICloneT<T>
         {
             var t = typeof(T);
             if (_handlers.TryGetValue(t, out var handler) && handler is IRuntimeDataHandler<T> handlerData)
@@ -366,7 +378,7 @@ namespace PowerCellStudio
             }
         }
         
-        public void RemoveData<T>(T data) where T : struct, ICloneT<T>
+        public void RemoveData<T>(T data) where T : struct //, ICloneT<T>
         {
             var t = typeof(T);
             if (_handlers.TryGetValue(t, out var handler) && handler is IRuntimeDataHandler<T> handlerData)
@@ -393,7 +405,7 @@ namespace PowerCellStudio
         }
 
         public void AddChangeListener<T>(OnRuntimeDataChange<T> action)
-            where T : struct, ICloneT<T>
+            where T : struct //, ICloneT<T>
         {
             var t = typeof(T);
             if (_handlers.TryGetValue(t, out var handler) && handler is IRuntimeDataHandler<T> handlerData)
@@ -420,7 +432,7 @@ namespace PowerCellStudio
         }
         
         public void RemoveChangeListener<T>(OnRuntimeDataChange<T> action)
-            where T : struct, ICloneT<T>
+            where T : struct //, ICloneT<T>
         {
             var t = typeof(T);
             if (_handlers.TryGetValue(t, out var handler) && handler is IRuntimeDataHandler<T> handlerData)

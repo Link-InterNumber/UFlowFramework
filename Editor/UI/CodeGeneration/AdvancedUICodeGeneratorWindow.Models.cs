@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public partial class AdvancedUICodeGeneratorWindow
     {
@@ -12,34 +12,45 @@ namespace PowerCellStudio
             public Transform transform;
             public string relativePath;
             public int depth;
-            public bool selected;
-            public Type fieldType;
             public Type interactionComponentType;
+            public List<ComponentFieldInfo> fields = new List<ComponentFieldInfo>();
+
+            public bool HasSelectedField => fields.Any(field => field.selected);
+        }
+
+        private class ComponentFieldInfo
+        {
+            public Type fieldType;
+            public Component component;
+            public bool selected;
+            public string baseFieldName;
+            public string baseMethodName;
             public string fieldName;
             public string methodName;
+        }
 
-            public string GetComponentDisplay()
-            {
-                var components = transform.GetComponents<Component>()
-                    .Where(component => component != null)
-                    .Select(component => component.GetType().Name)
-                    .ToArray();
-                return components.Length == 0 ? string.Empty : string.Join(", ", components);
-            }
+        private class GeneratedFieldInfo
+        {
+            public NodeInfo node;
+            public ComponentFieldInfo field;
+
+            public string relativePath => node.relativePath;
+            public Type interactionComponentType => IsInteractiveType(field.fieldType) ? field.fieldType : null;
+            public Type fieldType => field.fieldType;
+            public string fieldName => field.fieldName;
+            public string methodName => field.methodName;
         }
 
         private class ScriptFileInfo
         {
-            public readonly string className;
             public readonly string assetPath;
             public readonly string content;
             public readonly bool openAfterGenerate;
 
             public string AssetPath => assetPath;
 
-            public ScriptFileInfo(string className, string assetPath, string content, bool openAfterGenerate)
+            public ScriptFileInfo(string assetPath, string content, bool openAfterGenerate)
             {
-                this.className = className;
                 this.assetPath = assetPath;
                 this.content = content;
                 this.openAfterGenerate = openAfterGenerate;
@@ -63,6 +74,7 @@ namespace PowerCellStudio
             public string relativePath;
             public string fieldName;
             public string fieldTypeName;
+            public string fieldTypeAssemblyQualifiedName;
             public bool isCloseButton;
         }
     }

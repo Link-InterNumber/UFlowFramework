@@ -4,9 +4,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Text;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class ConstSettingItem : IEditorSettingWindowItem
     {
@@ -21,7 +20,9 @@ namespace PowerCellStudio
         private string localizationStringTable;
         private string localizationAssetTable;
         private Dictionary<Language, string> languageFont = new Dictionary<Language, string>();
-        private ConstSetting.ConfigSaveMode configSaveMode;
+        private Dictionary<Language, string> languageTMPFont = new Dictionary<Language, string>();
+        // private ConstSetting.ConfigSaveMode configSaveMode;
+        private Language[] _languages;
 
         public void InitSave()
         {
@@ -82,17 +83,24 @@ namespace PowerCellStudio
                 localizationAssetTable = (string)locAssetTableField.GetValue(null);
 
             // LanguageFont
+            _languages = System.Enum.GetValues(typeof(Language)) as Language[];
             var langFontField = type.GetField("LanguageFont", BindingFlags.Static | BindingFlags.Public);
             if (langFontField != null)
             {
                 var dict = langFontField.GetValue(null) as Dictionary<Language, string>;
                 languageFont = dict != null ? new Dictionary<Language, string>(dict) : new Dictionary<Language, string>();
             }
+            var langTMPFontField = type.GetField("LanguageTMPFont", BindingFlags.Static | BindingFlags.Public);
+            if (langTMPFontField != null)
+            {
+                var dict = langTMPFontField.GetValue(null) as Dictionary<Language, string>;
+                languageTMPFont = dict != null ? new Dictionary<Language, string>(dict) : new Dictionary<Language, string>();
+            }
 
             // ConfigConfigSaveMode
-            var configSaveModeField = type.GetField("ConfigConfigSaveMode", BindingFlags.Static | BindingFlags.Public);
-            if (configSaveModeField != null)
-                configSaveMode = (ConstSetting.ConfigSaveMode)configSaveModeField.GetValue(null);
+            // var configSaveModeField = type.GetField("ConfigConfigSaveMode", BindingFlags.Static | BindingFlags.Public);
+            // if (configSaveModeField != null)
+            //     configSaveMode = (ConstSetting.ConfigSaveMode)configSaveModeField.GetValue(null);
         }
 
         public void OnGUI(EditorWindow window)
@@ -124,16 +132,24 @@ namespace PowerCellStudio
             defaultLanguage = (Language)EditorGUILayout.EnumPopup("default Language", defaultLanguage);
             localizationStringTable = EditorGUILayout.TextField("Localization String Table", localizationStringTable);
             localizationAssetTable = EditorGUILayout.TextField("Localization Asset Table", localizationAssetTable);
-
+            EditorGUILayout.Space();
             GUILayout.Label("Language Fonts Table", EditorStyles.boldLabel);
-            foreach (var lang in System.Enum.GetValues(typeof(Language)))
+            foreach (var lang in _languages)
             {
-                string font = languageFont.ContainsKey((Language)lang) ? languageFont[(Language)lang] : "";
+                string font = languageFont.TryGetValue(lang, out var value) ? value : string.Empty;
                 font = EditorGUILayout.TextField(lang.ToString(), font);
-                languageFont[(Language)lang] = font;
+                languageFont[lang] = font;
+            }
+            EditorGUILayout.Space();
+            GUILayout.Label("Language TMP Fonts Table", EditorStyles.boldLabel);
+            foreach (var lang in _languages)
+            {
+                string font = languageTMPFont.TryGetValue(lang, out var value) ? value : string.Empty;
+                font = EditorGUILayout.TextField(lang.ToString(), font);
+                languageTMPFont[lang] = font;
             }
 
-            configSaveMode = (ConstSetting.ConfigSaveMode)EditorGUILayout.EnumPopup("Config Save Mode", configSaveMode);
+            // configSaveMode = (ConstSetting.ConfigSaveMode)EditorGUILayout.EnumPopup("Config Save Mode", configSaveMode);
 
             GUILayout.Space(20);
             if (GUILayout.Button("Save Settings"))
@@ -147,7 +163,7 @@ namespace PowerCellStudio
             string path = "Assets/UFlowFramework/Define/ConstSetting.cs";
             // if (string.IsNullOrEmpty(path)) return;
 
-            var writer = new PowerCellStudio.CsWriter();
+            var writer = new CsWriter();
 
             // using
             writer.WriteUsing("System.Collections.Generic", "System.IO", "UnityEngine");
@@ -234,12 +250,12 @@ namespace PowerCellStudio
             writer.EndWriteBody();
             writer.WriteLine(";");
 
-            writer.WriteLine("public enum ConfigSaveMode { ScriptableObject, Json, Binary }");
-            writer.WriteLine("/// <summary>");
-            writer.WriteLine("/// 配置保存模式（默认二进制）");
-            writer.WriteLine("/// <para>Configuration save mode (default: Binary)</para>");
-            writer.WriteLine("/// </summary>");
-            writer.WriteLine($"public static readonly ConfigSaveMode ConfigConfigSaveMode = ConfigSaveMode.{configSaveMode};");
+            // writer.WriteLine("public enum ConfigSaveMode { ScriptableObject, Json, Binary }");
+            // writer.WriteLine("/// <summary>");
+            // writer.WriteLine("/// 配置保存模式（默认二进制）");
+            // writer.WriteLine("/// <para>Configuration save mode (default: Binary)</para>");
+            // writer.WriteLine("/// </summary>");
+            // writer.WriteLine($"public static readonly ConfigSaveMode ConfigConfigSaveMode = ConfigSaveMode.{configSaveMode};");
 
             writer.EndWriteBody(); // end class
             writer.EndWriteBody(); // end namespace

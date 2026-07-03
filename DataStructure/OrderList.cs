@@ -1,14 +1,14 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace PowerCellStudio
 {
-    // 测试后，和List<IComparable>比较，插入性能慢7.4倍，二分查找性能和枚举迭代性能相当，移除性能提高约90倍
-    // 目前看没有合适的使用场景
-    // After testing, compared with List<IComparable>, insertion performance is 7.4 times slower, binary search & enumeration iteration performance is comparable to List<IComparable>, and removal performance is improved by about 90 times.
-    // Currently, there seems to be no suitable use case.
+    /// <summary>
+    /// 使用二分查找和数组实现的有序列表，支持快速插入和删除操作。
+    /// An ordered list implemented using binary search and an array, supporting fast insertion and deletion operations
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class OrderList<T>: IList<T> where T : IComparable<T>
     {
         private T[] _rawData;
@@ -28,13 +28,13 @@ namespace PowerCellStudio
                 _count = 0;
                 return;
             }
-            source = source.OrderBy(o => o).ToList();
             _rawData = new T[source.Count];
             _count = source.Count;
             for (var i = 0; i < _count; i++)
             {
                 _rawData[i] = source[i];
             }
+            Array.Sort(_rawData, 0, _count);
         }
 
         public T this[int index]
@@ -86,6 +86,11 @@ namespace PowerCellStudio
             Array.Copy(_rawData, index, _rawData, index + 1, _count - index);
             _rawData[index] = item;
             _count++;
+        }
+
+        public void Sort()
+        {
+            Array.Sort(_rawData, 0, _count);
         }
 
         public void AddRange(IEnumerable<T> items)

@@ -10,7 +10,7 @@ using UnityEngine.Localization.Tables;
 using UnityEngine.UI;
 using TextEditor = UnityEditor.UI.TextEditor;
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public class TextExMenu
     {

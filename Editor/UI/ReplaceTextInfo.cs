@@ -2,7 +2,7 @@ using UnityEngine;
 using TMPro;
 
 
-namespace PowerCellStudio
+namespace PowerCellStudio.Editor
 {
     public struct ReplaceTextInfo
     {
