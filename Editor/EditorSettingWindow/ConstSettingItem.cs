@@ -20,7 +20,9 @@ namespace PowerCellStudio.Editor
         private string localizationStringTable;
         private string localizationAssetTable;
         private Dictionary<Language, string> languageFont = new Dictionary<Language, string>();
+        // private Dictionary<Language, string> languageTMPFont = new Dictionary<Language, string>();
         private ConstSetting.ConfigSaveMode configSaveMode;
+        private Language[] _languages;
 
         public void InitSave()
         {
@@ -81,12 +83,19 @@ namespace PowerCellStudio.Editor
                 localizationAssetTable = (string)locAssetTableField.GetValue(null);
 
             // LanguageFont
+            _languages = System.Enum.GetValues(typeof(Language)) as Language[];
             var langFontField = type.GetField("LanguageFont", BindingFlags.Static | BindingFlags.Public);
             if (langFontField != null)
             {
                 var dict = langFontField.GetValue(null) as Dictionary<Language, string>;
                 languageFont = dict != null ? new Dictionary<Language, string>(dict) : new Dictionary<Language, string>();
             }
+            // var langTMPFontField = type.GetField("LanguageTMPFont", BindingFlags.Static | BindingFlags.Public);
+            // if (langTMPFontField != null)
+            // {
+            //     var dict = langTMPFontField.GetValue(null) as Dictionary<Language, string>;
+            //     languageTMPFont = dict != null ? new Dictionary<Language, string>(dict) : new Dictionary<Language, string>();
+            // }
 
             // ConfigConfigSaveMode
             var configSaveModeField = type.GetField("ConfigConfigSaveMode", BindingFlags.Static | BindingFlags.Public);
@@ -123,14 +132,21 @@ namespace PowerCellStudio.Editor
             defaultLanguage = (Language)EditorGUILayout.EnumPopup("default Language", defaultLanguage);
             localizationStringTable = EditorGUILayout.TextField("Localization String Table", localizationStringTable);
             localizationAssetTable = EditorGUILayout.TextField("Localization Asset Table", localizationAssetTable);
-
+            EditorGUILayout.Space();
             GUILayout.Label("Language Fonts Table", EditorStyles.boldLabel);
-            foreach (var lang in System.Enum.GetValues(typeof(Language)))
+            foreach (var lang in _languages)
             {
-                string font = languageFont.ContainsKey((Language)lang) ? languageFont[(Language)lang] : "";
+                string font = languageFont.TryGetValue(lang, out var value) ? value : string.Empty;
                 font = EditorGUILayout.TextField(lang.ToString(), font);
-                languageFont[(Language)lang] = font;
+                languageFont[lang] = font;
             }
+            // GUILayout.Label("Language TMP Fonts Table", EditorStyles.boldLabel);
+            // foreach (var lang in _languages)
+            // {
+            //     string font = languageTMPFont.TryGetValue(lang, out var value) ? value : string.Empty;
+            //     font = EditorGUILayout.TextField(lang.ToString(), font);
+            //     languageTMPFont[lang] = font;
+            // }
 
             configSaveMode = (ConstSetting.ConfigSaveMode)EditorGUILayout.EnumPopup("Config Save Mode", configSaveMode);
 

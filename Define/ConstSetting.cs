@@ -77,6 +77,14 @@ namespace PowerCellStudio
             { Language.ChineseTraditional, "Assets/UFlowFramework/Fonts/AlibabaPuHuiTi-2-85-Bold.ttf" },
             { Language.Japanese, "Assets/UFlowFramework/Fonts/AlibabaPuHuiTi-2-85-Bold.ttf" },
         };
+        
+        // public static readonly Dictionary<Language, string> LanguageTMPFont = new Dictionary<Language, string>()
+        // {
+        //     { Language.ChineseSimplified, "Assets/UFlowFramework/Fonts/ZiHunBianTaoTiSDF.asset" },
+        //     { Language.English, "Assets/UFlowFramework/Fonts/ZiHunBianTaoTiSDF.asset" },
+        //     { Language.ChineseTraditional, "Assets/UFlowFramework/Fonts/ZiHunBianTaoTiSDF.asset" },
+        //     { Language.Japanese, "Assets/UFlowFramework/Fonts/AlibabaPuHuiTi_2_85_Bold_SDF.asset" },
+        // };
 
         /// <summary>
         /// 配置保存模式
