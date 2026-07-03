@@ -119,7 +119,7 @@ namespace PowerCellStudio
 
         private static void WriteConstructor(CsWriter csWriter, string confName)
         {
-            var assetPath = ConfigManager.assetFolderPath;
+            var assetPath = ConfigInitTool.assetFolderPath;
             csWriter.StartWriteMethod(CsWriter.MethodSign.Public,
                     CsWriter.MethodSign.None, 
                     "",

@@ -27,7 +27,7 @@ namespace PowerCellStudio
         {
             GetClientRemoteManifest();
             yield return GetServerRemoteManifest();
-            yield return CheckRemoteBundle(onDownloadStarted, onDownloadProgress);
+            yield return CheckRemoteAssets(onDownloadStarted, onDownloadProgress);
         }
 
         public bool IsBundleRemote(string bundleName)
@@ -188,7 +188,7 @@ namespace PowerCellStudio
             handler?.SetResult(true);
         }
 
-        private IEnumerator CheckRemoteBundle(Action onDownloadStarted, Action<float> onDownloadProgress)
+        private IEnumerator CheckRemoteAssets(Action onDownloadStarted, Action<float> onDownloadProgress)
         {
 #if UNITY_EDITOR
             if (!simulateRemoteBundleInEditor)

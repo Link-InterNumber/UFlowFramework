@@ -155,7 +155,7 @@ namespace RVO.JobSystem
                         material.SetColor("_BaseColor", Color.green);
                         break;
                     case TestAgentType.Blue:
-                        material.SetColor("_BaseColor", Color.deepSkyBlue);
+                        material.SetColor("_BaseColor", Color.blue);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -207,7 +207,7 @@ namespace RVO.JobSystem
                             material.SetColor("_BaseColor", Color.green);
                             break;
                         case TestAgentType.Blue:
-                            material.SetColor("_BaseColor", Color.deepSkyBlue);
+                            material.SetColor("_BaseColor", Color.blue);
                             break;
                         default:
                             throw new ArgumentOutOfRangeException();

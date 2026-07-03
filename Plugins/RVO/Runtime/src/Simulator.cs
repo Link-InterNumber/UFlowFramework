@@ -458,8 +458,8 @@ namespace RVO
                 // {
                 //     continue;
                 // }
-                agents[index].computeNeighbors();
-                agents[index].computeNewVelocity();
+                agents[index].ComputeNeighbors();
+                agents[index].ComputeNewVelocity();
             }
 
             for (int index = 0; index < agents.Count; ++index)
@@ -468,7 +468,7 @@ namespace RVO
                 // {
                 //     continue;
                 // }
-                agents[index].update();
+                agents[index].Update();
             }
 #endif
             // _stepIndex++;
@@ -518,8 +518,8 @@ namespace RVO
                 // {
                 //     continue;
                 // }
-                agents[index].computeNeighbors();
-                agents[index].computeNewVelocity();
+                agents[index].ComputeNeighbors();
+                agents[index].ComputeNewVelocity();
             }
 
             for (int index = 0; index < agents.Count; ++index)
@@ -528,7 +528,7 @@ namespace RVO
                 // {
                 //     continue;
                 // }
-                agents[index].update();
+                agents[index].Update();
             }
 #endif
             // _stepIndex++;

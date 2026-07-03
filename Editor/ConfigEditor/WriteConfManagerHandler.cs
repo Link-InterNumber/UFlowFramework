@@ -25,7 +25,7 @@ namespace PowerCellStudio
     {
         public static void Write(in CsWriter csWriter, in List<string> confCollections)
         {
-            csWriter.WriteLine("public partial class ConfigManager");
+            csWriter.WriteLine("public partial class ConfigManager : SingletonBase<ConfigManager>");
             csWriter.StartWriteBody();
 
             WriteFields(csWriter, confCollections);

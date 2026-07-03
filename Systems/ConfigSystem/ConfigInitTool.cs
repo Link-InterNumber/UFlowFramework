@@ -1,22 +1,21 @@
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEngine;
 
 namespace PowerCellStudio
 {
-    public partial class ConfigManager: SingletonBase<ConfigManager>
+    public static class ConfigInitTool
     {
         public static string assetFolderPath => $"{Application.streamingAssetsPath}/ConfigAsset/";
         public static string configAssetListName => "ConfigAssetList.txt";
 
-        private bool _inited = false;
-        /// <summary>
-        /// 初始化需要的配置表，会一直存在在内存中，直到游戏结束。
-        /// Init config tables that are needed and will exist in memory until the end of the game
-        /// </summary>
-        private ConfigGroup _initConfig;
+        // private bool _inited = false;
+        // /// <summary>
+        // /// 初始化需要的配置表，会一直存在在内存中，直到游戏结束。
+        // /// Init config tables that are needed and will exist in memory until the end of the game
+        // /// </summary>
+        // private ConfigGroup _initConfig;
 
         public static IEnumerator CopyConfigToPersistentDataPath()
         {
@@ -86,42 +85,42 @@ namespace PowerCellStudio
             PlayerPrefs.SetInt(saveKey, 1);
         }
 
-        public IEnumerator Init(OnLoadCompleted onInitCompleted)
-        {
-            // 编辑器下直接assetFolderPath中加载配置表二进制文件，无需拷贝到持久化目录
-            yield return null;
-            // // 你可以使用 ConfigGroup 加载多个配置数据；
-            // // You can use ConfigGroup to load multiple configuration data;
-            // _initConfig = new ConfigGroup<CommonConfigLoader>(_guidanceConf, _rolePropConf); //(_baseTypeSampleConf, _customTypeSampleConf);
-            // _initConfig.onLoadCompleted += OnInitConfLoadCompleted;
-            // if(onInitCompleted != null) _initConfig.onLoadCompleted += onInitCompleted;
-            // yield return _initConfig.LoadAll();
-        }
-
-        private void OnInitConfLoadCompleted(AssetLoadStatus data)
-        {
-            switch (data)
-            {
-                case AssetLoadStatus.Loading:
-                    break;
-                case AssetLoadStatus.Unload:
-                {
-                    var sb = new StringBuilder();
-                    foreach (var initConfigFailLoadConfig in _initConfig.failLoadConfigs)
-                    {
-                        sb.Append(initConfigFailLoadConfig);
-                        sb.Append("\n");
-                    }
-                    ConfigLogger.LogError($"Config Load Failed, Failed Configs: \n {sb}");
-                    break;
-                }
-                default:
-                    _inited = true;
-                    ConfigLogger.Log("Config Load successfully");
-                    // Do something
-                    // ...
-                    break;
-            }
-        }
+        // public IEnumerator Init(OnLoadCompleted onInitCompleted)
+        // {
+        //     // 编辑器下直接assetFolderPath中加载配置表二进制文件，无需拷贝到持久化目录
+        //     yield return null;
+        //     // // 你可以使用 ConfigGroup 加载多个配置数据；
+        //     // // You can use ConfigGroup to load multiple configuration data;
+        //     // _initConfig = new ConfigGroup<CommonConfigLoader>(_guidanceConf, _rolePropConf); //(_baseTypeSampleConf, _customTypeSampleConf);
+        //     // _initConfig.onLoadCompleted += OnInitConfLoadCompleted;
+        //     // if(onInitCompleted != null) _initConfig.onLoadCompleted += onInitCompleted;
+        //     // yield return _initConfig.LoadAll();
+        // }
+        //
+        // private void OnInitConfLoadCompleted(AssetLoadStatus data)
+        // {
+        //     switch (data)
+        //     {
+        //         case AssetLoadStatus.Loading:
+        //             break;
+        //         case AssetLoadStatus.Unload:
+        //         {
+        //             var sb = new StringBuilder();
+        //             foreach (var initConfigFailLoadConfig in _initConfig.failLoadConfigs)
+        //             {
+        //                 sb.Append(initConfigFailLoadConfig);
+        //                 sb.Append("\n");
+        //             }
+        //             ConfigLogger.LogError($"Config Load Failed, Failed Configs: \n {sb}");
+        //             break;
+        //         }
+        //         default:
+        //             _inited = true;
+        //             ConfigLogger.Log("Config Load successfully");
+        //             // Do something
+        //             // ...
+        //             break;
+        //     }
+        // }
     }
 }

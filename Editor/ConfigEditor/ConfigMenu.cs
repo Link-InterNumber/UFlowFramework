@@ -124,7 +124,7 @@ namespace PowerCellStudio
                 md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
                 var historyMap = force ? null : LoadHistoryFile(excelPath);
 
-                var assetFilePath = ConfigManager.assetFolderPath;
+                var assetFilePath = ConfigInitTool.assetFolderPath;
                 if (!Directory.Exists(assetFilePath))
                 {
                     Directory.CreateDirectory(assetFilePath);
@@ -162,7 +162,7 @@ namespace PowerCellStudio
                 {
                     sb.AppendLine(assetFile);
                 }
-                var listFilePath = Path.Combine(assetFilePath, ConfigManager.configAssetListName);
+                var listFilePath = Path.Combine(assetFilePath, ConfigInitTool.configAssetListName);
                 File.WriteAllText(listFilePath, sb.ToString(), Encoding.UTF8);
             }
             catch (Exception e)
@@ -257,7 +257,7 @@ namespace PowerCellStudio
         [MenuItem("Tools/Config/Delete Config Assets", false, 102)]
         public static void DeleteConfigAsset()
         {
-            var assetPath = ConfigManager.assetFolderPath;
+            var assetPath = ConfigInitTool.assetFolderPath;
             if (!Directory.Exists(assetPath))
             {
                 return;

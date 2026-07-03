@@ -18,16 +18,15 @@ namespace PowerCellStudio
             {
                 Camera.main.gameObject.name = nameof(MainCamera);
             }
-            gameObject.AddComponent<AsyncManager>();
             DontDestroyOnLoad(gameObject);
             // DOTween.Init();
-            AssetUtils.Init(this, OnInited);
             StartCoroutine(UpdateLoadState());
         }
 
         private IEnumerator UpdateLoadState()
         {
-            yield return ConfigManager.CopyConfigToPersistentDataPath();
+            yield return ConfigInitTool.CopyConfigToPersistentDataPath();
+            AssetUtils.Init(this, OnInited);
             if(!loadingString && !loadingPecent && !loadingImage) yield break;
             while (AssetUtils.initState != AssetInitState.Complete)
             {
@@ -75,7 +74,6 @@ namespace PowerCellStudio
         
         private IEnumerator OnAddressableInited()
         {
-            yield return ConfigManager.instance.Init(null);
             yield return LocalizationManager.instance.Init(new UnityLocalizationProvider(), null);
             ApplicationManager.instance.SetLoading(false);
             EventManager.instance.onStartGame.Invoke();

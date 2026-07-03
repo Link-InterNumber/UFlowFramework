@@ -77,6 +77,11 @@ namespace PowerCellStudio
 
         bool IUIComponent.Close()
         {
+            return CheckCloseCondition();
+        }
+        
+        protected virtual bool CheckCloseCondition()
+        {
             return true;
         }
 
