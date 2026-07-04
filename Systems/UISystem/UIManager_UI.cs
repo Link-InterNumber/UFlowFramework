@@ -137,14 +137,12 @@ namespace PowerCellStudio
             if (page == null) return null;
             _newPagePushing = true;
             page.pushMode = pushMode;
-            UIUtils.OpenUI(page, data);
-            if (currentPage != null && currentPage.GetHashCode() == page.GetHashCode())
+            if (currentPage == null || currentPage.GetHashCode() != page.GetHashCode())
             {
-                SortingPage();
-                return currentPage as T;
+                _pageStack.Push(page);
             }
-            _pageStack.Push(page);
             SortingPage();
+            UIUtils.OpenUI(page, data);
             return page;
         }
 

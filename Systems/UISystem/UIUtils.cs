@@ -126,7 +126,8 @@ namespace PowerCellStudio
                 foreach (var key in keys)
                 {
                     var child = page.children[key];
-                    CloseUI(child, null, true);
+                    if (child.isOpened)
+                        CloseUI(child, null, true);
                     if (child is IUIPoolable && poolParent != null
                         && !poolParent.children.ContainsKey(child.GetType()) 
                         && !poolParent.windowRequests.IsUIGoingToOpen(key, out _))

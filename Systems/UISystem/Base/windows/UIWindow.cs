@@ -29,12 +29,8 @@ namespace PowerCellStudio
             }
         }
 
-        public bool isOpened => gameObject.activeInHierarchy;
-        public virtual void OnUIDestroy()
-        {
-            AssetUtils.DeSpawnLoader(_assetsLoader);
-            _assetsLoader = null;
-        }
+        private bool _isOpened;
+        public bool isOpened => _isOpened;
 
         IUIParent IUIChild.parent
         {
@@ -72,12 +68,14 @@ namespace PowerCellStudio
         
         void IUIComponent.Open(object data)
         {
+            _isOpened = true;
             OnOpen(data);
         }
 
         bool IUIComponent.Close()
         {
-            return CheckCloseCondition();
+            _isOpened = !CheckCloseCondition();
+            return !_isOpened;
         }
         
         protected virtual bool CheckCloseCondition()
@@ -86,12 +84,18 @@ namespace PowerCellStudio
         }
 
         public abstract void OnOpen(object data);
-
-        public abstract void OnFocus();
+        
+        public abstract void OnClose();
+        
+        public virtual void OnFocus(){}
         
         public virtual void OnHide(){}
-
-        public abstract void OnClose();
+        
+        public virtual void OnUIDestroy()
+        {
+            AssetUtils.DeSpawnLoader(_assetsLoader);
+            _assetsLoader = null;
+        }
 
         public virtual void RegisterEvent()
         {
@@ -114,11 +118,6 @@ namespace PowerCellStudio
             }
         }
 
-        protected LoaderYieldInstruction<T> LoadAssetAsync<T>(string path) where T : UnityEngine.Object
-        {
-            return _assetsLoader.LoadAsYieldInstruction<T>(path);
-        }
-
         protected virtual void OnCloseBtnClick()
         {
             CloseUI(null);
@@ -129,10 +128,19 @@ namespace PowerCellStudio
             _parent.CloseUI(this, afterClosed);
         }
 
+        #region UI Operations
+
         protected void SetRaycastEnable(bool enable)
         {
             var canvasGroup = gameObject.TryAddComponent<CanvasGroup>();
             canvasGroup.blocksRaycasts = enable;
         }
+        
+        protected LoaderYieldInstruction<T> LoadAssetAsync<T>(string path) where T : UnityEngine.Object
+        {
+            return _assetsLoader.LoadAsYieldInstruction<T>(path);
+        }
+
+        #endregion
     }
 }

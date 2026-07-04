@@ -138,7 +138,6 @@ namespace PowerCellStudio
 
         bool IUIComponent.Close()
         {
-            OnClose();
             return true;
         }
 

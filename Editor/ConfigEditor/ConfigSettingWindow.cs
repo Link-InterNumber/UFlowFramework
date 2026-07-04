@@ -132,7 +132,7 @@ namespace PowerCellStudio.Editor
             }
 
             GUILayout.Space(10);
-            GUILayout.Label("Export Text components on prefab to CSV", EditorStyles.boldLabel);
+            GUILayout.Label("Export 【TextEx】 components on prefab to CSV", EditorStyles.boldLabel);
             _save.UIPrefabPath = EditorGUILayout.TextField("Prefab Folder Path", _save.UIPrefabPath);
 
             if (GUILayout.Button("Export"))
@@ -142,9 +142,10 @@ namespace PowerCellStudio.Editor
                     EditorUtility.DisplayDialog("Error", "Please specify a valid folder path.", "OK");
                     return;
                 }
+                EditorSaveUtils.SetEditorPref(SaveKey.UIPrefabPath, _save.UIPrefabPath);
                 UnityLocalizationWriter.CollectTextsFromGameObject(_save.UIPrefabPath);
                 UnityLocalizationCsvExporter.Export();
-                var csvPath = Path.Combine(_save.excelPath, LocalizationFolderName);
+                var csvPath = Path.Combine(_save.excelPath, LocalizationFolderName)+"/";
                 var fullPath = Path.GetFullPath(csvPath);
                 if (File.Exists(fullPath) || Directory.Exists(fullPath))
                 {

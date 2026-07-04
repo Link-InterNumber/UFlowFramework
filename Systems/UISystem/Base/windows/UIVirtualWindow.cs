@@ -21,10 +21,17 @@ namespace PowerCellStudio
 
         void IUIComponent.Open(object data)
         {
+            _isOpened = true;
             OnOpen(data);
         }
 
         bool IUIComponent.Close()
+        {
+            _isOpened = !CheckCloseCondition();
+            return !_isOpened;
+        }
+        
+        protected virtual bool CheckCloseCondition()
         {
             return true;
         }
@@ -41,7 +48,8 @@ namespace PowerCellStudio
         }
         public Transform transform => window?.transform ?? null;
         public RectTransform rectTransform => window?.rectTransform ?? null;
-        public bool isOpened => window?.isOpened ?? false;
+        private bool _isOpened;
+        public bool isOpened => _isOpened;
 
         public virtual void RegisterEvent()
         {
@@ -74,13 +82,13 @@ namespace PowerCellStudio
         }
 
         public abstract void OnOpen(object data);
+        
+        public abstract void OnClose();
 
         public abstract void OnFocus();
 
         public virtual void OnHide(){}
-
-        public abstract void OnClose();
-
+        
         public virtual void OnUIDestroy()
         {
             AssetUtils.DeSpawnLoader(_assetsLoader);
