@@ -41,12 +41,14 @@ namespace PowerCellStudio
         {
             base.RegisterEvent();
             screenButton.onClick.AddListener(SkipGuidance);
+            Debug.LogWarning("GuidanceWindow RegisterEvent");
         }
 
         public override void DeregisterEvent()
         {
             base.DeregisterEvent();
             screenButton.onClick.RemoveListener(SkipGuidance);
+            Debug.LogWarning("GuidanceWindow DeregisterEvent");
         }
         
         public override void OnOpen(object data)
@@ -84,6 +86,7 @@ namespace PowerCellStudio
         private void SkipGuidance()
         {
             if(!_canSkip) return;
+            LinkLogger.LogWarning("Guidance skipped by user.");
             GuidanceManager.instance.DeExecuteGuidance(_guidanceTag.guidanceIndex);
         }
 
@@ -113,7 +116,7 @@ namespace PowerCellStudio
             _uiPrefab = null;
         }
 
-        bool IUIComponent.Close()
+        protected override bool CheckCloseCondition()
         {
             switch (_state)
             {

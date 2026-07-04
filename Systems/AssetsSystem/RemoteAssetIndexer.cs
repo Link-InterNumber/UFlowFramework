@@ -102,7 +102,7 @@ namespace PowerCellStudio
 #if UNITY_EDITOR
             var url = simulateRemoteBundleInEditor
                 ? AssetUtils.BuildRemoteUrl("remoteManifest.json")
-                : $"file://{Application.streamingAssetsPath}/remoteManifest.json";
+                : $"{Application.streamingAssetsPath}/remoteManifest.json";
 #else
             var url = AssetUtils.BuildRemoteUrl("remoteManifest.json");
 #endif
@@ -118,7 +118,7 @@ namespace PowerCellStudio
             else
             {
 #if !UNITY_EDITOR
-                AssetLog.LogError("下载remoteManifest.json失败: " + request.error);
+                AssetLogger.LogError("下载remoteManifest.json失败: " + request.error);
 #endif
             }
             if (_remoteManifest == null) _remoteManifest = new Dictionary<string, BundleInfo>();

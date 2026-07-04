@@ -168,7 +168,7 @@ namespace PowerCellStudio
             if (ui == null) return;
             ui.transform.SetAsLastSibling();
             ui.transform.gameObject.SetActive(true);
-            ui.RegisterEvent();
+            if (!ui.isOpened) ui.RegisterEvent();
             if(ui is IUIChild child)
             {
                 child.parent.openedUIs.Push(child);
@@ -232,12 +232,12 @@ namespace PowerCellStudio
             ui.parent.openedUIs.Remove(ui);
         }
         
-        public static void DestroyUI<T>(T ui, Action onClose) where T : IUIComponent
+        public static void DestroyUI<T>(T ui, Action onDestroy) where T : IUIComponent
         {
-            ui.DeregisterEvent();
+            // ui.DeregisterEvent();
             ui.OnUIDestroy();
             GameObject.Destroy(ui.transform.gameObject);
-            onClose?.Invoke();
+            onDestroy?.Invoke();
         }
     }
 }

@@ -1,22 +1,22 @@
 ﻿using GBG.PlayableGraphMonitor.Editor.GraphView;
 using GBG.PlayableGraphMonitor.Editor.Utility;
 using System.Text;
-using UnityEditor.UIElements;
+using UnityEditor.Search;
 using UnityEngine;
-using UnityEngine.Animations;
+using UnityEngine.Audio;
 using UnityEngine.Playables;
 using UnityEngine.UIElements;
 
 namespace GBG.PlayableGraphMonitor.Editor.Node
 {
-    public sealed class AnimationClipPlayableNode : PlayableNode
+    public sealed class AudioClipPlayableNode : PlayableNode
     {
         private readonly ObjectField _clipField;
 
         private readonly ProgressBar _progressBar;
 
 
-        public AnimationClipPlayableNode()
+        public AudioClipPlayableNode()
         {
             var banner = mainContainer.Q("divider");
             banner.style.height = StyleKeyword.Auto;
@@ -30,7 +30,7 @@ namespace GBG.PlayableGraphMonitor.Editor.Node
 
             _clipField = new ObjectField
             {
-                objectType = typeof(Motion),
+                objectType = typeof(AudioClip),
             };
             var clipFieldSelector = _clipField.Q(className: "unity-object-field__selector");
             clipFieldSelector.style.display = DisplayStyle.None;
@@ -47,9 +47,8 @@ namespace GBG.PlayableGraphMonitor.Editor.Node
                 return;
             }
 
-
-            var clipPlayable = (AnimationClipPlayable)Playable;
-            var clip = clipPlayable.GetAnimationClip();
+            var clipPlayable = (AudioClipPlayable)Playable;
+            var clip = clipPlayable.GetClip();
             _clipField.SetValueWithoutNotify(clip);
 
             // MEMO KEYWORD: CLIP_PROGRESS
@@ -64,7 +63,7 @@ namespace GBG.PlayableGraphMonitor.Editor.Node
                     var time = Playable.GetTime();
                     rawProgress01 = time / clip.length;
 
-                    if (clip.isLooping)
+                    if (clipPlayable.GetLooped())
                     {
                         progress01 = GraphTool.Wrap01(rawProgress01);
                     }
@@ -113,6 +112,7 @@ namespace GBG.PlayableGraphMonitor.Editor.Node
         //     // _clipField.SetValueWithoutNotify(null);
         // }
 
+
         protected override void AppendNodeDescription(StringBuilder descBuilder)
         {
             base.AppendNodeDescription(descBuilder);
@@ -122,16 +122,9 @@ namespace GBG.PlayableGraphMonitor.Editor.Node
                 return;
             }
 
-            var animClipPlayable = (AnimationClipPlayable)Playable;
-
-            // IK
-            descBuilder.AppendLine(LINE)
-                .Append("ApplyFootIK: ").AppendLine(animClipPlayable.GetApplyFootIK().ToString())
-                .Append("ApplyPlayableIK: ").AppendLine(animClipPlayable.GetApplyPlayableIK().ToString());
-
-            // Clip
+            var clipPlayable = (AudioClipPlayable)Playable;
             descBuilder.AppendLine(LINE);
-            var clip = animClipPlayable.GetAnimationClip();
+            var clip = clipPlayable.GetClip();
             if (!clip)
             {
                 descBuilder.AppendLine("Clip: None");
@@ -140,39 +133,15 @@ namespace GBG.PlayableGraphMonitor.Editor.Node
 
             descBuilder.Append("Clip: ").AppendLine(clip.name)
                 .Append("Length: ").Append(clip.length.ToString("F3")).AppendLine("(s)")
-                .Append("Looped: ").AppendLine(clip.isLooping.ToString())
-                .Append("WrapMode: ").AppendLine(clip.wrapMode.ToString())
-                .Append("FrameRate: ").AppendLine(clip.frameRate.ToString("F3"))
-                .Append("Empty: ").AppendLine(clip.empty.ToString())
-                .Append("Legacy: ").AppendLine(clip.legacy.ToString())
-                .Append("HumanMotion: ").AppendLine(clip.humanMotion.ToString())
-                .Append("HasMotionCurves: ").AppendLine(clip.hasMotionCurves.ToString())
-                .Append("HasRootCurves: ").AppendLine(clip.hasRootCurves.ToString())
-                .Append("HasGenericRootTransform: ").AppendLine(clip.hasGenericRootTransform.ToString())
-                .Append("HasMotionFloatCurves: ").AppendLine(clip.hasMotionFloatCurves.ToString())
-                .AppendLine("LocalBounds: ")
-                .Append("  Center: ").AppendLine(clip.localBounds.center.ToString())
-                .Append("  Extends: ").AppendLine(clip.localBounds.extents.ToString())
-                .Append("ApparentSpeed: ").AppendLine(clip.apparentSpeed.ToString("F3")) // Motion.cs
-                .Append("AverageSpeed: ").AppendLine(clip.averageSpeed.ToString())
-                .Append("AverageAngularSpeed: ").AppendLine(clip.averageAngularSpeed.ToString("F3"))
-                .Append("AverageDuration: ").AppendLine(clip.averageDuration.ToString("F3"))
-                .Append("IsHumanMotion: ").AppendLine(clip.isHumanMotion.ToString());
-
-            // Event
-            descBuilder.AppendLine(LINE);
-            var events = clip.events;
-            descBuilder.AppendLine(
-                events.Length == 0
-                    ? "No Event"
-                    : (events.Length == 1 ? "1 Event:" : $"{events.Length.ToString()} Events:")
-            );
-            for (int i = 0; i < events.Length; i++)
-            {
-                var evt = events[i];
-                var evtPosition = evt.time / clip.length * 100;
-                descBuilder.AppendLine($"  #{(i + 1).ToString()} {evtPosition.ToString("F2")}% {evt.functionName}");
-            }
+                .Append("Looped: ").AppendLine(clipPlayable.GetLooped().ToString())
+                .Append("Channels: ").AppendLine(clip.channels.ToString())
+                .Append("Ambisonic: ").AppendLine(clip.ambisonic.ToString())
+                .Append("Frequency: ").AppendLine(clip.frequency.ToString())
+                .Append("Samples: ").AppendLine(clip.samples.ToString())
+                .Append("LoadState: ").AppendLine(clip.loadState.ToString())
+                .Append("LoadType: ").AppendLine(clip.loadType.ToString())
+                .Append("LoadInBackground: ").AppendLine(clip.loadInBackground.ToString())
+                .Append("PreloadAudioData: ").AppendLine(clip.preloadAudioData.ToString());
         }
     }
 }

@@ -29,7 +29,7 @@ namespace PowerCellStudio
                 var indexFilePathV0 =$"{Application.streamingAssetsPath}/{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}Index.bytes";
                 var dataFilePathV0 =$"{Application.streamingAssetsPath}/{ConstSetting.BundleAssetConfigFolder}/{ConstSetting.BundleAssetConfigName}Data.bytes";
 #if UNITY_ANDROID
-                using (UnityWebRequest request = UnityWebRequest.Get("file://" + indexFilePathV0))
+                using (UnityWebRequest request = UnityWebRequest.Get(indexFilePathV0))
                 {
                     request.downloadHandler = new DownloadHandlerFile(indexFilePath);
                     yield return request.SendWebRequest();
@@ -40,7 +40,7 @@ namespace PowerCellStudio
                         yield break;
                     }
                 }
-                using (UnityWebRequest request = UnityWebRequest.Get("file://" + dataFilePathV0))
+                using (UnityWebRequest request = UnityWebRequest.Get(dataFilePathV0))
                 {
                     request.downloadHandler = new DownloadHandlerFile(dataFilePath);
                     yield return request.SendWebRequest();

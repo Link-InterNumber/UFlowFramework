@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using System.Drawing;
 using System.Drawing.Imaging;
 using Newtonsoft.Json;
-using UnityEngine.Pool;
 
 namespace PowerCellStudio.Editor
 {

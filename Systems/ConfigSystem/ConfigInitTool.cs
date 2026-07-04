@@ -41,7 +41,7 @@ namespace PowerCellStudio
             }
             if (Application.platform == RuntimePlatform.Android)
             {
-                var listFilePath = $"file://{assetFolderPath}{configAssetListName}";
+                var listFilePath = $"{assetFolderPath}{configAssetListName}";
                 using var wepRequest = UnityEngine.Networking.UnityWebRequest.Get(listFilePath);
                 wepRequest.downloadHandler = new UnityEngine.Networking.DownloadHandlerFile(Path.Combine(folder, configAssetListName));
                 var asyncOp = wepRequest.SendWebRequest();
@@ -55,7 +55,7 @@ namespace PowerCellStudio
                 wepRequest.Dispose();
                 foreach (var assetFile in assetFiles)
                 {
-                    var assetPath = $"file://{assetFolderPath}{assetFile}";
+                    var assetPath = $"{assetFolderPath}{assetFile}";
                     var destPath = Path.Combine(folder, assetFile);
                     using var assetRequest = UnityEngine.Networking.UnityWebRequest.Get(assetPath);
                     assetRequest.downloadHandler = new UnityEngine.Networking.DownloadHandlerFile(destPath);

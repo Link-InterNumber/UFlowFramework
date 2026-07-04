@@ -40,8 +40,8 @@ namespace PowerCellStudio
                 onComplete?.Invoke(null);
                 return;
             }
-            // 使用 file:// 协议加载本地文件
-            string url = "file://" + path;
+            // 使用协议加载本地文件
+            string url = path;
             AsyncManager.Run(LoadImageCoroutine(url, onComplete, decrypt));
         }
 

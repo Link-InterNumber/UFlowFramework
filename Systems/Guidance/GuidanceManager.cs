@@ -257,7 +257,7 @@ namespace PowerCellStudio
             _nextIndex = 0;
             for (var i = 0; i < _currentIndex.Count; i++)
             {
-                _currentIndex.Add(_currentIndex[i]);
+                _executedIndex.Add(_currentIndex[i]);
             }
             _currentIndex.Clear();
             UIManager.instance.CloseWindow<GuidanceWindow>();

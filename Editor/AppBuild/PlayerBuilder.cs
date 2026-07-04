@@ -10,80 +10,131 @@ namespace PowerCellStudio.Editor
 {
     public class PlayerBuilder
     {
-        const string androidKeystorePass = "PowerCellStudio_keke";
-        const string androidKeyaliasName = "PowerCellStudio";
-        const string androidKeyaliasPass = "PowerCellStudio_keke";
-        private const string GameName = "Opoop日记";
+        private const string BuildNameMissingTitle = "Build Aborted";
+        private const string BuildNameMissingMessage = "未配置程序名，请先在 Project Settings > Player > Product Name 中设置程序名后再构建。";
+        private const string BuildNameInvalidMessage = "Product Name 不能作为文件名使用，请修改 Project Settings > Player > Product Name 后再构建。";
+        private const string AndroidKeystoreMissingTitle = "Android Build Aborted";
+        private const string AndroidKeystoreMissingMessage = "已启用 Custom Keystore，但 Project Settings > Player > Publishing Settings 中的 Keystore 路径不存在或未配置。";
+        private const string AndroidKeystoreCredentialMissingMessage = "已启用 Custom Keystore，但 Keystore Password / Key Alias Name / Key Alias Password 未完整配置。";
         
         public static string GetBuildTargetName(BuildTarget target)
         {
-            var dateNow = DateTime.Now;
-            var dateStamp = dateNow.Year * 100000000L + dateNow.Month * 1000000L + dateNow.Day * 10000L + dateNow.Hour * 100L + dateNow.Minute;
+            if (!TryGetBuildProductName(out var productName, false))
+            {
+                return null;
+            }
+
+            var dateStamp = DateTime.Now.ToString("yyyyMMddHHmm");
             switch (target)
             {
                 case BuildTarget.Android:
-                    return $"{GameName}{dateStamp}.apk";
+                    return $"{productName}_{dateStamp}.apk";
                 case BuildTarget.StandaloneWindows:
                 case BuildTarget.StandaloneWindows64:
-                    return $"{GameName}{dateStamp}.exe";
+                    return $"{productName}_{dateStamp}.exe";
                 case BuildTarget.StandaloneOSXIntel:
                 case BuildTarget.StandaloneOSXIntel64:
                 case BuildTarget.StandaloneOSX:
-                    return $"{GameName}{dateStamp}.app";
+                    return $"{productName}_{dateStamp}.app";
                 case BuildTarget.iOS:
-                    return $"{GameName}{dateStamp}-local";
+                    return $"{productName}_{dateStamp}-local";
                 case BuildTarget.WebGL:
-                    return $"{GameName}{dateStamp}";
+                    return $"{productName}_{dateStamp}";
                 default:
                     Debug.Log("Target not implemented.");
                     return null;
             }
         }
 
+        public static bool ValidateBuildConfiguration(BuildTarget target)
+        {
+            if (!TryGetBuildProductName(out _, true))
+            {
+                return false;
+            }
+
+            if (target != BuildTarget.Android || !PlayerSettings.Android.useCustomKeystore)
+            {
+                return true;
+            }
+
+            if (string.IsNullOrWhiteSpace(PlayerSettings.Android.keystoreName) || !File.Exists(PlayerSettings.Android.keystoreName))
+            {
+                EditorUtility.DisplayDialog(AndroidKeystoreMissingTitle, AndroidKeystoreMissingMessage, "OK");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(PlayerSettings.Android.keystorePass)
+                || string.IsNullOrWhiteSpace(PlayerSettings.Android.keyaliasName)
+                || string.IsNullOrWhiteSpace(PlayerSettings.Android.keyaliasPass))
+            {
+                EditorUtility.DisplayDialog(AndroidKeystoreMissingTitle, AndroidKeystoreCredentialMissingMessage, "OK");
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryGetBuildProductName(out string productName, bool showDialog)
+        {
+            productName = PlayerSettings.productName?.Trim();
+            if (string.IsNullOrEmpty(productName))
+            {
+                if (showDialog)
+                {
+                    EditorUtility.DisplayDialog(BuildNameMissingTitle, BuildNameMissingMessage, "OK");
+                }
+
+                return false;
+            }
+
+            var invalidFileNameChars = Path.GetInvalidFileNameChars();
+            productName = new string(productName.Where(ch => !invalidFileNameChars.Contains(ch)).ToArray()).Trim();
+            if (!string.IsNullOrEmpty(productName))
+            {
+                return true;
+            }
+
+            if (showDialog)
+            {
+                EditorUtility.DisplayDialog(BuildNameMissingTitle, BuildNameInvalidMessage, "OK");
+            }
+
+            return false;
+        }
+
+        private static bool PrepareBuildAssets()
+        {
+            ConfigMenu.CreateConfigAssetByForce();
+            if (AddressableBuilder.IsBuildOnPlayerBuild())
+            {
+                return true;
+            }
+
+            return AddressableBuilder.BuildAddressables();
+        }
+
         [MenuItem(@"Build/Addressable/Default Build", false, 1001)]
         public static void DefaultPlayerBuilder()
         {
-            ConfigMenu.CreateConfigAssetByForce();
-            AssetDatabase.DeleteAsset("Assets/StreamingAssets");
-            if (!Directory.Exists(Application.streamingAssetsPath))
-            {
-                Directory.CreateDirectory(Application.streamingAssetsPath);
-            }
-            if (!AddressableBuilder.IsBuildOnPlayerBuild())
-            {
-                var result =  AddressableBuilder.BuildAddressables();
-                if (!result) return;
-            }
             var options = new BuildPlayerOptions();
-            if (options.target == BuildTarget.Android && PlayerSettings.Android.useCustomKeystore)
-            {
-                if (!File.Exists(PlayerSettings.Android.keystoreName))
-                {
-                    var keyPath = EditorUtility.OpenFolderPanel("Select the folder of excel files", Environment.CurrentDirectory, "");
-                    if(string.IsNullOrEmpty(keyPath)) return;
-                    PlayerSettings.Android.keystoreName = keyPath;
-                }
-                PlayerSettings.Android.keystorePass = androidKeystorePass;
-                PlayerSettings.Android.keyaliasName = androidKeyaliasName;
-                PlayerSettings.Android.keyaliasPass = androidKeyaliasPass;
-            }
             options.options = BuildOptions.None;
-            // options.locationPathName = Environment.CurrentDirectory;
             BuildPlayerOptions playerSettings = BuildPlayerWindow.DefaultBuildMethods.GetBuildPlayerOptions(options);
-            if (playerSettings.target == BuildTarget.Android && PlayerSettings.Android.useCustomKeystore)
+            if (!ValidateBuildConfiguration(playerSettings.target))
             {
-                if (!File.Exists(PlayerSettings.Android.keystoreName))
-                {
-                    var keyPath = EditorUtility.OpenFolderPanel("Select the folder of excel files", Environment.CurrentDirectory, "");
-                    if(string.IsNullOrEmpty(keyPath)) return;
-                    PlayerSettings.Android.keystoreName = keyPath;
-                }
-                PlayerSettings.Android.keystorePass = androidKeystorePass;
-                PlayerSettings.Android.keyaliasName = androidKeyaliasName;
-                PlayerSettings.Android.keyaliasPass = androidKeyaliasPass;
+                return;
             }
-            var path = Environment.CurrentDirectory + $"/Build/{playerSettings.target}/";
-            playerSettings.locationPathName = path + GetBuildTargetName(playerSettings.target);
+
+            if (!PrepareBuildAssets()) return;
+
+            var buildTargetName = GetBuildTargetName(playerSettings.target);
+            if (string.IsNullOrEmpty(buildTargetName))
+            {
+                return;
+            }
+
+            var path = Path.Combine(Environment.CurrentDirectory, $"Build/{playerSettings.target}/");
+            playerSettings.locationPathName = Path.Combine(path, buildTargetName);
             playerSettings.options |= BuildOptions.CompressWithLz4;
             PlayerSettings.SetScriptingBackend(playerSettings.targetGroup , ScriptingImplementation.IL2CPP);
             if (!Directory.Exists(path))
@@ -95,22 +146,26 @@ namespace PowerCellStudio.Editor
         [MenuItem(@"Build/Addressable/Window Build", false, 1002)]
         public static void BuildWindowAssets()
         {
-            ConfigMenu.CreateConfigAssetByForce();
-            AssetDatabase.DeleteAsset("Assets/StreamingAssets");
-            if (!Directory.Exists(Application.streamingAssetsPath))
+            if (!ValidateBuildConfiguration(BuildTarget.StandaloneWindows))
             {
-                Directory.CreateDirectory(Application.streamingAssetsPath);
+                return;
             }
-            if (!AddressableBuilder.IsBuildOnPlayerBuild())
+
+            if (!PrepareBuildAssets())
             {
-                var result =  AddressableBuilder.BuildAddressables();
-                if (!result) return;
+                return;
             }
+
             var path = Path.Combine(Environment.CurrentDirectory, "Build/StandaloneWindows/");
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
+            var buildTargetName = GetBuildTargetName(BuildTarget.StandaloneWindows);
+            if (string.IsNullOrEmpty(buildTargetName))
+            {
+                return;
+            }
             BuildPlayerOptions playerSettings = new BuildPlayerOptions();
-            playerSettings.locationPathName = Path.Combine(path, GetBuildTargetName(BuildTarget.StandaloneWindows));
+            playerSettings.locationPathName = Path.Combine(path, buildTargetName);
             playerSettings.scenes = EditorBuildSettings.scenes.Where(o => o.enabled).Select(o => o.path).ToArray();
             playerSettings.targetGroup = BuildTargetGroup.Standalone;
             playerSettings.target = BuildTarget.StandaloneWindows;
@@ -123,46 +178,32 @@ namespace PowerCellStudio.Editor
         [MenuItem(@"Build/Addressable/Andriod Build", false, 1003)]
         public static void BuildAndroidAssets()
         {
-            ConfigMenu.CreateConfigAssetByForce();
-            AssetDatabase.DeleteAsset("Assets/StreamingAssets");
-            if (!Directory.Exists(Application.streamingAssetsPath))
+            if (!ValidateBuildConfiguration(BuildTarget.Android))
             {
-                Directory.CreateDirectory(Application.streamingAssetsPath);
+                return;
             }
-            if (!File.Exists(PlayerSettings.Android.keystoreName))
+
+            if (!PrepareBuildAssets())
             {
-                var keyPath = EditorUtility.OpenFolderPanel("Select the folder of excel files", Environment.CurrentDirectory, "");
-                if(string.IsNullOrEmpty(keyPath)) return;
-                PlayerSettings.Android.keystoreName = keyPath;
+                return;
             }
-            if (PlayerSettings.Android.useCustomKeystore)
-            {
-                if (!File.Exists(PlayerSettings.Android.keystoreName))
-                {
-                    var keyPath = EditorUtility.OpenFolderPanel("Select the folder of excel files", Environment.CurrentDirectory, "");
-                    if(string.IsNullOrEmpty(keyPath)) return;
-                    PlayerSettings.Android.keystoreName = keyPath;
-                }
-                PlayerSettings.Android.keystorePass = androidKeystorePass;
-                PlayerSettings.Android.keyaliasName = androidKeyaliasName;
-                PlayerSettings.Android.keyaliasPass = androidKeyaliasPass;
-            }
-            if (!AddressableBuilder.IsBuildOnPlayerBuild())
-            {
-                var result =  AddressableBuilder.BuildAddressables();
-                if (!result) return;
-            }
+
             var path = Path.Combine(Environment.CurrentDirectory, "Build/Android/");
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
+            var buildTargetName = GetBuildTargetName(BuildTarget.Android);
+            if (string.IsNullOrEmpty(buildTargetName))
+            {
+                return;
+            }
             BuildPlayerOptions playerSettings = new BuildPlayerOptions();
-            playerSettings.locationPathName = Path.Combine(path, GetBuildTargetName(BuildTarget.Android));
+            playerSettings.locationPathName = Path.Combine(path, buildTargetName);
             playerSettings.scenes = EditorBuildSettings.scenes.Where(o => o.enabled).Select(o => o.path).ToArray();
             playerSettings.targetGroup = BuildTargetGroup.Android;
             playerSettings.target = BuildTarget.Android;
             playerSettings.options |= BuildOptions.CompressWithLz4;
             PlayerSettings.SetScriptingBackend(playerSettings.targetGroup , ScriptingImplementation.IL2CPP);
-
+            
             // playerSettings.locationPathName = path + GetBuildTargetName(playerSettings.target);
             BuildPipeline.BuildPlayer(playerSettings);
             EditorUtility.RevealInFinder("Build/Android/");
@@ -171,22 +212,26 @@ namespace PowerCellStudio.Editor
         [MenuItem(@"Build/Addressable/WebGl Build", false, 1004)]
         public static void BuildWebGlAssets()
         {
-            ConfigMenu.CreateConfigAssetByForce();
-            AssetDatabase.DeleteAsset("Assets/StreamingAssets");
-            if (!Directory.Exists(Application.streamingAssetsPath))
+            if (!ValidateBuildConfiguration(BuildTarget.WebGL))
             {
-                Directory.CreateDirectory(Application.streamingAssetsPath);
+                return;
             }
-            if (!AddressableBuilder.IsBuildOnPlayerBuild())
+
+            if (!PrepareBuildAssets())
             {
-                var result =  AddressableBuilder.BuildAddressables();
-                if (!result) return;
+                return;
             }
+
             var path = Path.Combine(Environment.CurrentDirectory, "Build/WebGL/");
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
+            var buildTargetName = GetBuildTargetName(BuildTarget.WebGL);
+            if (string.IsNullOrEmpty(buildTargetName))
+            {
+                return;
+            }
             BuildPlayerOptions playerSettings = new BuildPlayerOptions();
-            playerSettings.locationPathName = Path.Combine(path, GetBuildTargetName(BuildTarget.WebGL));
+            playerSettings.locationPathName = Path.Combine(path, buildTargetName);
             playerSettings.scenes = EditorBuildSettings.scenes.Where(o => o.enabled).Select(o => o.path).ToArray();
             playerSettings.targetGroup = BuildTargetGroup.WebGL;
             playerSettings.target = BuildTarget.WebGL;
@@ -201,22 +246,26 @@ namespace PowerCellStudio.Editor
         [MenuItem(@"Build/Addressable/Switch Build", false, 1005)]
         public static void BuildSwitchAssets()
         {
-            ConfigMenu.CreateConfigAssetByForce();
-            AssetDatabase.DeleteAsset("Assets/StreamingAssets");
-            if (!Directory.Exists(Application.streamingAssetsPath))
+            if (!ValidateBuildConfiguration(BuildTarget.Switch))
             {
-                Directory.CreateDirectory(Application.streamingAssetsPath);
+                return;
             }
-            if (!AddressableBuilder.IsBuildOnPlayerBuild())
+
+            if (!PrepareBuildAssets())
             {
-                var result =  AddressableBuilder.BuildAddressables();
-                if (!result) return;
+                return;
             }
+
             var path = Path.Combine(Environment.CurrentDirectory, "Build/Switch/");
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
+            var buildTargetName = GetBuildTargetName(BuildTarget.Switch);
+            if (string.IsNullOrEmpty(buildTargetName))
+            {
+                return;
+            }
             BuildPlayerOptions playerSettings = new BuildPlayerOptions();
-            playerSettings.locationPathName = Path.Combine(path, GetBuildTargetName(BuildTarget.Switch));
+            playerSettings.locationPathName = Path.Combine(path, buildTargetName);
             playerSettings.scenes = EditorBuildSettings.scenes.Where(o => o.enabled).Select(o => o.path).ToArray();
             playerSettings.targetGroup = BuildTargetGroup.Switch;
             playerSettings.target = BuildTarget.Switch;

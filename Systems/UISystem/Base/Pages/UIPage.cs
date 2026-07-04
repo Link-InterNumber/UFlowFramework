@@ -82,11 +82,12 @@ namespace PowerCellStudio
             var window = GetUI<T>();
             if (window == null) return false;
             if (!window.isOpened) return true;
-            var isPeek = GetTopUI().Equals(window);
+            var peekUi = GetTopUI();
+            var isPeek = peekUi != null && peekUi.Equals(window);
             if (!UIUtils.CloseUI<T>(window, onClosed)) return false;
             if (isPeek)
             {
-                GetTopUI()?.OnFocus();
+                peekUi.OnFocus();
             }
             return true;
         }
@@ -94,11 +95,12 @@ namespace PowerCellStudio
         bool IUIParent.CloseUI<T>(T uiChild, Action afterClosed)
         {
             if(uiChild == null || !_openedUIs.Contains(uiChild)) return false;
-            var isPeek = GetTopUI().Equals(uiChild);
+            var peekUi = GetTopUI();
+            var isPeek = peekUi != null && peekUi.Equals(uiChild);
             if (!UIUtils.CloseUI<T>(uiChild, afterClosed)) return false;
             if(isPeek)
             {
-                GetTopUI()?.OnFocus();
+                peekUi.OnFocus();
             }
             return true;
         }

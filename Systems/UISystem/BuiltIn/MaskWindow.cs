@@ -100,7 +100,7 @@ namespace PowerCellStudio
             
         }
 
-        bool IUIComponent.Close()
+        protected override bool CheckCloseCondition()
         {
             _emptyCount--;
             if (_waitingCount || _emptyCount)

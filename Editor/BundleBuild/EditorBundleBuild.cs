@@ -87,10 +87,21 @@ namespace PowerCellStudio.Editor
             var options = new BuildPlayerOptions();
             // options.locationPathName = Environment.CurrentDirectory;
             BuildPlayerOptions playerSettings = BuildPlayerWindow.DefaultBuildMethods.GetBuildPlayerOptions(options);
+            if (!PlayerBuilder.ValidateBuildConfiguration(playerSettings.target))
+            {
+                return;
+            }
+
+            var buildTargetName = PlayerBuilder.GetBuildTargetName(playerSettings.target);
+            if (string.IsNullOrEmpty(buildTargetName))
+            {
+                return;
+            }
+
             var buildPath = Path.Combine(Environment.CurrentDirectory, $"Build/{playerSettings.target}/");
             if (!Directory.Exists(buildPath))
                 Directory.CreateDirectory(buildPath);
-            playerSettings.locationPathName = Path.Combine(buildPath, PlayerBuilder.GetBuildTargetName(playerSettings.target));
+            playerSettings.locationPathName = Path.Combine(buildPath, buildTargetName);
             playerSettings.scenes = EditorBuildSettings.scenes.Where(o => o.enabled).Select(o => o.path).ToArray();
             playerSettings.options = BuildOptions.None;
             playerSettings.options |= BuildOptions.CompressWithLz4;
