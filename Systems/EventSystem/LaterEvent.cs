@@ -125,6 +125,7 @@ namespace PowerCellStudio
         {
             events?.Invoke(_data);
             _toInvoke = false;
+            _data = default;
         }
     }
 
@@ -192,6 +193,8 @@ namespace PowerCellStudio
         {
             events?.Invoke(_data, _data2);
             _toInvoke = false;
+            _data = default;
+            _data2 = default;
         }
     }
 
@@ -261,6 +264,9 @@ namespace PowerCellStudio
         {
             events?.Invoke(_data, _data2, _data3);
             _toInvoke = false;
+            _data = default;
+            _data2 = default;
+            _data3 = default;
         }
     }
 }

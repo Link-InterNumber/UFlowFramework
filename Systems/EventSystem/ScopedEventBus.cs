@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine.Pool;
 
 namespace PowerCellStudio
 {
@@ -259,10 +260,68 @@ namespace PowerCellStudio
         }
 
         /// <summary>
+        /// 清空所有通过CollectInvoke收集的事件调用
+        /// </summary>
+        public void ClearCollectedInvokes()
+        {
+            if (_isTriggering) return;
+            _laterInvokeQueue.Clear();
+        }
+        
+        /// <summary>
+        /// 取消通过CollectInvoke收集的事件调用，通过eventId匹配
+        /// </summary>
+        /// <param name="eventId"></param>
+        public void CancelCollectedInvokeById(int eventId)
+        {
+            for (int i = 0; i < _laterInvokeQueue.Count; i++)
+            {
+                var info = _laterInvokeQueue.Dequeue();
+                if (info.eventId != eventId)
+                {
+                    _laterInvokeQueue.Enqueue(info);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 取消通过CollectInvoke收集的事件调用，通过eventId和参数匹配
+        /// </summary>
+        /// <param name="eventId"></param>
+        /// <param name="parameters"></param>
+        public void CancelCollectedInvoke(int eventId, params object[] parameters)
+        {
+            for (int i = 0; i < _laterInvokeQueue.Count; i++)
+            {
+                var info = _laterInvokeQueue.Dequeue();
+                if (info.eventId != eventId || !AreParametersEqual(info.parameters, parameters))
+                {
+                    _laterInvokeQueue.Enqueue(info);
+                }
+            }
+        }
+
+        private bool AreParametersEqual(object[] infoParameters, object[] parameters)
+        {
+            if (infoParameters == null && parameters == null) return true;
+            if (infoParameters == null || parameters == null) return false;
+            if (infoParameters.Length != parameters.Length) return false;
+            for (int i = 0; i < infoParameters.Length; i++)
+            {
+                if (!Equals(infoParameters[i], parameters[i])) return false;
+            }
+            return true;
+        }
+
+        private bool _isTriggering = false;
+
+        /// <summary>
         /// 触发所有通过CollectInvoke收集的事件调用
         /// </summary>
         public void TriggerInvoke()
         {
+            if (_isTriggering) return; // 防止递归触发
+            _isTriggering = true;
             while (_laterInvokeQueue.Count > 0)
             {
                 var info = _laterInvokeQueue.Dequeue();
@@ -287,6 +346,7 @@ namespace PowerCellStudio
                         break;
                 }
             }
+            _isTriggering = false;
         }
 
         private Stack<EventInvokeInfo> _invokeStack = new Stack<EventInvokeInfo>();
@@ -300,13 +360,69 @@ namespace PowerCellStudio
         {
             _invokeStack.Push(new EventInvokeInfo { eventId = eventId, parameters = parameters });
         }
+        
+        /// <summary>
+        /// 清空所有通过HoldInvoke收集的事件调用
+        /// </summary>
+        public void ClearHeldInvokes()
+        {
+            if (_isTriggering) return;
+            _invokeStack.Clear();
+        }
+        
+        /// <summary>
+        /// 取消通过HoldInvoke收集的事件调用，通过eventId匹配
+        /// </summary>
+        /// <param name="eventId"></param>
+        public void CancelHeldInvokeById(int eventId)
+        {
+            var tempStack = new Stack<EventInvokeInfo>();
+            while (_invokeStack.Count > 0)
+            {
+                var info = _invokeStack.Pop();
+                if (info.eventId != eventId)
+                {
+                    tempStack.Push(info);
+                }
+            }
+            while (tempStack.Count > 0)
+            {
+                _invokeStack.Push(tempStack.Pop());
+            }
+        }
+        
+        /// <summary>
+        /// 取消通过HoldInvoke收集的事件调用，通过eventId和参数匹配
+        /// </summary>
+        /// <param name="eventId"></param>
+        /// <param name="parameters"></param>
+        public void CancelHeldInvoke(int eventId, params object[] parameters)
+        {
+            var tempStack = new Stack<EventInvokeInfo>();
+            while (_invokeStack.Count > 0)
+            {
+                var info = _invokeStack.Pop();
+                if (info.eventId != eventId || !AreParametersEqual(info.parameters, parameters))
+                {
+                    tempStack.Push(info);
+                }
+            }
+            while (tempStack.Count > 0)
+            {
+                _invokeStack.Push(tempStack.Pop());
+            }
+        }
+
+        private bool _isReleasing = false;
 
         /// <summary>
         /// 触发所有通过HoldInvoke收集的事件调用，且同一事件ID只会触发一次。适用于在一定时间内可能多次触发同一事件，但只希望最终触发一次的场景（如UI刷新）。HoldInvoke会将事件调用压入栈中，等待后续通过ReleaseInvoke触发。ReleaseInvoke会触发栈中所有事件调用，但同一事件ID只会触发一次。
         /// </summary>
         public void ReleaseInvoke()
         {
-            var idSet = new HashSet<int>();
+            if (_isReleasing) return; // 防止递归触发
+            _isReleasing = true;
+            var idSet = HashSetPool<int>.Get();
             while (_invokeStack.Count > 0)
             {
                 var info = _invokeStack.Pop();
@@ -333,6 +449,8 @@ namespace PowerCellStudio
                         break;
                 }
             }
+            HashSetPool<int>.Release(idSet);
+            _isReleasing = false;
         }
 
 #endregion

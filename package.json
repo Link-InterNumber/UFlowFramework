@@ -24,6 +24,6 @@
         "com.unity.addressables": "1.21.4",
         "com.unity.textmeshpro": "3.0.6",
         "com.unity.localization": "1.4.2",
-        "com.unity.ugui": "1.0.0"
+        "com.unity.collections": "2.6.2"
     }
 }
