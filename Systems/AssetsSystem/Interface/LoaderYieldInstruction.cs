@@ -138,6 +138,7 @@ namespace PowerCellStudio
             _onLoadSuccess = null;
             _onLoadFailed = null;
             _assetPath = null;
+            _taskCompletionSource?.SetResult(null);
             _taskCompletionSource = null;
             _onDone = null;
         }
