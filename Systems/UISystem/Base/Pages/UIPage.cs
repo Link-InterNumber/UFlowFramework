@@ -32,7 +32,8 @@ namespace PowerCellStudio
         
         public RectTransform rectTransform => transform as RectTransform;
 
-        public bool isOpened => gameObject.activeSelf;
+        private bool _isOpened = false;
+        public bool isOpened => _isOpened;
         
         public void OnUIDestroy()
         {
@@ -132,6 +133,7 @@ namespace PowerCellStudio
 
         void IUIComponent.Open(object data)
         {
+            _isOpened = true;
             if(_assetsLoader == null) _assetsLoader = AssetUtils.SpawnLoader(gameObject.name);
             OnOpen(data);
         }
@@ -140,6 +142,7 @@ namespace PowerCellStudio
 
         bool IUIComponent.Close()
         {
+            _isOpened = false;
             return true;
         }
 
