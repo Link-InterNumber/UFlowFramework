@@ -1,13 +1,56 @@
 # Unity Project Template (2022.3.53f1)
 
 ![Unity Version](https://img.shields.io/badge/Unity-2022.3.53f1%20LTS-blue?logo=unity)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 # There are unverified features in the main branch, use the release branch!
 
 # github
 
 [https://github.com/Link-InterNumber/UFlowFramework](https://github.com/Link-InterNumber/UFlowFramework)
+
+# Document
+
+[Document](Doc/English/0.InfoOfUFlow.md)
+
+## 📦 Package Information
+
+| Item | Value |
+|------|-------|
+| Package Name | `com.powercellstudio.uflowframework` |
+| Current Version | `1.7.1` |
+| Unity Version | `2022.3` or later |
+| License | [MIT License](LICENSE) |
+| Recommended Branch | `release` |
+
+## 🚀 Installation
+
+### Option 1: Copy into Your Project
+
+Download or clone the repository, then copy the `Assets/UFlowFramework` folder into the `Assets` directory of your Unity project.
+
+### Option 2: Install from Git via Package Manager
+
+In Unity, open **Package Manager > Add package from git URL...** and enter:
+
+```text
+https://github.com/Link-InterNumber/UFlowFramework.git?path=Assets/UFlowFramework
+```
+
+> For stable usage, use the `release` branch or specify a tag/commit.
+
+## ✨ UFlow Framework Features
+
+UFlow is a modular development framework for Unity projects. It provides a set of commonly used systems and tools to help projects quickly build their foundation, reduce repetitive development work, and improve extensibility and maintainability.
+
+- **Modular Architecture**: Provides a module hub, business module lifecycle management, and event registration/release mechanisms to help split project logic by feature.
+- **Asset Management System**: Supports Addressables, AssetBundle, Resources, and other loading modes, with unified interfaces for asset loading, caching, and release.
+- **Page-Window UI System**: Manages UI through the parent-child relationship between Page and Window, supporting page stack switching, window opening/closing, and UI code skeleton generation.
+- **Configuration Table Tools**: Supports Excel/CSV configuration import, generates configuration classes and binary configuration assets, and supports index-chunk based reading and custom build pipeline integration.
+- **Event and Async Systems**: Provides type-safe events, end-of-frame merged event dispatching, and coroutine/task-style asynchronous execution helpers.
+- **Data and Localization**: Includes persistent data, runtime data management, version migration, and multilingual support based on Unity Localization.
+- **Common Game Systems**: Includes object pooling, audio management, red point notifications, guidance, time utilities, finite state machines, UI list update tools, and more.
+- **Tools and Extensibility**: Provides logging code generation, build tools, binary serialization, DataChunk, reflection utilities, visual effects helpers, network communication tools, and other extensions.
 
 ## 🚨 Environment Requirements
 
@@ -31,6 +74,25 @@ The following official plugin packages must be installed via **Package Manager**
    // Call this in any initialization code
    TMPro.TMP_Settings.LoadDefaultSettings(); 
    ```
+
+
+## 🤝 Contributing
+
+Issues and Pull Requests are welcome for bug reports, fixes, and documentation improvements. Before submitting changes, it is recommended to:
+
+1. Create a feature branch based on the `release` branch.
+2. Confirm that the Unity version and dependency package versions meet the requirements.
+3. Run basic validation for changes related to runtime logic, asset loading, configuration tables, UI, or build pipelines.
+4. If public APIs or usage workflows are changed, update both Chinese and English documentation.
+
+## 🐞 Feedback
+
+- GitHub Issues: [https://github.com/Link-InterNumber/UFlowFramework/issues](https://github.com/Link-InterNumber/UFlowFramework/issues)
+- QQ Group: 676959424
+
+## 📄 License
+
+This project is open-sourced under the [MIT License](LICENSE). You are free to use, modify, and distribute it, provided that the original copyright and license notices are retained.
 
 ### You May Not Need These Features
 For projects that already use **other or custom** resource loading or localization management solutions, you can modify/delete the corresponding scripts as needed.
@@ -103,7 +165,3 @@ This project complies with the licensing agreements of all third-party resources
 ---
 
 🙏 **Special Thanks** to all the authors and contributors of open-source projects for their outstanding work!
-
-# Document
-
-[Document](Doc/English/0.InfoOfUFlow.md)
