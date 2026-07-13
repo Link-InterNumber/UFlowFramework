@@ -50,6 +50,7 @@ Shader "Custom/FastSSS"
             #pragma multi_compile_fog
             // 额外光源
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            #pragma multi_compile _ _FORWARD_PLUS
             #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma shader_feature_local _USE_THICKNESS_MAP
@@ -176,26 +177,46 @@ Shader "Custom/FastSSS"
                 half sss = pow(backLight * thickness, _SSSPower) * _SSSScale ;
                 half3 subsurface = _SSSColor.rgb * mainLight.color * sss * albedo;
 
-#ifdef _ADDITIONAL_LIGHTS
+#if defined(_ADDITIONAL_LIGHTS) || defined(USE_CLUSTER_LIGHT_LOOP) || defined(USE_FORWARD_PLUS)
                 // 获取额外光源处理
-                int pixelLightCount = GetAdditionalLightsCount();
-                for(int index = 0; index < pixelLightCount; index++)
+                // Unity 6 / Unity 2022 的 Forward+ 光源循环宏可能会读取 inputData.normalizedScreenSpaceUV 和 inputData.positionWS。
+                // 当前 Shader 没有使用 URP Lit 的完整 InputData，这里提供宏需要的最小字段。
+                struct FastSSSInputData
                 {
-                    Light light = GetAdditionalLight(index, worldPos, half4(1,1,1,1));
-                    // 计算光照颜色和衰减
-                    float3 attenuatedLightColor = light.color * (light.distanceAttenuation * light.shadowAttenuation);
-                    // 获取额外光源的阴影
-                    // float addtionalShadow = AdditionalLightRealtimeShadow(light.shadowCoord, index);
-                    // 计算漫反射和镜面反射
-                    diffuse += LightingLambert(attenuatedLightColor, light.direction, bump); //* addtionalShadow;
-			        specular += LightingSpecular(attenuatedLightColor, light.direction, bump, viewDir, _Specular, _Gloss); //* addtionalShadow;
+                    float3 positionWS;
+                    float2 normalizedScreenSpaceUV;
+                };
 
-                    // Additional light SSS
-                    float3 addtionalH = normalize(bump - light.direction);
-                    half addBackLight = saturate(dot(viewDir, addtionalH));
-                    half addSss = pow(addBackLight * thickness, _SSSPower) * _SSSScale;
-                    subsurface += _SSSColor.rgb * light.color * light.distanceAttenuation * addSss * albedo;
+                FastSSSInputData inputData;
+                inputData.positionWS = worldPos;
+                inputData.normalizedScreenSpaceUV = i.pos.xy / GetScaledScreenParams().xy;
+
+                int pixelLightCount = GetAdditionalLightsCount();
+#if defined(LIGHT_LOOP_BEGIN)
+LIGHT_LOOP_BEGIN(pixelLightCount)
+#else
+                for (uint lightIndex = 0u; lightIndex < (uint)pixelLightCount; ++lightIndex)
+                {
+#endif
+                Light light = GetAdditionalLight(lightIndex, worldPos, half4(1,1,1,1));
+                // 计算光照颜色和衰减
+                float3 attenuatedLightColor = light.color * (light.distanceAttenuation * light.shadowAttenuation);
+                // 获取额外光源的阴影
+                // float addtionalShadow = AdditionalLightRealtimeShadow(light.shadowCoord, lightIndex);
+                // 计算漫反射和镜面反射
+                diffuse += LightingLambert(attenuatedLightColor, light.direction, bump); //* addtionalShadow;
+                specular += LightingSpecular(attenuatedLightColor, light.direction, bump, viewDir, _Specular, _Gloss); //* addtionalShadow;
+
+                // Additional light SSS
+                float3 addtionalH = normalize(bump - light.direction);
+                half addBackLight = saturate(dot(viewDir, addtionalH));
+                half addSss = pow(addBackLight * thickness, _SSSPower) * _SSSScale;
+                subsurface += _SSSColor.rgb * light.color * light.distanceAttenuation * addSss * albedo;
+#if defined(LIGHT_LOOP_END)
+LIGHT_LOOP_END
+#else
                 }
+#endif
 #endif
                 float4 col = float4(ambient + diffuse + specular + subsurface, 1.0);
                 // 雾

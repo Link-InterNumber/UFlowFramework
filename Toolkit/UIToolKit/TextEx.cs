@@ -19,12 +19,12 @@ namespace PowerCellStudio
             if(!Application.isPlaying) return;
             if(changeFontWhenLanChange)
             {
-                LocalizationManager.instance.onLanguageChange.AddListener(ChangeFont);
-                ChangeFont(LocalizationManager.instance.curLanguage);
+                LocalizationManager.instance?.onLanguageChange.AddListener(ChangeFont);
+                ChangeFont(LocalizationManager.instance?.curLanguage ?? ConstSetting.DefaultLanguage);
             }
             if (!staticText || string.IsNullOrEmpty(localizationKey)) return;
             SetLocalizedText();
-            LocalizationManager.instance.onLanguageChange.AddListener(OnLocalChange);
+            LocalizationManager.instance?.onLanguageChange.AddListener(OnLocalChange);
             _addListener = true;
         }
 
@@ -34,14 +34,14 @@ namespace PowerCellStudio
             _paramCache = null;
             if(!Application.isPlaying) return;
             localizationKey = null;
-            LocalizationManager.instance.onLanguageChange.RemoveListener(OnLocalChange);
-            LocalizationManager.instance.onLanguageChange.RemoveListener(ChangeFont);
+            LocalizationManager.instance?.onLanguageChange.RemoveListener(OnLocalChange);
+            LocalizationManager.instance?.onLanguageChange.RemoveListener(ChangeFont);
         }
 
         private void ChangeFont(Language data)
         {
-            if (LocalizationManager.instance.font != null)
-                font = LocalizationManager.instance.font;
+            if (LocalizationManager.instance?.font != null)
+                font = LocalizationManager.instance?.font;
         }
 
         public void SetLocalizationText(string key, params object[] param)
@@ -57,7 +57,7 @@ namespace PowerCellStudio
             }
             SetLocalizedText();
             if(_addListener) return;
-            LocalizationManager.instance.onLanguageChange.AddListener(OnLocalChange);
+            LocalizationManager.instance?.onLanguageChange.AddListener(OnLocalChange);
             _addListener = true;
         }
 
@@ -71,7 +71,7 @@ namespace PowerCellStudio
 #if UNITY_EDITOR
             if(!Application.isPlaying) return;
 #endif
-            if (!LocalizationManager.instance.TryGetString(localizationKey, out var localizedText, _paramCache))
+            if (LocalizationManager.instance == null || !LocalizationManager.instance.TryGetString(localizationKey, out var localizedText, _paramCache))
             {
 #if UNITY_EDITOR
                 text = $"[N/A]{localizationKey}";

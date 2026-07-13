@@ -13,6 +13,7 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _ReceiveShadows
+  - _SoftEdgeLight
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -29,7 +30,7 @@ Material:
         m_Scale: {x: 10, y: 10}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 1d3f3ffc5dd1af74b93a29690072a124, type: 3}
+        m_Texture: {fileID: 2800000, guid: 73e50acc92fe27a46bf0a089ac59c1d0, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -40,13 +41,14 @@ Material:
     - _DarkIntensity: 1
     - _DarkPower: 1.24
     - _DiffuseScale: 1.13
-    - _EdgeLightScale: 4.31
-    - _EdgeLightSize: 0.762
-    - _Fresnel: 0.455
+    - _EdgeLightScale: 5
+    - _EdgeLightSize: 1
+    - _Fresnel: 0.632
     - _Gloss: 70
-    - _LightBoundary: -0.252
+    - _LightBoundary: 0.64
     - _LightPower: 0.386
     - _ReceiveShadows: 1
+    - _SoftEdgeLight: 1
     - _SubShadow: 1.75
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}

@@ -59,12 +59,13 @@ namespace PowerCellStudio.Editor
                 else
                 {
                     _layoutGroup.objectReferenceValue = null;
-                    Debug.LogError("ListManager needs a [VerticalLayoutGroup] or a [HorizontalLayoutGroup]!");
+                    EditorGUILayout.HelpBox("ListManager needs a [VerticalLayoutGroup], [HorizontalLayoutGroup] or [GridLayoutGroup]!", MessageType.Error);
                 }
             }
             else
             {
                 _direction.enumValueIndex = (int) RecycleScrollRect.ListDirection.HORIZONTAL;
+                EditorGUILayout.HelpBox("ListManager needs a [VerticalLayoutGroup], [HorizontalLayoutGroup] or [GridLayoutGroup]!", MessageType.Error);
             }
             EditorGUILayout.PropertyField(_layoutGroup);
             EditorGUILayout.PropertyField(_direction);

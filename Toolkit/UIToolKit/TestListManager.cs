@@ -1,16 +1,23 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
+using UnityEngine;
 
 namespace PowerCellStudio
 {
-    public class TestListManager : SceneMainBase
+    public class TestListManager : MonoBehaviour
     {
         public RecycleScrollRect recycleScrollRect;
         public int testNumber = 20;
 
-        protected override void ReadyForStart()
+        private void Awake()
+        {
+            IndexGetter.instance = new IndexGetter();
+        }
+
+        private void OnEnable()
         {
             if (!recycleScrollRect) return;
-            recycleScrollRect.UpdateList(Enumerable.Range(0, testNumber).ToList());
+            recycleScrollRect.UpdateList(Enumerable.Range(0, testNumber));
         }
     }
 }

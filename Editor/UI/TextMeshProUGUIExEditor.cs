@@ -105,6 +105,9 @@ namespace PowerCellStudio.Editor
     {
         private SerializedProperty m_staticText;
         private SerializedProperty m_localizationKey;
+        private SerializedProperty m_enableFourCornerGradient;
+        private SerializedProperty m_textGradient;
+        private SerializedProperty m_gradientAngle;
         // private GUIStyle _style;
 
         protected override void OnEnable()
@@ -112,6 +115,9 @@ namespace PowerCellStudio.Editor
             base.OnEnable();
             m_staticText = serializedObject.FindProperty("staticText");
             m_localizationKey = serializedObject.FindProperty("localizationKey");
+            m_enableFourCornerGradient = serializedObject.FindProperty("enableFourCornerGradient");
+            m_textGradient = serializedObject.FindProperty("textGradient");
+            m_gradientAngle = serializedObject.FindProperty("gradientAngle");
         }
 
         protected override void OnDisable()
@@ -119,14 +125,28 @@ namespace PowerCellStudio.Editor
             base.OnDisable();
             m_staticText = null;
             m_localizationKey = null;
+            m_enableFourCornerGradient = null;
+            m_textGradient = null;
+            m_gradientAngle = null;
         }
 
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Localization");
             serializedObject.Update();
+            EditorGUILayout.LabelField("Four Corner Gradient");
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(m_enableFourCornerGradient, new GUIContent("Enable"));
+            if (m_enableFourCornerGradient.boolValue)
+            {
+                EditorGUILayout.PropertyField(m_textGradient, new GUIContent("Gradient"));
+                EditorGUILayout.PropertyField(m_gradientAngle, new GUIContent("Angle"));
+            }
+            var gradientChanged = EditorGUI.EndChangeCheck();
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Localization");
             EditorGUILayout.PropertyField(m_staticText);
             if (m_staticText.boolValue)
             {
@@ -181,6 +201,16 @@ namespace PowerCellStudio.Editor
                 }
             }
             serializedObject.ApplyModifiedProperties();
+            if (gradientChanged)
+            {
+                foreach (var item in targets)
+                {
+                    if (item is TextMeshProUGUIEx textMeshProUGUIEx)
+                    {
+                        textMeshProUGUIEx.SetVerticesDirty();
+                    }
+                }
+            }
         }
 
         private string GetPathName(Transform tr)

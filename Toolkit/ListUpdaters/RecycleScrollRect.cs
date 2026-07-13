@@ -90,6 +90,17 @@ namespace PowerCellStudio
         
         private void OnDestroy()
         {
+            StopAllCoroutines();
+            layoutGroup = null;
+            scroll = null;
+            maskObj = null;
+            prefab = null;
+            onItemInteraction = null;
+            _layoutHandler = null;
+            _itemDict?.Clear();
+            _dataList?.Clear();
+            _itemDict = null;
+            _dataList = null;
             AssetUtils.DeSpawnLoader(_assetLoader);
             if (!scroll) return;
             if (optimize) scroll.onValueChanged.RemoveListener(OnScrollValueChanged);
@@ -132,7 +143,7 @@ namespace PowerCellStudio
 
         private IEnumerator DelayInit()
         {
-            yield return null;
+            yield return new WaitForEndOfFrame();;
             Init();
         }
 
@@ -187,7 +198,7 @@ namespace PowerCellStudio
                 ListPool<GameObject>.Release(toDestroy);
             }
             _previousIndex = -1;
-            AsyncManager.Run(DelayReorderItemsByPos());
+            ForceRebuild();
         }
 
         private IRecycleScrollRectLayout CreateLayoutHandler(Vector2 prefabRectSize)

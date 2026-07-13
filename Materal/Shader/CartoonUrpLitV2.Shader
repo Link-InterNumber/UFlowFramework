@@ -14,8 +14,9 @@ Shader "Custom/CartoonUrpLitV2"
         _Fresnel ("Fresnel", Range(0.0, 1.0)) = 0.5
 
         _LightBoundary ("Light Boundary", Range(-0.5, 1.0)) = 0.0
+        [Toggle(_SoftEdgeLight)]_SoftEdgeLight ("SoftEdgeLight", Float) = 1.0
         _EdgeLightSize ("Edge Light Size", Range(0.0, 1.0)) = 0.5
-        _EdgeLightScale ("Edge Light Scale", Range(0.0, 5.0)) = 1.0
+        _EdgeLightScale ("Edge Light Scale", Range(0.0, 10.0)) = 1.0
         _DiffuseScale ("Diffuse Scale", Range(0.0, 5.0)) = 1.0
         _DarkIntensity ("DarkIntensity", Range(0.0, 1.0)) = 1.0
         _LightPower ("Light Power", Range(0.01, 1)) = 0.5
@@ -72,10 +73,12 @@ Shader "Custom/CartoonUrpLitV2"
             #pragma multi_compile_fog
             // 额外光源
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            #pragma multi_compile _ _FORWARD_PLUS
             #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma shader_feature_local _ReceiveShadows
             #pragma shader_feature_local _CalSubShadow
+            #pragma shader_feature_local _SoftEdgeLight
             // #pragma multi_compile _ _ADDITIONAL_LIGHT_CALCULATE_SHADOWS
             // GPU Instance
             #pragma multi_compile_instancing
@@ -164,7 +167,12 @@ Shader "Custom/CartoonUrpLitV2"
                 // 背光系数
                 float backLight = max(0, dot(-viewDir, lightDir));
                 // float3 edgeLight_al = _EdgeLightScale * light.distanceAttenuation * smoothstep(edgeSize, edgeSize, fresnelP5 * (dotProduct_al + backLight_al));
-                float3 edgeLightBase = _EdgeLightScale * smoothstep(edgeSize, edgeSize, fresnelP5 * (dotDumpLight + backLight));
+#ifdef _SoftEdgeLight
+                float3 edgeLightBase = _EdgeLightScale * fresnelP5 * fresnelP5 * saturate(dotDumpLight + backLight) * edgeSize;
+#else
+                edgeSize = 1 - edgeSize;
+                float3 edgeLightBase = _EdgeLightScale * fresnelP5 * smoothstep(edgeSize, edgeSize, fresnelP5 * (dotDumpLight + backLight));
+#endif
                 float3 edgeLight = shadow * edgeLightBase * lightColor;
                 return edgeLight;
             }
@@ -213,15 +221,29 @@ Shader "Custom/CartoonUrpLitV2"
                 float shadow = subShadow;
 #endif
 
-                // 边缘光
-                float edgeSize = 1.0 - _EdgeLightSize;
-
-#if defined(_ADDITIONAL_LIGHTS)
+#if defined(_ADDITIONAL_LIGHTS) || defined(USE_CLUSTER_LIGHT_LOOP) || defined(USE_FORWARD_PLUS)
                 // 获取额外光源处理
+                // Unity 6 / Unity 2022 的 Forward+ 光源循环宏可能会读取 inputData.normalizedScreenSpaceUV 和 inputData.positionWS。
+                // 当前 Shader 没有使用 URP Lit 的完整 InputData，这里提供宏需要的最小字段。
+                struct CartoonInputData
+                {
+                    float3 positionWS;
+                    float2 normalizedScreenSpaceUV;
+                };
+
+                CartoonInputData inputData;
+                inputData.positionWS = worldPos;
+                inputData.normalizedScreenSpaceUV = i.pos.xy / GetScaledScreenParams().xy;
+
                 int pixelLightCount = GetAdditionalLightsCount();
                 float3 offsetPosAddtionalLight = worldPos + bump * 0.05;
+#if defined(LIGHT_LOOP_BEGIN)
+LIGHT_LOOP_BEGIN(pixelLightCount)
+                    uint index = lightIndex;
+#else
                 for(int index = 0; index < pixelLightCount; index++)
                 {
+#endif
                     Light light = GetAdditionalLight(index, offsetPosAddtionalLight, half4(1,1,1,1));
                     float dotProduct_al = dot(bump, light.direction);
                     float distanceAttenuation = min(3, light.distanceAttenuation);
@@ -234,14 +256,18 @@ Shader "Custom/CartoonUrpLitV2"
                     diffuse += smoothstep(-_LightBoundary, 1.0 + _LightBoundary, dotProduct_al * distanceAttenuation) * light.shadowAttenuation * lightColor * _Diffuse.rgb;
                     float3 halfDir_al = normalize(light.direction + viewDir);
                     specular += light.color * _Specular.rgb * pow(max(0, dot(bump, halfDir_al)), _Gloss) * shaow_al;
+#if defined(LIGHT_LOOP_END)
+LIGHT_LOOP_END
+#else
                 }
+#endif
                 shadow = saturate(shadow);
 #endif
 
                 // 光照
                 float dotProduct = dot(bump, lightDir);
                 // 计算边缘光
-                edgeLight += getEdgeLight(dotProduct, viewDir, lightDir, _MainLightColor.rgb, fresnelP5, shadow, edgeSize);
+                edgeLight += getEdgeLight(dotProduct, viewDir, lightDir, _MainLightColor.rgb, fresnelP5, shadow, _EdgeLightSize);
                 diffuseShadow = smoothstep(-_LightBoundary, 1.0 + _LightBoundary, dotProduct + diffuseShadow);
                 diffuseShadow = saturate(diffuseShadow);
 
