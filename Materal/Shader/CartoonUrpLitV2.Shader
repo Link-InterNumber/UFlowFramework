@@ -73,7 +73,11 @@ Shader "Custom/CartoonUrpLitV2"
             #pragma multi_compile_fog
             // 额外光源
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            #if UNITY_VERSION >= 600000
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
+            #else
             #pragma multi_compile _ _FORWARD_PLUS
+            #endif
             #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma shader_feature_local _ReceiveShadows
@@ -251,7 +255,7 @@ LIGHT_LOOP_BEGIN(pixelLightCount)
                     float shaow_al = (distanceAttenuation * light.shadowAttenuation);
                     shadow += shaow_al;
 
-                    edgeLight += getEdgeLight(dotProduct_al, viewDir, light.direction, light.color * distanceAttenuation, fresnelP5, shaow_al, edgeSize);
+                    edgeLight += getEdgeLight(dotProduct_al, viewDir, light.direction, light.color * distanceAttenuation, fresnelP5, shaow_al, _EdgeLightSize);
                     float3 lightColor = (light.color + albedo) * 0.5;
                     diffuse += smoothstep(-_LightBoundary, 1.0 + _LightBoundary, dotProduct_al * distanceAttenuation) * light.shadowAttenuation * lightColor * _Diffuse.rgb;
                     float3 halfDir_al = normalize(light.direction + viewDir);
