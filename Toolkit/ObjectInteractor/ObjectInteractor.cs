@@ -1,9 +1,10 @@
+using System;
 using UnityEngine;
 
 namespace PowerCellStudio
 {
-    public class ObjectInteractor : MonoBehaviour
+    public abstract class ObjectInteractor : MonoBehaviour
     {
-        
+        protected abstract void OnDestroy();
     }
 }

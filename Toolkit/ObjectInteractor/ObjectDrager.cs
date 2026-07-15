@@ -23,5 +23,12 @@ namespace PowerCellStudio
         {
             onEndDrag.Invoke(eventData);
         }
+        
+        protected override void OnDestroy()
+        {
+            onDrag.RemoveAllListeners();
+            onBeginDrag.RemoveAllListeners();
+            onEndDrag.RemoveAllListeners();
+        }
     }
 }

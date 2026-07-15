@@ -8,9 +8,6 @@ namespace PowerCellStudio
     public class ObjectPointer : ObjectInteractor, IPointerDownHandler, IPointerUpHandler,
         IPointerEnterHandler, IPointerExitHandler
     {
-        /// <summary>
-        /// onDown 之后触发
-        /// </summary>
         public UnityEvent onDown = new UnityEvent();
         public UnityEvent onUp = new UnityEvent();
         public UnityEvent onPointerEnter = new UnityEvent();
@@ -34,6 +31,14 @@ namespace PowerCellStudio
         public void OnPointerExit(PointerEventData eventData)
         {
             onPointerExit.Invoke();
+        }
+
+        protected override void OnDestroy()
+        {
+            onDown.RemoveAllListeners();
+            onUp.RemoveAllListeners();
+            onPointerEnter.RemoveAllListeners();
+            onPointerExit.RemoveAllListeners();
         }
     }
 }

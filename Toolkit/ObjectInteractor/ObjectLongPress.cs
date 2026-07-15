@@ -66,8 +66,22 @@ namespace PowerCellStudio
         /// </summary>
         public UnityEvent onPressing = new UnityEvent();
         
+        /// <summary>
+        /// 长按UI激活状态，true为激活，false为取消
+        /// </summary>
         public UnityEvent<bool> _onActive = new UnityEvent<bool>();
         public UnityEvent<bool> onActive => _onActive;
+
+        protected override void OnDestroy()
+        {
+            onStart.RemoveAllListeners();
+            onConfirm.RemoveAllListeners();
+            onCancel.RemoveAllListeners();
+            onRelease.RemoveAllListeners();
+            onPressing.RemoveAllListeners();
+            _onActive.RemoveAllListeners();
+        }
+        
         public void StopProcess()
         {
             if (!_pressing) return;

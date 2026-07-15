@@ -16,5 +16,10 @@ namespace PowerCellStudio
         {
             onClick.Invoke();
         }
+
+        protected override void OnDestroy()
+        {
+            onClick.RemoveAllListeners();
+        }
     }
 }
