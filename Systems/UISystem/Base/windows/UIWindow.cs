@@ -97,9 +97,12 @@ namespace PowerCellStudio
             _assetsLoader = null;
         }
 
+        protected UIEventHost _eventHost;
+        
         public virtual void RegisterEvent()
         {
             OnCanvasHierarchyChanged();
+            _eventHost = UIEventHostPool.Get();
             if (closeBtn == null) return;
             foreach (var button in closeBtn)
             {
@@ -110,6 +113,8 @@ namespace PowerCellStudio
 
         public virtual void DeregisterEvent()
         {
+            UIEventHostPool.Release(_eventHost);
+            _eventHost = null;
             if (closeBtn == null) return;
             foreach (var button in closeBtn)
             {

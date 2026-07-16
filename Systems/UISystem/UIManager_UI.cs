@@ -259,7 +259,7 @@ namespace PowerCellStudio
             yield return new WaitForSecondsRealtime(time);
             if (!_cachedUIs.TryGetValue(uiType, out var cachedPage)) yield break;
             _cachedUIs.Remove(uiType);
-            var page = cachedPage as IUIParent;
+            // var page = cachedPage as IUIParent;
             // while (IsAnyWindowOpening(page))
             // {
             //     yield return null;
@@ -403,17 +403,17 @@ namespace PowerCellStudio
             foreach (var uiParent in pages)
             {
                 ClearClosedWindow(uiParent);
-
-                // if (uiParent.isOpened) 
-                // {
-                //     ClearClosedWindow(uiParent);
-                //     continue;
-                // }
-                // _pageStack.Remove(uiParent);
-                // UIUtils.ClosePage(uiParent, true, null, _poolPage);
             }
             ClearClosedWindow(_poolPage);
             ClearClosedWindow(_standAlonePage);
+            foreach (var keyValuePair in _cachedUIs)
+            {
+                var page = keyValuePair.Value as IUIParent;
+                if (page == null) continue;
+                UIUtils.ClosePageInstance(page, true, null, _poolPage);
+            }
+            _cachedUIs.Clear();
+            UIEventHostPool.Clear();
         }
 
         /// <summary>

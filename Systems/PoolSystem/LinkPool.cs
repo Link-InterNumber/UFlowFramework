@@ -78,6 +78,7 @@ namespace PowerCellStudio
         /// <returns>是否回收成功 / Whether the object was successfully recycled</returns>
         public virtual bool Release(T obj)
         {
+            if (obj == null) return false;
             if (_stack == null) return false;
             if (IsInPool(obj)) return true;
             if (count >= _maxSize) return false;

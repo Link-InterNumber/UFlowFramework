@@ -47,6 +47,22 @@ namespace PowerCellStudio
             tglWarning.isOn = true;
             tglError.isOn = true;
             base.RegisterEvent();
+            // sliderTimeScale.onValueChanged.AddListener(OnTimeScaleSliderChange);
+            // inputTargetFrameRate.onEndEdit.AddListener(OnTargetFrameRateDropdownChange);
+            // inputTimeScale.onEndEdit.AddListener(OnInputTimeScale);
+            // inputTargetFixedFrameRate.onEndEdit.AddListener(OnTargetFixedFrameRateDropdownChange);
+            // btnClearLog.onClick.AddListener(OnClickClearLog);
+            // tglLog.onValueChanged.AddListener(OnClickLog);
+            // tglWarning.onValueChanged.AddListener(OnClickWarning);
+            // tglError.onValueChanged.AddListener(OnClickError);
+            _eventHost.AddListener(sliderTimeScale, OnTimeScaleSliderChange);
+            _eventHost.AddListener(inputTargetFrameRate, OnTargetFrameRateDropdownChange);
+            _eventHost.AddListener(inputTimeScale, OnInputTimeScale);
+            _eventHost.AddListener(inputTargetFixedFrameRate, OnTargetFixedFrameRateDropdownChange);
+            _eventHost.AddListener(btnClearLog, OnClickClearLog);
+            _eventHost.AddListener(tglLog, OnClickLog);
+            _eventHost.AddListener(tglWarning, OnClickWarning);
+            _eventHost.AddListener(tglError, OnClickError);
         }
         
         public override void OnOpen(object data)
@@ -54,7 +70,7 @@ namespace PowerCellStudio
             txtTargetFrameRate.text = Application.targetFrameRate.ToString();
             sliderTimeScale.minValue = 0;
             sliderTimeScale.maxValue = 10;
-            sliderTimeScale.value = Time.timeScale;
+            sliderTimeScale.SetValueWithoutNotify(Time.timeScale);
             _frameTime = Time.unscaledTime;
             _fixedFrameTime = Time.unscaledTime;
             txtTargetFixedFrameRate.text = Mathf.RoundToInt(1f / Time.fixedDeltaTime).ToString();
@@ -64,16 +80,7 @@ namespace PowerCellStudio
             inputTargetFrameRate.contentType = InputField.ContentType.IntegerNumber;
             inputTargetFixedFrameRate.inputType = InputField.InputType.Standard;
             inputTargetFixedFrameRate.contentType = InputField.ContentType.IntegerNumber;
-            sliderTimeScale.onValueChanged.AddListener(OnTimeScaleSliderChange);
-            inputTargetFrameRate.onEndEdit.AddListener(OnTargetFrameRateDropdownChange);
-            inputTimeScale.onEndEdit.AddListener(OnInputTimeScale);
-            inputTargetFixedFrameRate.onEndEdit.AddListener(OnTargetFixedFrameRateDropdownChange);
-            
             DebugBtn.onLoged += OnLoged;
-            btnClearLog.onClick.AddListener(OnClickClearLog);
-            tglLog.onValueChanged.AddListener(OnClickLog);
-            tglWarning.onValueChanged.AddListener(OnClickWarning);
-            tglError.onValueChanged.AddListener(OnClickError);
             UpdateLogs();
 
         }
@@ -98,15 +105,15 @@ namespace PowerCellStudio
 
         public override void OnClose()
         {
-            sliderTimeScale.onValueChanged.RemoveListener(OnTimeScaleSliderChange);
-            inputTargetFrameRate.onEndEdit.RemoveListener(OnTargetFrameRateDropdownChange);
-            inputTimeScale.onEndEdit.RemoveListener(OnInputTimeScale);
-            inputTargetFixedFrameRate.onEndEdit.RemoveListener(OnTargetFixedFrameRateDropdownChange);
+            // sliderTimeScale.onValueChanged.RemoveListener(OnTimeScaleSliderChange);
+            // inputTargetFrameRate.onEndEdit.RemoveListener(OnTargetFrameRateDropdownChange);
+            // inputTimeScale.onEndEdit.RemoveListener(OnInputTimeScale);
+            // inputTargetFixedFrameRate.onEndEdit.RemoveListener(OnTargetFixedFrameRateDropdownChange);
             DebugBtn.onLoged -= OnLoged;
-            btnClearLog.onClick.RemoveListener(OnClickClearLog);
-            tglLog.onValueChanged.RemoveListener(OnClickLog);
-            tglWarning.onValueChanged.RemoveListener(OnClickWarning);
-            tglError.onValueChanged.RemoveListener(OnClickError);
+            // btnClearLog.onClick.RemoveListener(OnClickClearLog);
+            // tglLog.onValueChanged.RemoveListener(OnClickLog);
+            // tglWarning.onValueChanged.RemoveListener(OnClickWarning);
+            // tglError.onValueChanged.RemoveListener(OnClickError);
         }
 
         private void OnLoged(DebugBtn.LogInfo logInfo)

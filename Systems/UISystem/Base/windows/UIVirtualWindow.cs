@@ -50,9 +50,11 @@ namespace PowerCellStudio
         public RectTransform rectTransform => window?.rectTransform ?? null;
         private bool _isOpened;
         public bool isOpened => _isOpened;
+        protected UIEventHost _eventHost;
 
         public virtual void RegisterEvent()
         {
+            _eventHost = UIEventHostPool.Get();
             if (window.closeBtn == null) return;
             foreach (var button in window.closeBtn)
             {
@@ -63,6 +65,8 @@ namespace PowerCellStudio
 
         public virtual void DeregisterEvent()
         {
+            UIEventHostPool.Release(_eventHost);
+            _eventHost = null;
             if (window.closeBtn == null) return;
             foreach (var button in window.closeBtn)
             {

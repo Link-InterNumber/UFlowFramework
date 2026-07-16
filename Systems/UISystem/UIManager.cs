@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace PowerCellStudio
 {
     public partial class UIManager : MonoSingleton<UIManager>
     {
+        
         private void Start()
         {
             GameObject.DontDestroyOnLoad(gameObject);
@@ -17,15 +16,15 @@ namespace PowerCellStudio
         {
             RegisterEvents();
         }
+        
+        private void OnDisable()
+        {
+            UnRegisterEvents();
+        }
 
         private void RegisterEvents()
         {
             EventManager.instance.onClearUnusedAsset.AddListener(Clear);
-        }
-
-        private void OnDisable()
-        {
-            UnRegisterEvents();
         }
 
         private void UnRegisterEvents()

@@ -48,10 +48,13 @@ namespace PowerCellStudio
         /// 当前控制的UI组件实例。
         /// </summary>
         protected T ctrlUI { get => _ui; private set => _ui = value; }
+
+        protected UIEventHost _eventHost;
         
         public UIVariableCtrl(IUIComponent ui)
         {
             _ui = ui as T;
+            _eventHost = UIEventHostPool.Get();
         }
         
         /// <summary>
@@ -60,6 +63,8 @@ namespace PowerCellStudio
         public virtual void Dispose()
         {
             _ui = null;
+            UIEventHostPool.Release(_eventHost);
+            _eventHost = null;
         }
 
         public abstract void BindUIEvent();

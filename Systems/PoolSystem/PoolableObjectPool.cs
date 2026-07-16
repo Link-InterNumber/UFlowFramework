@@ -15,6 +15,12 @@ namespace PowerCellStudio
             return obj;
         }
 
+        /// <summary>
+        /// 将对象放入池中，返回false时需要会调用Dispose，外部需要置空 /
+        /// Put the object into the pool. When it returns false, Dispose needs to be called, and the external reference needs to be set to null.
+        /// </summary>
+        /// <param name="obj">对象池道具 / Object to be released</param>
+        /// <returns>是否回收成功 / Whether the object was successfully recycled</returns>
         public override bool Release(IPoolable obj)
         {
             if (_stack == null)
@@ -57,8 +63,15 @@ namespace PowerCellStudio
             return obj;
         }
 
+        /// <summary>
+        /// 将对象放入池中，返回false时需要会调用Dispose，外部需要置空 / 
+        /// Put the object into the pool. When it returns false, Dispose needs to be called, and the external reference needs to be set to null.
+        /// </summary>
+        /// <param name="obj">对象池道具 / Object to be released</param>
+        /// <returns>是否回收成功 / Whether the object was successfully recycled</returns>
         public override bool Release(T obj)
         {
+            if (obj == null) return false;
             if (_stack == null)
             {
                 obj.Dispose();

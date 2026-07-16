@@ -5,7 +5,7 @@ namespace PowerCellStudio
     public interface IUIComponent
     {
         /// <summary>
-        /// 资源加载器，会在UI初始化时创建，在UI销毁时自动回收加载都资源
+        /// 资源加载器，会在UI初始化时创建，在UI销毁时自动回收加载的资源
         /// The assetsLoader is created when the UI is initialized and automatically reclaims the loaded resources when the UI is destroyed
         /// </summary>
         public IAssetLoader assetsLoader { get;}
@@ -50,14 +50,14 @@ namespace PowerCellStudio
         public void OnFocus();
         
         /// <summary>
-        /// 注册UI组件的事件。
-        /// Register events for UI component.
+        /// 注册UI组件的事件。在OnOpen前调用 /
+        /// Register events for UI component. Call before OnOpen. 
         /// </summary>
         public void RegisterEvent();
         
         /// <summary>
-        /// 注销UI组件的事件。
-        /// Remove the UI component events.
+        /// 注销UI组件的事件。在OnClose前调用
+        /// Remove the UI component events. Call before OnClose. 
         /// </summary>
         public void DeregisterEvent();
     }
