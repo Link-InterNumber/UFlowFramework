@@ -41,7 +41,7 @@ namespace PowerCellStudio
             var ctrlType = GetCtrlType(data);
             if (_ctrl != null && ctrlType != _ctrl.GetType())
             {
-                _ctrl.DisbindUIEvent();
+                _ctrl.DisbindUIEvent(_eventHost);
                 _ctrl.Dispose();
                 _ctrl = null;
                 _updateCtrl = null;
@@ -52,7 +52,7 @@ namespace PowerCellStudio
             if (_ctrl == null)
             {
                 _ctrl = CreateCtrl(ctrlType);
-                _ctrl?.BindUIEvent();
+                _ctrl?.BindUIEvent(_eventHost);
                 _updateCtrl = _ctrl as IUIVariableUpdateCtrl;
                 _needUpdate = _updateCtrl != null;
             }
@@ -75,7 +75,7 @@ namespace PowerCellStudio
 
         public override void OnUIDestroy()
         {
-            _ctrl?.DisbindUIEvent();
+            _ctrl?.DisbindUIEvent(_eventHost);
             _ctrl?.Dispose();
             _ctrl = null;
             _updateCtrl = null;

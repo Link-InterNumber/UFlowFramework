@@ -41,12 +41,11 @@ namespace PowerCellStudio
         private int _fixedFrameCount = 0;
         private float _fixedFrameTime = 0;
 
-        public override void RegisterEvent()
+        protected override void RegisterEvent(UIEventHost eventHost)
         {
             tglLog.isOn = true;
             tglWarning.isOn = true;
             tglError.isOn = true;
-            base.RegisterEvent();
             // sliderTimeScale.onValueChanged.AddListener(OnTimeScaleSliderChange);
             // inputTargetFrameRate.onEndEdit.AddListener(OnTargetFrameRateDropdownChange);
             // inputTimeScale.onEndEdit.AddListener(OnInputTimeScale);
@@ -55,14 +54,14 @@ namespace PowerCellStudio
             // tglLog.onValueChanged.AddListener(OnClickLog);
             // tglWarning.onValueChanged.AddListener(OnClickWarning);
             // tglError.onValueChanged.AddListener(OnClickError);
-            _eventHost.AddListener(sliderTimeScale, OnTimeScaleSliderChange);
-            _eventHost.AddListener(inputTargetFrameRate, OnTargetFrameRateDropdownChange);
-            _eventHost.AddListener(inputTimeScale, OnInputTimeScale);
-            _eventHost.AddListener(inputTargetFixedFrameRate, OnTargetFixedFrameRateDropdownChange);
-            _eventHost.AddListener(btnClearLog, OnClickClearLog);
-            _eventHost.AddListener(tglLog, OnClickLog);
-            _eventHost.AddListener(tglWarning, OnClickWarning);
-            _eventHost.AddListener(tglError, OnClickError);
+            eventHost.AddListener(sliderTimeScale, OnTimeScaleSliderChange);
+            eventHost.AddListener(inputTargetFrameRate, OnTargetFrameRateDropdownChange);
+            eventHost.AddListener(inputTimeScale, OnInputTimeScale);
+            eventHost.AddListener(inputTargetFixedFrameRate, OnTargetFixedFrameRateDropdownChange);
+            eventHost.AddListener(btnClearLog, OnClickClearLog);
+            eventHost.AddListener(tglLog, OnClickLog);
+            eventHost.AddListener(tglWarning, OnClickWarning);
+            eventHost.AddListener(tglError, OnClickError);
         }
         
         public override void OnOpen(object data)

@@ -37,19 +37,18 @@ namespace PowerCellStudio
             
         }
 
-        public override void RegisterEvent()
+        protected override void RegisterEvent(UIEventHost eventHost)
         {
-            base.RegisterEvent();
-            screenButton.onClick.AddListener(SkipGuidance);
-            Debug.LogWarning("GuidanceWindow RegisterEvent");
+            base.RegisterEvent(eventHost);
+            eventHost.AddListener(screenButton, SkipGuidance);
+            // Debug.LogWarning("GuidanceWindow RegisterEvent");
         }
 
-        public override void DeregisterEvent()
-        {
-            base.DeregisterEvent();
-            screenButton.onClick.RemoveListener(SkipGuidance);
-            Debug.LogWarning("GuidanceWindow DeregisterEvent");
-        }
+        // protected override void DeregisterEvent(UIEventHost eventHost)
+        // {
+        //     base.DeregisterEvent();
+        //     Debug.LogWarning("GuidanceWindow DeregisterEvent");
+        // }
         
         public override void OnOpen(object data)
         {

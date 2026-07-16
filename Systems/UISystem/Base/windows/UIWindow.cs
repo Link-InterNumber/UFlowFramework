@@ -99,28 +99,40 @@ namespace PowerCellStudio
 
         protected UIEventHost _eventHost;
         
-        public virtual void RegisterEvent()
+        public void RegisterEvent()
         {
             OnCanvasHierarchyChanged();
             _eventHost = UIEventHostPool.Get();
+            RegisterEvent(_eventHost);
             if (closeBtn == null) return;
             foreach (var button in closeBtn)
             {
                 if (!button) continue;
-                button.onClick.AddListener(OnCloseBtnClick);
+                _eventHost.AddListener(button, OnCloseBtnClick);
             }
         }
 
-        public virtual void DeregisterEvent()
+        protected virtual void RegisterEvent(UIEventHost eventHost)
         {
+            
+        }
+
+        public void DeregisterEvent()
+        {
+            DeregisterEvent(_eventHost);
             UIEventHostPool.Release(_eventHost);
             _eventHost = null;
-            if (closeBtn == null) return;
-            foreach (var button in closeBtn)
-            {
-                if (!button) continue;
-                button.onClick.RemoveListener(OnCloseBtnClick);
-            }
+            // if (closeBtn == null) return;
+            // foreach (var button in closeBtn)
+            // {
+            //     if (!button) continue;
+            //     button.onClick.RemoveListener(OnCloseBtnClick);
+            // }
+        }
+        
+        protected virtual void DeregisterEvent(UIEventHost eventHost)
+        {
+            
         }
 
         protected virtual void OnCloseBtnClick()

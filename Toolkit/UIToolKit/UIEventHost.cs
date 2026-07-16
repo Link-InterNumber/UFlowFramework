@@ -7,6 +7,9 @@ using UnityEngine.UI;
 
 namespace PowerCellStudio
 {
+    /// <summary>
+    /// UI事件宿主类，用于管理UI事件的注册和注销，确保在对象释放时清理所有事件监听器。
+    /// </summary>
     public class UIEventHost : IDisposable, IPoolable
     {
         private List<UnityEventBase> _events;
@@ -108,7 +111,6 @@ namespace PowerCellStudio
         public void Dispose()
         {
             Release();
-            _events = null;
             GC.SuppressFinalize(this);
         }
 
@@ -126,6 +128,7 @@ namespace PowerCellStudio
         {
             Release();
             if (_events != null) ListPool<UnityEventBase>.Release(_events);
+            _events = null;
         }
     }
 }

@@ -200,7 +200,6 @@ namespace PowerCellStudio
             {
                 return false;
             }
-            ui.DeregisterEvent();
             ui.transform.gameObject.SetActive(false);
             if(ui is IUIParent parent)
             {
@@ -221,6 +220,7 @@ namespace PowerCellStudio
                 EventManager.instance.onUIClose.Invoke(child);
             }
             ui.OnClose();
+            ui.DeregisterEvent();
             afterClosed?.Invoke();
             return true;
         }

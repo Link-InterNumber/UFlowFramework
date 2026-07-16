@@ -13,13 +13,15 @@ namespace PowerCellStudio
         /// 绑定UI事件。
         /// Binds UI events.
         /// </summary>
-        void BindUIEvent();
+        /// <param name="eventHost"></param>
+        void BindUIEvent(UIEventHost eventHost);
 
         /// <summary>
         /// 解绑UI事件。
         /// Unbinds UI events.
         /// </summary>
-        void DisbindUIEvent();
+        /// <param name="eventHost"></param>
+        void DisbindUIEvent(UIEventHost eventHost);
 
         /// <summary>
         /// 当UI打开时调用。
@@ -49,12 +51,9 @@ namespace PowerCellStudio
         /// </summary>
         protected T ctrlUI { get => _ui; private set => _ui = value; }
 
-        protected UIEventHost _eventHost;
-        
         public UIVariableCtrl(IUIComponent ui)
         {
             _ui = ui as T;
-            _eventHost = UIEventHostPool.Get();
         }
         
         /// <summary>
@@ -63,13 +62,11 @@ namespace PowerCellStudio
         public virtual void Dispose()
         {
             _ui = null;
-            UIEventHostPool.Release(_eventHost);
-            _eventHost = null;
         }
 
-        public abstract void BindUIEvent();
+        public abstract void BindUIEvent(UIEventHost eventHost);
 
-        public abstract void DisbindUIEvent();
+        public abstract void DisbindUIEvent(UIEventHost eventHost);
 
         public abstract void OnOpen(object data);
 

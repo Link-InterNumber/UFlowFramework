@@ -52,27 +52,39 @@ namespace PowerCellStudio
         public bool isOpened => _isOpened;
         protected UIEventHost _eventHost;
 
-        public virtual void RegisterEvent()
+        public void RegisterEvent()
         {
             _eventHost = UIEventHostPool.Get();
+            RegisterEvent(_eventHost);
             if (window.closeBtn == null) return;
             foreach (var button in window.closeBtn)
             {
                 if (!button) continue;
-                button.onClick.AddListener(OnCloseBtnClick);
+                _eventHost.AddListener(button, OnCloseBtnClick);
             }
         }
-
-        public virtual void DeregisterEvent()
+        
+        protected virtual void RegisterEvent(UIEventHost eventHost)
         {
+            
+        }
+
+        public void DeregisterEvent()
+        {
+            DeregisterEvent(_eventHost);
             UIEventHostPool.Release(_eventHost);
             _eventHost = null;
-            if (window.closeBtn == null) return;
-            foreach (var button in window.closeBtn)
-            {
-                if (!button) continue;
-                button.onClick.RemoveListener(OnCloseBtnClick);
-            }
+            // if (window.closeBtn == null) return;
+            // foreach (var button in window.closeBtn)
+            // {
+            //     if (!button) continue;
+            //     button.onClick.RemoveListener(OnCloseBtnClick);
+            // }
+        }
+        
+        protected virtual void DeregisterEvent(UIEventHost eventHost)
+        {
+            
         }
 
         protected virtual void OnCloseBtnClick()
