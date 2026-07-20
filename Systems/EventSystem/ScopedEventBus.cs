@@ -1,9 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine.Pool;
+using System;
 
 namespace PowerCellStudio
 {
-    public class ScopedEventBus
+    public class ScopedEventBus : IDisposable
     {
         private Dictionary<int, LineEventBase> _eventBus = new Dictionary<int, LineEventBase>();
 
@@ -247,6 +248,45 @@ namespace PowerCellStudio
             public object[] parameters;
         }
 
+        private bool AreParametersEqual(object[] infoParameters, object[] parameters)
+        {
+            if (infoParameters == null && parameters == null) return true;
+            if (infoParameters == null || parameters == null) return false;
+            if (infoParameters.Length != parameters.Length) return false;
+            for (int i = 0; i < infoParameters.Length; i++)
+            {
+                if (!Equals(infoParameters[i], parameters[i])) return false;
+            }
+            return true;
+        }
+
+        private void InvokeQueuedEvent(EventInvokeInfo info)
+        {
+            if (info.parameters == null || info.parameters.Length == 0)
+            {
+                Invoke(info.eventId);
+                return;
+            }
+
+            switch (info.parameters.Length)
+            {
+                case 1:
+                    Invoke(info.eventId, info.parameters[0]);
+                    break;
+                case 2:
+                    Invoke(info.eventId, info.parameters[0], info.parameters[1]);
+                    break;
+                case 3:
+                    Invoke(info.eventId, info.parameters[0], info.parameters[1], info.parameters[2]);
+                    break;
+                default:
+                    ModuleLogger.LogError($"Unsupported parameter count {info.parameters.Length} for event id {info.eventId}");
+                    break;
+            }
+        }
+
+#region CollectInvoke
+
         private Queue<EventInvokeInfo> _laterInvokeQueue = new Queue<EventInvokeInfo>();
 
         /// <summary>
@@ -274,7 +314,8 @@ namespace PowerCellStudio
         /// <param name="eventId"></param>
         public void CancelCollectedInvokeById(int eventId)
         {
-            for (int i = 0; i < _laterInvokeQueue.Count; i++)
+            var count = _laterInvokeQueue.Count;
+            for (int i = 0; i < count; i++)
             {
                 var info = _laterInvokeQueue.Dequeue();
                 if (info.eventId != eventId)
@@ -291,7 +332,8 @@ namespace PowerCellStudio
         /// <param name="parameters"></param>
         public void CancelCollectedInvoke(int eventId, params object[] parameters)
         {
-            for (int i = 0; i < _laterInvokeQueue.Count; i++)
+            var count = _laterInvokeQueue.Count;
+            for (int i = 0; i < count; i++)
             {
                 var info = _laterInvokeQueue.Dequeue();
                 if (info.eventId != eventId || !AreParametersEqual(info.parameters, parameters))
@@ -299,18 +341,6 @@ namespace PowerCellStudio
                     _laterInvokeQueue.Enqueue(info);
                 }
             }
-        }
-
-        private bool AreParametersEqual(object[] infoParameters, object[] parameters)
-        {
-            if (infoParameters == null && parameters == null) return true;
-            if (infoParameters == null || parameters == null) return false;
-            if (infoParameters.Length != parameters.Length) return false;
-            for (int i = 0; i < infoParameters.Length; i++)
-            {
-                if (!Equals(infoParameters[i], parameters[i])) return false;
-            }
-            return true;
         }
 
         private bool _isTriggering = false;
@@ -322,32 +352,30 @@ namespace PowerCellStudio
         {
             if (_isTriggering) return; // 防止递归触发
             _isTriggering = true;
-            while (_laterInvokeQueue.Count > 0)
+            try
             {
-                var info = _laterInvokeQueue.Dequeue();
-                if (info.parameters == null || info.parameters.Length == 0)
+                while (_laterInvokeQueue.Count > 0)
                 {
-                    Invoke(info.eventId);
-                    continue;
-                }
-                switch (info.parameters.Length)
-                {
-                    case 1:
-                        Invoke(info.eventId, info.parameters[0]);
-                        break;
-                    case 2:
-                        Invoke(info.eventId, info.parameters[0], info.parameters[1]);
-                        break;
-                    case 3:
-                        Invoke(info.eventId, info.parameters[0], info.parameters[1], info.parameters[2]);
-                        break;
-                    default:
-                        ModuleLogger.LogError($"Unsupported parameter count {info.parameters.Length} for event id {info.eventId}");
-                        break;
+                    var info = _laterInvokeQueue.Dequeue();
+                    InvokeQueuedEvent(info);
                 }
             }
-            _isTriggering = false;
+            catch (Exception e)
+            {
+                if (e.InnerException != null) 
+                    ModuleLogger.LogError($"Exception occurred while triggering events: {e.InnerException.Message} \n{e.InnerException?.StackTrace}");
+                else
+                    ModuleLogger.LogError($"Exception occurred while triggering events: {e.Message} \n{e.StackTrace}");
+            }
+            finally
+            {
+                _isTriggering = false;                
+            }
         }
+
+#endregion
+
+#region HoldInvoke
 
         private Stack<EventInvokeInfo> _invokeStack = new Stack<EventInvokeInfo>();
 
@@ -423,36 +451,42 @@ namespace PowerCellStudio
             if (_isReleasing) return; // 防止递归触发
             _isReleasing = true;
             var idSet = HashSetPool<int>.Get();
-            while (_invokeStack.Count > 0)
+            try
             {
-                var info = _invokeStack.Pop();
-                if (idSet.Contains(info.eventId)) continue; // 避免重复触发同一事件
-                idSet.Add(info.eventId);
-                if (info.parameters == null || info.parameters.Length == 0)
+                while (_invokeStack.Count > 0)
                 {
-                    Invoke(info.eventId);
-                    continue;
-                }
-                switch (info.parameters.Length)
-                {
-                    case 1:
-                        Invoke(info.eventId, info.parameters[0]);
-                        break;
-                    case 2:
-                        Invoke(info.eventId, info.parameters[0], info.parameters[1]);
-                        break;
-                    case 3:
-                        Invoke(info.eventId, info.parameters[0], info.parameters[1], info.parameters[2]);
-                        break;
-                    default:
-                        ModuleLogger.LogError($"Unsupported parameter count {info.parameters.Length} for event id {info.eventId}");
-                        break;
+                    var info = _invokeStack.Pop();
+                    if (idSet.Contains(info.eventId)) continue; // 避免重复触发同一事件
+                    idSet.Add(info.eventId);
+                    InvokeQueuedEvent(info);
                 }
             }
-            HashSetPool<int>.Release(idSet);
-            _isReleasing = false;
+            catch (Exception e)
+            {
+                if (e.InnerException != null) 
+                    ModuleLogger.LogError($"Exception occurred while releasing held events: {e.InnerException.Message} \n{e.InnerException?.StackTrace}");
+                else
+                    ModuleLogger.LogError($"Exception occurred while releasing held events: {e.Message} \n{e.StackTrace}");
+            }
+            finally
+            {
+                HashSetPool<int>.Release(idSet);
+                _isReleasing = false;
+            }
         }
 
 #endregion
+
+        public void Dispose()
+        {
+            Clear();
+            ClearCollectedInvokes();
+            ClearHeldInvokes();
+            _eventBus = null;
+            _laterInvokeQueue = null;
+            _invokeStack = null;
+        }
+
+        #endregion
     }
 }

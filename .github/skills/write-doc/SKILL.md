@@ -1,5 +1,5 @@
 ---
-name: code-feature-doc
+name: write-doc
 argument-hint: '<file-or-symbol> [target-audience]'
 description: 'Use when: 生成中文代码文档、编写功能说明、API文档、模块文档、Unity/C#代码说明。 writing Chinese Markdown documentation for code features, APIs, modules, components, systems, or gameplay logic. Produces Chinese feature explanations, usage notes, code examples, edge cases, and integration guidance from source code.'
 user-invocable: true
@@ -10,6 +10,8 @@ disable-model-invocation: false
 
 ## Goal
 
+生成中文 Markdown 文档，说明现有代码功能，包括功能作用、使用场景、工作原理和实际代码示例。
+生成的文档行文和排版风格应与现有项目文档保持一致。
 Create clear Chinese Markdown documentation for an existing code feature, including what it does, when to use it, how it works, and practical code examples.
 
 Use this skill when the user asks to:

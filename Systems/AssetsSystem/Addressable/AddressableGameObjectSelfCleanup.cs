@@ -14,6 +14,7 @@ namespace PowerCellStudio
         private void OnDestroy()
         {
             _manager?.ReleaseGameObject(gameObject);
+            _manager = null;
         }
     }
 }

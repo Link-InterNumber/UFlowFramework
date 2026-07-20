@@ -7,6 +7,8 @@ namespace PowerCellStudio
 {
     public sealed class PoolGroup
     {
+        private const char PoolTagSeparator = '^';
+
         private Dictionary<string, GameObjectPool> _gameObjectPools = new Dictionary<string, GameObjectPool>();
         private Dictionary<string, string> _gameObjectTagMap = new Dictionary<string, string>();
         private HashSet<string> _onLoading = new HashSet<string>();
@@ -25,7 +27,7 @@ namespace PowerCellStudio
             {
                 if (_autoDestroy == value) return;
                 _autoDestroy = value;
-                foreach (var (_, gameObjectPool) in _gameObjectPools)
+                foreach (var gameObjectPool in _gameObjectPools.Values)
                 {
                     gameObjectPool.autoDestroy = value;
                 }
@@ -60,9 +62,7 @@ namespace PowerCellStudio
         /// <returns>池对象 / Pool of the specified type</returns>
         public PoolableObjectPool GetPool<T>()
         {
-            var key = typeof(T);
-            if (_pools.ContainsKey(key)) return _pools[key];
-            return null;
+            return _pools.TryGetValue(typeof(T), out var pool) ? pool : null;
         }
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace PowerCellStudio
         public PoolableObjectPool Push<T>(Func<T> create, int maxNum, int initNum) where T : class, IPoolable
         {
             var key = typeof(T);
-            if (_pools.ContainsKey(key)) return _pools[key];
+            if (_pools.TryGetValue(key, out var pool)) return pool;
             var newPool = new PoolableObjectPool(create, maxNum, initNum);
             _pools[key] = newPool;
             return newPool;
@@ -262,7 +262,10 @@ namespace PowerCellStudio
         /// <returns>是否成功释放 / Whether the release was successful</returns>
         public bool ReleaseGameObject(GameObject go)
         {
-            var tag = go.name.Split('^')[0];
+            if (go == null) return false;
+            var name = go.name;
+            var separatorIndex = name.IndexOf(PoolTagSeparator);
+            var tag = separatorIndex < 0 ? name : name.Substring(0, separatorIndex);
             if (_gameObjectTagMap.TryGetValue(tag, out var path))
             {
                 if (_gameObjectPools.TryGetValue(path, out var pool))
@@ -330,11 +333,11 @@ namespace PowerCellStudio
         /// </summary>
         public void ClearAll()
         {
-            foreach (var (_, pool) in _gameObjectPools)
+            foreach (var pool in _gameObjectPools.Values)
             {
                 pool.Clear();
             }
-            foreach (var (_, pool) in _pools)
+            foreach (var pool in _pools.Values)
             {
                 pool.Clear();
             }
@@ -346,11 +349,11 @@ namespace PowerCellStudio
         /// </summary>
         public void ForceClear()
         {
-            foreach (var (_, pool) in _gameObjectPools)
+            foreach (var pool in _gameObjectPools.Values)
             {
                 pool.ClearStack();
             }
-            foreach (var (_, pool) in _pools)
+            foreach (var pool in _pools.Values)
             {
                 pool.Clear();
             }
@@ -370,7 +373,7 @@ namespace PowerCellStudio
             _root = new GameObject(rootName).transform;
             _root.SetParent(rootParent);
             _root.localScale = Vector3.one;
-            foreach (var (_, pool) in _gameObjectPools)
+            foreach (var pool in _gameObjectPools.Values)
             {
                 pool.ChangeRoot(_root);
             }
@@ -382,18 +385,18 @@ namespace PowerCellStudio
         /// </summary>
         public void Dispose()
         {
-            foreach (var (_, pool) in _gameObjectPools)
+            foreach (var pool in _gameObjectPools.Values)
             {
                 pool.Dispose();
             }
             _gameObjectPools.Clear();
             _gameObjectTagMap.Clear();
-            foreach (var (_, pool) in _pools)
+            foreach (var pool in _pools.Values)
             {
                 pool.Dispose();
             }
             _pools.Clear();
-            GameObject.Destroy(_root.gameObject);
+            if (_root) GameObject.Destroy(_root.gameObject);
             _root = null;
         }
     }

@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -86,12 +85,13 @@ namespace PowerCellStudio
         /// <returns>页面实例 / Instance of the page</returns>
         private T GetOrCreatePage<T>() where T : UIBehaviour, IUIParent
         {
+            var pageType = typeof(T);
             var page = GetPage<T>();
-            if (page == null || typeof(T) == typeof(TempPage))
+            if (page == null || pageType == typeof(TempPage))
             {
-                if (_cachedUIs.TryGetValue(typeof(T), out var cachedPage))
+                if (_cachedUIs.TryGetValue(pageType, out var cachedPage))
                 {
-                    _cachedUIs.Remove(typeof(T));
+                    _cachedUIs.Remove(pageType);
                     return cachedPage as T;
                 }
                 return UIUtils.CreatePage<T>(transform, canvasRenderMode);
@@ -107,12 +107,7 @@ namespace PowerCellStudio
         /// <returns>是否有窗口正在打开 / Whether any windows are opening</returns>
         public bool IsAnyWindowOpening(IUIParent page)
         {
-            if (page == null) return false;
-            if (page.windowRequests != null && page.windowRequests.Count > 0)
-            {
-                return true;
-            }
-            return false;
+            return page != null && page.windowRequests != null && page.windowRequests.Count > 0;
         }
 
         private void SortingPage()
@@ -376,9 +371,9 @@ namespace PowerCellStudio
             }
             else if (currentPage.CloseUI<T>(onClosed))
             {
+                var window = currentPage.GetUI<T>();
                 if (destroy)
                 {
-                    var window = currentPage.GetUI<T>();
                     UIUtils.RemoveChild(window);
                     UIUtils.DestroyUI(window, null);
                 }
@@ -386,7 +381,6 @@ namespace PowerCellStudio
                          && _poolPage.GetUI<T>() == null 
                          && !_poolPage.IsUIGoingToOpen<T>(out _))
                 {
-                    var window = currentPage.GetUI<T>();
                     UIUtils.RemoveChild(window);
                     UIUtils.SetUIChildToParent(window, _poolPage);
                 }
@@ -399,8 +393,7 @@ namespace PowerCellStudio
         /// </summary>
         public void Clear()
         {
-            var pages = _pageStack.ToArray();
-            foreach (var uiParent in pages)
+            foreach (var uiParent in _pageStack)
             {
                 ClearClosedWindow(uiParent);
             }
@@ -424,7 +417,8 @@ namespace PowerCellStudio
         public void ClearClosedWindow(IUIParent page)
         {
             if (page == null) return;
-            var windows = page.children.Values.ToArray();
+            var windows = new IUIChild[page.children.Count];
+            page.children.Values.CopyTo(windows, 0);
             foreach (var uiChild in windows)
             {
                 if (uiChild.isOpened) continue;

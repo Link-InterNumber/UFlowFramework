@@ -4,6 +4,8 @@ namespace PowerCellStudio
 {
     public abstract class UIVariableWindow : UIWindow
     {
+        private static readonly Type[] _ctrlCtorTypes = { typeof(IUIComponent) };
+
         private IUIVariableCtrl _ctrl;
         protected IUIVariableCtrl UICtrl => _ctrl;
         private IUIVariableUpdateCtrl _updateCtrl;
@@ -25,7 +27,7 @@ namespace PowerCellStudio
         {
             // CN:使用反射创建控制器实例，在构造函数中传入当前UI窗口实例
             // EN: Use reflection to create a controller instance, passing the current UI window instance in the constructor
-            var constructor = ctrlType.GetConstructor(new Type[] { typeof(IUIComponent) });
+            var constructor = ctrlType.GetConstructor(_ctrlCtorTypes);
             if (constructor != null)
             {
                 return constructor.Invoke(new object[] { this }) as IUIVariableCtrl;
@@ -39,27 +41,33 @@ namespace PowerCellStudio
             // CN:如果已有控制器且类型不匹配，则释放旧控制器
             // EN: If there is already a controller and the type does not match, release the old controller
             var ctrlType = GetCtrlType(data);
-            if (_ctrl != null && ctrlType != _ctrl.GetType())
+            var ctrl = _ctrl;
+            if (ctrl != null && ctrlType != ctrl.GetType())
             {
-                _ctrl.DisbindUIEvent(_eventHost);
-                _ctrl.Dispose();
+                ctrl.DisbindUIEvent(_eventHost);
+                ctrl.Dispose();
                 _ctrl = null;
                 _updateCtrl = null;
+                _needUpdate = false;
+                ctrl = null;
             }
 
             // CN:如果控制器为空，则创建新的控制器
             // EN: If the controller is null, create a new controller
-            if (_ctrl == null)
+            if (ctrl == null)
             {
-                _ctrl = CreateCtrl(ctrlType);
-                _ctrl?.BindUIEvent(_eventHost);
-                _updateCtrl = _ctrl as IUIVariableUpdateCtrl;
+                ctrl = CreateCtrl(ctrlType);
+                if (ctrl == null) return;
+
+                _ctrl = ctrl;
+                ctrl.BindUIEvent(_eventHost);
+                _updateCtrl = ctrl as IUIVariableUpdateCtrl;
                 _needUpdate = _updateCtrl != null;
             }
 
             // CN:执行控制器的打开逻辑
             // EN: Execute the controller's open logic
-            _ctrl?.OnOpen(data);
+            ctrl.OnOpen(data);
         }
 
         public override void OnClose()

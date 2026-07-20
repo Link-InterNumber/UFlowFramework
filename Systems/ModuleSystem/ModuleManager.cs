@@ -36,6 +36,23 @@ namespace PowerCellStudio
             go.AddComponent<ModuleManager>().Init();
         }
 
+        private static int CompareModuleInitOrder(Type x, Type y)
+        {
+            var xOrder = x.GetCustomAttribute<ModuleInitOrder>()?.order ?? 99999;
+            var yOrder = y.GetCustomAttribute<ModuleInitOrder>()?.order ?? 99999;
+            return xOrder.CompareTo(yOrder);
+        }
+
+        private void CreateModules(Type baseType)
+        {
+            var res = ReflectionUtils.GetInstantiableSubtype(baseType);
+            res.Sort(CompareModuleInitOrder);
+            foreach (var type in res)
+            {
+                CreateModule(type);
+            }
+        }
+
         private void Init()
         {
             GameObject.DontDestroyOnLoad(gameObject);
@@ -50,32 +67,12 @@ namespace PowerCellStudio
 
         private void CreateSingletonModule()
         {
-            var res = ReflectionUtils.GetInstantiableSubtype(typeof(SingletonBase<>));
-            res.Sort((x, y) =>
-                {
-                    var xOrder = x.GetCustomAttribute<ModuleInitOrder>()?.order ?? 99999;
-                    var yOrder = y.GetCustomAttribute<ModuleInitOrder>()?.order ?? 99999;
-                    return xOrder.CompareTo(yOrder);
-                });
-            foreach (var type in res)
-            {
-                CreateModule(type);
-            }
+            CreateModules(typeof(SingletonBase<>));
         }
 
         private void CreateMonoSingletonModule()
         {
-            var res = ReflectionUtils.GetInstantiableSubtype(typeof(MonoSingleton<>));
-            res.Sort((x, y) =>
-            {
-                var xOrder = x.GetCustomAttribute<ModuleInitOrder>()?.order ?? 99999;
-                var yOrder = y.GetCustomAttribute<ModuleInitOrder>()?.order ?? 99999;
-                return xOrder.CompareTo(yOrder);
-            });
-            foreach (var type in res)
-            {
-                CreateModule(type);
-            }
+            CreateModules(typeof(MonoSingleton<>));
         }
 
         private bool CreateModule(Type type)
@@ -87,6 +84,7 @@ namespace PowerCellStudio
             foreach (var dependAttribute in dependAttributes)
             {
                 var dependType = dependAttribute.DependModuleType;
+                if (_modules.ContainsKey(dependType)) continue;
                 if (!CreateModule(dependType))
                 {
                     ModuleLogger.LogError($"Failed to create module {type.Name} because dependency {dependType.Name} failed to create.");
@@ -184,19 +182,23 @@ namespace PowerCellStudio
 
         private void OnStartGame()
         {
-            foreach (var (key, value) in _modules)
+            foreach (var value in _modules.Values)
             {
-                if (!(value is IOnGameStartModule)) continue;
-                (value as IOnGameStartModule).OnGameStart();
+                if (value is IOnGameStartModule onGameStartModule)
+                {
+                    onGameStartModule.OnGameStart();
+                }
             }
         }
 
         private void OnResetGame()
         {
-            foreach (var (key, value) in _modules)
+            foreach (var value in _modules.Values)
             {
                 if (value is IOnGameResetModule onGameResetModule)
+                {
                     onGameResetModule.OnGameReset();
+                }
             }
         }
 

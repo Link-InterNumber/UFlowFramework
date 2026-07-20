@@ -41,10 +41,10 @@ namespace PowerCellStudio
             _transform = gameObject.transform;
             GameObject.DontDestroyOnLoad(gameObject);
             _groupRoot = new List<PoolGroup>();
-            var PoolGroupNames = Enum.GetNames(typeof(PoolGroupName));
-            for (int i = 0; i < PoolGroupNames.Length; i++)
+            var poolGroupNames = Enum.GetNames(typeof(PoolGroupName));
+            for (int i = 0; i < poolGroupNames.Length; i++)
             {
-                _groupRoot.Add(new PoolGroup(_transform, PoolGroupNames[i]));
+                _groupRoot.Add(new PoolGroup(_transform, poolGroupNames[i]));
             }
             EventManager.instance.onClearUnusedAsset.AddListener(ClearAllPool);
         }
@@ -55,11 +55,15 @@ namespace PowerCellStudio
         /// </summary>
         public void Deinit()
         {
-            ClearAllPool();
-            if (!_transform) return;
-            GameObject.Destroy(_transform);
-            _transform = null;
             EventManager.instance.onClearUnusedAsset.RemoveListener(ClearAllPool);
+            ClearAllPool();
+            if (_transform)
+            {
+                GameObject.Destroy(_transform.gameObject);
+            }
+            _transform = null;
+            _groupRoot = null;
+            _inited = false;
         }
 
         /// <summary>
@@ -136,7 +140,11 @@ namespace PowerCellStudio
             where T : class, IPoolable
         {
             var obj = GetGroup(groupName).Get<T>();
-            if (obj == null) ModuleLogger.LogError<PoolManager>($"{typeof(T).Name} is null, {typeof(T).Name} was unregistered, groupName: " + groupName);
+            if (obj == null)
+            {
+                var typeName = typeof(T).Name;
+                ModuleLogger.LogError<PoolManager>($"{typeName} is null, {typeName} was unregistered, groupName: " + groupName);
+            }
             return obj;
         }
         
@@ -298,6 +306,7 @@ namespace PowerCellStudio
         /// </summary>
         public void ClearAllPool()
         {
+            if (_groupRoot == null) return;
             foreach (var poolGroup in _groupRoot)
             {
                 poolGroup.ForceClear();

@@ -1,5 +1,5 @@
 ---
-name: xml-code-comments
+name: comments-it
 argument-hint: '<file-or-symbol>'
 description: 'Use when: 为代码 public 类、struct、字段、属性、方法生成或补全中英文 XML 注释；generate bilingual XML documentation comments for public classes, structs, fields, properties, and methods with Chinese first and English second.'
 user-invocable: true

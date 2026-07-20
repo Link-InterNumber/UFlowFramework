@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -20,19 +19,23 @@ namespace PowerCellStudio
         {
             var results = GetAllGameObjectsByPointerEventData(eventData);
             var current = eventData.pointerCurrentRaycast.gameObject;
+            bool hasTarget = target;
             for (int i = 0; i < results.Count; i++)
             {
                 var go = results[i].gameObject;
-                if(go == current) continue;
-                if (target && go == target)
+                if (go == current) continue;
+
+                if (hasTarget)
                 {
-                    ExecuteEvents.Execute(go, eventData, function);
-                    break;
-                }
-                if(target)
-                {
+                    if (go == target)
+                    {
+                        ExecuteEvents.Execute(go, eventData, function);
+                        break;
+                    }
+
                     continue;
                 }
+
                 ExecuteEvents.Execute(go, eventData, function);
             }
         }
@@ -56,52 +59,50 @@ namespace PowerCellStudio
         /// <returns>由屏幕位置指向的游戏对象列表</returns>
         public static List<RaycastResult> GetAllGameObjectsByPoint(Vector2 screenPosition)
         {
-            PointerEventData eventDataCurrentPosition = new PointerEventData(EventSystem.current);
-            eventDataCurrentPosition.position = new Vector2(screenPosition.x, screenPosition.y);
+            var eventDataCurrentPosition = new PointerEventData(EventSystem.current)
+            {
+                position = screenPosition
+            };
             return GetAllGameObjectsByPointerEventData(eventDataCurrentPosition);
         }
         
         public static void InitCanvas(IUIComponent uiChild, bool ignoreRaycaster, bool standaloneCanvas, RenderMode canvasRenderMode)
         {
-            uiChild.transform.gameObject.SetLayerRecursively("UI");
-            uiChild.rectTransform.localScale = Vector3.one;
-            uiChild.rectTransform.Adapt2Parent();
+            var rectTransform = uiChild.rectTransform;
+            var gameObject = rectTransform.gameObject;
+
+            gameObject.SetLayerRecursively("UI");
+            rectTransform.localScale = Vector3.one;
+            rectTransform.Adapt2Parent();
 
             if (uiChild is IUIParent uiparent)
             {
-                var canvas = uiChild.rectTransform.gameObject.GetComponent<Canvas>();
-                if (!canvas) canvas = uiChild.rectTransform.gameObject.AddComponent<Canvas>();
+                var canvas = gameObject.GetComponent<Canvas>();
+                if (!canvas) canvas = gameObject.AddComponent<Canvas>();
                 uiparent.canvasCom = canvas;
                 canvas.renderMode = canvasRenderMode;
                 canvas.planeDistance = 10;
                 if (canvasRenderMode != RenderMode.ScreenSpaceOverlay) canvas.worldCamera = UICamera.instance.cameraCom;
-                var canvasScale = uiChild.rectTransform.gameObject.TryAddComponent<CanvasScaler>();
+                var canvasScale = gameObject.TryAddComponent<CanvasScaler>();
                 canvasScale.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
                 canvasScale.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
                 var screenHeight = ConstSetting.DefaultUISize.y;
                 var screenWidth = ConstSetting.DefaultUISize.x;
                 var designRatio = screenHeight * 1f / screenWidth;
                 var currentRatio = Screen.height * 1f / Screen.width;
-                // var newRes = Vector2Int.zero;
-                if (currentRatio < designRatio)
-                {
-                    canvasScale.matchWidthOrHeight = 1;
-                }
-                else
-                {
-                    canvasScale.matchWidthOrHeight = 0;
-                }
+                canvasScale.matchWidthOrHeight = currentRatio < designRatio ? 1 : 0;
                 canvasScale.referenceResolution = ConstSetting.DefaultUISize;
-                uiChild.rectTransform.gameObject.TryAddComponent<GraphicRaycaster>().enabled = !ignoreRaycaster;
+                gameObject.TryAddComponent<GraphicRaycaster>().enabled = !ignoreRaycaster;
             }
             else
             {
                 if (standaloneCanvas)
                 {
-                    var canvas = uiChild.rectTransform.gameObject.GetComponent<Canvas>();
-                    if (!canvas) canvas = uiChild.rectTransform.gameObject.AddComponent<Canvas>();
+                    var canvas = gameObject.GetComponent<Canvas>();
+                    if (!canvas) gameObject.AddComponent<Canvas>();
                 }
-                if (ignoreRaycaster) uiChild.rectTransform.gameObject.TryAddComponent<CanvasGroup>().blocksRaycasts = false;
+
+                if (ignoreRaycaster) gameObject.TryAddComponent<CanvasGroup>().blocksRaycasts = false;
             }
         }
 
@@ -122,7 +123,8 @@ namespace PowerCellStudio
             CloseUI(page, null);
             if (destroy)
             {
-                var keys = page.children.Keys.ToArray();
+                var keys = new Type[page.children.Count];
+                page.children.Keys.CopyTo(keys, 0);
                 foreach (var key in keys)
                 {
                     var child = page.children[key];
@@ -148,14 +150,15 @@ namespace PowerCellStudio
 
         public static void SetUIChildToParent<T>(T child, IUIParent parent) where T : IUIChild
         {
-            if(child.parent != null) RemoveChild(child);
-            child.transform.SetParent(parent.transform);
+            if (child.parent != null) RemoveChild(child);
+
+            var childTransform = child.transform;
+            childTransform.SetParent(parent.transform);
             child.parent = parent;
-            child.transform.SetAsLastSibling();
-            child.transform.localPosition = Vector3.zero;
-            child.transform.localScale = Vector3.one;
-            var childType = child.GetType();
-            parent.children[childType] = child;
+            childTransform.SetAsLastSibling();
+            childTransform.localPosition = Vector3.zero;
+            childTransform.localScale = Vector3.one;
+            parent.children[child.GetType()] = child;
         }
         
         public static void InitUI<T>(T ui, bool ignoreRaycaster, bool standaloneCanvas, RenderMode renderMode) where T : IUIComponent
@@ -166,22 +169,25 @@ namespace PowerCellStudio
         public static void OpenUI<T>(T ui, object data) where T : IUIComponent
         {
             if (ui == null) return;
-            ui.transform.SetAsLastSibling();
-            ui.transform.gameObject.SetActive(true);
+            var uiTransform = ui.transform;
+            var uiGameObject = uiTransform.gameObject;
+
+            uiTransform.SetAsLastSibling();
+            uiGameObject.SetActive(true);
             if (!ui.isOpened) ui.RegisterEvent();
-            if(ui is IUIChild child)
+            if (ui is IUIChild child)
             {
                 child.parent.openedUIs.Push(child);
                 child.Open(data);
                 child.OnFocus();
-                var widgets = ui.transform.gameObject.GetComponentsInChildren<IUIWidget>(true);
-                foreach (var w in widgets)
+                var widgets = uiGameObject.GetComponentsInChildren<IUIWidget>(true);
+                for (var i = 0; i < widgets.Length; i++)
                 {
-                    w.OnWidgetEnable();
+                    widgets[i].OnWidgetEnable();
                 }
                 EventManager.instance.onUIOpen.Invoke(child);
             }
-            else if(ui is IUIParent parent)
+            else if (ui is IUIParent parent)
             {
                 parent.Open(data);
                 parent.OnFocus();
@@ -200,8 +206,10 @@ namespace PowerCellStudio
             {
                 return false;
             }
-            ui.transform.gameObject.SetActive(false);
-            if(ui is IUIParent parent)
+            var uiGameObject = ui.transform.gameObject;
+
+            uiGameObject.SetActive(false);
+            if (ui is IUIParent parent)
             {
                 foreach (var uiChild in parent.openedUIs)
                 {
@@ -209,13 +217,13 @@ namespace PowerCellStudio
                 }
                 EventManager.instance.onPageClose.Invoke(parent);
             }
-            if(ui is IUIChild child)
+            if (ui is IUIChild child)
             {
                 child.parent.openedUIs.Remove(child);
-                var widgets = ui.transform.gameObject.GetComponentsInChildren<IUIWidget>(true);
-                foreach (var w in widgets)
+                var widgets = uiGameObject.GetComponentsInChildren<IUIWidget>(true);
+                for (var i = 0; i < widgets.Length; i++)
                 {
-                    w.OnWidgetDisable();
+                    widgets[i].OnWidgetDisable();
                 }
                 EventManager.instance.onUIClose.Invoke(child);
             }
@@ -227,14 +235,12 @@ namespace PowerCellStudio
 
         public static void RemoveChild<T>(T ui) where T : IUIChild
         {
-            var type = ui.GetType();
-            ui.parent.children.Remove(type);
+            ui.parent.children.Remove(ui.GetType());
             ui.parent.openedUIs.Remove(ui);
         }
         
         public static void DestroyUI<T>(T ui, Action onDestroy) where T : IUIComponent
         {
-            // ui.DeregisterEvent();
             ui.OnUIDestroy();
             GameObject.Destroy(ui.transform.gameObject);
             onDestroy?.Invoke();

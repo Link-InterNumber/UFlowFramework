@@ -17,13 +17,12 @@ namespace PowerCellStudio
         
         private IAssetLoader _assetsLoader;
         private IUIParent _parent;
-        // private Canvas _canvas;
 
-        public IAssetLoader assetsLoader 
+        public IAssetLoader assetsLoader
         {
             get
             {
-                if(_assetsLoader == null || !_assetsLoader.spawned)
+                if (_assetsLoader == null || !_assetsLoader.spawned)
                     _assetsLoader = AssetUtils.SpawnLoader(this.GetType().Name);
                 return _assetsLoader;
             }
@@ -50,18 +49,22 @@ namespace PowerCellStudio
         protected override void OnCanvasHierarchyChanged()
         {
             base.OnCanvasHierarchyChanged();
-            // 获取屏幕安全区
-            if (!adaptiveRoot) return;
+            var root = adaptiveRoot;
+            if (!root) return;
+
             var safeArea = Screen.safeArea;
             var scale = UIManager.PixelScale;
-            var offsetMin = new Vector2(Mathf.Max(0, safeArea.min.x * scale), Mathf.Max(0, safeArea.min.y * scale));
+            var offsetMin = new Vector2(
+                Mathf.Max(0, safeArea.min.x * scale),
+                Mathf.Max(0, safeArea.min.y * scale));
             var offsetMax = safeArea.max * scale - UIManager.ScreenSize;
             offsetMax.x = Mathf.Min(0, offsetMax.x);
             offsetMax.y = Mathf.Min(0, offsetMax.y);
-            adaptiveRoot.anchorMin = Vector2.zero;
-            adaptiveRoot.anchorMax = Vector2.one;
-            adaptiveRoot.offsetMin = offsetMin;
-            adaptiveRoot.offsetMax = offsetMax;
+
+            root.anchorMin = Vector2.zero;
+            root.anchorMax = Vector2.one;
+            root.offsetMin = offsetMin;
+            root.offsetMax = offsetMax;
         }
 
         public RectTransform rectTransform => transform as RectTransform;
@@ -102,13 +105,19 @@ namespace PowerCellStudio
         public void RegisterEvent()
         {
             OnCanvasHierarchyChanged();
-            _eventHost = UIEventHostPool.Get();
-            RegisterEvent(_eventHost);
-            if (closeBtn == null) return;
-            foreach (var button in closeBtn)
+            var eventHost = UIEventHostPool.Get();
+            _eventHost = eventHost;
+
+            RegisterEvent(eventHost);
+
+            var buttons = closeBtn;
+            if (buttons == null) return;
+
+            for (var i = 0; i < buttons.Length; i++)
             {
+                var button = buttons[i];
                 if (!button) continue;
-                _eventHost.AddListener(button, OnCloseBtnClick);
+                eventHost.AddListener(button, OnCloseBtnClick);
             }
         }
 
@@ -119,15 +128,10 @@ namespace PowerCellStudio
 
         public void DeregisterEvent()
         {
-            DeregisterEvent(_eventHost);
-            UIEventHostPool.Release(_eventHost);
+            var eventHost = _eventHost;
+            DeregisterEvent(eventHost);
+            UIEventHostPool.Release(eventHost);
             _eventHost = null;
-            // if (closeBtn == null) return;
-            // foreach (var button in closeBtn)
-            // {
-            //     if (!button) continue;
-            //     button.onClick.RemoveListener(OnCloseBtnClick);
-            // }
         }
         
         protected virtual void DeregisterEvent(UIEventHost eventHost)

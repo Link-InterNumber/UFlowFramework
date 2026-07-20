@@ -68,9 +68,9 @@ namespace PowerCellStudio
                 {
                     if (Math.Abs(v - _blendValue[i]) > 0.002f) continue;
                     _blendValue.RemoveAt(i);
-                    break;
+                    Calculated();
+                    return;
                 }
-                Calculated();
             }
 
             /// <summary>
@@ -79,10 +79,10 @@ namespace PowerCellStudio
             /// </summary>
             private void Calculated()
             {
-                var cal = Math.Max(_baseValue, 0f);
-                foreach (var i in _blendValue)
+                var cal = Mathf.Max(_baseValue, 0f);
+                for (var i = 0; i < _blendValue.Count; i++)
                 {
-                    cal *= i;
+                    cal *= _blendValue[i];
                 }
                 _calculatedValue = cal;
             }
@@ -108,7 +108,7 @@ namespace PowerCellStudio
         
         #endregion
         
-        private Stack<TimeScaler> _stack = new Stack<TimeScaler>();
+        private readonly Stack<TimeScaler> _stack = new Stack<TimeScaler>();
         private float _target;
         private float _duration;
         private float _time;
@@ -350,13 +350,14 @@ namespace PowerCellStudio
             {
                 ModuleLogger.LogWarning<TimeManager>("Now time is paused, timeScale will not be set immediately.");
                 var pauseTimeScale = _stack.Pop();
-                var nv = fun.Invoke(GetCurTimeScaler().baseValue);
+                var pausedTimeScaler = GetCurTimeScaler();
+                var nv = fun.Invoke(pausedTimeScaler.baseValue);
                 if (nv <= 0)
                 {
                     ModuleLogger.LogError<TimeManager>("If you want to push a zero TimeScaler, please use PauseTime().");
                     return;
                 }
-                GetCurTimeScaler().UpdateValue(nv);
+                pausedTimeScaler.UpdateValue(nv);
                 _stack.Push(pauseTimeScale);
                 return;
             }
@@ -436,11 +437,12 @@ namespace PowerCellStudio
         private void UpdateTarget(float duration)
         {
             var tsReplace = _stack.Peek();
-            _target = tsReplace.calculatedValue * _globalScale;
+            var calculatedValue = tsReplace.calculatedValue;
+            _target = calculatedValue * _globalScale;
             _blending = true;
             _time = 0f;
             _duration = duration;
-            EventManager.instance.onTimeScaleReplaced?.Invoke(tsReplace.calculatedValue);
+            EventManager.instance.onTimeScaleReplaced?.Invoke(calculatedValue);
         }
 
         /// <summary>
@@ -450,10 +452,11 @@ namespace PowerCellStudio
         /// <param name="dt">deltaTime</param>
         public void FixedExecute(float dt)
         {
+            var fixedUnscaledDeltaTime = Time.fixedUnscaledDeltaTime;
             if (_inTimeRecording && !_paused)
             {
                 _timeWithoutPause += (long)(dt * 1000);
-                _unscaleTimeWithoutPause += (long)(Time.fixedUnscaledDeltaTime * 1000);
+                _unscaleTimeWithoutPause += (long)(fixedUnscaledDeltaTime * 1000);
             }
             if (!_blending) return;
             if (_time >= _duration)
@@ -462,7 +465,7 @@ namespace PowerCellStudio
                 Time.timeScale = _target;
                 return;
             }
-            _time += Time.fixedUnscaledDeltaTime;
+            _time += fixedUnscaledDeltaTime;
             var progress = Mathf.Clamp01(_time / _duration);
             Time.timeScale = Mathf.Lerp(Time.timeScale, _target, progress);
         }
