@@ -97,6 +97,13 @@ namespace PowerCellStudio
         /// <param name="onFail">加载失败回调。Callback invoked when loading fails.</param>
         public void LoadAllAsync<T>(string label, OnLoadSuccess<IList<T>> onSuccess, OnLoadFailed onFail = null) where T : UnityEngine.Object;
 
-        // public void Merge(IAssetLoader other);
+        #if UNITY_EDITOR
+        /// <summary>
+        /// Editor模式下获取所有已加载的资源地址
+        /// Get all loaded asset addresses in Editor mode.
+        /// </summary>
+        /// <returns>所有已加载的资源地址。All loaded asset addresses.</returns>
+        public IEnumerable<string> GetAllLoadedAssets();
+        #endif
     }
 }

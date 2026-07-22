@@ -340,5 +340,20 @@ namespace PowerCellStudio
             _assetsBundleManager.LoadAssetsFromBundleAsync(label, onSuccess, onFail);
         }
 
+#if UNITY_EDITOR
+        public IEnumerable<string> GetAllLoadedAssets()
+        {
+            if (_refCount == null || _refCount.Count == 0)
+            {
+                yield break;
+            }
+
+            foreach (var key in _refCount.Keys)
+            {
+                yield return key;
+            }
+        }
+#endif
+
     }
 }

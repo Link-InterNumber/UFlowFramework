@@ -86,5 +86,13 @@ namespace PowerCellStudio
             }
             ListPool<IAssetLoader>.Release(loaders);
         }
+
+        public IEnumerable<IAssetLoader> GetAllActiveLoaders()
+        {
+            foreach (var loader in _activeLoader.Values)
+            {
+                yield return loader;
+            }
+        }
     }
 }

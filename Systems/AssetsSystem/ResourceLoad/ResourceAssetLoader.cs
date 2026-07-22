@@ -349,5 +349,20 @@ namespace PowerCellStudio
                 else onSuccess?.Invoke(new List<T> { obj });
             };
         }
+
+#if UNITY_EDITOR
+        public IEnumerable<string> GetAllLoadedAssets()
+        {
+            if (_assets == null || _assets.Count == 0)
+            {
+                yield break;
+            }
+
+            foreach (var key in _assets.Keys)
+            {
+                yield return key;
+            }
+        }
+#endif
     }
 }

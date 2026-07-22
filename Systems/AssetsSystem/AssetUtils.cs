@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -20,7 +21,13 @@ namespace PowerCellStudio
         private static IAssetManager _assetManager;
         
         private static LoaderYieldInstructionPool _loaderYieldInstructionPool;
+        
+        #if UNITY_EDITOR
+        public static AssetLoaderPool _assetLoaderPool;
+        #else
         private static AssetLoaderPool _assetLoaderPool;
+        #endif
+
         private static PoolableObjectPool _batchLoaderPool;
         
         public static AssetInitState initState => _assetManager?.initState ?? AssetInitState.Complete;
@@ -100,6 +107,17 @@ namespace PowerCellStudio
         {
             _assetLoaderPool?.DeSpawnLoaderByTag(tag);
         }
+
+#if UNITY_EDITOR
+        public static IEnumerable<IAssetLoader> GetAllActiveLoaders()
+        {
+            if (_assetLoaderPool == null)
+            {
+                return Array.Empty<IAssetLoader>();
+            }
+            return _assetLoaderPool.GetAllActiveLoaders();
+        }
+#endif
 
         public static void LoadScene(string sceneName, Action onComplete, Action onFailed = null, bool unLoadOtherScene = false)
         {

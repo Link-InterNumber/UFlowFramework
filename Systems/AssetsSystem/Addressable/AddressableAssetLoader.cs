@@ -415,6 +415,21 @@ namespace PowerCellStudio
             };
         }
 
+#if UNITY_EDITOR
+        public IEnumerable<string> GetAllLoadedAssets()
+        {
+            if (_handles == null || _handles.Count == 0)
+            {
+                yield break;
+            }
+
+            foreach (var key in _handles.Keys)
+            {
+                yield return key;
+            }
+        }
+#endif
+
         #endregion
 
         #region load form AssetReference
