@@ -1,5 +1,6 @@
 ﻿
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using TMPro;
 using UnityEditor;
 #endif
@@ -14,30 +15,79 @@ namespace PowerCellStudio
         public bool DrawDebug = true;
 #if UNITY_EDITOR
         private static Vector3[] fourCorners = new Vector3[4];
+        private static readonly Color interactiveFillColor = new Color(1f, 0.45f, 0.15f, 0.1f);
+        private static readonly Color nonInteractiveFillColor = new Color(0.2f, 0.75f, 1f, 0.1f);
+        private static GUIStyle overlapLabelStyle;
+
+        private static void EnsureOverlapLabelStyle()
+        {
+            if (overlapLabelStyle != null)
+                return;
+
+            overlapLabelStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = Color.white },
+                fontSize = 20
+            };
+        }
+
         private void OnDrawGizmos()
         {
             if(!DrawDebug)
                 return;
-            // Gizmos.color = Color.magenta;
+
+            EnsureOverlapLabelStyle();
             var elements = transform.GetComponentsInChildren<MaskableGraphic>(true);
-            if (elements == null || elements.Length == 0) return; 
-            var originColor = Gizmos.color;
+            if (elements == null || elements.Length == 0)
+                return;
+
+            var activeElements = new List<MaskableGraphic>(elements.Length);
             var elementsCount = elements.Length;
             for (var i = 0; i < elementsCount; i++)
             {
-                var text = elements[i];
-                if (text.raycastTarget)
+                var element = elements[i];
+                if (element != null && element.raycastTarget)
                 {
-                    RectTransform rectTransform = text.transform as RectTransform;
-                    rectTransform.GetWorldCorners(fourCorners);
-                    Gizmos.color = Color.Lerp(Color.blue, Color.magenta, i * 1f / Mathf.Max(1, elementsCount - 1));
-                    for (int j = 0; j < 4; j++)
-                    {
-                        Gizmos.DrawLine(fourCorners[j], fourCorners[(j+1)%4]);
-                    }
+                    activeElements.Add(element);
                 }
             }
-            Gizmos.color = originColor;
+
+            if (activeElements.Count == 0)
+                return;
+
+            activeElements.Sort((a, b) => a.depth.CompareTo(b.depth));
+
+            var oldHandlesColor = Handles.color;
+            var activeCount = activeElements.Count;
+            for (var i = 0; i < activeCount; i++)
+            {
+                var graphic = activeElements[i];
+                var rectTransform = graphic.rectTransform;
+                if (rectTransform == null)
+                    continue;
+
+                rectTransform.GetWorldCorners(fourCorners);
+                var isInteractive = HasUserInteractiveComponent(graphic.transform);
+                var layerT = activeCount > 1 ? i * 1f / (activeCount - 1) : 1f;
+                var baseFillColor = isInteractive ? interactiveFillColor : nonInteractiveFillColor;
+                var fillColor = new Color(
+                    baseFillColor.r,
+                    baseFillColor.g,
+                    baseFillColor.b,
+                    Mathf.Lerp(baseFillColor.a * 0.6f, baseFillColor.a * 1.4f, layerT));
+                var outlineColor = Color.Lerp(baseFillColor, Color.white, 0.35f);
+                outlineColor.a = 0.95f;
+
+                Handles.DrawSolidRectangleWithOutline(fourCorners, fillColor, outlineColor);
+
+                var center = (fourCorners[0] + fourCorners[1] + fourCorners[2] + fourCorners[3]) * 0.25f;
+                Handles.color = isInteractive ? new Color(1f, 0.35f, 0.1f, 0.95f) : new Color(0.15f, 0.85f, 1f, 0.95f);
+                Handles.DrawSolidDisc(center, Vector3.forward, HandleUtility.GetHandleSize(center) * 0.025f);
+                Handles.Label(center, (i + 1).ToString(), overlapLabelStyle);
+            }
+
+            Handles.color = oldHandlesColor;
         }
         
         [MenuItem("GameObject/ShowRaycastTarget")]
@@ -102,6 +152,43 @@ namespace PowerCellStudio
                     text.raycastTarget = false;
                 }
             }
+        }
+
+        [MenuItem("GameObject/CancelRaycastTarget/NonInteractiveOnly")]
+        public static void CancelTextRaycastOfNonInteractiveOnly()
+        {
+            if(!Selection.activeTransform)
+                return;
+            CancelTextRaycastOfNonInteractiveOnlyRecursive(Selection.activeTransform);
+        }
+
+        private static void CancelTextRaycastOfNonInteractiveOnlyRecursive(Transform node)
+        {
+            if (node == null)
+                return;
+
+            if (HasUserInteractiveComponent(node))
+                return;
+
+            foreach (var graphic in node.GetComponents<MaskableGraphic>())
+            {
+                if (graphic.raycastTarget)
+                {
+                    graphic.raycastTarget = false;
+                }
+            }
+
+            var childCount = node.childCount;
+            for (var i = 0; i < childCount; i++)
+            {
+                CancelTextRaycastOfNonInteractiveOnlyRecursive(node.GetChild(i));
+            }
+        }
+
+        private static bool HasUserInteractiveComponent(Transform node)
+        {
+            return node.GetComponent<Selectable>() != null
+                   || node.GetComponent<ScrollRect>() != null;
         }
 #endif
     }
