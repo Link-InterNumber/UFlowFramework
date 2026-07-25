@@ -88,7 +88,7 @@ namespace PowerCellStudio
             if (!UIUtils.CloseUI<T>(window, onClosed)) return false;
             if (isPeek)
             {
-                peekUi.OnFocus();
+                GetTopUI()?.OnFocus();
             }
             return true;
         }
@@ -99,9 +99,9 @@ namespace PowerCellStudio
             var peekUi = GetTopUI();
             var isPeek = peekUi != null && peekUi.Equals(uiChild);
             if (!UIUtils.CloseUI<T>(uiChild, afterClosed)) return false;
-            if(isPeek)
+            if (isPeek)
             {
-                peekUi.OnFocus();
+                GetTopUI()?.OnFocus();
             }
             return true;
         }

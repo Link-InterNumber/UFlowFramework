@@ -30,11 +30,12 @@ namespace PowerCellStudio
                 _audioSource.playOnAwake = false;
             }
             gameObject.SetActive(true);
-            _assetLoader = AssetUtils.SpawnLoader();
+            _assetLoader = AssetUtils.SpawnLoader("LinkAudioSource");
         }
 
         public override void OnDeSpawn()
         {
+            _audioSource.Stop();
             AssetUtils.DeSpawnLoader(_assetLoader);
             _assetLoader = null;
             if (!string.IsNullOrEmpty(onGoingRequest.clipPath)) onFree?.Invoke();
@@ -47,7 +48,8 @@ namespace PowerCellStudio
         {
             AssetUtils.DeSpawnLoader(_assetLoader);
             _assetLoader = null;
-            StopAllCoroutines();
+            _fadeCoroutine?.Cancel();
+            _fadePitchCoroutine?.Cancel();
             if (string.IsNullOrEmpty(onGoingRequest.clipPath)) return;
             onFree?.Invoke();
             onFree = null;
@@ -64,7 +66,7 @@ namespace PowerCellStudio
             Fade(currentVolume, 0.3f);
         }
 
-        private Coroutine _fadeCoroutine;
+        private AsyncHandlerBase _fadeCoroutine;
         public void Fade(float targetVolume, float duration, Action onComplete = null)
         {
             if (duration <= 0)
@@ -73,9 +75,9 @@ namespace PowerCellStudio
                 onComplete?.Invoke();
                 return;
             }
-            if (_fadeCoroutine != null)
-                StopCoroutine(_fadeCoroutine);
-            _fadeCoroutine = StartCoroutine(FadeHelper(targetVolume, duration, onComplete));
+
+            _fadeCoroutine?.Cancel();
+            _fadeCoroutine = AsyncManager.Run(FadeHelper(targetVolume, duration, onComplete));
         }
 
         private IEnumerator FadeHelper(float targetVolume, float duration, Action onComplete = null)
@@ -95,7 +97,7 @@ namespace PowerCellStudio
             _fadeCoroutine = null;
         }
 
-        private Coroutine _fadePitchCoroutine;
+        private AsyncHandlerBase _fadePitchCoroutine;
         public void FadePitch(float targetPitch, float duration, Action onComplete = null)
         {
             if (duration <= 0)
@@ -104,9 +106,9 @@ namespace PowerCellStudio
                 onComplete?.Invoke();
                 return;
             }
-            if (_fadePitchCoroutine != null)
-                StopCoroutine(_fadePitchCoroutine);
-            _fadePitchCoroutine = StartCoroutine(FadePitchHelper(targetPitch, duration, onComplete));
+
+            _fadePitchCoroutine?.Cancel();
+            _fadePitchCoroutine = AsyncManager.Run(FadePitchHelper(targetPitch, duration, onComplete));
         }
         
         private IEnumerator FadePitchHelper(float targetPitch, float duration, Action onComplete = null)
@@ -131,6 +133,7 @@ namespace PowerCellStudio
 #endif
         private AudioRequest _onGoingRequest;
         public AudioRequest onGoingRequest => _onGoingRequest;
+        
         public void Play(AudioRequest request)
         {
             if (string.IsNullOrEmpty(request.clipPath))
@@ -145,7 +148,17 @@ namespace PowerCellStudio
                 }
                 return;
             }
-            if (onGoingRequest.fadeOut > 0 && _onGoingRequest.clipPath != request.clipPath)
+
+            if (onGoingRequest.clipPath == request.clipPath)
+            {
+                if (_audioSource.clip)
+                {
+                    RunRequest(request, _audioSource.clip);
+                }
+                return;
+            }
+            
+            if (onGoingRequest.fadeOut > 0)
             {
                 var fadeTime = Mathf.Min(onGoingRequest.fadeOut, GetClipLength() - GetCurrentTime());
                 Fade(0f, fadeTime, () => {
@@ -185,9 +198,12 @@ namespace PowerCellStudio
             }
             DeSpawn();
         }
+        
+        // private bool _isPlaying;
 
         private void RunRequest(AudioRequest request, AudioClip clip)
         {
+            // _isPlaying = true;
             if (!string.IsNullOrEmpty(_onGoingRequest.clipPath)
                 && _onGoingRequest.clipPath == request.clipPath)
             {
@@ -195,9 +211,9 @@ namespace PowerCellStudio
                 if (_audioSource.loop && !request.loop)
                 {
                     _audioSource.time = GetCurrentTime();
-                    _audioSource.Play();
                 }
                 _audioSource.loop = request.loop;
+                _audioSource.Play();
                 return;
             }
 
@@ -230,6 +246,7 @@ namespace PowerCellStudio
 
         public void ClearRequest()
         {
+            // _isPlaying = false;
             if(_onGoingRequest.attachGameObject)
             {
                 transform.SetParent(AudioManager.instance.transform);
@@ -281,20 +298,35 @@ namespace PowerCellStudio
             _audioSource.volume = Mathf.Lerp(setVolume * onGoingRequest.volume, 0f, lerp);
         }
 
+        private bool _cachedPlaying;
         private void Update()
         {
             if (!_audioSource || !_audioSource.clip) return;
-            UpdateFadeOut();
-            if (_onGoingRequest.loop || !IsReachedEnd()) return;
-            if (autoDespawn)
-                DeSpawn();
-            else
+            if (!_cachedPlaying && _audioSource.isPlaying)
             {
-                if (!string.IsNullOrEmpty(_onGoingRequest.clipPath))
-                    _assetLoader.Release(_onGoingRequest.clipPath);
-                ClearRequest();
-                onFree?.Invoke();
+                _cachedPlaying = true;
             }
+            
+            if (!_cachedPlaying) return;
+            UpdateFadeOut();
+
+            if (_cachedPlaying && !_audioSource.isPlaying)
+            {
+                if (autoDespawn)
+                    DeSpawn();
+                else
+                {
+                    _audioSource.Stop();
+                    if (!string.IsNullOrEmpty(_onGoingRequest.clipPath))
+                        _assetLoader.Release(_onGoingRequest.clipPath);
+                    ClearRequest();
+                    onFree?.Invoke();
+                }
+                _cachedPlaying = false;
+            }
+            
+            // if (_onGoingRequest.loop || !IsReachedEnd()) return;
+
         }
     }
 }

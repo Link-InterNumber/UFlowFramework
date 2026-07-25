@@ -77,7 +77,7 @@ namespace PowerCellStudio
 
         private void Awake()
         {
-            _assetLoader = AssetUtils.SpawnLoader();
+            _assetLoader = AssetUtils.SpawnLoader(gameObject.name);
             layoutGroup.enabled = false;
             if (!scroll) return;
             if (optimize) scroll.onValueChanged.AddListener(OnScrollValueChanged);

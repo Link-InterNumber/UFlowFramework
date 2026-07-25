@@ -130,7 +130,7 @@ namespace PowerCellStudio
 
         private void Awake()
         {
-            _assetLoader = AssetUtils.SpawnLoader();
+            _assetLoader = AssetUtils.SpawnLoader(gameObject.name);
         }
 
         private void OnDestroy()

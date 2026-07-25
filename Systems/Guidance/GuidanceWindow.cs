@@ -41,17 +41,17 @@ namespace PowerCellStudio
         {
             base.RegisterEvent(eventHost);
             eventHost.AddListener(screenButton, SkipGuidance);
-            // Debug.LogWarning("GuidanceWindow RegisterEvent");
+            Debug.LogWarning("GuidanceWindow RegisterEvent");
         }
 
-        // protected override void DeregisterEvent(UIEventHost eventHost)
-        // {
-        //     base.DeregisterEvent();
-        //     Debug.LogWarning("GuidanceWindow DeregisterEvent");
-        // }
+        protected override void DeregisterEvent(UIEventHost eventHost)
+        {
+            Debug.LogWarning("GuidanceWindow DeregisterEvent");
+        }
         
         public override void OnOpen(object data)
         {
+            Debug.LogWarning("GuidanceWindow OnOpen");
             _state = State.Opened;
             if (graphics) graphics.raycastTarget = true;
             var guidanceInfo = (Info) data;
@@ -109,6 +109,7 @@ namespace PowerCellStudio
 
         public override void OnClose()
         {
+            Debug.LogWarning("GuidanceWindow OnClose");
             _state = State.Closed;
             if (!_uiPrefab) return;
             GameObject.Destroy(_uiPrefab);
@@ -128,7 +129,7 @@ namespace PowerCellStudio
                 case State.CanClose:
                     return true;
                 case State.Closed:
-                    return false;
+                    return true;
                 default:
                     return true;
             }

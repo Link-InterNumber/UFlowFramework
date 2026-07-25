@@ -23,9 +23,10 @@ namespace PowerCellStudio
         /// <returns>是否回收成功 / Whether the object was successfully recycled</returns>
         public override bool Release(IPoolable obj)
         {
+            if (obj == null) return false;
             if (_stack == null)
             {
-                obj.Dispose();
+                // obj.Dispose();
                 return false;
             }
             if (IsInPool(obj)) return true;
@@ -33,7 +34,7 @@ namespace PowerCellStudio
             if (count >= _maxSize)
             {
                 obj.Dispose();
-                return false;
+                return true;
             }
             _stack.Push(obj);
             _set.Add(obj);
@@ -74,7 +75,7 @@ namespace PowerCellStudio
             if (obj == null) return false;
             if (_stack == null)
             {
-                obj.Dispose();
+                // obj.Dispose();
                 return false;
             }
             if (IsInPool(obj)) return true;
@@ -82,7 +83,7 @@ namespace PowerCellStudio
             if (count >= _maxSize)
             {
                 obj.Dispose();
-                return false;
+                return true;
             }
             _stack.Push(obj);
             _set.Add(obj);
