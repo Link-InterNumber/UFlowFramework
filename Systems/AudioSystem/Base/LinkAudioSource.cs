@@ -36,6 +36,7 @@ namespace PowerCellStudio
         public override void OnDeSpawn()
         {
             _audioSource.Stop();
+            if (_audioSource) _audioSource.clip = null;
             AssetUtils.DeSpawnLoader(_assetLoader);
             _assetLoader = null;
             if (!string.IsNullOrEmpty(onGoingRequest.clipPath)) onFree?.Invoke();
@@ -46,6 +47,7 @@ namespace PowerCellStudio
 
         void OnDestroy()
         {
+            if (_audioSource) _audioSource.clip = null;
             AssetUtils.DeSpawnLoader(_assetLoader);
             _assetLoader = null;
             _fadeCoroutine?.Cancel();
@@ -317,9 +319,9 @@ namespace PowerCellStudio
                 else
                 {
                     _audioSource.Stop();
+                    ClearRequest();
                     if (!string.IsNullOrEmpty(_onGoingRequest.clipPath))
                         _assetLoader.Release(_onGoingRequest.clipPath);
-                    ClearRequest();
                     onFree?.Invoke();
                 }
                 _cachedPlaying = false;
