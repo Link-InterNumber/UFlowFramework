@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace PowerCellStudio
 {
@@ -84,7 +83,7 @@ namespace PowerCellStudio
             return null;
         }
         
-        public IEntityGroup[] AllEntityGroup()
+        internal IEntityGroup[] AllEntityGroup()
         {
             return _entityGroups.ToArray();
         }
@@ -149,7 +148,7 @@ namespace PowerCellStudio
             return _entities.TryGetValue(index, out var entity) ? entity : null;
         }
         
-        public ILinkEntity[] GetEntityByGroup<T>() where T : class, IEntityGroup
+        public IEnumerable<ILinkEntity> GetEntityByGroup<T>() where T : class, IEntityGroup
         {
             var entityGroup = GetEntityGroup<T>();
             if (entityGroup != null)

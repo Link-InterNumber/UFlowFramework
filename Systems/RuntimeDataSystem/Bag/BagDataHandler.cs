@@ -1,7 +1,6 @@
 ﻿
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace PowerCellStudio
 {
@@ -74,10 +73,10 @@ namespace PowerCellStudio
             RuntimeDataManager.instance.GetRuntimeStorage<BagData>()?.RemoveListener(action);
         }
         
-        public List<RItem> GetAllData()
+        public IEnumerable<RItem> GetAllData()
         {
             var bag = RuntimeDataManager.instance.GetRuntimeStorage<BagData>();
-            return bag?.ToList()?? new List<RItem>();
+            return bag != null ? bag : Array.Empty<RItem>();
         }
     }
 }

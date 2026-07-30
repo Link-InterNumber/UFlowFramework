@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace PowerCellStudio
 {
@@ -25,7 +25,7 @@ namespace PowerCellStudio
 
         public void RemoveListener(OnRuntimeDataChange<T> action);
 
-        public List<T> GetAllData();
+        public IEnumerable<T> GetAllData();
     }
 
     public abstract class RuntimeDataHandlerBase<T, KT> : IRuntimeDataHandler<T>
@@ -83,11 +83,11 @@ namespace PowerCellStudio
             storage.RemoveListener(action);
         }
 
-        public virtual List<T> GetAllData()
+        public virtual IEnumerable<T> GetAllData()
         {
             var storage = GetStorage();
-            if (storage == null) return new List<T>();
-            return storage.ToList();
+            if (storage == null) return Array.Empty<T>();
+            return storage;
         }
     }
 }

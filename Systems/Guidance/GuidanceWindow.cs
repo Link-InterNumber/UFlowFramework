@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -66,7 +65,7 @@ namespace PowerCellStudio
             {
                 var hand = _uiPrefab.GetComponent<GuidanceHand>();
                 if (!hand) return;
-                var currentConfig = GuidanceManager.instance.GetConf(GuidanceManager.instance.currentIndex.Last());
+                var currentConfig = GuidanceManager.instance.GetConf(GuidanceManager.instance.currentIndex[GuidanceManager.instance.currentIndex.Count - 1]);
                 hand.Init(_guidanceTag, currentConfig?.decs.Get());
                 return;
             }

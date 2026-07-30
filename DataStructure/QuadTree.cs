@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -333,7 +332,7 @@ namespace PowerCellStudio
             return branch.children;
         }
 
-        public List<T> GetBlock(Vector2 pos)
+        public IEnumerable<T> GetBlock(Vector2 pos)
         {
             var root = _root;
             while (!root.isLeaf)
@@ -342,7 +341,7 @@ namespace PowerCellStudio
                 root = root.nodes[index];
             }
             root = root.parent != null ? root.parent : root;
-            return QuadTreeNode<T>.GetAllChildren(root).ToList();
+            return QuadTreeNode<T>.GetAllChildren(root);
         }
     
         public IEnumerable<T> GetLeafEnumerator(Vector2 pos)
@@ -360,24 +359,24 @@ namespace PowerCellStudio
             }
         }
 
-        public IEnumerable<T> GetBlockEnumerator(Vector2 pos)
-        {
-            var root = _root;
-            while (!root.isLeaf)
-            {
-                var index = root.GetIndex(pos);
-                root = root.nodes[index];
-            }
-            root = root.parent != null ? root.parent : root;
-            for (var i = 0; i < root.nodes.Length; i++)
-            {
-                var branch = root.nodes[i];
-                for (var j = 0; j < branch.count; j++)
-                {
-                    yield return branch.children[j];
-                }
-            }
-        }
+        // public IEnumerable<T> GetBlockEnumerator(Vector2 pos)
+        // {
+        //     var root = _root;
+        //     while (!root.isLeaf)
+        //     {
+        //         var index = root.GetIndex(pos);
+        //         root = root.nodes[index];
+        //     }
+        //     root = root.parent != null ? root.parent : root;
+        //     for (var i = 0; i < root.nodes.Length; i++)
+        //     {
+        //         var branch = root.nodes[i];
+        //         for (var j = 0; j < branch.count; j++)
+        //         {
+        //             yield return branch.children[j];
+        //         }
+        //     }
+        // }
 
         public T Find(Vector2 pos, bool approximately = true)
         {

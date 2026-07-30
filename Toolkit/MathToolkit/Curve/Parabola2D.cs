@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -76,8 +75,13 @@ namespace PowerCellStudio
         /// <returns>抛物线上距离最近的点 / Nearest point on the parabola</returns>
         public Vector2 GetNearDot(Vector2 pos)
         {
-            var dots = GetDotByY(pos.y).OrderBy(o => o.x);
-            return pos.x + 0.1f >= a ? dots.LastOrDefault() : dots.FirstOrDefault();
+            var dots = GetDotByY(pos.y); //.OrderBy(o => o.x);
+            if (dots.Count == 0)
+                return GetDotByX(pos.x);
+            if (dots.Count == 1)
+                return dots[0];
+            dots.Sort((o1, o2) => o1.x.CompareTo(o2.x));
+            return pos.x + 0.1f >= a ? dots[dots.Count - 1] : dots[0];
         }
 
         /// <summary>

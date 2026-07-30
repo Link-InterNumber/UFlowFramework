@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -67,7 +66,7 @@ namespace PowerCellStudio
 
         public IEnumerable<int> GetAllChunkIndexes()
         {
-            return _offsetMap.Keys.OrderBy(index => index);
+            return _offsetMap.Keys;
         }
 
         public long GetChunkOffset(int chunkIndex)

@@ -60,9 +60,9 @@ namespace PowerCellStudio
                     fadeIn = fadeinTime,
                     fadeOut = fadeoutTime,
                     delay = intervalTime
-                }).ToArray();
+                });
                 behavior.musicRecord.SetClips(requests, randPlay);
-                PushRequest(requests[0]);
+                PushRequest(behavior.musicRecord.GetCurrent());
             }
             else
             {

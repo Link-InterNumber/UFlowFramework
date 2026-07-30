@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.Pool;
 
 namespace PowerCellStudio
@@ -79,7 +78,13 @@ namespace PowerCellStudio
         public void DeSpawnLoaderByTag(string tag)
         {
             var loaders = ListPool<IAssetLoader>.Get();
-            loaders.AddRange(_activeLoader.Values.Where(loader => loader.tag == tag));
+            foreach (var activeLoaderValue in _activeLoader.Values)
+            {
+                if (activeLoaderValue != null && activeLoaderValue.tag == tag)
+                {
+                    loaders.Add(activeLoaderValue);
+                }
+            }
             foreach (var loader in loaders)
             {
                 DeSpawn(loader);

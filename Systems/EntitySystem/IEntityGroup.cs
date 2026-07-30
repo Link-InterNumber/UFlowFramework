@@ -23,7 +23,7 @@ namespace PowerCellStudio
 
         public ILinkEntity GetEntity(long index);
 
-        public ILinkEntity[] AllEntity();
+        public IEnumerable<ILinkEntity> AllEntity();
         
         public void Update(float deltaTime);
     }

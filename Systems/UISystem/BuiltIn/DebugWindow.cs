@@ -143,9 +143,9 @@ namespace PowerCellStudio
 
         private void UpdateLogs()
         {
-            var fliterLogs = DebugBtn.logInfos.Where(o => 
+            var fliterLogs = DebugBtn.logInfos.Where(o =>
             {
-                switch(o.logType)
+                switch (o.logType)
                 {
                     case LogType.Log:
                         if (!tglLog.isOn) return false;
@@ -166,7 +166,7 @@ namespace PowerCellStudio
                         return false;
                 }
                 return true;
-            }).ToList();
+            });
             listLog.UpdateList(fliterLogs);
         }
 

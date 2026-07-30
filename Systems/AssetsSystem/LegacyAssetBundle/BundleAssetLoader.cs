@@ -144,8 +144,7 @@ namespace PowerCellStudio
             if (AssetUtils.TryGetSubAssetName(address, out var mainPath, out var subAsset))
             {
                 var allAssets = AssetDatabase.LoadAllAssetsAtPath(mainPath);
-                asset = allAssets.OfType<T>()
-                    .FirstOrDefault(sprite => sprite.name == subAsset);
+                asset = allAssets.FirstOrDefault(o => o.name == subAsset) as T;
             }
             else
             {

@@ -154,7 +154,7 @@ namespace PowerCellStudio
 
             public IEnumerator<T> GetEnumerator()
             {
-                return _rawData.Values.Select(o => o).GetEnumerator();
+                return _rawData.Values.GetEnumerator();
             }
 
             IEnumerator IEnumerable.GetEnumerator()

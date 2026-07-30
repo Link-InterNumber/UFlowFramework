@@ -227,7 +227,7 @@ public class QuadTreeTest : RunTestMono
 
             // Test GetBlock - This will expose a NullReferenceException in your current code
             // because it assumes root.nodes is not null.
-            var block = tree.GetBlock(itemA.Position);
+            var block = tree.GetBlock(itemA.Position).ToList();
             Assert(block.Count == 2, "When not split, block should contain all items.");
             Assert(block.Contains(itemA) && block.Contains(itemB), "Block should contain A and B.");
         });
@@ -258,7 +258,7 @@ public class QuadTreeTest : RunTestMono
             Assert(leafB[0] == itemB, "Leaf for item B should contain item B.");
 
             // Test GetBlock for item A's position
-            var block = tree.GetBlock(itemA.Position);
+            var block = tree.GetBlock(itemA.Position).ToList();
             Assert(block.Count == 3, "Block should contain all 3 items from the parent's children.");
             Assert(block.Contains(itemA) && block.Contains(itemB) && block.Contains(itemC), "Block should contain A, B, and C.");
         });
@@ -277,9 +277,9 @@ public class QuadTreeTest : RunTestMono
             var leafEnum = tree.GetLeafEnumerator(itemA.Position).ToList();
             Assert(leafEnum.Count == 1 && leafEnum[0] == itemA, "Leaf enumerator should yield item A.");
 
-            var blockEnum = tree.GetBlockEnumerator(itemA.Position).ToList();
-            Assert(blockEnum.Count == 2, "Block enumerator should yield 2 items.");
-            Assert(blockEnum.Contains(itemA) && blockEnum.Contains(itemB), "Block enumerator should contain A and B.");
+            // var blockEnum = tree.GetBlockEnumerator(itemA.Position).ToList();
+            // Assert(blockEnum.Count == 2, "Block enumerator should yield 2 items.");
+            // Assert(blockEnum.Contains(itemA) && blockEnum.Contains(itemB), "Block enumerator should contain A and B.");
         });
     }
 

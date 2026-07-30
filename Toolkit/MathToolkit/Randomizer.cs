@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -547,30 +548,33 @@ namespace PowerCellStudio
         /// <param name="elements">抽取的元素池 / Pool of elements to select from</param>
         /// <param name="count">抽取的数量 / Number of elements to select</param>
         /// <returns>选中的元素集合 / List of selected elements</returns>
-        public List<T> RandomSelectionWithoutDuplicates<T>(IList<T> elements, int count)
+        public IEnumerable<T> RandomSelectionWithoutDuplicates<T>(IList<T> elements, int count)
         {
-            if (elements == null || elements.Count == 0) return default;
-            if (count <= 0) return new List<T>();
+            if (elements == null) yield break;
+            if (count <= 0) yield break;
             int n = elements.Count;
-            if (count >= n) return new List<T>(elements);
+            if (count >= n)
+            {
+                foreach (var element in elements)
+                    yield return element;
+                yield break;
+            }
 
             // Fisher-Yates 部分洗牌：只进行前 count 次交换
-            T[] buffer = new T[n];
-            for (int i = 0; i < n; i++) buffer[i] = elements[i];
+            int[] buffer = ArrayPool<int>.Shared.Rent(n);
+            for (int i = 0; i < n; i++) buffer[i] = i;
 
             for (int i = 0; i < count; i++)
             {
                 int j = NextIntExclusive(i, n); // 随机选一个索引 j∈[i,n)
                 // swap buffer[i] and buffer[j]
-                T tmp = buffer[i];
+                var tmp = buffer[i];
                 buffer[i] = buffer[j];
                 buffer[j] = tmp;
             }
-
-            List<T> result = new List<T>(count);
             for (int i = 0; i < count; i++)
-                result.Add(buffer[i]);
-            return result;
+                yield return elements[buffer[i]];
+            ArrayPool<int>.Shared.Return(buffer);
         }
         
         /// <summary>
@@ -580,28 +584,34 @@ namespace PowerCellStudio
         /// <typeparam name="T">元素类型 / Type of element</typeparam>
         /// <param name="elements">抽取的元素池 / Pool of elements to select from</param>
         /// <param name="count">抽取的数量 / Number of elements to select</param>
-        /// <returns>选中的元素集合 / List of selected elements</returns>
-        public List<T> RandomSelectionWithoutDuplicates<T>(T[] elements, int count)
+        /// <returns>选中的元素 / selected elements</returns>
+        public IEnumerable<T> RandomSelectionWithoutDuplicates<T>(T[] elements, int count)
         {
-            if (elements == null || elements.Length == 0) return new List<T>();
+            if (elements == null || elements.Length == 0) yield break;
             int n = elements.Length;
-            if (count <= 0) return new List<T>();
-            if (count >= n) return new List<T>(elements);
+            if (count <= 0) yield break;
+            if (count >= n)
+            {
+                foreach (var element in elements)
+                    yield return element;
+                yield break;
+            }
 
             // 部分 Fisher-Yates
-            T[] buffer = new T[n];
-            Array.Copy(elements, buffer, n);
+            int[] buffer = ArrayPool<int>.Shared.Rent(n);
+            for (int i = 0; i < n; i++) buffer[i] = i;
+            
             for (int i = 0; i < count; i++)
             {
                 int j = NextIntExclusive(i, n);
-                T tmp = buffer[i];
+                var tmp = buffer[i];
                 buffer[i] = buffer[j];
                 buffer[j] = tmp;
             }
 
-            List<T> result = new List<T>(count);
-            for (int i = 0; i < count; i++) result.Add(buffer[i]);
-            return result;
+            for (int i = 0; i < count; i++)
+                yield return elements[buffer[i]];
+            ArrayPool<int>.Shared.Return(buffer);
         }
         
         private class WeightedElement<T>
@@ -627,12 +637,58 @@ namespace PowerCellStudio
         /// Randomly select multiple weighted elements without duplication.
         /// </summary>
         /// <typeparam name="T">元素类型 / Type of element</typeparam>
-        /// <param name="ItemWeightsPair">元素与权重的字典 / Dictionary of elements and weights</param>
+        /// <param name="items">元素列表 / array of elements</param>
+        /// <param name="weights">元素权重列表 / array of element weights</param>
+        /// <param name="count">要选取的数量 / Number of elements to select</param>
+        /// <returns>选中的元素 / selected elements</returns>
+        public IEnumerable<T> WeightedRandomSelectionWithoutDuplicates<T>(T[] items, int[] weights, int count)
+        {
+            if (items == null || items.Length <= 0 || weights == null || weights.Length <= 0 || count <= 0) return Array.Empty<T>();
+            List<WeightedElement<T>> weightedElements = new List<WeightedElement<T>>();
+            for (int i = 0; i < items.Length; i++)
+            {
+                var w = 0;
+                if (weights.Length > i && weights[i] > 0)
+                    w = weights[i];
+                weightedElements.Add(new WeightedElement<T>(items[i], w));
+            }
+            return WeightedRandomSelectionWithoutDuplicatesHandler<T>(weightedElements, count);
+        }
+
+        /// <summary>
+        /// 带权重随机选择多个元素，不重复。
+        /// Randomly select multiple weighted elements without duplication.
+        /// </summary>
+        /// <typeparam name="T">元素类型 / Type of element</typeparam>
+        /// <param name="items">元素列表 / IList of elements & weight</param>
+        /// <param name="count">要选取的数量 / Number of elements to select</param>
+        /// <returns>选中的元素 / selected elements</returns>
+        public IEnumerable<T> WeightedRandomSelectionWithoutDuplicates<T>(IEnumerable<(T items, int weights)> items,
+            int count)
+        {
+            if (items == null || count <= 0) return Array.Empty<T>();
+            List<WeightedElement<T>> weightedElements = new List<WeightedElement<T>>();
+            foreach (var item in items)
+            {
+                var w = Math.Max(0, item.weights);
+                weightedElements.Add(new WeightedElement<T>(item.items, w));
+            }
+            if (weightedElements.Count == 0) return Array.Empty<T>();
+            return WeightedRandomSelectionWithoutDuplicatesHandler<T>(weightedElements, count);
+        }
+
+        /// <summary>
+        /// 带权重随机选择多个元素，不重复。
+        /// Randomly select multiple weighted elements without duplication.
+        /// </summary>
+        /// <typeparam name="T">元素类型 / Type of element</typeparam>
+        /// <param name="items">元素列表 / List of elements</param>
+        /// <param name="weights">元素权重列表 / List of element weights</param>
         /// <param name="count">要选取的数量 / Number of elements to select</param>
         /// <returns>选中的元素集合 / List of selected elements</returns>
-        public List<T> WeightedRandomSelectionWithoutDuplicates<T>(IList<T> items, IList<int> weights, int count)
+        public IEnumerable<T> WeightedRandomSelectionWithoutDuplicates<T>(IList<T> items, IList<int> weights, int count)
         {
-            if (items == null || items.Count <= 0 || weights == null || weights.Count <= 0 || count <= 0) return new List<T>();
+            if (items == null || items.Count <= 0 || weights == null || weights.Count <= 0 || count <= 0) return Array.Empty<T>();
             while (items.Count > weights.Count)
             {
                 weights.Add(0);
@@ -657,18 +713,17 @@ namespace PowerCellStudio
         /// <param name="ItemWeightsPair">元素与权重的字典 / Dictionary of elements and weights</param>
         /// <param name="count">要选取的数量 / Number of elements to select</param>
         /// <returns>选中的元素集合 / List of selected elements</returns>
-        public List<T> WeightedRandomSelectionWithoutDuplicates<T>(Dictionary<T, int> ItemWeightsPair, int count)
+        public IEnumerable<T> WeightedRandomSelectionWithoutDuplicates<T>(Dictionary<T, int> ItemWeightsPair, int count)
         {
-            if (ItemWeightsPair == null || ItemWeightsPair.Count <= 0 || count <= 0) return new List<T>();
-            if (count > ItemWeightsPair.Count) return ItemWeightsPair.Keys.ToList();
+            if (ItemWeightsPair == null || ItemWeightsPair.Count <= 0 || count <= 0) return Array.Empty<T>();
+            if (count > ItemWeightsPair.Count) return ItemWeightsPair.Keys;
 
             List<WeightedElement<T>> weightedElements = ItemWeightsPair.Select(item => new WeightedElement<T>(item.Key, Math.Max(0, item.Value))).ToList();
             return WeightedRandomSelectionWithoutDuplicatesHandler<T>(weightedElements, count);
         }
 
-        private List<T> WeightedRandomSelectionWithoutDuplicatesHandler<T>(List<WeightedElement<T>> weightedElements, int count)
+        private IEnumerable<T> WeightedRandomSelectionWithoutDuplicatesHandler<T>(List<WeightedElement<T>> weightedElements, int count)
         {
-            List<T> result = new List<T>();
             weightedElements.Sort((a, b) => b.Weight.CompareTo(a.Weight));
             for (int pick = 0; pick < count; pick++)
             {
@@ -680,19 +735,21 @@ namespace PowerCellStudio
                 int randomValue = NextIntExclusive(0, totalWeight);
 
                 WeightedElement<T> selected = weightedElements[0];
-                foreach (WeightedElement<T> element in weightedElements)
+                var removeIndex = 0;
+                for (var i = 0; i < weightedElements.Count; i++)
                 {
+                    var element = weightedElements[i];
                     randomValue -= element.Weight;
                     if (randomValue <= 0)
                     {
                         selected = element;
+                        removeIndex = i;
                         break;
                     }
                 }
-                result.Add(selected.Element);
-                weightedElements.Remove(selected);
+                weightedElements.RemoveAt(removeIndex);
+                yield return selected.Element;
             }
-            return result;
         }
         
         public void Shuffle<T>(T[] array)

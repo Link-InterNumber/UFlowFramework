@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UI;
@@ -249,31 +248,33 @@ namespace PowerCellStudio
             var firstIndex = 0;
             var maxVisibleIndex = _layoutHandler.visibleNum - 1 + _numBuffer;
             _layoutHandler.GetViewIndexRange(passLength, _numBuffer, _count, ref  firstIndex, ref maxVisibleIndex);
-            // passLength = Mathf.Clamp(passLength, 0f, (_count - _numVisible + 0.5f) * _prefabSize);
-            // var firstIndex = Mathf.Clamp(Mathf.FloorToInt(passLength / _prefabSize), 0, _count - _numVisible);
             
             if (_previousIndex == firstIndex) return;
-            // var maxVisibleIndex = firstIndex + _numVisible - 1 + _numBuffer;
-            var newKeys = ListPool<int>.Get();
+            
+            Span<int> newKeys = stackalloc int[maxVisibleIndex - firstIndex + 1];
+            var newKeyNumber = 0;
             for (var i = firstIndex; i <= maxVisibleIndex; i++)
             {
                 if(_itemDict.ContainsKey(i)) continue;
-                newKeys.Add(i);
+                newKeys[newKeyNumber] = i;
+                newKeyNumber++;
             }
-            if (newKeys.Count == 0)
-            {
-                ListPool<int>.Release(newKeys);
-                return;
-            }
+            if (newKeyNumber == 0) return;
+            
             // keys中有而newKeys中没有的
-            var removeKeys = _itemDict.Keys.Where(o => o < firstIndex || o > maxVisibleIndex).ToList();
-            if (removeKeys.Count == 0)
+            Span<int> removeKeys = stackalloc int[_itemDict.Count];
+            var removeKeyNumber = 0;
+            foreach (var itemDictKey in _itemDict.Keys)
             {
-                ListPool<int>.Release(newKeys);
-                return;
+                if (itemDictKey < firstIndex || itemDictKey > maxVisibleIndex)
+                {
+                    removeKeys[removeKeyNumber] = itemDictKey;
+                    removeKeyNumber++;
+                }
             }
+            if (removeKeyNumber == 0) return;
 
-            var loopCount = Mathf.Min(removeKeys.Count, newKeys.Count);
+            var loopCount = Mathf.Min(removeKeyNumber, newKeyNumber);
             for (var i = 0; i < loopCount; i++)
             {
                 var item = _itemDict[removeKeys[i]];
@@ -283,7 +284,6 @@ namespace PowerCellStudio
                 _itemDict.Remove(removeKeys[i]);
                 _itemDict[newIndex] = item;
             }
-            ListPool<int>.Release(newKeys);
             _previousIndex = firstIndex;
         }
 

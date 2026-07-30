@@ -1,4 +1,4 @@
-using System.Linq;
+using System;
 using UnityEngine;
 
 namespace PowerCellStudio
@@ -93,13 +93,38 @@ namespace PowerCellStudio
         public static Bounds GetWorldBounds(this RectTransform rt)
         {
             if (!rt) return new Bounds();
-            var corners = new Vector3[4];
-            rt.GetWorldCorners(corners);
+            Span<Vector3> corners = stackalloc Vector3[4];
+            Rect rect = rt.rect;
+            float x = rect.x;
+            float y = rect.y;
+            float xMax = rect.xMax;
+            float yMax = rect.yMax;
+            corners[0] = new Vector3(x, y, 0.0f);
+            corners[1] = new Vector3(x, yMax, 0.0f);
+            corners[2] = new Vector3(xMax, yMax, 0.0f);
+            corners[3] = new Vector3(xMax, y, 0.0f);
+            Matrix4x4 localToWorldMatrix = rt.localToWorldMatrix;
+            for (int index = 0; index < 4; ++index)
+                corners[index] = localToWorldMatrix.MultiplyPoint(corners[index]);
 
-            var center = new Vector3(corners.Sum(o => o.x) / 4f, corners.Sum(o => o.y) / 4f);
-            var size = new Vector3(corners.Max(o => o.x) - corners.Min(o => o.x), corners.Max(o => o.y) - corners.Min(o => o.y));
+            var sumX = 0f;
+            var sumY = 0f;
+            var maxX = corners[0].x;
+            var maxY = corners[0].y;
+            var minX = corners[0].x;
+            var minY = corners[0].y;
+            for (int i = 0; i < 4; i++)
+            {
+                sumX += corners[i].x;
+                sumY += corners[i].y;
+                if (corners[i].x > maxX) maxX = corners[i].x;
+                if (corners[i].y > maxY) maxY = corners[i].y;
+                if (corners[i].x < minX) minX = corners[i].x;
+                if (corners[i].y < minY) minY = corners[i].y;
+            }
+            var center = new Vector3(sumX / 4f, sumY / 4f);
+            var size = new Vector3(maxX - minX, maxY - minY);
             var bounds = new Bounds(center, size);
-
             return bounds;
         }
 
@@ -111,9 +136,37 @@ namespace PowerCellStudio
         /// <returns>世界空间中心点。World-space center point.</returns>
         public static Vector3 GetWorldCenter(this RectTransform rt)
         {
-            var corners = new Vector3[4];
-            rt.GetWorldCorners(corners);
-            var center = new Vector3(corners.Sum(o => o.x) / 4f, corners.Sum(o => o.y) / 4f);
+            if (!rt) return Vector3.zero;
+            Span<Vector3> corners = stackalloc Vector3[4];
+            Rect rect = rt.rect;
+            float x = rect.x;
+            float y = rect.y;
+            float xMax = rect.xMax;
+            float yMax = rect.yMax;
+            corners[0] = new Vector3(x, y, 0.0f);
+            corners[1] = new Vector3(x, yMax, 0.0f);
+            corners[2] = new Vector3(xMax, yMax, 0.0f);
+            corners[3] = new Vector3(xMax, y, 0.0f);
+            Matrix4x4 localToWorldMatrix = rt.localToWorldMatrix;
+            for (int index = 0; index < 4; ++index)
+                corners[index] = localToWorldMatrix.MultiplyPoint(corners[index]);
+
+            var sumX = 0f;
+            var sumY = 0f;
+            var maxX = corners[0].x;
+            var maxY = corners[0].y;
+            var minX = corners[0].x;
+            var minY = corners[0].y;
+            for (int i = 0; i < 4; i++)
+            {
+                sumX += corners[i].x;
+                sumY += corners[i].y;
+                if (corners[i].x > maxX) maxX = corners[i].x;
+                if (corners[i].y > maxY) maxY = corners[i].y;
+                if (corners[i].x < minX) minX = corners[i].x;
+                if (corners[i].y < minY) minY = corners[i].y;
+            }
+            var center = new Vector3(sumX / 4f, sumY / 4f);
             return center;
         }
 

@@ -116,7 +116,7 @@ public class QuadTreePerformanceTest : RunTestMono
             foreach (var pos in _queryPositions)
             {
                 var block = quadTree.GetBlock(pos);
-                totalCount += block.Count;
+                totalCount += block.Count();
             }
             UnityEngine.Debug.Log($"    Total items in blocks accessed: {totalCount}");
         });

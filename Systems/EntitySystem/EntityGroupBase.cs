@@ -1,6 +1,4 @@
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace PowerCellStudio
 {
@@ -56,9 +54,9 @@ namespace PowerCellStudio
             return null;
         }
 
-        public ILinkEntity[] AllEntity()
+        public IEnumerable<ILinkEntity> AllEntity()
         {
-            return _entities.Values.ToArray();
+            return _entities.Values;
         }
 
         public abstract void Update(float deltaTime);

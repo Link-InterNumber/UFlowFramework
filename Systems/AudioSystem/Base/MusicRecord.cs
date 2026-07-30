@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -29,7 +30,7 @@ namespace PowerCellStudio
             return true;
         }
 
-        public void SetClips(AudioRequest[] clipRefs, bool isRandom)
+        public void SetClips(IEnumerable<AudioRequest> clipRefs, bool isRandom)
         {
             _clips.Clear();
             _clipSet.Clear();
@@ -42,11 +43,10 @@ namespace PowerCellStudio
             _index = 0;
         }
 
-        public void AddClips(AudioRequest[] requests)
+        public void AddClips(IEnumerable<AudioRequest> requests)
         {
-            for (var i = 0; i < requests.Length; i++)
+            foreach (var clipRef in requests)
             {
-                var clipRef = requests[i];
                 if (_clipSet.Contains(clipRef.clipPath)) continue;
                 _clips.Add(clipRef);
                 _clipSet.Add(clipRef.clipPath);
