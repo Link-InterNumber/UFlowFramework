@@ -58,8 +58,8 @@ namespace PowerCellStudio
                 Mathf.Max(0, safeArea.min.x * scale),
                 Mathf.Max(0, safeArea.min.y * scale));
             var offsetMax = safeArea.max * scale - UIManager.ScreenSize;
-            offsetMax.x = Mathf.Min(0, offsetMax.x);
-            offsetMax.y = Mathf.Min(0, offsetMax.y);
+            // offsetMax.x = Mathf.Min(offsetMax.x);
+            // offsetMax.y = Mathf.Min(offsetMax.y);
 
             root.anchorMin = Vector2.zero;
             root.anchorMax = Vector2.one;

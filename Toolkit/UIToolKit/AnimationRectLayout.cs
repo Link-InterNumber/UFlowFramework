@@ -12,7 +12,8 @@ namespace PowerCellStudio
             Horizontal,
             Vertical,
         }
-        
+
+        public float space = 0f;
         public LayoutType layoutType;
         private List<RectTransform> _children = new List<RectTransform>();
         private List<Vector2> _targetPos = new List<Vector2>();
@@ -38,6 +39,12 @@ namespace PowerCellStudio
                 _children[i].anchoredPosition = Vector2.Lerp(_children[i].anchoredPosition, _targetPos[i], Time.deltaTime * 10f);
             }
             _isDirty = !isAllArrived;
+        }
+
+        public void ForceUpdate()
+        {
+            _isDirty = true;
+            CollectChildren();
         }
 
         private void CollectChildren()
@@ -67,8 +74,14 @@ namespace PowerCellStudio
                 totalSize += child.sizeDelta;
             }
 
+            var childCount = _children.Count;
+            var spaceV2 = new Vector2(space * (childCount - 1), space * (childCount - 1));
+            totalSize += spaceV2;
+            
             // 将_children按照从左到右放置
-            var startPos = new Vector2(-totalSize.x / 2, 0f);
+            var startPos = layoutType == LayoutType.Horizontal
+                ? new Vector2(-totalSize.x / 2, 0f)
+                : new Vector2(0f, -totalSize.y / 2);
             for (var i = 0; i < _children.Count; i++)
             {
                 var child = _children[i];
@@ -76,12 +89,12 @@ namespace PowerCellStudio
                 if (layoutType == LayoutType.Horizontal)
                 {
                     targetPos.x += child.sizeDelta.x / 2;
-                    startPos.x += child.sizeDelta.x;
+                    startPos.x += child.sizeDelta.x + space;
                 }
                 else
                 {
                     targetPos.y += child.sizeDelta.y / 2;
-                    startPos.y += child.sizeDelta.y;
+                    startPos.y += child.sizeDelta.y + space;
                 }
 
                 _targetPos.Add(targetPos);

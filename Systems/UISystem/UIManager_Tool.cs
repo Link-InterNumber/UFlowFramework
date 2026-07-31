@@ -40,13 +40,14 @@ namespace PowerCellStudio
         {
             get
             {
+                if (!instance) return 1f;
                 if (instance.canvasRenderMode == RenderMode.ScreenSpaceOverlay)
                     return 1f;
                 if (UICamera.instance)
                 {
                     return ScreenSize.x / UICamera.instance.cameraCom.pixelWidth;
                 }
-                return 1f;
+                return ScreenSize.x / Screen.currentResolution.width;
             }
         }
 

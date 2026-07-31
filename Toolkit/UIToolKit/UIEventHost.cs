@@ -16,6 +16,8 @@ namespace PowerCellStudio
 
         public LinkPool<IPoolable> LinkPool { get ; set ; }
         
+        internal UIEventHost(){}
+        
         internal static UIEventHost Create()
         {
             var host = new UIEventHost();

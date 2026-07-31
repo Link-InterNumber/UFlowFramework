@@ -40,7 +40,7 @@ namespace PowerCellStudio
             _currentScreen = new Vector2Int(Screen.width, Screen.height);
             var screenHeight = Screen.height;
             _cameraCom.orthographicSize = screenHeight / 200f;
-            EventManager.instance.onChangeScreen?.Invoke(_currentScreen);
+            EventManager.instance?.onChangeScreen?.Invoke(_currentScreen);
         }
     }
 }
