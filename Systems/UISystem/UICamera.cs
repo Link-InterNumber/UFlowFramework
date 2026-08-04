@@ -23,6 +23,8 @@ namespace PowerCellStudio
         }
 
         private Vector2Int _currentScreen;
+        public Vector2Int currentScreen => _currentScreen;
+        
         protected override void Awake()
         {
             base.Awake();

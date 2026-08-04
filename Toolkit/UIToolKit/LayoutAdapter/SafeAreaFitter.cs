@@ -3,8 +3,16 @@ using UnityEngine.EventSystems;
 
 namespace PowerCellStudio
 {
+    /// <summary>
+    /// 将 RectTransform 调整到屏幕安全区域内。
+    /// Fits the RectTransform within the screen safe area.
+    /// </summary>
     public class SafeAreaFitter : UIBehaviour
     {
+        /// <summary>
+        /// 是否在组件启用或 Canvas 层级变化时自动适配安全区域。
+        /// Determines whether to automatically fit the safe area when the component is enabled or the Canvas hierarchy changes.
+        /// </summary>
         public bool runInAutomatic = true;
 
         protected override void OnEnable()
@@ -21,6 +29,11 @@ namespace PowerCellStudio
             AdaptToSafeArea();
         }
 
+        /// <summary>
+        /// 手动重新计算并应用当前屏幕安全区域。
+        /// Manually recalculates and applies the current screen safe area.
+        /// </summary>
+        [TestButton("TestSafeArea")]
         public void ForceUpdate()
         {
             AdaptToSafeArea();
@@ -46,12 +59,10 @@ namespace PowerCellStudio
         }
 
         [TestButton]
-        public void TestSafeArea()
-        {
-            AdaptToSafeArea();
-        }
-
-        [TestButton]
+        /// <summary>
+        /// 输出当前安全区域和 RectTransform 的适配参数。
+        /// Logs the current safe area and the RectTransform adaptation parameters.
+        /// </summary>
         public void LogSafeArea()
         {
             var safeArea = Screen.safeArea;

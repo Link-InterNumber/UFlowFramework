@@ -109,6 +109,7 @@ namespace PowerCellStudio
         
         private void OnLoadFailed()
         {
+            UILogger.LogError($"加载【{_windowType.Name}】失败");
             _assetLoadStatus = AssetLoadStatus.Loaded;
             _onLoaded?.Invoke();
             _onLoaded = null;

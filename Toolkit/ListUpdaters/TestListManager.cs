@@ -11,7 +11,6 @@ namespace PowerCellStudio
 
         private void Awake()
         {
-            IndexGetter.instance = new IndexGetter();
         }
 
         private void OnEnable()

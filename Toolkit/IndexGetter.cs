@@ -3,8 +3,12 @@ using System.Collections.Generic;
 
 namespace PowerCellStudio
 {
-    public class IndexGetter : SingletonBase<IndexGetter>
+    public class IndexGetter
     {
+        private static IndexGetter _instance;
+
+        public static IndexGetter instance => _instance ??= new IndexGetter();
+        
         private Dictionary<Type, int> _cache = new Dictionary<Type, int>();
 
         /// <summary>

@@ -24,12 +24,12 @@ namespace PowerCellStudio
 
         private void RegisterEvents()
         {
-            EventManager.instance.onClearUnusedAsset.AddListener(Clear);
+            EventManager.instance?.onClearUnusedAsset.AddListener(Clear);
         }
 
         private void UnRegisterEvents()
         {
-            EventManager.instance.onClearUnusedAsset.RemoveListener(Clear);
+            EventManager.instance?.onClearUnusedAsset.RemoveListener(Clear);
         }
     }
 }
