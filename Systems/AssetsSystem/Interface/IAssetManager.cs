@@ -29,6 +29,8 @@ namespace PowerCellStudio
         /// <param name="callBack">初始化完成后的回调。<para>Callback after initialization is complete.</para></param>
         void Init(MonoBehaviour coroutineRunner, Action callBack);
 
+        void Deinit();
+
         /// <summary>
         /// 创建一个资源加载器实例。
         /// <para>Create an asset loader instance.</para>

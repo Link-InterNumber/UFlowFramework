@@ -28,6 +28,14 @@ namespace PowerCellStudio
             coroutineRunner.StartCoroutine(InitHandle(handle, callBack));
         }
 
+        void IAssetManager.Deinit()
+        {
+            ClearUnusedAsset();
+            Addressables.ClearResourceLocators();
+            initState = AssetInitState.InitModule;
+            initProcess = 0f;
+        }
+
         public IAssetLoader CreateLoader()
         {
             return new AddressableAssetLoader(this);

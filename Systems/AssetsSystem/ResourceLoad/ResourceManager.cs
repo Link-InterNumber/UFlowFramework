@@ -27,6 +27,13 @@ namespace PowerCellStudio
             callBack?.Invoke();
         }
 
+        void IAssetManager.Deinit()
+        {
+            // Resources不需要复杂释放，直接完成
+            initState = AssetInitState.InitModule;
+            initProcess = 0f;
+        }
+
         public IAssetLoader CreateLoader()
         {
             return new ResourceAssetLoader();

@@ -37,6 +37,10 @@ namespace PowerCellStudio
 
         public void Clear()
         {
+            foreach (var loaderYieldInstruction in _onloading.Values)
+            {
+                AssetUtils.ReleaseLoadHandler<AssetBundle>(loaderYieldInstruction);
+            }
             _onloading.Clear();
         }
 

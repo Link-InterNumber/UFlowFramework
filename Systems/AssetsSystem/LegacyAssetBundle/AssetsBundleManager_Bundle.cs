@@ -470,7 +470,12 @@ namespace PowerCellStudio
             var cached = _loadedBundles.GetAll();
             foreach (var (bundleName, bundleRef) in cached)
             {
-                _bundleRefCountBuffer[bundleName] = bundleRef.refCount;
+                _bundleRefCountBuffer.Remove(bundleName);
+                if (bundleRef.asset)
+                {
+                    bundleRef.asset.Unload(true);
+                    bundleRef.Dispose();
+                }
             }
             _loadedBundles.Clear();
             _bundleIndex.ClearUnused();

@@ -23,6 +23,7 @@ namespace PowerCellStudio
             StartCoroutine(UpdateLoadState());
         }
 
+
         private IEnumerator UpdateLoadState()
         {
             yield return ConfigInitTool.CopyConfigToPersistentDataPath();

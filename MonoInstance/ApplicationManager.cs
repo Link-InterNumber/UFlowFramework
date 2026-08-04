@@ -145,6 +145,10 @@ namespace PowerCellStudio
         protected void OnApplicationQuit()
         {
             _applicationState = ApplicationState.Quit;
+#if UNITY_EDITOR
+            AssetUtils.Deinit();
+            UnityEditor.EditorUtility.UnloadUnusedAssetsImmediate();
+#endif
             EventManager.instance?.onQuit.Invoke();
             EventManager.instance?.onLoading.RemoveAllListeners();
             EventManager.instance?.onPause.RemoveAllListeners();

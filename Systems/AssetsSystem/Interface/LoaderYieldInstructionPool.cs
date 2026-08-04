@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace PowerCellStudio
 {
-    internal class LoaderYieldInstructionPool
+    internal class LoaderYieldInstructionPool : IDisposable
     {
         private Dictionary<Type, Stack<ILoaderYieldInstruction>> _poolDic;
 
@@ -12,6 +12,19 @@ namespace PowerCellStudio
         public LoaderYieldInstructionPool()
         {
             _poolDic = new Dictionary<Type, Stack<ILoaderYieldInstruction>>();
+        }
+
+        public void Dispose()
+        {
+            foreach (var stack in _poolDic.Values)
+            {
+                while (stack.Count > 0)
+                {
+                    stack.Clear();
+                }
+            }
+            _poolDic.Clear();
+            _poolDic = null;
         }
 
         public LoaderYieldInstruction<T> Get<T>(string path) where T : class

@@ -13,6 +13,15 @@ namespace PowerCellStudio
             _loadPlan = new Dictionary<string, HashSet<(string, Type)>>();
         }
         
+        public void Clear()
+        {
+            foreach (var plan in _loadPlan.Values)
+            {
+                HashSetPool<(string, Type)>.Release(plan);
+            }
+            _loadPlan.Clear();
+        }
+
         public int GetRefCount(string bundleName)
         {
             return _loadPlan.TryGetValue(bundleName, out var handler) ? handler.Count : 0;

@@ -40,7 +40,7 @@ namespace PowerCellStudio
         /// 设计UI画布尺寸，(宽,高)
         /// <para>Default UI canvas size (width, height)</para>
         /// </summary>
-        public static readonly Vector2Int DefaultUISize = new Vector2Int(1080, 1920);
+        public static readonly Vector2Int DefaultUISize = new Vector2Int(1920, 1080);
 
         /// <summary>
         /// 文件加密密钥

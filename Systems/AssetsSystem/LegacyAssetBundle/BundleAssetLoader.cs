@@ -54,6 +54,9 @@ namespace PowerCellStudio
         public void Deinit()
         {
             if(!_spawned) return;
+#if UNITY_EDITOR
+            if (AssetsBundleManager.simulateAssetBundleInEditor)
+#endif
             foreach (var (assetPath, refCount) in _refCount)
             {
                 _assetsBundleManager.DelAssetRef(assetPath, refCount);
@@ -70,7 +73,10 @@ namespace PowerCellStudio
                 if (newValue < 1)
                 {
                     _refCount.Remove(address);
-                    _assetsBundleManager.DelAssetRef(address);
+#if UNITY_EDITOR
+                    if (AssetsBundleManager.simulateAssetBundleInEditor)
+#endif
+                        _assetsBundleManager.DelAssetRef(address);
                 }
                 else
                 {

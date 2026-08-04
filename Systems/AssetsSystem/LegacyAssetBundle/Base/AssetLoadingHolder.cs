@@ -13,6 +13,23 @@ namespace PowerCellStudio
             _onloading = new Dictionary<string, List<LoaderYieldInstruction<T>>>();
         }
 
+        public void Clear()
+        {
+            foreach (var handler in _onloading.Values)
+            {
+                for (var i = 0; i < handler.Count; i++)
+                {
+                    var loadHandler = handler[i];
+                    if (loadHandler != null)
+                    {
+                        AssetUtils.ReleaseLoadHandler<T>(loadHandler);
+                    }
+                }
+                ListPool<LoaderYieldInstruction<T>>.Release(handler);
+            }
+            _onloading.Clear();
+        }
+
         public bool IsLoading(string assetPath)
         {
             return _onloading.ContainsKey(assetPath);

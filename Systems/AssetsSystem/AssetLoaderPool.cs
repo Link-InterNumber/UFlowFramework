@@ -5,7 +5,7 @@ using UnityEngine.Pool;
 
 namespace PowerCellStudio
 {
-    public class AssetLoaderPool
+    public class AssetLoaderPool : IDisposable
     {
         private ObjectPool<IAssetLoader> _pool;
         private Dictionary<int, IAssetLoader> _activeLoader;
@@ -20,6 +20,15 @@ namespace PowerCellStudio
                 loader => loader.Init(),
                 loader => loader.Deinit(),
                 loader => loader.Deinit(), true, initialSize, 30);
+        }
+
+        public void Dispose()
+        {
+            DeSpawnAllLoader();
+            _pool.Dispose();
+            _spawnFunc = null;
+            _activeLoader = null;
+            _pool = null;
         }
 
         public IAssetLoader Spawn(string tag = "")  

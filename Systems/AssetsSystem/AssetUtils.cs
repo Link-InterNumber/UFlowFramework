@@ -68,6 +68,19 @@ namespace PowerCellStudio
             _assetLoaderPool = new AssetLoaderPool(_assetManager.CreateLoader);
         }
 
+        internal static void Deinit()
+        {
+            _loaderYieldInstructionPool?.Dispose();
+            _loaderYieldInstructionPool = null;
+            _batchLoaderPool?.Dispose();
+            _batchLoaderPool = null;
+            _assetLoaderPool?.Dispose();
+            _assetLoaderPool = null;
+            _assetManager?.Deinit();
+            _assetManager = null;
+            Resources.UnloadUnusedAssets();
+        }
+
         /// <summary>
         /// 创建一个资源加载器实例。
         /// <para>Create an asset loader instance.</para>

@@ -56,6 +56,48 @@ namespace PowerCellStudio
             EventManager.instance.onClearUnusedAsset.AddListener(ClearUnusedAsset);
         }
 
+        void IAssetManager.Deinit()
+        {
+            initState = AssetInitState.InitModule;
+            initProcess = 0f;
+            if (!_inited) return;
+            _inited = false;
+            _loadPlan.Clear();
+            var loadedAsset = _loadedAssets.GetAll();
+            foreach (var keyValuePair in loadedAsset)
+            {
+                var asset = keyValuePair.Value;
+                if (asset.asset)
+                {
+                    Resources.UnloadAsset(asset.asset);
+                    asset.Dispose();
+                }
+            }
+            _loadedAssets.Clear();
+            
+            _loadingAssets.Clear();
+            
+            var loadedBundle = _loadedBundles.GetAll();
+            foreach (var keyValuePair in loadedBundle)
+            {
+                var bundle = keyValuePair.Value;
+                if (bundle.asset)
+                {
+                    bundle.asset.Unload(true);
+                    bundle.Dispose();
+                }
+            }
+            _loadedBundles.Clear();
+            
+            _loadingBundles.Clear();
+            if (_removedAssetHolder)
+            {
+                _removedAssetHolder.Clear();
+                GameObject.Destroy(_removedAssetHolder.gameObject);
+                _removedAssetHolder = null;
+            }
+        }
+
         private IEnumerator InitHandler(Action callBack)
         {
             _bundleFoldName = MainBundleName;
