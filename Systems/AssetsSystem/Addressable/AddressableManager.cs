@@ -31,6 +31,7 @@ namespace PowerCellStudio
         void IAssetManager.Deinit()
         {
             ClearUnusedAsset();
+            Addressables.ClearDependencyCacheAsync(Addressables.ResourceLocators);
             Addressables.ClearResourceLocators();
             initState = AssetInitState.InitModule;
             initProcess = 0f;

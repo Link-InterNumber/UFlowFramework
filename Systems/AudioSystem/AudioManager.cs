@@ -19,7 +19,9 @@ namespace PowerCellStudio
         protected override void Deinit()
         {
             _masterPipeline?.Dispose();
+            _masterPipeline = null;
             AssetUtils.DeSpawnLoader(_assetLoader);
+            _assetLoader = null;
             base.Deinit();
         }
 

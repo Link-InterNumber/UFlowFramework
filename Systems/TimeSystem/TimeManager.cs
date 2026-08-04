@@ -151,8 +151,8 @@ namespace PowerCellStudio
         /// </summary>
         public void RegisterEvent()
         {
-            EventManager.instance.onStartGame.AddListener(StartRecord);
-            EventManager.instance.onResetGame.AddListener(StopRecord);
+            EventManager.instance?.onStartGame.AddListener(StartRecord);
+            EventManager.instance?.onResetGame.AddListener(StopRecord);
         }
 
         /// <summary>
@@ -161,8 +161,8 @@ namespace PowerCellStudio
         /// </summary>
         public void UnRegisterEvent()
         {
-            EventManager.instance.onStartGame.RemoveListener(StartRecord);
-            EventManager.instance.onResetGame.RemoveListener(StopRecord);
+            EventManager.instance?.onStartGame.RemoveListener(StartRecord);
+            EventManager.instance?.onResetGame.RemoveListener(StopRecord);
         }
 
         /// <summary>

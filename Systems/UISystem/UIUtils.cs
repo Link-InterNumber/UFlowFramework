@@ -215,7 +215,7 @@ namespace PowerCellStudio
                 {
                     uiChild.OnHide();
                 }
-                EventManager.instance.onPageClose.Invoke(parent);
+                EventManager.instance?.onPageClose.Invoke(parent);
             }
             if (ui is IUIChild child)
             {
@@ -225,7 +225,7 @@ namespace PowerCellStudio
                 {
                     widgets[i].OnWidgetDisable();
                 }
-                EventManager.instance.onUIClose.Invoke(child);
+                EventManager.instance?.onUIClose.Invoke(child);
             }
             ui.OnClose();
             ui.DeregisterEvent();

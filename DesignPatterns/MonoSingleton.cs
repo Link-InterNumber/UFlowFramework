@@ -48,8 +48,8 @@ namespace PowerCellStudio
             StopAllCoroutines();
             if (_instance.GetInstanceID() == GetInstanceID())
             {
-                // ModuleLog<T>.Log($"{typeof(T).Name} Deinited, GameObject Name: {gameObject.name}.");
-                // _instance = null;
+                ModuleLogger.Log($"{typeof(T).Name} Deinited, GameObject Name: {gameObject.name}.");
+                _instance = null;
                 _isExist = false;
             }
         }

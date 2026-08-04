@@ -56,6 +56,15 @@ namespace PowerCellStudio
             LoadExecutedIndex();
         }
 
+        protected override void Deinit()
+        {
+            OnGameReset();
+            _guidanceTags = null;
+            _onIndex = null;
+            _executedIndex = null;
+            _currentIndex = null;
+        }
+
         /// <summary>
         /// 重置游戏时调用以清除引导相关数据。
         /// Called to clear guidance data when the game is reset.

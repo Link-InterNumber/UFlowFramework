@@ -246,6 +246,17 @@ namespace PowerCellStudio
             _storage = new RuntimeDataStorage();
         }
 
+        protected override void Deinit()
+        {
+            base.Deinit();
+            _storage?.Clear();
+            _doNotClearStorage?.Clear();
+            _handlers?.Clear();
+            _storage = null;
+            _doNotClearStorage = null;
+            _handlers = null;
+        }
+
         public void RegisterEvent()
         {
             EventManager.instance.onStartGame.AddListener(OnStartGame);

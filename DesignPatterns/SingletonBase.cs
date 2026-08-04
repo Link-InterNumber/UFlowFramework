@@ -37,9 +37,12 @@ namespace PowerCellStudio
                 // }
             }
         }
+        
+        protected virtual void Deinit(){}
 
         public void Dispose()
         {
+            Deinit();
             if (_instance == null) return;
             _instance = null;
         }

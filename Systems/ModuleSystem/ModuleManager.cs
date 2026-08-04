@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -165,19 +166,26 @@ namespace PowerCellStudio
             base.Deinit();
             EventManager.instance.onStartGame.RemoveListener(OnStartGame);
             EventManager.instance.onResetGame.RemoveListener(OnResetGame);
-            // var modules =_modules.Values.Reverse().ToList();
-            // foreach (var module in modules)
-            // {
-            //     if (module is IEventModule eventModule)
-            //     {
-            //         eventModule.UnRegisterEvent();
-            //     }
-            //     module.Dispose();
-            // }
+            var modules =_modules.Values.ToList();
+            foreach (var module in modules)
+            {
+                if (module is EventManager) continue;
+                if (module is IEventModule eventModule)
+                {
+                    eventModule.UnRegisterEvent();
+                }
+                module.Dispose();
+            }
+            _modules.Clear();
+            _executionModule.Clear();
+            _laterExecutionModule.Clear();
+            _fixedExecutionModule.Clear();
+            moduleInfos.Clear();
             _modules = null;
             _executionModule = null;
             _laterExecutionModule = null;
             _fixedExecutionModule = null;
+            moduleInfos = null;
         }
 
         private void OnStartGame()

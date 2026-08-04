@@ -161,7 +161,39 @@ namespace PowerCellStudio
 
         public void OnDeinit()
         {
+            onLoading.RemoveAllListeners();
+            onPause.RemoveAllListeners();
+            onQuit.RemoveAllListeners();
+            onChangeResolution.RemoveAllListeners();
+            onChangeScreen.RemoveAllListeners();
+            onStartGame.RemoveAllListeners();
+            onResetGame.RemoveAllListeners();
+            onClearUnusedAsset.RemoveAllListeners();
+            onPageOpen.RemoveAllListeners();
+            onPageClose.RemoveAllListeners();
+            onUIOpen.RemoveAllListeners();
+            onUIClose.RemoveAllListeners();
+            onScreenOrientationChange.RemoveAllListeners();
+            onUIInputEnable.RemoveAllListeners();
+            onGuidanceStart.RemoveAllListeners();
+            onGuidanceEnd.RemoveAllListeners();
+            onLanguageChange.RemoveAllListeners();
+            onTimeScaleReplaced.RemoveAllListeners();
+            onTimeScalePause.RemoveAllListeners();
+            onNetConnect.RemoveAllListeners();
+            onNetDisconnect.RemoveAllListeners();
+            // foreach (var latereEvent in _latereEvents)
+            // {
+            //     latereEvent.RemoveAllListeners();
+            // }
             _latereEvents.Clear();
+            _latereEvents = null;
+            // foreach (var executedEvent in _executedEvents)
+            // {
+            //     executedEvent.RemoveAllListeners();
+            // }
+            _executedEvents.Clear();
+            _executedEvents = null;
         }
 
         public void LaterExecute(float dt)

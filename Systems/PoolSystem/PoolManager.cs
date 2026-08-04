@@ -53,10 +53,17 @@ namespace PowerCellStudio
         /// 反初始化并清理对象池管理器。
         /// Deinitialize and clear the PoolManager.
         /// </summary>
-        public void Deinit()
+        protected override void Deinit()
         {
             EventManager.instance.onClearUnusedAsset.RemoveListener(ClearAllPool);
-            ClearAllPool();
+            if (_groupRoot != null)
+            {
+                foreach (var poolGroup in _groupRoot)
+                {
+                    poolGroup.Dispose();
+                }
+                _groupRoot.Clear();
+            }
             if (_transform)
             {
                 GameObject.Destroy(_transform.gameObject);

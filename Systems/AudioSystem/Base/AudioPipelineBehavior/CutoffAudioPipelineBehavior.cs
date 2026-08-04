@@ -26,6 +26,12 @@ namespace PowerCellStudio
 
         public void ReceiveRequest(AudioRequest request)
         {
+            if (!_audioSourceCtrl)
+            {
+                _audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
+                _audioSourceCtrl.autoDespawn = false;
+                _audioSourceCtrl.onFree.AddListener(OnAudioSourceFree);
+            }
             _audioSourceCtrl.gameObject.SetActive(true);
             _audioSourceCtrl.Play(request);
         }
@@ -50,10 +56,7 @@ namespace PowerCellStudio
         {
             if (!IsPlaying()) return;
             _audioSourceCtrl?.FadeOutAndDespawn();
-            _audioSourceCtrl = LinkAudioSourceUtils.Get(_pipeline);
-            _audioSourceCtrl.autoDespawn = false;
-            _audioSourceCtrl.onFree.AddListener(OnAudioSourceFree);
-            _audioSourceCtrl.gameObject.SetActive(false);   
+            _audioSourceCtrl = null;
         }
 
         public void SetMixGroup(AudioMixerGroup mixGroup)
