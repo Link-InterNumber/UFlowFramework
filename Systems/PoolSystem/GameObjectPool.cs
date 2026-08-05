@@ -56,7 +56,7 @@ namespace PowerCellStudio
             var handle = _assetLoader.LoadAsYieldInstruction<GameObject>(path);
             yield return handle;
             _prefab = handle.asset;
-            handle.Dispose();
+            AssetUtils.ReleaseLoadHandler<GameObject>(handle);
             if (_prefab == null)
             {
                 _loadStatus = AssetLoadStatus.Unload;

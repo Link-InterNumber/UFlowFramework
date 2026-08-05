@@ -149,7 +149,6 @@ namespace PowerCellStudio
             EventManager.instance?.OnDeinit();
 #if UNITY_EDITOR
             AssetUtils.Deinit();
-            UnityEditor.EditorUtility.UnloadUnusedAssetsImmediate();
 #endif
         }
 

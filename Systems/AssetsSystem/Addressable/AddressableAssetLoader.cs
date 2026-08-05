@@ -1,8 +1,8 @@
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using UnityEngine.Pool;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using Object = UnityEngine.Object;
 
@@ -34,13 +34,36 @@ namespace PowerCellStudio
         public void Init()
         {
             if(_spawned) return;
-            if(_handles == null) _handles = new Dictionary<string, AsyncOperationHandle>();
+            if(_handles == null) _handles = DictionaryPool<string, AsyncOperationHandle>.Get();
             _handles.Clear();
             _spawned = true;
         }
         
+        /// <summary>
+        /// Don't call this method
+        /// </summary>
+        void IAssetLoader.Deinit()
+        {
+            if (!_spawned) return;
+            ReleaseAllHandle();
+            if (_handles != null) DictionaryPool<string, AsyncOperationHandle>.Release(_handles);
+            _handles = null;
+            _spawned = false;
+            tag = null;
+        }
+        
+        public bool isValid
+        {
+            get
+            {
+                if (!_spawned) return false;
+                return _handles != null;
+            }
+        }
+        
         private void ReleaseAllHandle()
         {
+            if(!_spawned) return;
             if(_handles == null) return;
             foreach (var (_, handle) in _handles)
             {
@@ -49,21 +72,16 @@ namespace PowerCellStudio
             }
             _handles.Clear();
         }
-        
-        /// <summary>
-        /// Don't call this method
-        /// </summary>
-        public void Deinit()
-        {
-            ReleaseAllHandle();
-            _handles = null;
-            _spawned = false;
-        }
 
         #endregion
 
         public bool Release(string address)
         {
+            if (!isValid)
+            {
+                AssetLogger.LogError($"Release Asset Failed, Loader is not valid, address:[{address}]");
+                return false;
+            }
             if(_handles.TryGetValue(address, out var handle))
             {
                 _handles.Remove(address);
@@ -78,6 +96,11 @@ namespace PowerCellStudio
 
         public bool IsLoading(string address)
         {
+            if (!isValid)
+            {
+                AssetLogger.LogError($"Release Asset Failed, Loader is not valid, address:[{address}]");
+                return false;
+            }
             if(_handles.TryGetValue(address, out var handle))
             {
                 if (handle.IsValid())
@@ -88,6 +111,11 @@ namespace PowerCellStudio
 
         public bool IsAnyLoading()
         {
+            if (!isValid)
+            {
+                AssetLogger.LogError($"Release Asset Failed, Loader is not valid");
+                return false;
+            }
             foreach (var handle in _handles.Values)
             {
                 if (handle.IsValid() && !handle.IsDone)
@@ -98,33 +126,33 @@ namespace PowerCellStudio
             return false;
         }
 
-        public void Merge(IAssetLoader other)
-        {
-            if (other == null || other.index == this.index || !other.spawned) return;
-            if (other.IsAnyLoading())
-            {
-                AssetLogger.LogError($"Trying to merge loader {other.index} into {this.index} while it still has loading assets. This may cause unexpected behavior.");
-                return;
-            }
-            if (other is AddressableAssetLoader otherLoader)
-            {
-                foreach (var kvp in otherLoader._handles)
-                {
-                    if (!_handles.ContainsKey(kvp.Key))
-                    {
-                        _handles.Add(kvp.Key, kvp.Value);
-                    }
-                    else
-                    {
-                        if (kvp.Value.IsValid())
-                        {
-                            _manager.Release(kvp.Value);
-                        }
-                    }
-                }
-                otherLoader._handles.Clear();
-            }
-        }
+        // public void Merge(IAssetLoader other)
+        // {
+        //     if (other == null || other.index == this.index || !other.spawned) return;
+        //     if (other.IsAnyLoading())
+        //     {
+        //         AssetLogger.LogError($"Trying to merge loader {other.index} into {this.index} while it still has loading assets. This may cause unexpected behavior.");
+        //         return;
+        //     }
+        //     if (other is AddressableAssetLoader otherLoader)
+        //     {
+        //         foreach (var kvp in otherLoader._handles)
+        //         {
+        //             if (!_handles.ContainsKey(kvp.Key))
+        //             {
+        //                 _handles.Add(kvp.Key, kvp.Value);
+        //             }
+        //             else
+        //             {
+        //                 if (kvp.Value.IsValid())
+        //                 {
+        //                     _manager.Release(kvp.Value);
+        //                 }
+        //             }
+        //         }
+        //         otherLoader._handles.Clear();
+        //     }
+        // }
 
         #region GameObject
 
@@ -311,6 +339,11 @@ namespace PowerCellStudio
         /// <param name="onFail">资源加载失败时调用的回调</param>
         public void LoadAsync<T>(string address, OnLoadSuccess<T> onSuccess, OnLoadFailed onFail = null) where T : Object
         {
+            if (!isValid)
+            {
+                AssetLogger.LogError($"Release Asset Failed, Loader is not valid, address:[{address}]");
+                return;
+            }
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
 #endif
@@ -346,6 +379,11 @@ namespace PowerCellStudio
         /// <returns>表示异步加载操作的任务</returns>
         public Task<T> LoadTask<T>(string address) where T : Object
         {
+            if (!isValid)
+            {
+                AssetLogger.LogError($"Release Asset Failed, Loader is not valid, address:[{address}]");
+                return Task.FromResult(default(T));
+            }
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
 #endif
@@ -361,6 +399,11 @@ namespace PowerCellStudio
         /// <returns>协程支持对象</returns>
         public LoaderYieldInstruction<T> LoadAsYieldInstruction<T>(string address) where T : Object
         {
+            if (!isValid)
+            {
+                AssetLogger.LogError($"Release Asset Failed, Loader is not valid, address:[{address}]");
+                return null;
+            }
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
 #endif
@@ -389,6 +432,11 @@ namespace PowerCellStudio
 
         public void LoadAllAsync<T>(string label, OnLoadSuccess<IList<T>> onSuccess, OnLoadFailed onFail = null) where T : Object
         {
+            if (!isValid)
+            {
+                AssetLogger.LogError($"Release Asset Failed, Loader is not valid, Label:[{label}]");
+                return;
+            }
             AsyncOperationHandle<IList<T>> handler = default;
             if(_handles.TryGetValue(label, out var handle))
             {

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Pool;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
@@ -30,8 +31,8 @@ namespace PowerCellStudio
         }
 
         #region Common
-        
-        private Dictionary<string, int> _refCount = new Dictionary<string, int>();
+
+        private Dictionary<string, int> _refCount;
 
         private void AddRef(string assetPath)
         {
@@ -48,10 +49,11 @@ namespace PowerCellStudio
         public void Init()
         {
             if(_spawned) return;
+            if(_refCount == null) _refCount = DictionaryPool<string, int>.Get();
             _spawned = true;
         }
 
-        public void Deinit()
+        void IAssetLoader.Deinit()
         {
             if(!_spawned) return;
 #if UNITY_EDITOR
@@ -61,12 +63,28 @@ namespace PowerCellStudio
             {
                 _assetsBundleManager.DelAssetRef(assetPath, refCount);
             }
-            _refCount.Clear();
+            if (_refCount != null) DictionaryPool<string, int>.Release(_refCount);
+            _refCount = null;
             _spawned = false;
+            tag = null;
+        }
+
+        public bool isValid
+        {
+            get
+            {
+                if (!_spawned) return false;
+                return _refCount != null;
+            }
         }
 
         public bool Release(string address)
         {
+            if (!isValid)
+            {
+                AssetLogger.LogError($"Release Asset Failed, Loader is not valid, address:[{address}]");
+                return false;
+            }
             if (_refCount.TryGetValue(address, out var current))
             {
                 var newValue = current - 1;
@@ -94,6 +112,11 @@ namespace PowerCellStudio
 
         public bool IsAnyLoading()
         {
+            if (!isValid)
+            {
+                AssetLogger.LogError($"Release Asset Failed, Loader is not valid");
+                return false;
+            }
             foreach (var kvp in _refCount)
             {
                 if (_assetsBundleManager.IsAssetLoading(kvp.Key))
@@ -104,30 +127,30 @@ namespace PowerCellStudio
             return false;
         }
 
-        public void Merge(IAssetLoader other)
-        {
-            if (other == null || other.index == this.index || !other.spawned) return;
-            if (other.IsAnyLoading())
-            {
-                AssetLogger.LogError($"Trying to merge loader {other.index} into {this.index} while it still has loading assets. This may cause unexpected behavior.");
-                return;
-            }
-            if (other is BundleAssetLoader otherLoader)
-            {
-                foreach (var kvp in otherLoader._refCount)
-                {
-                    if (!_refCount.ContainsKey(kvp.Key))
-                    {
-                        _refCount.Add(kvp.Key, kvp.Value);
-                    }
-                    else
-                    {
-                        _refCount[kvp.Key] += kvp.Value;
-                    }
-                }
-                otherLoader._refCount.Clear();
-            }
-        }
+        // public void Merge(IAssetLoader other)
+        // {
+        //     if (other == null || other.index == this.index || !other.spawned) return;
+        //     if (other.IsAnyLoading())
+        //     {
+        //         AssetLogger.LogError($"Trying to merge loader {other.index} into {this.index} while it still has loading assets. This may cause unexpected behavior.");
+        //         return;
+        //     }
+        //     if (other is BundleAssetLoader otherLoader)
+        //     {
+        //         foreach (var kvp in otherLoader._refCount)
+        //         {
+        //             if (!_refCount.ContainsKey(kvp.Key))
+        //             {
+        //                 _refCount.Add(kvp.Key, kvp.Value);
+        //             }
+        //             else
+        //             {
+        //                 _refCount[kvp.Key] += kvp.Value;
+        //             }
+        //         }
+        //         otherLoader._refCount.Clear();
+        //     }
+        // }
 
         private void OnLoadFinish<T>(T asset, string address) where T : Object
         {
@@ -181,6 +204,11 @@ namespace PowerCellStudio
 
         public void LoadAsync<T>(string address, OnLoadSuccess<T> onSuccess, OnLoadFailed onFail = null) where T : Object
         {
+            if (!isValid)
+            {
+                AssetLogger.LogError($"Release Asset Failed, Loader is not valid, address:[{address}]");
+                return;
+            }
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
             if (!AssetsBundleManager.simulateAssetBundleInEditor)
@@ -198,6 +226,11 @@ namespace PowerCellStudio
 
         public Task<T> LoadTask<T>(string address) where T : Object
         {
+            if (!isValid)
+            {
+                AssetLogger.LogError($"Release Asset Failed, Loader is not valid, address:[{address}]");
+                return Task.FromResult<T>(null);
+            }
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
             if (!AssetsBundleManager.simulateAssetBundleInEditor)
@@ -214,6 +247,11 @@ namespace PowerCellStudio
         
         public LoaderYieldInstruction<T> LoadAsYieldInstruction<T>(string address) where T : Object
         {
+            if (!isValid)
+            {
+                AssetLogger.LogError($"Release Asset Failed, Loader is not valid, address:[{address}]");
+                return null;
+            }
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
             if (!AssetsBundleManager.simulateAssetBundleInEditor)
@@ -234,6 +272,11 @@ namespace PowerCellStudio
 
         public void AsyncLoadNInstantiate(string address, OnLoadSuccess<GameObject> onSuccess, OnLoadFailed onFail = null)
         {
+            if (!isValid)
+            {
+                AssetLogger.LogError($"Release Asset Failed, Loader is not valid, address:[{address}]");
+                return;
+            }
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
             if (!AssetsBundleManager.simulateAssetBundleInEditor)
@@ -265,6 +308,11 @@ namespace PowerCellStudio
 
         public void AsyncLoadNInstantiate(string address, Transform parent, OnLoadSuccess<GameObject> onSuccess, OnLoadFailed onFail = null)
         {
+            if (!isValid)
+            {
+                AssetLogger.LogError($"Release Asset Failed, Loader is not valid, address:[{address}]");
+                return;
+            }
 #if UNITY_EDITOR
             address = AssetUtils.EditorCheckPath(address);
             if (!AssetsBundleManager.simulateAssetBundleInEditor)
@@ -311,6 +359,12 @@ namespace PowerCellStudio
         
         public void LoadAllAsync<T>(string label, OnLoadSuccess<IList<T>> onSuccess, OnLoadFailed onFail = null) where T : Object
         {
+            if (!isValid)
+            {
+                AssetLogger.LogError($"Release Asset Failed, Loader is not valid, label:[{label}]");
+                onFail?.Invoke();
+                return;
+            }
             // 获取bundle名为label的中间类型为T的所有资源
 #if UNITY_EDITOR
             if (!AssetsBundleManager.simulateAssetBundleInEditor)

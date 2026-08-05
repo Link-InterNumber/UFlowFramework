@@ -14,7 +14,7 @@ namespace PowerCellStudio
 
         private IList<string> _labels;
         private bool _canceled;
-        private HashSet<string> _loadedLabels = new HashSet<string>();
+        private HashSet<string> _loadedLabels;
 
         /// <summary>
         /// 按标签批量准备资源。
@@ -145,7 +145,8 @@ namespace PowerCellStudio
 
         public override void OnSpawn()
         {
-            
+            if (_loadedLabels != null) return;
+            _loadedLabels = HashSetPool<string>.Get();
         }
 
         public override void OnDeSpawn()
