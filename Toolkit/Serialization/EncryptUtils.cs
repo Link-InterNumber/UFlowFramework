@@ -7,33 +7,33 @@ namespace PowerCellStudio
     {
         private static Encoding encoding = new UTF8Encoding(false);
 
-        #region DES
+        // #region DES
         
-        /// <summary>
-        /// DES加密
-        /// </summary>
-        /// <param name="data">加密数据</param>
-        /// <param name="key">8位字符的密钥字符串</param>
-        /// <param name="iv">8位字符的初始化向量字符串</param>
-        /// <returns></returns>
-        public static string DESEncrypt(string data, string key, string iv)
-        {
-            return DESEncryptor.Encrypt(data, key, iv, encoding);
-        }
+        // /// <summary>
+        // /// DES加密
+        // /// </summary>
+        // /// <param name="data">加密数据</param>
+        // /// <param name="key">8位字符的密钥字符串</param>
+        // /// <param name="iv">8位字符的初始化向量字符串</param>
+        // /// <returns></returns>
+        // public static string DESEncrypt(string data, string key, string iv)
+        // {
+        //     return DESEncryptor.Encrypt(data, key, iv, encoding);
+        // }
 
-        /// <summary>
-        /// DES解密
-        /// </summary>
-        /// <param name="data">解密数据</param>
-        /// <param name="key">8位字符的密钥字符串(需要和加密时相同)</param>
-        /// <param name="iv">8位字符的初始化向量字符串(需要和加密时相同)</param>
-        /// <returns></returns>
-        public static string DESDecrypt(string data, string key, string iv)
-        {
-            return DESEncryptor.Decrypt(data, key, iv, encoding);
-        }
+        // /// <summary>
+        // /// DES解密
+        // /// </summary>
+        // /// <param name="data">解密数据</param>
+        // /// <param name="key">8位字符的密钥字符串(需要和加密时相同)</param>
+        // /// <param name="iv">8位字符的初始化向量字符串(需要和加密时相同)</param>
+        // /// <returns></returns>
+        // public static string DESDecrypt(string data, string key, string iv)
+        // {
+        //     return DESEncryptor.Decrypt(data, key, iv, encoding);
+        // }
         
-        #endregion
+        // #endregion
 
         #region RAS
 
@@ -126,6 +126,26 @@ namespace PowerCellStudio
         public static string AESDecrypt(string cipherText, string encryptionKey)
         {
             return AesCbcEncryptor.AESDecrypt(cipherText, encryptionKey, encoding);
+        }
+
+        public static byte[] AESGcmEncrypt(byte[] data, string encryptionKey)
+        {
+            return AesGcmEncryptor.Encrypt(data, encryptionKey, encoding);
+        }
+        
+        public static byte[] AESGcmDecrypt(byte[] data, string encryptionKey)
+        {
+            return AesGcmEncryptor.Decrypt(data, encryptionKey, encoding);
+        }
+        
+        public static string AESGcmEncrypt(string plainText, string encryptionKey)
+        {
+            return AesGcmEncryptor.Encrypt(plainText, encryptionKey, encoding);
+        }
+
+        public static string AESGcmDecrypt(string cipherText, string encryptionKey)
+        {
+            return AesGcmEncryptor.Decrypt(cipherText, encryptionKey, encoding);
         }
 
         #endregion
