@@ -147,6 +147,26 @@ namespace PowerCellStudio
         {
             return AesGcmEncryptor.Decrypt(cipherText, encryptionKey, encoding);
         }
+        
+        public static byte[] AesCtrHmacEncrypt(byte[] data, string encryptionKey)
+        {
+            return AesCtrHmacEncryptor.Encrypt(data, encryptionKey, encoding);
+        }
+        
+        public static byte[] AesCtrHmacDecrypt(byte[] data, string encryptionKey)
+        {
+            return AesCtrHmacEncryptor.Decrypt(data, encryptionKey, encoding);
+        }
+        
+        public static string AesCtrHmacEncrypt(string plainText, string encryptionKey)
+        {
+            return AesCtrHmacEncryptor.Encrypt(plainText, encryptionKey, encoding);
+        }
+
+        public static string AesCtrHmacDecrypt(string cipherText, string encryptionKey)
+        {
+            return AesCtrHmacEncryptor.Decrypt(cipherText, encryptionKey, encoding);
+        }
 
         #endregion
 

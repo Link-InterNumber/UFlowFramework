@@ -24,7 +24,7 @@ namespace PowerCellStudio
                 var versionedJson = PersistenceEnvelopeUtility.PackString(GetCurrentVersion<T>(), json);
                 if (encrypt)
                 {
-                    var jsonEn = EncryptUtils.AESEncrypt(versionedJson, ConstSetting.FileEncryptionKey);
+                    var jsonEn = EncryptUtils.AESGcmEncrypt(versionedJson, ConstSetting.FileEncryptionKey);
                     File.WriteAllText(filePath, jsonEn);
                 }
                 else
@@ -67,7 +67,7 @@ namespace PowerCellStudio
                     var versionedJson = PersistenceEnvelopeUtility.PackString(GetCurrentVersion<T>(), json);
                     if (encrypt)
                     {
-                        var jsonEn = EncryptUtils.AESEncrypt(versionedJson, ConstSetting.FileEncryptionKey);
+                        var jsonEn = EncryptUtils.AESGcmEncrypt(versionedJson, ConstSetting.FileEncryptionKey);
                         await File.WriteAllTextAsync(filePath, jsonEn);
                     }
                     else
@@ -95,7 +95,7 @@ namespace PowerCellStudio
             {
                 var rawText = File.ReadAllText(filePath);
                 var content = decrypt
-                    ? EncryptUtils.AESDecrypt(rawText, ConstSetting.FileEncryptionKey)
+                    ? EncryptUtils.AESGcmDecrypt(rawText, ConstSetting.FileEncryptionKey)
                     : rawText;
                 var version = 0;
                 if (PersistenceEnvelopeUtility.TryUnpackString(content, out var storedVersion, out var payload))
@@ -157,7 +157,7 @@ namespace PowerCellStudio
                     try
                     {
                         var content = decrypt
-                            ? EncryptUtils.AESDecrypt(rawText, ConstSetting.FileEncryptionKey)
+                            ? EncryptUtils.AESGcmDecrypt(rawText, ConstSetting.FileEncryptionKey)
                             : rawText;
                         var version = 0;
                         if (PersistenceEnvelopeUtility.TryUnpackString(content, out var storedVersion, out var payload))

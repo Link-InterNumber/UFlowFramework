@@ -223,7 +223,7 @@ namespace PowerCellStudio.Editor
         {
             if (!File.Exists(binPath)) return null;
             byte[] encryptedData = File.ReadAllBytes(binPath);
-            var decryptedData = _isEncrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
+            var decryptedData = _isEncrypt ? EncryptUtils.AESGcmDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
             using MemoryStream memoryStream = new MemoryStream(decryptedData);
             // 使用BinaryFormatter进行反序列化
             BinaryFormatter formatter = new BinaryFormatter();

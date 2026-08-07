@@ -46,7 +46,7 @@ namespace PowerCellStudio
         {
             Deinit();
             StopAllCoroutines();
-            if (_instance.GetInstanceID() == GetInstanceID())
+            if (_instance && _instance.GetInstanceID() == GetInstanceID())
             {
                 ModuleLogger.Log($"{typeof(T).Name} Deinited, GameObject Name: {gameObject.name}.");
                 _instance = null;

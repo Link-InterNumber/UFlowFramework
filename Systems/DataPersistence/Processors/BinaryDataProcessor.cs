@@ -22,7 +22,7 @@ namespace PowerCellStudio
             {
                 var bytes = SerializeBinaryPayload(PlayerDataType.Binary, data);
                 bytes = PersistenceEnvelopeUtility.PackBinary(GetCurrentVersion<T>(), bytes);
-                if (encrypt) bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
+                if (encrypt) bytes = EncryptUtils.AESGcmEncrypt(bytes, ConstSetting.FileEncryptionKey);
                 File.WriteAllBytes(filePath, bytes);
                 LinkLogger.Log($"Save a Binary at {filePath}");
             }
@@ -60,7 +60,7 @@ namespace PowerCellStudio
                     bytes = PersistenceEnvelopeUtility.PackBinary(GetCurrentVersion<T>(), bytes);
                     if (encrypt)
                     {
-                        bytes = EncryptUtils.AESEncrypt(bytes, ConstSetting.FileEncryptionKey);
+                        bytes = EncryptUtils.AESGcmEncrypt(bytes, ConstSetting.FileEncryptionKey);
                     }
 
                     await File.WriteAllBytesAsync(filePath, bytes);
@@ -84,7 +84,7 @@ namespace PowerCellStudio
             try
             {
                 byte[] encryptedData = File.ReadAllBytes(filePath);
-                var content = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
+                var content = decrypt ? EncryptUtils.AESGcmDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
                 var version = 0;
                 if (PersistenceEnvelopeUtility.TryUnpackBinary(content, out var storedVersion, out var payload))
                 {
@@ -148,7 +148,7 @@ namespace PowerCellStudio
                 await Task.Run(async () =>
                 {
                     byte[] encryptedData = await File.ReadAllBytesAsync(filePath);
-                    var content = decrypt ? EncryptUtils.AESDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
+                    var content = decrypt ? EncryptUtils.AESGcmDecrypt(encryptedData, ConstSetting.FileEncryptionKey) : encryptedData;
                     var version = 0;
                     if (PersistenceEnvelopeUtility.TryUnpackBinary(content, out var storedVersion, out var payload))
                     {
