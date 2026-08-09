@@ -56,13 +56,13 @@ namespace PowerCellStudio
         }
 
         private float _lastPressTime;
-        private int _currentId;
+        private int _currentId = -1;
 
 
 #if ENABLE_INPUT_SYSTEM
         private void OnFingerDown(UnityEngine.InputSystem.EnhancedTouch.Finger finger)
         {
-            if (_currentId > 0) return;
+            if (_currentId >= 0) return;
             var touch = finger.currentTouch;
             _onMove?.Invoke(new ScreenInputEvent
             {
@@ -86,7 +86,7 @@ namespace PowerCellStudio
                 inputId = touch.touchId,
                 screenPos = touch.screenPosition,
                 delta = touch.delta,
-                pressTime = Time.unscaledTime - _lastPressTime,
+                    pressTime = Time.unscaledTime - _lastPressTime,
                 state = ScreenInputEventState.End
             });
             _lastPressTime = 0;
@@ -211,7 +211,7 @@ namespace PowerCellStudio
                 {
                     _lastPressTime = Time.time;
                 }
-                else
+                else if (!Input.GetMouseButton(0))
                 {
                     _lastPressTime = 0;
                 }

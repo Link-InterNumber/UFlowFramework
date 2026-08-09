@@ -59,28 +59,38 @@ namespace PowerCellStudio
             state = ScreenInputEventState.End
          });
          _isDragging = false;
+#if ENABLE_INPUT_SYSTEM
+         _fingerDragging = false;
+#endif
       }
 
 #if ENABLE_INPUT_SYSTEM
       private bool _fingerDragging = false;
       private void OnFingerDown(UnityEngine.InputSystem.EnhancedTouch.Finger finger)
       {
-         if (!_fingerDragging) return;
-         EndDragging();
-         _fingerDragging = false;
+         if (_fingerDragging)
+         {
+            EndDragging();
+         }
+
+         _lastPos = finger.screenPosition;
+         _startTime = Time.unscaledTime;
       }
 
       private void OnFingerUp(UnityEngine.InputSystem.EnhancedTouch.Finger finger)
       {
          if (!_fingerDragging) return;
          EndDragging();
-         _fingerDragging = false;
       }
 
       private void OnFingerMove(UnityEngine.InputSystem.EnhancedTouch.Finger finger)
       {
          if (UnityEngine.InputSystem.EnhancedTouch.Touch.activeTouches.Count != 1)
          {
+            if (_fingerDragging)
+            {
+               EndDragging();
+            }
             return;
          }
          var touch = finger.currentTouch;
@@ -88,7 +98,7 @@ namespace PowerCellStudio
          {
             screenPos = touch.screenPosition,
             delta = touch.delta,
-            pressTime = (float)touch.time,
+            pressTime = Time.unscaledTime - _startTime,
             state = _fingerDragging ? ScreenInputEventState.Execute : ScreenInputEventState.Start,
          });
          _lastPos = finger.screenPosition;
@@ -140,6 +150,11 @@ namespace PowerCellStudio
             if (mouse == null) return;
             if (mouse.leftButton.isPressed)
             {
+               if (mouse.leftButton.wasPressedThisFrame)
+               {
+                  _startTime = Time.unscaledTime;
+               }
+
                var delta = mouse.delta.value;
                // if (!_isDragging && delta.sqrMagnitude < 25f) return;
                if (delta.sqrMagnitude > 0.01f)
@@ -148,7 +163,7 @@ namespace PowerCellStudio
                   {
                      screenPos = mouse.position.value,
                      delta = delta,
-                     pressTime = Time.time - _startTime,
+                     pressTime = Time.unscaledTime - _startTime,
                      state = _isDragging ? ScreenInputEventState.Execute : ScreenInputEventState.Start
                   });
                   _isDragging = true;
@@ -161,7 +176,7 @@ namespace PowerCellStudio
                {
                   screenPos = mouse.position.ReadValue(),
                   delta = Vector2.zero,
-                  pressTime = Time.time - _startTime,
+                  pressTime = Time.unscaledTime - _startTime,
                   state = ScreenInputEventState.End
                });
                _isDragging = false;

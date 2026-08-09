@@ -60,22 +60,25 @@ namespace PowerCellStudio
             pressTime = Time.time - _startTime
          });
          _isMouseDragging = false;
+#if ENABLE_INPUT_SYSTEM
+         _fingerDragging = false;
+#endif
       }
 
 #if ENABLE_INPUT_SYSTEM
       private bool _fingerDragging = false;
       private void OnFingerDown(UnityEngine.InputSystem.EnhancedTouch.Finger finger)
       {
-         if (!_fingerDragging) return;
-         EndDragging();
-         _fingerDragging = false;
+         if (_fingerDragging && UnityEngine.InputSystem.EnhancedTouch.Touch.activeTouches.Count != 2)
+         {
+            EndDragging();
+         }
       }
 
       private void OnFingerUp(UnityEngine.InputSystem.EnhancedTouch.Finger finger)
       {
          if (!_fingerDragging) return;
          EndDragging();
-         _fingerDragging = false;
       }
 
       private void OnFingerMove(UnityEngine.InputSystem.EnhancedTouch.Finger finger)
@@ -104,6 +107,10 @@ namespace PowerCellStudio
                pressTime = Time.time - _startTime
             });
             _fingerDragging = true;
+         }
+         else if (_fingerDragging)
+         {
+            EndDragging();
          }
       }
 #endif
@@ -159,6 +166,11 @@ namespace PowerCellStudio
             if (mouse == null) return;
             if (mouse.middleButton.isPressed)
             {
+               if (mouse.middleButton.wasPressedThisFrame)
+               {
+                  _startTime = Time.unscaledTime;
+               }
+
                Vector2 currentPos = mouse.position.ReadValue();
                Vector2 delta = mouse.delta.ReadValue();
                if (delta.sqrMagnitude > 0.01f)
@@ -168,7 +180,7 @@ namespace PowerCellStudio
                      screenPos = currentPos,
                      delta = delta,
                      state = _isMouseDragging ? ScreenInputEventState.Execute : ScreenInputEventState.Start,
-                     pressTime = Time.time - _startTime
+                     pressTime = Time.unscaledTime - _startTime
                   });
                   _lastMousePosition = currentPos;
                   _isMouseDragging = true;

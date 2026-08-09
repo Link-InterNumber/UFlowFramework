@@ -8,6 +8,7 @@ namespace PowerCellStudio
       private event ScreenInputEventHandler _onPinch;
       private float _lastDistance = 0f;
       private Vector2 _lastPinchPos;
+      private bool _isPinching;
       public float _pinchThreshold = 0.01f;
       private float _startTime;
       public void RegisterInput(ScreenInputEventHandler action)
@@ -34,6 +35,7 @@ namespace PowerCellStudio
          if (_enable) return;
          _enable = true;
          _lastDistance = 0f;
+         _isPinching = false;
 #if ENABLE_INPUT_SYSTEM
          UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerDown += OnFingerDown;
          UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerUp += OnFingerUp;
@@ -44,6 +46,7 @@ namespace PowerCellStudio
       {
          _enable = false;
          _lastDistance = 0f;
+         _isPinching = false;
 #if ENABLE_INPUT_SYSTEM
          UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerDown -= OnFingerDown;
          UnityEngine.InputSystem.EnhancedTouch.Touch.onFingerUp -= OnFingerUp;
@@ -58,16 +61,19 @@ namespace PowerCellStudio
             screenPos = _lastPinchPos,
             pinchDelta = 0f, // Reset pinch delta on finger up
             state = ScreenInputEventState.End,
-            pressTime = Time.time - _startTime
+            pressTime = Time.unscaledTime - _startTime
          });
          _lastDistance = 0f;
+         _isPinching = false;
       }
 
 #if ENABLE_INPUT_SYSTEM
       private void OnFingerDown(UnityEngine.InputSystem.EnhancedTouch.Finger finger)
       {
-         if (_lastDistance == 0f) return;
-         EndPinch();
+         if (_lastDistance != 0f && UnityEngine.InputSystem.EnhancedTouch.Touch.activeTouches.Count != 2)
+         {
+            EndPinch();
+         }
       }
 
       private void OnFingerUp(UnityEngine.InputSystem.EnhancedTouch.Finger finger)
@@ -83,21 +89,26 @@ namespace PowerCellStudio
          var touch0 = UnityEngine.InputSystem.EnhancedTouch.Touch.activeTouches[0];
          var touch1 = UnityEngine.InputSystem.EnhancedTouch.Touch.activeTouches[1];
          float currentDistance = Vector2.Distance(touch0.screenPosition, touch1.screenPosition);
+         if (_lastDistance == 0f)
+         {
+            _lastDistance = currentDistance;
+            _lastPinchPos = (touch0.screenPosition + touch1.screenPosition) / 2f;
+            _startTime = Time.unscaledTime;
+            return;
+         }
+
          float pinchDelta = currentDistance - _lastDistance;
          if (Mathf.Abs(pinchDelta) > _pinchThreshold)
          {
             _lastPinchPos = (touch0.screenPosition + touch1.screenPosition) / 2f;
-            if (_lastDistance == 0f)
-            {
-               _startTime = Time.time;
-            }
             _onPinch?.Invoke(new ScreenInputEvent
             {
                screenPos = _lastPinchPos,
                pinchDelta = pinchDelta,
-               state = _lastDistance == 0f ? ScreenInputEventState.Start : ScreenInputEventState.Execute,
-               pressTime = Time.time - _startTime
+               state = _isPinching ? ScreenInputEventState.Execute : ScreenInputEventState.Start,
+               pressTime = Time.unscaledTime - _startTime
             });
+            _isPinching = true;
          }
          _lastDistance = currentDistance;
       }
@@ -120,21 +131,26 @@ namespace PowerCellStudio
                var t0 = Input.GetTouch(0);
                var t1 = Input.GetTouch(1);
                float curDist = Vector2.Distance(t0.position, t1.position);
+               if (_lastDistance == 0f)
+               {
+                  _lastDistance = curDist;
+                  _lastPinchPos = (t0.position + t1.position) / 2f;
+                  _startTime = Time.unscaledTime;
+                  return;
+               }
+
                float pinchDelta = curDist - _lastDistance;
                if (Mathf.Abs(pinchDelta) > 0.01f)
                {
                   _lastPinchPos = (t0.position + t1.position) / 2f;
-                  if (_lastDistance == 0f)
-                  {
-                     _startTime = Time.time;
-                  }
                   _onPinch?.Invoke(new ScreenInputEvent
                   {
                      screenPos = _lastPinchPos,
                      pinchDelta = pinchDelta,
-                     state = _lastDistance == 0f ? ScreenInputEventState.Start : ScreenInputEventState.Execute,
-                     pressTime = Time.time - _startTime
+                     state = _isPinching ? ScreenInputEventState.Execute : ScreenInputEventState.Start,
+                     pressTime = Time.unscaledTime - _startTime
                   });
+                  _isPinching = true;
                }
                _lastDistance = curDist;
             }

@@ -6,9 +6,12 @@ namespace PowerCellStudio
 {
    public class ScreenInputMinitor : MonoBehaviour
    {
+#if ENABLE_INPUT_SYSTEM
+      private static int _enhancedTouchOwnerCount;
+#endif
       private Dictionary<Type, IScreenInputHandle> _inputHandles;
-
       private List<Type> _removeBuffer;
+      private bool _isActive;
 
       private void Awake()
       {
@@ -18,12 +21,13 @@ namespace PowerCellStudio
       
       private void OnDestroy()
       {
-         // 注销所有输入处理器
+         _isActive = false;
          foreach (var handle in _inputHandles.Values)
          {
             handle.Dispose();
          }
          _inputHandles.Clear();
+         _removeBuffer.Clear();
       }
 
       public void RegisterInputHandle<T>() where T : IScreenInputHandle, new()
@@ -42,7 +46,10 @@ namespace PowerCellStudio
             // _removeBuffer.Add(type);
          }
          _inputHandles[type] = handle;
-         handle.OnEnable();
+         if (_isActive)
+         {
+            handle.OnEnable();
+         }
       }
 
       public void UnregisterInputHandle<T>() where T : IScreenInputHandle
@@ -113,8 +120,12 @@ namespace PowerCellStudio
 
       private void OnEnable()
       {
+         _isActive = true;
 #if ENABLE_INPUT_SYSTEM
-         UnityEngine.InputSystem.EnhancedTouch.EnhancedTouchSupport.Enable();
+         if (_enhancedTouchOwnerCount++ == 0)
+         {
+            UnityEngine.InputSystem.EnhancedTouch.EnhancedTouchSupport.Enable();
+         }
 #endif
          // 启用所有输入处理器
          foreach (var handle in _inputHandles.Values)
@@ -125,8 +136,12 @@ namespace PowerCellStudio
 
       private void OnDisable()
       {
+         _isActive = false;
 #if ENABLE_INPUT_SYSTEM
-         UnityEngine.InputSystem.EnhancedTouch.EnhancedTouchSupport.Disable();
+         if (_enhancedTouchOwnerCount > 0 && --_enhancedTouchOwnerCount == 0)
+         {
+            UnityEngine.InputSystem.EnhancedTouch.EnhancedTouchSupport.Disable();
+         }
 #endif
          // 禁用所有输入处理器
          foreach (var handle in _inputHandles.Values)

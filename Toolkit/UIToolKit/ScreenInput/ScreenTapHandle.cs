@@ -169,6 +169,10 @@ namespace PowerCellStudio
                _startTime = 0;
                _mouseReleaseLastTime = Time.time;
             }
+            else if (mouse.leftButton.wasReleasedThisFrame)
+            {
+               _startTime = 0f;
+            }
 #else
             // Input API的逻辑
             if (Input.GetMouseButtonDown(0))
@@ -195,6 +199,10 @@ namespace PowerCellStudio
                });
                _startTime = 0;
                _mouseReleaseLastTime = Time.time;
+            }
+            else if (Input.GetMouseButtonUp(0))
+            {
+               _startTime = 0f;
             }
 #endif
          }
