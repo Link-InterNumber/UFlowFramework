@@ -38,11 +38,11 @@ namespace PowerCellStudio
                 return;
 
             EnsureOverlapLabelStyle();
-            var elements = transform.GetComponentsInChildren<MaskableGraphic>(true);
+            var elements = transform.GetComponentsInChildren<Graphic>(true);
             if (elements == null || elements.Length == 0)
                 return;
 
-            var activeElements = new List<MaskableGraphic>(elements.Length);
+            var activeElements = new List<Graphic>(elements.Length);
             var elementsCount = elements.Length;
             for (var i = 0; i < elementsCount; i++)
             {
@@ -145,7 +145,7 @@ namespace PowerCellStudio
         {
             if(!Selection.activeTransform)
                 return;
-            foreach (var text in Selection.activeTransform.GetComponentsInChildren<MaskableGraphic>(true))
+            foreach (var text in Selection.activeTransform.GetComponentsInChildren<Graphic>(true))
             {
                 if (text.raycastTarget)
                 {
@@ -170,7 +170,7 @@ namespace PowerCellStudio
             if (HasUserInteractiveComponent(node))
                 return;
 
-            foreach (var graphic in node.GetComponents<MaskableGraphic>())
+            foreach (var graphic in node.GetComponents<Graphic>())
             {
                 if (graphic.raycastTarget)
                 {

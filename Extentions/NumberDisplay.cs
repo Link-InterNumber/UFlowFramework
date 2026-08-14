@@ -263,5 +263,28 @@ namespace PowerCellStudio
                 _ => "输入数字超了",
             };
         }
+
+        private static int[] _romanValues = new[] { 1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1 };
+        private static string[] _romanSymbols = new[] { "M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I" };
+
+        public static string ToRomanNumber(int number)
+        {
+            if (number <= 0)
+            {
+                return string.Empty;
+            }
+
+            var result = string.Empty;
+            for (var i = 0; i < _romanValues.Length; i++)
+            {
+                while (number >= _romanValues[i])
+                {
+                    result += _romanSymbols[i];
+                    number -= _romanValues[i];
+                }
+            }
+
+            return result;
+        }
     }
 }
