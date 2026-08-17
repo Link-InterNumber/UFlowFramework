@@ -10,11 +10,11 @@ namespace PowerCellStudio
     /// </summary>
     public class AspectRatioLayout : UIBehaviour
     {
-        [Flags]
         /// <summary>
         /// 指定需要跟随屏幕尺寸适配的方向，支持按位组合。
         /// Specifies the directions that follow the screen size; values can be combined as flags.
         /// </summary>
+        [Flags]
         public enum AdaptMatch
         {
             /// <summary>

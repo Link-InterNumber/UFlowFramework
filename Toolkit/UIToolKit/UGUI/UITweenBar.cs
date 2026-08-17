@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 namespace PowerCellStudio
 {
     public class UITweenBar : MonoBehaviour
     {
-        public Slider TrackBar;
-        public Slider AppearBar;
-        public float TweenDuration = 0.5f;
+        public Slider trackBar;
+        public Slider appearBar;
+        public float tweenDuration = 0.5f;
 
         private float _currentValue = 0;
 
@@ -35,17 +33,17 @@ namespace PowerCellStudio
 
         private void Start()
         {
-            if (AppearBar)
+            if (appearBar)
             {
-                AppearBar.minValue = 0f;
-                AppearBar.maxValue = 1f;
-                AppearBar.wholeNumbers = false;
+                appearBar.minValue = 0f;
+                appearBar.maxValue = 1f;
+                appearBar.wholeNumbers = false;
             }
-            if (TrackBar)
+            if (trackBar)
             {
-                TrackBar.minValue = 0f;
-                TrackBar.maxValue = 1f;
-                TrackBar.wholeNumbers = false;
+                trackBar.minValue = 0f;
+                trackBar.maxValue = 1f;
+                trackBar.wholeNumbers = false;
             }
         }
 
@@ -100,10 +98,10 @@ namespace PowerCellStudio
         {
             if (_barTweenUpdater == null)
                 _barTweenUpdater = new BarTweenUpdater();
-            _barTweenUpdater.sliderBar = AppearBar;
+            _barTweenUpdater.sliderBar = appearBar;
             _barTweenUpdater.appearBarTweenTime = time;
             _barTweenUpdater.appearBarTweenTimePass = 0;
-            _barTweenUpdater.appearBarStartValue = AppearBar.value;
+            _barTweenUpdater.appearBarStartValue = appearBar.value;
             _barTweenUpdater.appearBarEndValue = val;
         }
 
@@ -111,10 +109,10 @@ namespace PowerCellStudio
         {
             if (_trackBarTweenUpdater == null)
                 _trackBarTweenUpdater = new BarTweenUpdater();
-            _trackBarTweenUpdater.sliderBar = TrackBar;
+            _trackBarTweenUpdater.sliderBar = trackBar;
             _trackBarTweenUpdater.appearBarTweenTime = time;
             _trackBarTweenUpdater.appearBarTweenTimePass = 0;
-            _trackBarTweenUpdater.appearBarStartValue = TrackBar.value;
+            _trackBarTweenUpdater.appearBarStartValue = trackBar.value;
             _trackBarTweenUpdater.appearBarEndValue = val;
         }
 
@@ -125,8 +123,8 @@ namespace PowerCellStudio
                 _barTweenUpdater.Update(Time.deltaTime);
                 if (_barTweenUpdater.isDone)
                 {
-                    SetTrackBarValue(AppearBar.value);
-                    if (TrackBar) TrackBar.value = AppearBar.value;
+                    SetTrackBarValue(appearBar.value);
+                    if (trackBar) trackBar.value = appearBar.value;
                     _barTweenUpdater = null;
                 }
             }
@@ -145,13 +143,13 @@ namespace PowerCellStudio
         {
             _currentValue = 1;
             SetTrackBarValue(0);
-            AppearBar.value = 0;
+            appearBar.value = 0;
             DoAppearBar(1f, 2f);
         }
 
         public void SetDelta(float deltaValue)
         {
-            var tempValue = AppearBar.value + deltaValue;
+            var tempValue = appearBar.value + deltaValue;
             tempValue = Mathf.Clamp01(tempValue);
             SetValue(tempValue);
         }
@@ -186,7 +184,7 @@ namespace PowerCellStudio
 
         private void AddValue(float value)
         {
-            DoAppearBar(value, TweenDuration);
+            DoAppearBar(value, tweenDuration);
         }
 
         private void SubValue(float value)
@@ -195,21 +193,21 @@ namespace PowerCellStudio
             // m_trackBar.value = m_previousValue;
             SetAppearBarValue(value);
             // await Task.Delay(1000);
-            if (TrackBar)
-                DoTrackBar(value, TweenDuration);
+            if (trackBar)
+                DoTrackBar(value, tweenDuration);
         }
 
         private void SetAppearBarValue(float value)
         {
             _barTweenUpdater = null;
-            AppearBar.value = value;
+            appearBar.value = value;
         }
 
         private void SetTrackBarValue(float value)
         {
             _trackBarTweenUpdater = null;
-            if (TrackBar)
-                TrackBar.value = value;
+            if (trackBar)
+                trackBar.value = value;
         }
     }
 }

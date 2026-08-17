@@ -58,19 +58,19 @@ namespace PowerCellStudio
             root.offsetMax = offsetMax;
         }
 
-        [TestButton]
-        /// <summary>
-        /// 输出当前安全区域和 RectTransform 的适配参数。
-        /// Logs the current safe area and the RectTransform adaptation parameters.
-        /// </summary>
-        public void LogSafeArea()
-        {
-            var safeArea = Screen.safeArea;
-            Debug.Log($"Safe Area: {safeArea}");
-                        var root = transform as RectTransform;
-            if (!root) return;
-            Debug.Log($"Root Offset Min: {root.offsetMin}, Offset Max: {root.offsetMax}");
-            Debug.Log($"Root Anchor Min: {root.anchorMin}, Anchor Max: {root.anchorMax}");
-        }
+        // /// <summary>
+        // /// 输出当前安全区域和 RectTransform 的适配参数。
+        // /// Logs the current safe area and the RectTransform adaptation parameters.
+        // /// </summary>
+        // [TestButton]
+        // public void LogSafeArea()
+        // {
+        //     var safeArea = Screen.safeArea;
+        //     Debug.Log($"Safe Area: {safeArea}");
+        //     var root = transform as RectTransform;
+        //     if (!root) return;
+        //     Debug.Log($"Root Offset Min: {root.offsetMin}, Offset Max: {root.offsetMax}");
+        //     Debug.Log($"Root Anchor Min: {root.anchorMin}, Anchor Max: {root.anchorMax}");
+        // }
     }
 }

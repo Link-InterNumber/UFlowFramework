@@ -6,10 +6,10 @@ namespace PowerCellStudio
     [RequireComponent(typeof(Text))]
     public class SliderNumDisplay : MonoBehaviour
     {
-        public Slider SliderNode;
-        public bool DisplayInPercent;
-        public bool DisplayDenominator = false;
-        public string Format = "N0";
+        public Slider sliderNode;
+        public bool displayInPercent;
+        public bool displayDenominator = false;
+        public string format = "N0";
         private Text _text;
 
         private void Awake()
@@ -19,23 +19,23 @@ namespace PowerCellStudio
 
         private void OnEnable()
         {
-            if(!SliderNode) return;
-            OnSliderValueChange(SliderNode.value);
-            SliderNode.onValueChanged.AddListener(OnSliderValueChange);
+            if(!sliderNode) return;
+            OnSliderValueChange(sliderNode.value);
+            sliderNode.onValueChanged.AddListener(OnSliderValueChange);
         }
         
         private void OnDisable()
         {
-            if(!SliderNode) return;
-            SliderNode.onValueChanged.RemoveListener(OnSliderValueChange);
+            if(!sliderNode) return;
+            sliderNode.onValueChanged.RemoveListener(OnSliderValueChange);
         }
 
         private void OnSliderValueChange(float arg0)
         {
-            var result = DisplayInPercent ? $"{(arg0 * 100).ToString(Format)}%" : arg0.ToString(Format);
-            if (DisplayDenominator)
+            var result = displayInPercent ? $"{(arg0 * 100).ToString(format)}%" : arg0.ToString(format);
+            if (displayDenominator)
             {
-                result += DisplayInPercent? "100%" : $"/{SliderNode.maxValue}";
+                result += displayInPercent? "100%" : $"/{sliderNode.maxValue}";
             }
             _text.text = result;
         }
