@@ -19,35 +19,35 @@ namespace PowerCellStudio.Editor
         {
             if (queryer == null || bundleData == null || string.IsNullOrEmpty(bundleData.bundleName))
                 return false;
-            if (bundleData.bundleDependent == null || bundleData.bundleDependent.Count == 0)
+            if (bundleData.bundleReferenced == null || bundleData.bundleReferenced.Count == 0)
                 return false;
             if (bundleData.assets == null || bundleData.assets.Count <= 1)
                 return false;
 
-            var bundleDependentDict = DictionaryPool<string, int>.Get();
+            var bundleReferencedDict = DictionaryPool<string, int>.Get();
             try
             {
-                foreach (var se in bundleData.bundleDependent)
+                foreach (var se in bundleData.bundleReferenced)
                 {
-                    bundleDependentDict[se] = 0;
+                    bundleReferencedDict[se] = 0;
                 }
 
                 foreach (var assetReferenceData in bundleData.assets)
                 {
-                    if (assetReferenceData?.assetDependent == null)
+                    if (assetReferenceData?.bundleReferenced == null)
                         continue;
-                    foreach (var se in assetReferenceData.assetDependent)
+                    foreach (var se in assetReferenceData.bundleReferenced)
                     {
                         var ae = queryer.GetAsset(se);
                         if (ae == null || string.IsNullOrEmpty(ae.bundleName) ||
-                            !bundleDependentDict.TryGetValue(ae.bundleName, out var referenceCount))
+                            !bundleReferencedDict.TryGetValue(ae.bundleName, out var referenceCount))
                             continue;
 
-                        bundleDependentDict[ae.bundleName] = referenceCount + 1;
+                        bundleReferencedDict[ae.bundleName] = referenceCount + 1;
                     }
                 }
 
-                foreach (var referenceCount in bundleDependentDict.Values)
+                foreach (var referenceCount in bundleReferencedDict.Values)
                 {
                     if (referenceCount > 0)
                         return true;
@@ -57,7 +57,7 @@ namespace PowerCellStudio.Editor
             }
             finally
             {
-                DictionaryPool<string, int>.Release(bundleDependentDict);
+                DictionaryPool<string, int>.Release(bundleReferencedDict);
             }
         }
 

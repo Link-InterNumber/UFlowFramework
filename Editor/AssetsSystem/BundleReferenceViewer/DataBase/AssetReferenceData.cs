@@ -8,7 +8,9 @@ namespace PowerCellStudio.Editor
     {
         public string assetPath;
         public string bundleName;
+        // 依赖资源
         private HashSet<string> _assetDependent;
+        // 引用这个资源的资源
         private HashSet<string> _bundleReferenced;
         public HashSet<string> assetDependent => _assetDependent;
         public HashSet<string> bundleReferenced => _bundleReferenced;

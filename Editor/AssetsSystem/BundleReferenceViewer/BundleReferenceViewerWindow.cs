@@ -150,7 +150,7 @@ namespace PowerCellStudio.Editor
                 _queryer.EnsureAssets(bundleData.bundleName);
 
             for (var i = 0; i < groups.Length; i++)
-                _defectDetectorBox.DetectGroup(new[] { groups[i] }, _queryer);
+                _defectDetectorBox.DetectGroups(new[] { groups[i] }, _queryer);
         }
 
         private void SelectFirstBundle(int analysisVersion)

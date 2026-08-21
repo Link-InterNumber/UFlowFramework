@@ -29,10 +29,10 @@ namespace PowerCellStudio.Editor
             if (assets != null)
                 for (var i = 0; i < assets.Count; i++)
                     assets[i].Dispose();
-            assets?.Clear();
+            // assets?.Clear();
             assets = null;
             Inactivate();
-            if (tags != null) tags.Clear();
+            // if (tags != null) tags.Clear();
             tags = null;
         }
 

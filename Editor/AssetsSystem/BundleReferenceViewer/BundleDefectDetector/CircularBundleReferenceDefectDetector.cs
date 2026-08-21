@@ -1,38 +1,62 @@
+// ==================== 3. 循环依赖检测器 ====================
+
 using System.Collections.Generic;
+using UnityEngine.Pool;
 
 namespace PowerCellStudio.Editor
 {
     /// <summary>
-    /// 检测 Bundle 是否处于循环依赖链中。
-    /// Detects whether a bundle is part of a circular dependency chain.
+    /// 检测Bundle依赖图中是否存在循环引用（环）。
+    /// 循环依赖会导致加载死锁、冗余加载和难以维护的依赖关系。
     /// </summary>
-    public sealed class CircularBundleReferenceDefectDetector : IBundleDefectDetector, System.IDisposable
+    public sealed class CircularBundleReferenceDefectDetector : IBundleDefectDetector
     {
-        private BundleReferenceQueryer _cachedQueryer;
-        private HashSet<string> _cyclicBundles;
-
-        public string title => "循环引用";
-
-        public string toolTips => "Bundle 通过依赖链直接或间接依赖自身。";
-
-        public string tag => "循环引用";
-
+        public string title => "循环依赖";
+        public string toolTips => "Bundle之间存在循环引用（A→B→A），可能导致加载异常或资源冗余。";
+        public string tag => "循环依赖";
         public DefectLevel defectLevel => DefectLevel.High;
 
-        public void Dispose()
-        {
-            _cachedQueryer = null;
-            _cyclicBundles?.Clear();
-            _cyclicBundles = null;
-        }
+        private int _maxRecursionDepth = 6;
 
         public bool Detect(BundleReferenceQueryer queryer, BundleReferenceData bundleData)
         {
             if (queryer == null || bundleData == null || string.IsNullOrEmpty(bundleData.bundleName))
                 return false;
 
-            EnsureCache(queryer);
-            return _cyclicBundles.Contains(bundleData.bundleName);
+            // 使用DFS检测从当前节点出发是否存在环
+            var state = DictionaryPool<string, int>.Get(); // 0-未访问，1-访问中，2-已访问
+            var result = HasCycle(queryer, bundleData.bundleName, state, 0);
+            DictionaryPool<string, int>.Release(state);
+            return result;
+        }
+
+        private bool HasCycle(BundleReferenceQueryer queryer, string node, Dictionary<string, int> state, int depth)
+        {
+            if (state.TryGetValue(node, out int status))
+            {
+                return status == 1; // 访问中，说明存在环
+            }
+
+            if (depth > _maxRecursionDepth)
+            {
+                state[node] = 2; // 标记已访问
+                return false; // 超过最大递归深度，认为没有环
+            }
+
+            state[node] = 1; // 标记访问中
+
+            var data = queryer.GetBundleData(node);
+            if (data?.bundleDependent != null)
+            {
+                foreach (var dep in data.bundleDependent)
+                {
+                    if (HasCycle(queryer, dep, state, depth + 1))
+                        return true;
+                }
+            }
+
+            state[node] = 2; // 标记已访问
+            return false;
         }
 
         public bool HasDefect(BundleReferenceQueryer queryer, BundleReferenceGroup group)
@@ -40,151 +64,14 @@ namespace PowerCellStudio.Editor
             if (queryer == null || group?.bundleNames == null)
                 return false;
 
-            EnsureCache(queryer);
+            // 可以逐Bundle检测，但为了效率，整个图检测一次即可，但现有接口只能返回bool，
+            // 这里简单遍历，但会重复计算，可优化但忽略。
             foreach (var bundleName in group.bundleNames)
             {
-                if (_cyclicBundles.Contains(bundleName))
-                    return true;
-            }
-
-            return false;
-        }
-
-        private void EnsureCache(BundleReferenceQueryer queryer)
-        {
-            if (_cachedQueryer == queryer && _cyclicBundles != null)
-                return;
-
-            _cachedQueryer = queryer;
-            _cyclicBundles = FindCyclicBundles(queryer.GetAllBundleData());
-        }
-
-        private static HashSet<string> FindCyclicBundles(
-            IReadOnlyDictionary<string, BundleReferenceData> allBundles)
-        {
-            var cyclicBundles = new HashSet<string>();
-            if (allBundles == null || allBundles.Count == 0)
-                return cyclicBundles;
-
-            var dependencies = CreateDependencySnapshot(allBundles);
-            var referenced = CreateReferencedSnapshot(allBundles);
-            var visited = new HashSet<string>();
-            var orderedBundles = new List<string>(allBundles.Keys);
-            var finishOrder = new List<string>(orderedBundles.Count);
-            for (var i = 0; i < orderedBundles.Count; i++)
-            {
-                var start = orderedBundles[i];
-                if (visited.Contains(start))
-                    continue;
-                BuildFinishOrder(start, dependencies, allBundles, visited, finishOrder);
-            }
-
-            visited.Clear();
-            for (var i = finishOrder.Count - 1; i >= 0; i--)
-            {
-                var start = finishOrder[i];
-                if (visited.Contains(start))
-                    continue;
-
-                var component = CollectComponent(start, referenced, allBundles, visited);
-                if (component.Count > 1 || HasSelfReference(start, dependencies))
-                    cyclicBundles.UnionWith(component);
-            }
-
-            return cyclicBundles;
-        }
-
-        private static void BuildFinishOrder(
-            string start,
-            IReadOnlyDictionary<string, string[]> dependencies,
-            IReadOnlyDictionary<string, BundleReferenceData> allBundles,
-            HashSet<string> visited,
-            List<string> finishOrder)
-        {
-            var stack = new Stack<TraversalFrame>();
-            visited.Add(start);
-            stack.Push(new TraversalFrame(start));
-            while (stack.Count > 0)
-            {
-                var frame = stack.Pop();
-                var currentDependencies = dependencies[frame.bundleName];
-                if (frame.nextIndex < currentDependencies.Length)
-                {
-                    stack.Push(new TraversalFrame(frame.bundleName, frame.nextIndex + 1));
-                    var dependency = currentDependencies[frame.nextIndex];
-                    if (!string.IsNullOrEmpty(dependency) && allBundles.ContainsKey(dependency) && visited.Add(dependency))
-                        stack.Push(new TraversalFrame(dependency));
-                    continue;
-                }
-                finishOrder.Add(frame.bundleName);
-            }
-        }
-
-        private static HashSet<string> CollectComponent(
-            string start,
-            IReadOnlyDictionary<string, string[]> referenced,
-            IReadOnlyDictionary<string, BundleReferenceData> allBundles,
-            HashSet<string> visited)
-        {
-            var component = new HashSet<string>();
-            var stack = new Stack<string>();
-            stack.Push(start);
-            visited.Add(start);
-            while (stack.Count > 0)
-            {
-                var current = stack.Pop();
-                component.Add(current);
-                foreach (var source in referenced[current])
-                {
-                    if (!string.IsNullOrEmpty(source) && allBundles.ContainsKey(source) && visited.Add(source))
-                        stack.Push(source);
-                }
-            }
-            return component;
-        }
-
-        private static bool HasSelfReference(
-            string bundleName,
-            IReadOnlyDictionary<string, string[]> dependencies)
-        {
-            var bundleDependencies = dependencies[bundleName];
-            for (var i = 0; i < bundleDependencies.Length; i++)
-            {
-                if (bundleDependencies[i] == bundleName)
+                if (Detect(queryer, queryer.GetBundleData(bundleName)))
                     return true;
             }
             return false;
-        }
-
-        private static Dictionary<string, string[]> CreateDependencySnapshot(
-            IReadOnlyDictionary<string, BundleReferenceData> allBundles,
-            bool referenced = false)
-        {
-            var snapshot = new Dictionary<string, string[]>(allBundles.Count);
-            foreach (var pair in allBundles)
-            {
-                var source = referenced ? pair.Value.bundleReferenced : pair.Value.bundleDependent;
-                snapshot[pair.Key] = source == null ? System.Array.Empty<string>() : new List<string>(source).ToArray();
-            }
-            return snapshot;
-        }
-
-        private static Dictionary<string, string[]> CreateReferencedSnapshot(
-            IReadOnlyDictionary<string, BundleReferenceData> allBundles)
-        {
-            return CreateDependencySnapshot(allBundles, true);
-        }
-
-        private readonly struct TraversalFrame
-        {
-            public readonly string bundleName;
-            public readonly int nextIndex;
-
-            public TraversalFrame(string bundleName, int nextIndex = 0)
-            {
-                this.bundleName = bundleName;
-                this.nextIndex = nextIndex;
-            }
         }
     }
 }

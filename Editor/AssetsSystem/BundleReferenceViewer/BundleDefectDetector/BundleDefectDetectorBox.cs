@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine.Pool;
 
 namespace PowerCellStudio.Editor
 {
@@ -9,11 +10,15 @@ namespace PowerCellStudio.Editor
 
         public BundleDefectDetectorBox()
         {
-            detectors = new List<IBundleDefectDetector>();
-            // 按缺陷等级从低到高注册，以符合当前检测流程的等级短路规则。
-            detectors.Add(new SingleReferenceSingleAssetDefectDetector());
-            detectors.Add(new ReferencesScatteredDefectDetector());
-            // detectors.Add(new CircularBundleReferenceDefectDetector());
+            detectors = new List<IBundleDefectDetector>
+            {
+                new SingleReferenceSingleAssetDefectDetector(), // Low
+                // new OrphanBundleDefectDetector(),               // Low
+                new ReferencesScatteredDefectDetector(),        // Medium
+                new DeepDependencyDefectDetector(),             // Medium
+                new HighReferenceCountDefectDetector(),         // Medium
+                new CircularBundleReferenceDefectDetector()     // High
+            };
         }
 
         public void Dispose()
@@ -30,24 +35,29 @@ namespace PowerCellStudio.Editor
             detectors = null;
         }
         
-        public void DetectGroup(IEnumerable<BundleReferenceGroup> groups, BundleReferenceQueryer queryer)
+        public void DetectGroups(IEnumerable<BundleReferenceGroup> groups, BundleReferenceQueryer queryer)
         {
             if (groups == null || queryer == null || detectors == null)
                 return;
 
             foreach (var group in groups)
             {
-                if (group == null)
-                    continue;
-                for (var i = 0; i < detectors.Count; i++)
-                {
-                    var detector = detectors[i];
-                    if (group.defectLevel >= detector.defectLevel) continue;
-                    if (!detector.HasDefect(queryer, group)) continue;
-                    group.defectLevel |= detector.defectLevel;
-                    if (group.defectLevel == DefectLevel.High)
-                        break;
-                }
+                DetectGroups(group, queryer);
+            }
+        }
+
+        public void DetectGroups(BundleReferenceGroup group, BundleReferenceQueryer queryer)
+        {
+            if (group == null)
+                return;
+            for (var i = 0; i < detectors.Count; i++)
+            {
+                var detector = detectors[i];
+                if (group.defectLevel >= detector.defectLevel) continue;
+                if (!detector.HasDefect(queryer, group)) continue;
+                group.defectLevel |= detector.defectLevel;
+                if (group.defectLevel == DefectLevel.High)
+                    break;
             }
         }
 
@@ -56,13 +66,39 @@ namespace PowerCellStudio.Editor
             if (data == null || queryer == null || detectors == null)
                 return;
 
-            data.tags ??= new List<string>();
+            if (data.tags == null)
+            {
+                data.tags = ListPool<string>.Get();
+            }
+            else
+            {
+                data.tags.Clear();
+            }
+            var group = queryer.GetGroupByBundle(data.bundleName);
+            var defectInfos = group?.defectInfos;
+            defectInfos?.Clear();
             for (var i = 0; i < detectors.Count; i++)
             {
                 var detector = detectors[i];
                 if (!detector.Detect(queryer, data)) continue;
                 data.defectLevel |= detector.defectLevel;
                 data.tags.Add(detector.tag);
+                if (defectInfos == null) continue;
+                if (defectInfos.TryGetValue(detector.tag, out var info))
+                {
+                    info.count++;
+                    info.bundleNames.Add(data.bundleName);
+                }
+                else
+                {
+                    defectInfos[detector.tag] = new GroupDefectInfo
+                    {
+                        count = 1,
+                        bundleNames = new List<string> { data.bundleName },
+                        tag = detector.tag,
+                        toolTips = detector.toolTips,
+                    };
+                }
             }
         }
         
