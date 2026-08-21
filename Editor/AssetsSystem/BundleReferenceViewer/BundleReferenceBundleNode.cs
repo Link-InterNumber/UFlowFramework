@@ -27,6 +27,7 @@ namespace PowerCellStudio.Editor
             _assetNodes = new Dictionary<string, AssetReferenceNode>();
             title = BuildTitle(data);
             style.width = NodeWidth;
+            style.backgroundColor = new Color(0.2f, 0.2f, 0.2f, 0.3f);
             tooltip = BuildTooltip(data);
 
             ApplyDefectStyle(data?.defectLevel ?? DefectLevel.None);
@@ -54,13 +55,6 @@ namespace PowerCellStudio.Editor
             style.height = ContainerHeight;
             style.minHeight = ContainerHeight;
             style.maxHeight = ContainerHeight;
-
-            // contentContainer.style.position = Position.Relative;
-            // contentContainer.style.left = 0f;
-            // contentContainer.style.top = HeaderHeight;
-            // contentContainer.style.width = NodeWidth;
-            contentContainer.style.height = ContainerHeight;
-            // contentContainer.style.overflow = Overflow.Hidden;
             RefreshExpandedState();
         }
 
@@ -104,7 +98,7 @@ namespace PowerCellStudio.Editor
             {
                 assetNode.SetPosition(new Rect(
                     15f,
-                    index * (ResourceNodeHeight + ResourceGap),
+                    HeaderHeight + index * (ResourceNodeHeight + ResourceGap),
                     ResourceNodeWidth,
                     ResourceNodeHeight));
                 index++;
@@ -125,9 +119,9 @@ namespace PowerCellStudio.Editor
                 tooltip = AssetPath;
                 style.position = Position.Absolute;
                 style.width = ResourceNodeWidth;
-                // style.height = ResourceNodeHeight;
-                // style.minHeight = ResourceNodeHeight;
-                // style.maxHeight = ResourceNodeHeight;
+                style.height = ResourceNodeHeight;
+                style.minHeight = ResourceNodeHeight;
+                style.maxHeight = ResourceNodeHeight;
 
                 InputPort = InstantiatePort(Orientation.Horizontal, Direction.Input,
                     Port.Capacity.Multi, typeof(bool));
