@@ -15,13 +15,21 @@ namespace PowerCellStudio
         /// </summary>
         public bool runInAutomatic = true;
 
+        public RectOffset padding = new RectOffset();
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            padding = null;
+        }
+
         protected override void OnEnable()
         {
             base.OnEnable();
             if (!runInAutomatic) return;
             AdaptToSafeArea();
         }
-        
+
         protected override void OnCanvasHierarchyChanged()
         {
             base.OnCanvasHierarchyChanged();
@@ -52,25 +60,12 @@ namespace PowerCellStudio
             // offsetMax.x = Mathf.Min(offsetMax.x);
             // offsetMax.y = Mathf.Min(offsetMax.y);
 
+            offsetMin += new Vector2(padding.left, padding.bottom);
+            offsetMax -= new Vector2(padding.right, padding.top);
             root.anchorMin = Vector2.zero;
             root.anchorMax = Vector2.one;
             root.offsetMin = offsetMin;
             root.offsetMax = offsetMax;
         }
-
-        // /// <summary>
-        // /// 输出当前安全区域和 RectTransform 的适配参数。
-        // /// Logs the current safe area and the RectTransform adaptation parameters.
-        // /// </summary>
-        // [TestButton]
-        // public void LogSafeArea()
-        // {
-        //     var safeArea = Screen.safeArea;
-        //     Debug.Log($"Safe Area: {safeArea}");
-        //     var root = transform as RectTransform;
-        //     if (!root) return;
-        //     Debug.Log($"Root Offset Min: {root.offsetMin}, Offset Max: {root.offsetMax}");
-        //     Debug.Log($"Root Anchor Min: {root.anchorMin}, Anchor Max: {root.anchorMax}");
-        // }
     }
 }

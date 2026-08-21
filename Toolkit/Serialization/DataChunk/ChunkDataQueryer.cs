@@ -4,6 +4,11 @@ using System.Collections.Generic;
 
 namespace PowerCellStudio
 {
+    /// <summary>
+    /// ChunkDataQueryer是一个用于查询分块数据的工具类。它提供了多种方式来准备和查询数据，包括通过索引文件和数据文件进行初始化，以及根据键值获取数据。该类支持按需加载分块数据，以提高内存使用效率，并提供了清理未使用数据的功能。
+    /// </summary>
+    /// <typeparam name="TKey"></typeparam>
+    /// <typeparam name="TData"></typeparam>
     public class ChunkDataQueryer<TKey, TData> 
     {
         private string _dataFilePath;

@@ -6,13 +6,29 @@ using UnityEngine.Pool;
 
 namespace PowerCellStudio
 {
+    /// <summary>
+    /// Provides helper methods for writing length-prefixed binary chunks.
+    /// 提供基于“长度前缀 + 数据体”格式的二进制写入辅助方法。
+    /// </summary>
+    /// <remarks>
+    /// File format:
+    /// 1) 4-byte Int32 length prefix
+    /// 2) payload bytes
+    /// 3) a terminal 4-byte zero length (0) to mark end of stream
+    ///
+    /// 文件格式：
+    /// 1）4字节 Int32 长度前缀
+    /// 2）对应长度的数据字节
+    /// 3）末尾写入一个4字节的0长度（0）作为结束标记
+    /// </remarks>
     public static class ChunkMaker
     {
         /// <summary>
         /// Writes records as [4-byte length + payload] chunks, ending each chunk with 0.
         /// 以[4字节长度+数据]分块写入记录，并以0结束每个块。
         /// </summary>
-        /// <param name="filePath">Output file path. 输出文件路径。</param>
+        /// <param name="fileDirectory">Output file directory. 输出文件目录。</param>
+        /// <param name="fileName">Base name of the chunk files. 分块文件的基础名称。</param>
         /// <param name="data">Source records to serialize and write. 待序列化并写入的源记录。</param>
         /// <param name="keySelector">Extracts per-record chunk key. 提取每条记录的分块键。</param>
         /// <param name="chunkSize">Maximum records per chunk. 每个分块的最大记录数。</param>
@@ -36,6 +52,19 @@ namespace PowerCellStudio
             StreamWriteChunkInfo(indexFilePath, chunkInfos, resolvedOptions);
         }
 
+        /// <summary>
+        /// Writes records as [4-byte length + payload] chunks, ending each chunk with 0.
+        /// 以[4字节长度+数据]分块写入记录，并以0结束每个块。
+        /// </summary>
+        /// <typeparam name="TData">Record type. 记录类型。</typeparam>
+        /// <typeparam name="TKey">Chunk key type. 分块键类型。</typeparam>
+        /// <param name="fileDirectory">Directory to write the chunk files to. 写入分块文件的目录。</param>
+        /// <param name="fileName">Base name of the chunk files. 分块文件的基础名称。</param>
+        /// <param name="data">Records to write. 要写入的记录。</param>
+        /// <param name="keySelector">Function to select the chunk key from a record. 从记录中选择分块键的函数。</param>
+        /// <param name="keyToChunkIndex">Function to map chunk key to chunk index. 将分块键映射到分块索引的函数。</param>
+        /// <param name="options">Chunk data options. 分块数据选项。</param>
+        /// <exception cref="ArgumentNullException"></exception>
         public static void StreamWriteSync<TKey, TData>(string fileDirectory, string fileName, IEnumerable<TData> data,
             Func<TData, TKey> keySelector, Func<TKey, int> keyToChunkIndex, ChunkDataOptions options = null)
         {

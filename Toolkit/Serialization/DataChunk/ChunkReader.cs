@@ -135,6 +135,14 @@ namespace PowerCellStudio
             ArrayPool<byte>.Shared.Return(lengthBuffer, true);
         }
 
+        /// <summary>
+        /// Reads chunk index info from the index file without reading the associated keys.
+        /// 读取索引文件中的分块索引信息，但不读取关联的键。
+        /// </summary>
+        /// <param name="filePath">Path to the index file. 索引文件的路径。</param>
+        /// <param name="options">Chunk data options. 分块数据选项。</param>
+        /// <typeparam name="TKey">Type of the chunk key. 分块键的类型。</typeparam>
+        /// <returns>Sequence of chunk index info tuples. 分块索引信息元组的序列。</returns>
         public static IEnumerable<(int index, long offset, TKey[] keys)> ReadIndexFileWithoutKeyBytes<TKey>(string filePath, ChunkDataOptions options = null)
         {
             if (!File.Exists(filePath)) yield break;
