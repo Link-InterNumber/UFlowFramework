@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
@@ -40,8 +41,7 @@ namespace PowerCellStudio.Editor
             }
         }
 
-        public void ShowBundle(BundleReferenceQueryer queryer, string bundleName,
-            BundleDefectDetectorBox defectDetectorBox)
+        public void ShowBundle(BundleReferenceQueryer queryer, string bundleName, BundleDefectDetectorBox defectDetectorBox, bool isSimplifyMode)
         {
             ClearGraph();
             if (queryer == null || string.IsNullOrEmpty(bundleName))
@@ -51,13 +51,15 @@ namespace PowerCellStudio.Editor
             if (group?.bundleNames == null || !group.bundleNames.Contains(bundleName))
                 return;
             
+            // 构建节点
             var nodeMap = new Dictionary<string, BundleReferenceBundleNode>();
             var assetNodeMap = new Dictionary<string, BundleReferenceBundleNode.AssetReferenceNode>();
+            group.defectInfos.Clear();
             foreach (var visibleBundle in group.bundleNames)
             {
                 var bundleInfo = queryer.GetBundleData(visibleBundle);
                 defectDetectorBox.DetectBundle(bundleInfo, queryer);
-                var node = new BundleReferenceBundleNode(bundleInfo);
+                var node = new BundleReferenceBundleNode(bundleInfo, isSimplifyMode);
                 nodeMap.Add(visibleBundle, node);
                 _bundleNodeMap[visibleBundle] = node;
                 AddElement(node);
@@ -67,30 +69,61 @@ namespace PowerCellStudio.Editor
                     assetNodeMap[assetPair.Key] = assetPair.Value;
             }
 
-            foreach (var bundleNameInGroup in group.bundleNames)
+            if (!isSimplifyMode)
             {
-                var bundleInfo = queryer.GetBundleData(bundleNameInGroup);
-                if (bundleInfo.assets == null)
-                    continue;
-
-                foreach (var asset in bundleInfo.assets)
+                // 建立节点之间的连接
+                foreach (var bundleNameInGroup in group.bundleNames)
                 {
-                    if (asset == null || !assetNodeMap.TryGetValue(asset.assetPath, out var sourceNode))
+                    var bundleInfo = queryer.GetBundleData(bundleNameInGroup);
+                    if (bundleInfo.assets == null)
                         continue;
 
-                    if (asset.assetDependent == null)
-                        continue;
-                    foreach (var dependencyPath in asset.assetDependent)
+                    foreach (var asset in bundleInfo.assets)
                     {
-                        if (!assetNodeMap.TryGetValue(dependencyPath, out var targetNode))
+                        if (asset == null || !assetNodeMap.TryGetValue(asset.assetPath, out var sourceNode))
                             continue;
-                        AddElement(sourceNode.OutputPort.ConnectTo(targetNode.InputPort));
+
+                        if (asset.assetDependent == null)
+                            continue;
+                        foreach (var dependencyPath in asset.assetDependent)
+                        {
+                            if (!assetNodeMap.TryGetValue(dependencyPath, out var targetNode))
+                                continue;
+                            AddElement(sourceNode.OutputPort.ConnectTo(targetNode.InputPort));
+                        }
                     }
                 }
             }
+
             var data = group.bundleNames.ToDictionary(name => name, name => queryer.GetBundleData(name));
             Layout(data, nodeMap);
             FocusBundle(nodeMap, bundleName);
+            
+            // 在界面右上角生成 group.defectInfos 的提示按钮
+            if (group.defectInfos != null && group.defectInfos.Count > 0)
+            {
+                foreach (var groupDefectInfo in group.defectInfos)
+                {
+                    var tag = groupDefectInfo.Key;
+                    var info = groupDefectInfo.Value;
+                    
+                    var defectInfoButton = new Button(null);
+                    
+                    defectInfoButton.text = tag;
+                    var toolTipSb = new StringBuilder();
+                    toolTipSb.AppendLine(info.toolTips);
+                    toolTipSb.AppendLine("bundle列表：");
+                    toolTipSb.Append("    ");
+                    toolTipSb.Append(string.Join("\n    ", info.bundleNames));
+                    defectInfoButton.tooltip = toolTipSb.ToString();
+                    defectInfoButton.style.backgroundColor = BundleReferenceUtils.GetDefectColor(info.level);
+                    defectInfoButton.style.position = Position.Absolute;
+                    defectInfoButton.style.top = 10f;
+                    defectInfoButton.style.right = 10f;
+                    Add(defectInfoButton);
+                }
+
+            }
         }
 
         public void ClearGraph()

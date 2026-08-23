@@ -22,6 +22,8 @@ namespace PowerCellStudio.Editor
 
     public struct GroupDefectInfo
     {
+        public DefectLevel level;
+        
         public int count;
         
         public string toolTips;

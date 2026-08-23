@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿using System;
+using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -26,6 +27,8 @@ namespace PowerCellStudio.Editor
         private BundleDefectDetectorBox _defectDetectorBox;
         private int _analysisVersion;
         private int _groupDetectionVersion;
+        private Func<bool> _simplifyModeFun;
+        public bool isSimplifyMode => this._simplifyModeFun != null && this._simplifyModeFun();
 
         private void OnEnable()
         {
@@ -97,10 +100,18 @@ namespace PowerCellStudio.Editor
                 text = "重新布局"
             };
             toolbar.Add(relayoutButton);
+            
+            var simplifyModeToggle = new Toggle("简化模式")
+            {
+                tooltip = "启用后，图中只显示 Bundle 节点引用关系，不显示 Asset 节点引用关系",
+            };
+            _simplifyModeFun = () => simplifyModeToggle.value;
+            toolbar.Add(simplifyModeToggle);
+
             return toolbar;
         }
 
-        private void GenerateGraph()
+        private void GenerateGraph()  
         {
             var analysisVersion = ++_analysisVersion;
             DisposeQueryer();
@@ -234,7 +245,7 @@ namespace PowerCellStudio.Editor
         private void SelectBundle(string bundleName)
         {
             _selectedBundleName = bundleName;
-            _graphView.ShowBundle(_queryer, _selectedBundleName, _defectDetectorBox);
+            _graphView.ShowBundle(_queryer, _selectedBundleName, _defectDetectorBox, isSimplifyMode);
         }
 
         private void ReadAnalysisFile()

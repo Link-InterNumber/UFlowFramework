@@ -76,7 +76,6 @@ namespace PowerCellStudio.Editor
             }
             var group = queryer.GetGroupByBundle(data.bundleName);
             var defectInfos = group?.defectInfos;
-            defectInfos?.Clear();
             for (var i = 0; i < detectors.Count; i++)
             {
                 var detector = detectors[i];
@@ -93,6 +92,7 @@ namespace PowerCellStudio.Editor
                 {
                     defectInfos[detector.tag] = new GroupDefectInfo
                     {
+                        level = detector.defectLevel,
                         count = 1,
                         bundleNames = new List<string> { data.bundleName },
                         tag = detector.tag,

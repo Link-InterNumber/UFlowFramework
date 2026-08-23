@@ -17,6 +17,10 @@ namespace PowerCellStudio.Editor
 
         public string BundleName { get; }
         public float ContainerHeight { get; }
+        
+        public Port InputPort { get; }
+        public Port OutputPort { get; }
+        
         public IReadOnlyDictionary<string, AssetReferenceNode> AssetNodes => _assetNodes;
 
         private readonly Dictionary<string, AssetReferenceNode> _assetNodes;
@@ -24,7 +28,7 @@ namespace PowerCellStudio.Editor
         private static Capabilities _capabilities =
             ~(Capabilities.Deletable | Capabilities.Copiable);
 
-        public BundleReferenceBundleNode(BundleReferenceData data)
+        public BundleReferenceBundleNode(BundleReferenceData data, bool isSimplifyMode)
         {
             BundleName = data?.bundleName ?? string.Empty;
             _assetNodes = new Dictionary<string, AssetReferenceNode>();
@@ -40,7 +44,7 @@ namespace PowerCellStudio.Editor
             if (data.defectLevel > DefectLevel.None)
             {
                 var label2 = new Label("缺陷");
-                label2.text = $"缺陷等级: {GetDefectLevelText(data.defectLevel)}";
+                label2.text = $"缺陷等级: {BundleReferenceUtils.GetDefectLevelText(data.defectLevel)}";
                 var label3 = new Label();
                 label3.text = $"缺陷内容: {string.Join("、", data.tags)}";
                 contentContainer.Add(label2);
@@ -49,28 +53,64 @@ namespace PowerCellStudio.Editor
 
             ApplyDefectStyle(data?.defectLevel ?? DefectLevel.None);
 
-            var assets = data?.assets;
-            var assetCount = 0;
-            if (assets != null)
+            if (isSimplifyMode)
             {
-                for (var i = 0; i < assets.Count; i++)
+                InputPort = InstantiatePort(Orientation.Horizontal, Direction.Input,
+                    Port.Capacity.Multi, typeof(bool));
+                InputPort.portName = "被引用";
+                inputContainer.Add(InputPort);
+
+                OutputPort = InstantiatePort(Orientation.Horizontal, Direction.Output,
+                    Port.Capacity.Multi, typeof(bool));
+                OutputPort.portName = "引用";
+                outputContainer.Add(OutputPort);
+                
+                var scrollView = new ScrollView(ScrollViewMode.Vertical);
+                scrollView.style.flexDirection = FlexDirection.Column;
+                scrollView.style.height = 200f;
+                scrollView.style.width = ResourceNodeWidth;
+                ContainerHeight = 200f + HeaderHeight;
+                
+                var assets = data?.assets;
+                if (assets != null)
                 {
-                    var asset = assets[i];
-                    if (asset == null || string.IsNullOrEmpty(asset.assetPath))
-                        continue;
-
-                    var assetNode = new AssetReferenceNode(asset);
-                    _assetNodes[asset.assetPath] = assetNode;
-                    contentContainer.Add(assetNode);
-                    assetCount++;
+                    for (var i = 0; i < assets.Count; i++)
+                    {
+                        var asset = assets[i];
+                        var assetLabel = new Label();
+                        var assetPath = asset.assetPath;
+                        assetLabel.text = assetPath;
+                        assetLabel.RegisterCallback<MouseDownEvent>(_ => BundleReferenceUtils.PingAsset(assetPath));
+                        scrollView.Add(assetLabel);
+                    }
                 }
+                contentContainer.Add(scrollView);
             }
+            else
+            {
+                var assets = data?.assets;
+                var assetCount = 0;
+                if (assets != null)
+                {
+                    for (var i = 0; i < assets.Count; i++)
+                    {
+                        var asset = assets[i];
+                        if (asset == null || string.IsNullOrEmpty(asset.assetPath))
+                            continue;
 
-            ContainerHeight = Mathf.Max(HeaderHeight + 16f,
-                HeaderHeight + assetCount * (ResourceNodeHeight + ResourceGap) + 10f);
-            style.height = ContainerHeight;
-            style.minHeight = ContainerHeight;
-            style.maxHeight = ContainerHeight;
+                        var assetNode = new AssetReferenceNode(asset);
+                        _assetNodes[asset.assetPath] = assetNode;
+                        contentContainer.Add(assetNode);
+                        assetCount++;
+                    }
+                }
+
+                ContainerHeight = Mathf.Max(HeaderHeight + 16f,
+                    HeaderHeight + assetCount * (ResourceNodeHeight + ResourceGap) + 10f);
+                style.height = ContainerHeight;
+                style.minHeight = ContainerHeight;
+                style.maxHeight = ContainerHeight;
+            }
             RefreshExpandedState();
         }
 
@@ -84,7 +124,7 @@ namespace PowerCellStudio.Editor
 
         private void ApplyDefectStyle(DefectLevel level)
         {
-            var color = GetDefectColor(level);
+            var color = BundleReferenceUtils.GetDefectColor(level);
             if (color.a <= 0f)
                 return;
 
@@ -103,7 +143,7 @@ namespace PowerCellStudio.Editor
             return $"Bundle: {data.bundleName}\n" +
                    $"依赖: {data.bundleDependent?.Count ?? 0}\n" +
                    $"被引用: {data.bundleReferenced?.Count ?? 0}\n" +
-                   $"缺陷等级: {GetDefectLevelText(data.defectLevel)}\n" +
+                   $"缺陷等级: {BundleReferenceUtils.GetDefectLevelText(data.defectLevel)}\n" +
                    $"缺陷内容: {defects}";
         }
 
@@ -152,45 +192,12 @@ namespace PowerCellStudio.Editor
                 OutputPort.portName = "引用";
                 outputContainer.Add(OutputPort);
 
-                RegisterCallback<MouseDownEvent>(_ => PingAsset(AssetPath));
+                RegisterCallback<MouseDownEvent>(_ => BundleReferenceUtils.PingAsset(AssetPath));
                 RefreshExpandedState();
             }
         }
 
-        private static void PingAsset(string assetPath)
-        {
-            if (string.IsNullOrEmpty(assetPath))
-                return;
 
-            var asset = AssetDatabase.LoadMainAssetAtPath(assetPath);
-            if (asset == null)
-                return;
-
-            // Selection.activeObject = asset;
-            EditorGUIUtility.PingObject(asset);
-        }
-
-        private static Color GetDefectColor(DefectLevel level)
-        {
-            if ((level & DefectLevel.High) != 0)
-                return new Color(0.75f, 0.18f, 0.18f, 1f);
-            if ((level & DefectLevel.Medium) != 0)
-                return new Color(0.85f, 0.52f, 0.12f, 1f);
-            if ((level & DefectLevel.Low) != 0)
-                return new Color(0.72f, 0.65f, 0.12f, 1f);
-            return Color.clear;
-        }
-
-        private static string GetDefectLevelText(DefectLevel level)
-        {
-            if ((level & DefectLevel.High) != 0)
-                return "高";
-            if ((level & DefectLevel.Medium) != 0)
-                return "中";
-            if ((level & DefectLevel.Low) != 0)
-                return "低";
-            return "无";
-        }
 
     }
 }
