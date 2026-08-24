@@ -8,7 +8,7 @@ namespace PowerCellStudio.Editor
 {
     public class BundleReferenceAnalyzer : IDisposable
     {
-        [MenuItem("Test/Analyze All Bundles", priority = 100)]
+        [MenuItem("Tools/UFlow/Analyze All Bundles", priority = 100)]
         public static void ReferenceAnalyzerEditorHandler()
         {
             _ = RunAnalysisAsync();
