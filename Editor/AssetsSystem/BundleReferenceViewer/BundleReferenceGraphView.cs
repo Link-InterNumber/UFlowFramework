@@ -4,6 +4,7 @@ using System.Text;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace PowerCellStudio.Editor
@@ -212,8 +213,22 @@ namespace PowerCellStudio.Editor
 
         public void ClearGraph()
         {
-            DeleteElements(edges.ToList());
-            DeleteElements(_bundleNodeMap.Values.Cast<GraphElement>().ToList());
+            var elements = ListPool<GraphElement>.Get();
+            try
+            {
+                foreach (var edge in edges)
+                    elements.Add(edge);
+                DeleteElements(elements);
+                elements.Clear();
+
+                foreach (var node in _bundleNodeMap.Values)
+                    elements.Add(node);
+                DeleteElements(elements);
+            }
+            finally
+            {
+                ListPool<GraphElement>.Release(elements);
+            }
             _bundleNodeMap.Clear();
             foreach (var tipButton in _tipButtons)
             {

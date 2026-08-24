@@ -16,6 +16,12 @@ namespace PowerCellStudio.Editor
             groupName = null;
             if (bundleNames != null) HashSetPool<string>.Release(bundleNames);
             bundleNames = null;
+            if (defectInfos != null)
+            {
+                foreach (var defectInfo in defectInfos.Values)
+                    defectInfo.bundleNames?.Clear();
+                defectInfos.Clear();
+            }
             defectInfos = null;
         }
     }

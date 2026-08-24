@@ -26,14 +26,11 @@ namespace PowerCellStudio.Editor
         public void Dispose()
         {
             bundleName = null;
-            if (assets != null)
-                for (var i = 0; i < assets.Count; i++)
-                    assets[i].Dispose();
-            // assets?.Clear();
+            // 资产对象由 BundleReferenceQueryer 的全局资产字典统一释放，
+            // 避免同一 AssetReferenceData 被 Bundle 和全局字典重复归还对象池。
+            assets?.Clear();
             assets = null;
             Inactivate();
-            // if (tags != null) tags.Clear();
-            tags = null;
         }
 
         public void Activate()

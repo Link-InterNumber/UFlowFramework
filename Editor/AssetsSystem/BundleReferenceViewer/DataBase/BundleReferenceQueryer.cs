@@ -28,7 +28,7 @@ namespace PowerCellStudio.Editor
             {
                 foreach (var keyValuePair in _bundleReferenceDict)
                     keyValuePair.Value.Dispose();
-                // _bundleReferenceDict.Clear();
+                _bundleReferenceDict.Clear();
                 _bundleReferenceDict = null;
             }
 
@@ -36,15 +36,15 @@ namespace PowerCellStudio.Editor
             {
                 foreach (var keyValuePair in _bundleReferenceGroupDict)
                     keyValuePair.Value.Dispose();
-                // _bundleReferenceGroupDict.Clear();
+                _bundleReferenceGroupDict.Clear();
                 _bundleReferenceGroupDict = null;
             }
             
             if (_assetReferenceDict != null)
             {
-                // foreach (var keyValuePair in _assetReferenceDict)
-                //     keyValuePair.Value.Dispose();
-                // _assetReferenceDict.Clear();
+                foreach (var keyValuePair in _assetReferenceDict)
+                    keyValuePair.Value.Dispose();
+                _assetReferenceDict.Clear();
                 _assetReferenceDict = null;
             }
 
@@ -153,6 +153,12 @@ namespace PowerCellStudio.Editor
                     dependentData.bundleReferenced.Add(assetData.assetPath);
                     _assetReferenceDict[se] = dependentData;
                 }
+            }
+
+            if (!_assetReferenceDict.TryGetValue(assetData.assetPath, out var registeredData) ||
+                !ReferenceEquals(registeredData, assetData))
+            {
+                assetData.Dispose();
             }
         }
 

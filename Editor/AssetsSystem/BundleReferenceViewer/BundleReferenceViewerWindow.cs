@@ -137,6 +137,9 @@ namespace PowerCellStudio.Editor
             DisposeQueryer();
             _defectDetectorBox?.Dispose();
             _defectDetectorBox = null;
+            _groupListItems.Clear();
+            if (_groupListPanel != null)
+                _groupListPanel.itemsSource = null;
             _listPanel = null;
             _groupListPanel = null;
             _groupCountLabel = null;
@@ -301,7 +304,12 @@ namespace PowerCellStudio.Editor
             _analysisVersion++;
             _groupDetectionVersion++;
             DisposeQueryer();
-            _groupListPanel?.Clear();
+            _groupListItems.Clear();
+            if (_groupListPanel != null)
+            {
+                _groupListPanel.itemsSource = _groupListItems;
+                _groupListPanel.Rebuild();
+            }
             _selectedBundleName = null;
             _graphView.ClearGraph();
         }

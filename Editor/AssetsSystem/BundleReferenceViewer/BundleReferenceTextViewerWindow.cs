@@ -155,8 +155,6 @@ namespace PowerCellStudio.Editor
 
             if (bundleCount == 0)
                 lines.Add("分析文件中没有 Bundle 数据。");
-            else
-                lines.Insert(0, $"Bundle 数量: {bundleCount}\n文件: {path}\n");
 
             return lines;
         }
