@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -98,10 +99,24 @@ namespace PowerCellStudio.Editor
                     await Task.Yield();
                 }
 
-                foreach (var bundleName in bundleReferenceGroup.bundleNames)
+                var bundleNames = bundleReferenceGroup.bundleNames.ToArray();
+                var detectionTasks = new Task<List<GroupDefectInfo>>[bundleNames.Length];
+                for (var i = 0; i < bundleNames.Length; i++)
                 {
-                    var bundleInfo = _queryer.GetBundleData(bundleName);
-                    _defectDetectorBox.DetectBundle(bundleInfo, _queryer);
+                    var bundleInfo = _queryer.GetBundleData(bundleNames[i]);
+                    detectionTasks[i] = Task.Run(() =>
+                    {
+                        using var detectorBox = new BundleDefectDetectorBox();
+                        return detectorBox.EvaluateBundle(bundleInfo, _queryer);
+                    });
+                }
+
+                var detectionResults = await Task.WhenAll(detectionTasks);
+                for (var i = 0; i < bundleNames.Length; i++)
+                {
+                    var bundleInfo = _queryer.GetBundleData(bundleNames[i]);
+                    ApplyDetectionResults(bundleInfo, detectionResults[i], _queryer);
+                    processedBundleCount++;
 
                     if (EditorUtility.DisplayCancelableProgressBar(
                             "Bundle 分析",
@@ -127,6 +142,48 @@ namespace PowerCellStudio.Editor
             var filePath = $"{QueryerFactory.serializedAssetDirectory}/{DateTime.Now:yyyyMMddHHmmss}.bin";
             QueryerFactory.SaveSerializedDataFromQueryer(_queryer, filePath);
             EditorUtility.DisplayDialog("分析完成", $"分析完成，数据已保存到 {filePath}", "OK");
+        }
+
+        private static void ApplyDetectionResults(
+            BundleReferenceData bundleInfo,
+            List<GroupDefectInfo> results,
+            BundleReferenceQueryer queryer)
+        {
+            if (bundleInfo == null)
+                return;
+
+            bundleInfo.defectLevel = DefectLevel.None;
+            if (bundleInfo.tags == null)
+                bundleInfo.tags = new List<string>();
+            else
+                bundleInfo.tags.Clear();
+
+            var group = queryer?.GetGroupByBundle(bundleInfo.bundleName);
+            if (results == null)
+                return;
+
+            for (var i = 0; i < results.Count; i++)
+            {
+                var result = results[i];
+                bundleInfo.defectLevel |= result.level;
+                bundleInfo.tags.Add(result.tag);
+
+                if (group == null || group.defectInfos == null)
+                    continue;
+
+                if (group.defectInfos.TryGetValue(result.tag, out var info))
+                {
+                    info.count += result.count;
+                    if (info.bundleNames == null)
+                        info.bundleNames = new List<string>();
+                    info.bundleNames.AddRange(result.bundleNames);
+                    group.defectInfos[result.tag] = info;
+                }
+                else
+                {
+                    group.defectInfos[result.tag] = result;
+                }
+            }
         }
     }
 }

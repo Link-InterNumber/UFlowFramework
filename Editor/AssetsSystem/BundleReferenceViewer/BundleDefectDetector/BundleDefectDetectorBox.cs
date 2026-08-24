@@ -101,6 +101,31 @@ namespace PowerCellStudio.Editor
                 }
             }
         }
+
+        public List<GroupDefectInfo> EvaluateBundle(BundleReferenceData data, BundleReferenceQueryer queryer)
+        {
+            var results = new List<GroupDefectInfo>();
+            if (data == null || queryer == null || detectors == null)
+                return results;
+
+            for (var i = 0; i < detectors.Count; i++)
+            {
+                var detector = detectors[i];
+                if (!detector.Detect(queryer, data))
+                    continue;
+
+                results.Add(new GroupDefectInfo
+                {
+                    level = detector.defectLevel,
+                    count = 1,
+                    bundleNames = new List<string> { data.bundleName },
+                    tag = detector.tag,
+                    toolTips = detector.toolTips
+                });
+            }
+
+            return results;
+        }
         
     }
 }

@@ -11,7 +11,7 @@ namespace PowerCellStudio.Editor
     public sealed class ReferencesScatteredDefectDetector : IBundleDefectDetector, IDisposable
     {
         public string title => "内部资源被外部多个分包引用";
-        public string toolTips => "Bundle 内资源被外部 Bundle 直接引用，同时又被本 Bundle 的其他资源使用，可能导致加载无关资源并拉长加载链。";
+        public string toolTips => "Bundle 内资源被外部多个 Bundle 直接引用，同时每个分包使用的资源不相同，可能导致加载无关资源并拉长加载链。";
         public string tag => "引用分散或冗余";
         public DefectLevel defectLevel => DefectLevel.Medium;
 
@@ -24,32 +24,48 @@ namespace PowerCellStudio.Editor
             if (bundleData.assets == null || bundleData.assets.Count <= 1)
                 return false;
 
-            var bundleReferencedDict = DictionaryPool<string, int>.Get();
+            var bundleReferencedDict = DictionaryPool<string, HashSet<string>>.Get();
             try
             {
-                foreach (var se in bundleData.bundleReferenced)
-                {
-                    bundleReferencedDict[se] = 0;
-                }
-
                 foreach (var assetReferenceData in bundleData.assets)
                 {
                     if (assetReferenceData?.bundleReferenced == null)
                         continue;
+
                     foreach (var se in assetReferenceData.bundleReferenced)
                     {
-                        var ae = queryer.GetAsset(se);
-                        if (ae == null || string.IsNullOrEmpty(ae.bundleName) ||
-                            !bundleReferencedDict.TryGetValue(ae.bundleName, out var referenceCount))
+                        var referencingAsset = queryer.GetAsset(se);
+                        if (referencingAsset == null ||
+                            string.IsNullOrEmpty(referencingAsset.bundleName) ||
+                            string.Equals(referencingAsset.bundleName, bundleData.bundleName,
+                                StringComparison.OrdinalIgnoreCase) ||
+                            !bundleData.bundleReferenced.Contains(referencingAsset.bundleName))
                             continue;
 
-                        bundleReferencedDict[ae.bundleName] = referenceCount + 1;
+                        if (!bundleReferencedDict.TryGetValue(referencingAsset.bundleName,
+                                out var referencedAssets))
+                        {
+                            referencedAssets = HashSetPool<string>.Get();
+                            bundleReferencedDict.Add(referencingAsset.bundleName, referencedAssets);
+                        }
+
+                        referencedAssets.Add(assetReferenceData.assetPath);
                     }
                 }
 
-                foreach (var referenceCount in bundleReferencedDict.Values)
+                if (bundleReferencedDict.Count < 2)
+                    return false;
+
+                HashSet<string> firstReferencedAssets = null;
+                foreach (var referencedAssets in bundleReferencedDict.Values)
                 {
-                    if (referenceCount > 0)
+                    if (firstReferencedAssets == null)
+                    {
+                        firstReferencedAssets = referencedAssets;
+                        continue;
+                    }
+
+                    if (!firstReferencedAssets.SetEquals(referencedAssets))
                         return true;
                 }
 
@@ -57,7 +73,9 @@ namespace PowerCellStudio.Editor
             }
             finally
             {
-                DictionaryPool<string, int>.Release(bundleReferencedDict);
+                foreach (var referencedAssets in bundleReferencedDict.Values)
+                    HashSetPool<string>.Release(referencedAssets);
+                DictionaryPool<string, HashSet<string>>.Release(bundleReferencedDict);
             }
         }
 

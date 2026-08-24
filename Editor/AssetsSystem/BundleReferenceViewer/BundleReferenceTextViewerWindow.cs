@@ -16,7 +16,8 @@ namespace PowerCellStudio.Editor
     {
         private const string DefaultDirectory = "Analysis";
 
-        private ScrollView _contentView;
+        private ListView _contentView;
+        private readonly List<string> _contentLines = new List<string>();
         private Label _fileLabel;
         private string _currentFilePath;
 
@@ -53,7 +54,26 @@ namespace PowerCellStudio.Editor
             toolbar.Add(_fileLabel);
             rootVisualElement.Add(toolbar);
 
-            _contentView = new ScrollView(ScrollViewMode.Vertical);
+            _contentView = new ListView
+            {
+                makeItem = () =>
+                {
+                    var label = new Label();
+                    label.style.whiteSpace = WhiteSpace.Normal;
+                    return label;
+                },
+                bindItem = (element, index) =>
+                {
+                    var label = (Label)element;
+                    label.text = _contentLines[index];
+                    label.style.unityFontStyleAndWeight = index == 0
+                        ? FontStyle.Bold
+                        : FontStyle.Normal;
+                },
+                itemsSource = _contentLines,
+                fixedItemHeight = 18f,
+                selectionType = SelectionType.None
+            };
             _contentView.style.flexGrow = 1f;
             _contentView.style.paddingLeft = 8f;
             _contentView.style.paddingRight = 8f;
@@ -146,16 +166,15 @@ namespace PowerCellStudio.Editor
             if (_contentView == null)
                 return;
 
-            _contentView.Clear();
-            for (var i = 0; i < lines.Count; i++)
+            _contentLines.Clear();
+            if (lines != null)
             {
-                var label = new Label(lines[i]);
-                label.style.whiteSpace = WhiteSpace.Normal;
-                label.style.unityFontStyleAndWeight = i == 0
-                    ? FontStyle.Bold
-                    : FontStyle.Normal;
-                _contentView.Add(label);
+                for (var i = 0; i < lines.Count; i++)
+                    _contentLines.Add(lines[i] ?? string.Empty);
             }
+
+            _contentView.itemsSource = _contentLines;
+            _contentView.Rebuild();
         }
 
         private void ClearContent()
@@ -163,7 +182,8 @@ namespace PowerCellStudio.Editor
             _currentFilePath = null;
             if (_fileLabel != null)
                 _fileLabel.text = "未打开文件";
-            _contentView?.Clear();
+            _contentLines.Clear();
+            _contentView?.Rebuild();
         }
 
         private void OnDisable()

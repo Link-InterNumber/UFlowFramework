@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
+// using UnityEditor;
 
 namespace PowerCellStudio.Editor
 {
@@ -24,20 +24,6 @@ namespace PowerCellStudio.Editor
                 return false;
             if (bundleData.bundleReferenced == null || bundleData.bundleReferenced.Count != 1)
                 return false;
-
-            if (bundleData.assets == null)
-            {
-                var assets = AssetDatabase.GetAssetPathsFromAssetBundle(bundleData.bundleName);
-                var assetData = new List<AssetReferenceData>();
-                for (var i = 0; i < assets.Length; i++)
-                {
-                    var d = AssetReferenceCollector.FindDirectReferences(bundleData.bundleName, assets[i]);
-                    if (d == null) continue;
-                    assetData.Add(d);
-                }
-                bundleData.assets = assetData;
-                queryer.SetAssets(bundleData.bundleName, bundleData.assets);
-            }
 
             return bundleData.assets?.Count == 1;
         }

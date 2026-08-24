@@ -16,6 +16,7 @@ namespace PowerCellStudio.Editor
         private static readonly Color CanvasColor = new Color(0.3f, 0.3f, 0.3f, 1f);
         private readonly Dictionary<string, BundleReferenceBundleNode> _bundleNodeMap =
             new Dictionary<string, BundleReferenceBundleNode>();
+        private List<Button> _tipButtons = new List<Button>();
 
         public BundleReferenceGraphView()
         {
@@ -41,21 +42,41 @@ namespace PowerCellStudio.Editor
             }
         }
 
-        public void ShowBundle(BundleReferenceQueryer queryer, string bundleName, BundleDefectDetectorBox defectDetectorBox, bool isSimplifyMode)
+        public void ShowBundle(BundleReferenceQueryer queryer, string bundleName,
+            BundleDefectDetectorBox defectDetectorBox, bool isSimplifyMode, int referenceDepth)
         {
-            ClearGraph();
-            if (queryer == null || string.IsNullOrEmpty(bundleName))
+            var group = queryer?.GetGroupByBundle(bundleName);
+            var visibleBundles = group == null
+                ? null
+                : CollectVisibleBundles(queryer, group, bundleName, referenceDepth);
+            ShowBundles(queryer, group, visibleBundles, bundleName, defectDetectorBox, isSimplifyMode);
+        }
+
+        public void ShowGroup(BundleReferenceQueryer queryer, string groupName,
+            BundleDefectDetectorBox defectDetectorBox, bool isSimplifyMode)
+        {
+            if (queryer == null || string.IsNullOrEmpty(groupName))
                 return;
 
-            var group = queryer.GetGroupByBundle(bundleName);
-            if (group?.bundleNames == null || !group.bundleNames.Contains(bundleName))
+            if (!queryer.GetAllGroups().TryGetValue(groupName, out var group))
+                return;
+
+            ShowBundles(queryer, group, group.bundleNames, null, defectDetectorBox, isSimplifyMode);
+        }
+
+        private void ShowBundles(BundleReferenceQueryer queryer, BundleReferenceGroup group,
+            IReadOnlyCollection<string> visibleBundles, string focusedBundleName,
+            BundleDefectDetectorBox defectDetectorBox, bool isSimplifyMode)
+        {
+            ClearGraph();
+            if (queryer == null || group?.bundleNames == null || visibleBundles == null || visibleBundles.Count == 0)
                 return;
             
             // 构建节点
             var nodeMap = new Dictionary<string, BundleReferenceBundleNode>();
             var assetNodeMap = new Dictionary<string, BundleReferenceBundleNode.AssetReferenceNode>();
             group.defectInfos.Clear();
-            foreach (var visibleBundle in group.bundleNames)
+            foreach (var visibleBundle in visibleBundles)
             {
                 var bundleInfo = queryer.GetBundleData(visibleBundle);
                 defectDetectorBox.DetectBundle(bundleInfo, queryer);
@@ -72,7 +93,7 @@ namespace PowerCellStudio.Editor
             if (!isSimplifyMode)
             {
                 // 建立节点之间的连接
-                foreach (var bundleNameInGroup in group.bundleNames)
+                foreach (var bundleNameInGroup in visibleBundles)
                 {
                     var bundleInfo = queryer.GetBundleData(bundleNameInGroup);
                     if (bundleInfo.assets == null)
@@ -94,14 +115,36 @@ namespace PowerCellStudio.Editor
                     }
                 }
             }
+            else
+            {
+                // 建立节点之间的连接
+                foreach (var bundleNameInGroup in visibleBundles)
+                {
+                    var bundleInfo = queryer.GetBundleData(bundleNameInGroup);
+                    if (bundleInfo.bundleDependent == null)
+                        continue;
 
-            var data = group.bundleNames.ToDictionary(name => name, name => queryer.GetBundleData(name));
+                    foreach (var dependencyBundle in bundleInfo.bundleDependent)
+                    {
+                        if (!nodeMap.TryGetValue(dependencyBundle, out var targetNode))
+                            continue;
+                        AddElement(nodeMap[bundleNameInGroup].OutputPort.ConnectTo(targetNode.InputPort));
+                    }
+                }
+            }
+
+            var data = visibleBundles.ToDictionary(name => name, name => queryer.GetBundleData(name));
             Layout(data, nodeMap);
-            FocusBundle(nodeMap, bundleName);
+            if (!string.IsNullOrEmpty(focusedBundleName))
+                FocusBundle(nodeMap, focusedBundleName);
             
             // 在界面右上角生成 group.defectInfos 的提示按钮
             if (group.defectInfos != null && group.defectInfos.Count > 0)
             {
+                var index = 0;
+                var topPadding = 10f;
+                var rightPadding = 10f;
+                var space = 15f;
                 foreach (var groupDefectInfo in group.defectInfos)
                 {
                     var tag = groupDefectInfo.Key;
@@ -118,11 +161,52 @@ namespace PowerCellStudio.Editor
                     defectInfoButton.tooltip = toolTipSb.ToString();
                     defectInfoButton.style.backgroundColor = BundleReferenceUtils.GetDefectColor(info.level);
                     defectInfoButton.style.position = Position.Absolute;
-                    defectInfoButton.style.top = 10f;
-                    defectInfoButton.style.right = 10f;
+                    defectInfoButton.style.top = topPadding + (space + topPadding) * index;
+                    defectInfoButton.style.right = rightPadding;
                     Add(defectInfoButton);
+                    _tipButtons.Add(defectInfoButton);
+                    index++;
                 }
 
+            }
+        }
+
+        private static HashSet<string> CollectVisibleBundles(BundleReferenceQueryer queryer,
+            BundleReferenceGroup group, string bundleName, int referenceDepth)
+        {
+            var result = new HashSet<string> { bundleName };
+            var depth = Mathf.Max(0, referenceDepth);
+            CollectVisibleBundlesInDirection(queryer, group.bundleNames, bundleName, depth, true, result);
+            CollectVisibleBundlesInDirection(queryer, group.bundleNames, bundleName, depth, false, result);
+            return result;
+        }
+
+        private static void CollectVisibleBundlesInDirection(BundleReferenceQueryer queryer,
+            HashSet<string> groupBundles, string startBundle, int maxDepth,
+            bool dependencies, HashSet<string> result)
+        {
+            if (maxDepth <= 0)
+                return;
+
+            var queue = new Queue<(string bundleName, int depth)>();
+            queue.Enqueue((startBundle, 0));
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                if (current.depth >= maxDepth)
+                    continue;
+
+                var data = queryer.GetBundleData(current.bundleName);
+                var neighbors = dependencies ? data.bundleDependent : data.bundleReferenced;
+                if (neighbors == null)
+                    continue;
+
+                foreach (var neighbor in neighbors)
+                {
+                    if (!groupBundles.Contains(neighbor) || !result.Add(neighbor))
+                        continue;
+                    queue.Enqueue((neighbor, current.depth + 1));
+                }
             }
         }
 
@@ -131,6 +215,63 @@ namespace PowerCellStudio.Editor
             DeleteElements(edges.ToList());
             DeleteElements(_bundleNodeMap.Values.Cast<GraphElement>().ToList());
             _bundleNodeMap.Clear();
+            foreach (var tipButton in _tipButtons)
+            {
+                Remove(tipButton);
+            }
+            _tipButtons.Clear();
+        }
+
+        public void HighlightDownstream(Port sourcePort)
+        {
+            ResetAssetNodeHighlight();
+            if (sourcePort == null)
+                return;
+
+            var visitedPorts = new HashSet<Port>();
+            HighlightDownstream(sourcePort, visitedPorts);
+        }
+
+        private void HighlightDownstream(Port sourcePort, HashSet<Port> visitedPorts)
+        {
+            if (sourcePort == null || !visitedPorts.Add(sourcePort))
+                return;
+
+            GetAssetNode(sourcePort.node)?.SetHighlight(true);
+            foreach (var edge in sourcePort.connections)
+            {
+                if (edge == null)
+                    continue;
+
+                GetAssetNode(edge.input?.node)?.SetHighlight(true);
+
+                HighlightDownstream(GetOutputPort(edge.input?.node), visitedPorts);
+            }
+        }
+
+        private static BundleReferenceBundleNode.AssetReferenceNode GetAssetNode(Node node)
+        {
+            return node as BundleReferenceBundleNode.AssetReferenceNode;
+        }
+
+        private static Port GetOutputPort(Node node)
+        {
+            if (node is BundleReferenceBundleNode bundleNode)
+                return bundleNode.OutputPort;
+
+            if (node is BundleReferenceBundleNode.AssetReferenceNode assetNode)
+                return assetNode.OutputPort;
+
+            return null;
+        }
+
+        private void ResetAssetNodeHighlight()
+        {
+            foreach (var node in _bundleNodeMap.Values)
+            {
+                foreach (var assetNode in node.AssetNodes.Values)
+                    assetNode.SetHighlight(false);
+            }
         }
 
         public void Relayout(BundleReferenceQueryer queryer, string bundleName)

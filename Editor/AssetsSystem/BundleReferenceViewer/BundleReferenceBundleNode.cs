@@ -3,6 +3,7 @@ using System.IO;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace PowerCellStudio.Editor
@@ -33,13 +34,23 @@ namespace PowerCellStudio.Editor
             BundleName = data?.bundleName ?? string.Empty;
             _assetNodes = new Dictionary<string, AssetReferenceNode>();
             title = data?.bundleName ?? "Bundle (数据为空)"; // BuildTitle(data);
+            titleContainer.style.flexWrap = Wrap.Wrap;
+            var titleLabel = titleContainer.Q<Label>();
+            if (titleLabel != null)
+            {
+                titleLabel.style.whiteSpace = WhiteSpace.Normal;
+                titleLabel.style.flexGrow = 1f;
+                titleLabel.style.flexShrink = 1f;
+                titleLabel.style.minWidth = 0f;
+            }
+
             style.width = NodeWidth;
             style.backgroundColor = new Color(0.2f, 0.2f, 0.2f, 0.3f);
             // tooltip = BuildTooltip(data);
             capabilities &= _capabilities;
             
             var label = new Label("引用关系");
-            label.text = $"引用 {data.bundleReferenced?.Count ?? 0}  被引用 {data.bundleDependent?.Count ?? 0}";
+            label.text = $"引用 {data.bundleDependent?.Count ?? 0}  被引用 {data.bundleReferenced?.Count ?? 0}";
             contentContainer.Add(label);
             if (data.defectLevel > DefectLevel.None)
             {
@@ -67,9 +78,8 @@ namespace PowerCellStudio.Editor
                 
                 var scrollView = new ScrollView(ScrollViewMode.Vertical);
                 scrollView.style.flexDirection = FlexDirection.Column;
-                scrollView.style.height = 200f;
+                scrollView.style.height = 150f;
                 scrollView.style.width = ResourceNodeWidth;
-                ContainerHeight = 200f + HeaderHeight;
                 
                 var assets = data?.assets;
                 if (assets != null)
@@ -85,6 +95,10 @@ namespace PowerCellStudio.Editor
                     }
                 }
                 contentContainer.Add(scrollView);
+                ContainerHeight = 200f + HeaderHeight;
+                style.height = ContainerHeight;
+                style.minHeight = ContainerHeight;
+                style.maxHeight = ContainerHeight;
             }
             else
             {
@@ -170,6 +184,8 @@ namespace PowerCellStudio.Editor
             private static Capabilities _capabilities =
                 ~(Capabilities.Movable | Capabilities.Deletable | Capabilities.Copiable);
 
+            private const float HighlightOutlineWidth = 2f;
+
             public AssetReferenceNode(AssetReferenceData data)
             {
                 AssetPath = data.assetPath;
@@ -192,12 +208,24 @@ namespace PowerCellStudio.Editor
                 OutputPort.portName = "引用";
                 outputContainer.Add(OutputPort);
 
-                RegisterCallback<MouseDownEvent>(_ => BundleReferenceUtils.PingAsset(AssetPath));
+                RegisterCallback<MouseDownEvent>(OnMouseDown);
                 RefreshExpandedState();
             }
+
+            private void OnMouseDown(MouseDownEvent evt)
+            {
+                BundleReferenceUtils.PingAsset(AssetPath);
+
+                var graphView = GetFirstAncestorOfType<BundleReferenceGraphView>();
+                graphView?.HighlightDownstream(OutputPort);
+            }
+
+            public void SetHighlight(bool highlighted)
+            {
+                style.borderLeftWidth = highlighted ? HighlightOutlineWidth : 0f;
+                style.borderLeftColor = highlighted ? Color.green : Color.clear;
+            }
         }
-
-
 
     }
 }
