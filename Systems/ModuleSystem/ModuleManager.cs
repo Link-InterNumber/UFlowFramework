@@ -180,12 +180,14 @@ namespace PowerCellStudio
             _executionModule.Clear();
             _laterExecutionModule.Clear();
             _fixedExecutionModule.Clear();
-            moduleInfos.Clear();
             _modules = null;
             _executionModule = null;
             _laterExecutionModule = null;
             _fixedExecutionModule = null;
+#if UNITY_EDITOR
+            moduleInfos.Clear();
             moduleInfos = null;
+#endif
         }
 
         private void OnStartGame()

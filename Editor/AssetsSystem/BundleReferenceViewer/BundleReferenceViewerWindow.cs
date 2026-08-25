@@ -38,8 +38,26 @@ namespace PowerCellStudio.Editor
         private void OnEnable()
         {
             _defectDetectorBox = new BundleDefectDetectorBox();
-            
+
+            rootVisualElement.style.paddingLeft = 8f;
+            rootVisualElement.style.paddingRight = 8f;
+            rootVisualElement.style.paddingTop = 6f;
+            rootVisualElement.style.paddingBottom = 8f;
+            rootVisualElement.style.backgroundColor = new Color(0.12f, 0.12f, 0.12f, 1f);
             rootVisualElement.style.flexDirection = FlexDirection.Column;
+            var header = new VisualElement();
+            header.style.marginBottom = 6f;
+            var title = new Label("Bundle 引用关系");
+            title.style.fontSize = 16f;
+            title.style.unityFontStyleAndWeight = FontStyle.Bold;
+            title.style.color = new Color(0.88f, 0.92f, 0.98f, 1f);
+            header.Add(title);
+            var subtitle = new Label("分析当前项目 Bundle 的资源依赖、引用关系和潜在问题。");
+            subtitle.style.fontSize = 11f;
+            subtitle.style.marginTop = 2f;
+            subtitle.style.color = new Color(0.62f, 0.66f, 0.72f, 1f);
+            header.Add(subtitle);
+            rootVisualElement.Add(header);
             rootVisualElement.Add(CreateToolbar());
 
             var content = new VisualElement();
@@ -51,6 +69,10 @@ namespace PowerCellStudio.Editor
             _listPanel.style.minWidth = 220f;
             _listPanel.style.maxWidth = 600f;
             _listPanel.style.flexShrink = 0f;
+            _listPanel.style.paddingLeft = 8f;
+            _listPanel.style.paddingRight = 8f;
+            _listPanel.style.paddingTop = 6f;
+            _listPanel.style.backgroundColor = new Color(0.16f, 0.17f, 0.2f, 0.95f);
             _listPanel.style.borderRightWidth = 1f;
             _listPanel.style.borderRightColor = new Color(0.25f, 0.25f, 0.25f);
 
@@ -59,12 +81,14 @@ namespace PowerCellStudio.Editor
             listTitle.style.paddingLeft = 8f;
             listTitle.style.paddingTop = 6f;
             listTitle.style.paddingBottom = 6f;
+            listTitle.style.color = new Color(0.88f, 0.92f, 0.98f, 1f);
             _listPanel.Add(listTitle);
 
             _groupCountLabel = new Label();
             _groupCountLabel.style.paddingLeft = 8f;
             _groupCountLabel.style.paddingTop = 4f;
             _groupCountLabel.style.paddingBottom = 4f;
+            _groupCountLabel.style.color = new Color(0.62f, 0.68f, 0.78f, 1f);
             _listPanel.Add(_groupCountLabel);
 
             _groupListPanel = new ListView
@@ -80,6 +104,8 @@ namespace PowerCellStudio.Editor
             _listPanelResizer = CreateListPanelResizer(content);
 
             _graphView = new BundleReferenceGraphView();
+            _graphView.style.marginLeft = 8f;
+            _graphView.style.backgroundColor = new Color(0.2f, 0.22f, 0.26f, 1f);
             content.Add(_listPanel);
             content.Add(_listPanelResizer);
             content.Add(_graphView);
@@ -97,7 +123,7 @@ namespace PowerCellStudio.Editor
             resizer.style.minWidth = 8f;
             resizer.style.maxWidth = 8f;
             resizer.style.flexShrink = 0f;
-            resizer.style.backgroundColor = new Color(0.18f, 0.18f, 0.18f);
+            resizer.style.backgroundColor = new Color(0.22f, 0.25f, 0.3f, 1f);
 
             resizer.RegisterCallback<MouseDownEvent>(evt =>
             {
@@ -230,11 +256,18 @@ namespace PowerCellStudio.Editor
         private VisualElement CreateToolbar()
         {
             var toolbar = new  UnityEditor.UIElements.Toolbar();
+            toolbar.style.paddingLeft = 6f;
+            toolbar.style.paddingRight = 6f;
+            toolbar.style.paddingTop = 4f;
+            toolbar.style.paddingBottom = 4f;
+            toolbar.style.marginBottom = 8f;
+            toolbar.style.height = 28f;
             _searchField = new TextField("搜索 Bundle")
             {
                 tooltip = "输入 Bundle 名称进行模糊搜索"
             };
             _searchField.style.minWidth = 260f;
+            _searchField.style.flexGrow = 1f;
             _searchField.RegisterValueChangedCallback(_ => RebuildGroupList());
             toolbar.Add(_searchField);
 

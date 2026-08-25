@@ -11,26 +11,49 @@ namespace PowerCellStudio.Editor
 
         internal static void PrepareManifest(string bundleDi, string manifestName)
         {
+            ClearManifest();
+
+            if (string.IsNullOrWhiteSpace(bundleDi) || string.IsNullOrWhiteSpace(manifestName))
+            {
+                EditorUtility.DisplayDialog("参数不完整", "Bundle 目录和 Manifest 名称不能为空.", "OK");
+                return;
+            }
+
+            bundleDi = Path.GetFullPath(bundleDi);
             if (!Directory.Exists(bundleDi))
             {
                 EditorUtility.DisplayDialog("目标文件夹不存在", $"文件夹 {bundleDi} 不存在.", "OK");
                 return;
             }
 
-            bundleDirectory = bundleDi;
-            var manifestBundle = AssetBundle.LoadFromFile($"{bundleDi}/{manifestName}.bundle");
+            var manifestPath = Path.Combine(bundleDi, $"{manifestName}");
+            var manifestBundle = AssetBundle.LoadFromFile(manifestPath);
             if (manifestBundle == null)
             {
                 EditorUtility.DisplayDialog("AssetBundleManifest 不存在", $"AssetBundleManifest分包 {manifestName} 不存在.", "OK");
                 return;
             }
-            manifest = manifestBundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
-            manifestBundle.Unload(false);
+            try
+            {
+                manifest = manifestBundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
+                if (manifest == null)
+                {
+                    EditorUtility.DisplayDialog("AssetBundleManifest 读取失败", "目标分包中不存在 AssetBundleManifest 资源.", "OK");
+                    return;
+                }
+
+                bundleDirectory = bundleDi;
+            }
+            finally
+            {
+                manifestBundle.Unload(false);
+            }
         }
         
         internal static void ClearManifest()
         {
-            Resources.UnloadAsset(manifest);
+            if (manifest != null)
+                Resources.UnloadAsset(manifest);
             manifest = null;
             bundleDirectory = null;
             var loadedBundles = AssetBundle.GetAllLoadedAssetBundles();

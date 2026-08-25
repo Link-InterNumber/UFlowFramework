@@ -102,7 +102,7 @@ namespace PowerCellStudio.Editor
 
                     foreach (var asset in bundleInfo.assets)
                     {
-                        if (asset == null || !assetNodeMap.TryGetValue(asset.assetPath, out var sourceNode))
+                        if (asset == null || asset.assetPath == null || !assetNodeMap.TryGetValue(asset.assetPath, out var sourceNode))
                             continue;
 
                         if (asset.assetDependent == null)
