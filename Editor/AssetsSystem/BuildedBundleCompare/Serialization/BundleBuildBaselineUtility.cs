@@ -73,7 +73,7 @@ namespace PowerCellStudio.Editor
         internal static List<BundleBuildBaselineInfo> CreateFrom(
             string directory,
             string manifestName,
-            AssetBundleManifest manifest)
+            IBundleReferenceManifest manifest)
         {
             if (string.IsNullOrWhiteSpace(directory) || manifest == null)
                 throw new ArgumentException("Bundle 目录和 Manifest 不能为空。");
@@ -84,10 +84,10 @@ namespace PowerCellStudio.Editor
             for (var i = 0; i < names.Length; i++)
             {
                 var bundleName = names[i];
-                var path = BundleReferenceCompareUtility.FindBundlePath(directory, bundleName, manifestName);
+                var path = BundleReferenceManifest.manifest.GetBundlePath(bundleName);
                 var data = BundleReferenceCompareUtility.ReadBuiltAssets(path);
                 cache[bundleName] = data;
-                BundleReferenceCompareUtility.CollectDependencyData(bundleName, directory, manifestName, manifest, cache);
+                BundleReferenceCompareUtility.CollectDependencyData(bundleName, manifest, cache);
                 result.Add(new BundleBuildBaselineInfo
                 {
                     bundleName = bundleName,

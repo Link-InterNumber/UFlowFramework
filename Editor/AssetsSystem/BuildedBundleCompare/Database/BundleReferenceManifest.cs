@@ -1,13 +1,14 @@
 ﻿using System.IO;
 using UnityEditor;
 using UnityEngine;
+// using UnityEngine.Build.Pipeline;
 
 namespace PowerCellStudio.Editor
 {
     public class BundleReferenceManifest
     {
         internal static string bundleDirectory;
-        internal static AssetBundleManifest manifest;
+        internal static IBundleReferenceManifest manifest;
 
         internal static void PrepareManifest(string bundleDi, string manifestName)
         {
@@ -35,13 +36,27 @@ namespace PowerCellStudio.Editor
             }
             try
             {
-                manifest = manifestBundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
-                if (manifest == null)
+                // var compatibilityManifest = manifestBundle.LoadAsset<CompatibilityAssetBundleManifest>(manifestBundle.GetAllAssetNames()[0]);
+                // if (compatibilityManifest == null)
+                // {
+                //     EditorUtility.DisplayDialog("CompatibilityAssetBundleManifest 读取失败", "目标分包中不存在 CompatibilityAssetBundleManifest 资源.", "OK");
+                //     return;
+                // }
+
+                // if (compatibilityManifest != null)
+                // {
+                //     manifest = new CompatibilityBundleReferenceManifest(compatibilityManifest, bundleDi);
+                //     bundleDirectory = bundleDi;
+                //     return;
+                // }
+
+                var unityManifest = manifestBundle.LoadAsset<AssetBundleManifest>("AssetBundleManifest");
+                if (unityManifest == null)
                 {
                     EditorUtility.DisplayDialog("AssetBundleManifest 读取失败", "目标分包中不存在 AssetBundleManifest 资源.", "OK");
                     return;
                 }
-
+                manifest = new UnityBundleReferenceManifest(unityManifest, bundleDi);
                 bundleDirectory = bundleDi;
             }
             finally
@@ -53,7 +68,7 @@ namespace PowerCellStudio.Editor
         internal static void ClearManifest()
         {
             if (manifest != null)
-                Resources.UnloadAsset(manifest);
+                manifest.UnloadAsset();
             manifest = null;
             bundleDirectory = null;
             var loadedBundles = AssetBundle.GetAllLoadedAssetBundles();

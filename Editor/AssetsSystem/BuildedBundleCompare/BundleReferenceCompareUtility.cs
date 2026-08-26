@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Pool;
 
@@ -8,37 +9,75 @@ namespace PowerCellStudio.Editor
 {
     internal static class BundleReferenceCompareUtility
     {
-        internal static string FindBundlePath(string directory, string bundleName, string manifestName)
-        {
-            var directPath = Path.Combine(directory, bundleName.Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(directPath))
-                return directPath;
+        // internal static Dictionary<string, string> BuildBundlePathIndex(string directory)
+        // {
+        //     var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        //     if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
+        //         return result;
+        //
+        //     var files = Directory.GetFiles(directory, "*", SearchOption.AllDirectories);
+        //     for (var i = 0; i < files.Length; i++)
+        //     {
+        //         var fileName = Path.GetFileName(files[i]);
+        //         var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(files[i]);
+        //         if (!result.ContainsKey(fileName))
+        //             result.Add(fileName, files[i]);
+        //         if (!result.ContainsKey(fileNameWithoutExtension))
+        //             result.Add(fileNameWithoutExtension, files[i]);
+        //     }
+        //
+        //     return result;
+        // }
 
-            var files = Directory.GetFiles(directory, "*", SearchOption.AllDirectories);
-            for (var i = 0; i < files.Length; i++)
-            {
-                var fileName = Path.GetFileName(files[i]);
-                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(files[i]);
-                if (string.Equals(fileName, bundleName, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(fileNameWithoutExtension, bundleName, StringComparison.OrdinalIgnoreCase))
-                    return files[i];
+        // internal static string FindBundlePath(
+        //     string directory,
+        //     string bundleName,
+        //     string manifestName,
+        //     IReadOnlyDictionary<string, string> bundlePathIndex = null)
+        // {
+        //     if (bundlePathIndex != null && !string.IsNullOrEmpty(bundleName))
+        //     {
+        //         if (bundlePathIndex.TryGetValue(bundleName, out var indexedPath))
+        //             return indexedPath;
+        //
+        //         var fileName = Path.GetFileName(bundleName);
+        //         if (bundlePathIndex.TryGetValue(fileName, out indexedPath))
+        //             return indexedPath;
+        //     }
+        //
+        //     return string.Empty;
+        //     // return FindBundlePath(directory, bundleName, manifestName);
+        // }
 
-                if (!string.IsNullOrEmpty(manifestName) &&
-                    string.Equals(fileNameWithoutExtension, manifestName, StringComparison.OrdinalIgnoreCase))
-                    continue;
-            }
-
-            return null;
-        }
+        // internal static string FindBundlePath(string directory, string bundleName, string manifestName)
+        // {
+        //     var directPath = Path.Combine(directory, bundleName.Replace('/', Path.DirectorySeparatorChar));
+        //     if (File.Exists(directPath))
+        //         return directPath;
+        //
+        //     var files = Directory.GetFiles(directory, "*", SearchOption.AllDirectories);
+        //     for (var i = 0; i < files.Length; i++)
+        //     {
+        //         var fileName = Path.GetFileName(files[i]);
+        //         var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(files[i]);
+        //         if (string.Equals(fileName, bundleName, StringComparison.OrdinalIgnoreCase) ||
+        //             string.Equals(fileNameWithoutExtension, bundleName, StringComparison.OrdinalIgnoreCase))
+        //             return files[i];
+        //
+        //         if (!string.IsNullOrEmpty(manifestName) &&
+        //             string.Equals(fileNameWithoutExtension, manifestName, StringComparison.OrdinalIgnoreCase))
+        //             continue;
+        //     }
+        //
+        //     return null;
+        // }
 
         internal static BuiltBundleData ReadBuiltAssets(string path)
         {
-            var result = new BuiltBundleData();
+            var result = ReadBuiltMetadata(path);
             if (string.IsNullOrEmpty(path) || !File.Exists(path))
                 return result;
 
-            result.exists = true;
-            result.size = new FileInfo(path).Length;
             var bundle = AssetBundle.LoadFromFile(path);
             if (bundle == null)
                 return result;
@@ -70,11 +109,20 @@ namespace PowerCellStudio.Editor
             return result;
         }
 
+        internal static BuiltBundleData ReadBuiltMetadata(string path)
+        {
+            var result = new BuiltBundleData();
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+                return result;
+
+            result.exists = true;
+            result.size = new FileInfo(path).Length;
+            return result;
+        }
+
         internal static void CollectDependencyData(
             string bundleName,
-            string directory,
-            string manifestName,
-            AssetBundleManifest manifest,
+            IBundleReferenceManifest manifest,
             IDictionary<string, BuiltBundleData> builtData)
         {
             if (string.IsNullOrEmpty(bundleName) || manifest == null || builtData == null)
@@ -82,7 +130,8 @@ namespace PowerCellStudio.Editor
 
             if (!builtData.TryGetValue(bundleName, out var rootData))
             {
-                rootData = ReadBuiltAssets(FindBundlePath(directory, bundleName, manifestName));
+                var bundlePath = BundleReferenceManifest.manifest.GetBundlePath(bundleName);
+                rootData = ReadBuiltAssets(bundlePath);
                 builtData[bundleName] = rootData;
             }
 
@@ -96,7 +145,8 @@ namespace PowerCellStudio.Editor
             {
                 if (!builtData.TryGetValue(dependencyName, out var dependencyData))
                 {
-                    dependencyData = ReadBuiltAssets(FindBundlePath(directory, dependencyName, manifestName));
+                    var bundlePath = BundleReferenceManifest.manifest.GetBundlePath(dependencyName);
+                    dependencyData = ReadBuiltAssets(bundlePath);
                     builtData[dependencyName] = dependencyData;
                 }
 
@@ -107,7 +157,7 @@ namespace PowerCellStudio.Editor
 
         private static void CollectDependencyNames(
             string bundleName,
-            AssetBundleManifest manifest,
+            IBundleReferenceManifest manifest,
             ISet<string> dependencies)
         {
             var directDependencies = manifest.GetDirectDependencies(bundleName) ?? Array.Empty<string>();
@@ -118,19 +168,27 @@ namespace PowerCellStudio.Editor
             }
         }
 
-        internal static HashSet<string> GetCurrentAssets(BundleReferenceQueryer queryer, string bundleName)
+        internal static HashSet<string> GetCurrentAssets(string bundleName)
         {
             var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (!queryer.GetAllBundleData().TryGetValue(bundleName, out var data) || data.assets == null)
+            if (string.IsNullOrEmpty(bundleName))
                 return result;
 
-            foreach (var asset in data.assets)
+            var assetPaths = AssetDatabase.GetAssetPathsFromAssetBundle(bundleName);
+            for (var i = 0; i < assetPaths.Length; i++)
             {
-                if (asset != null && !string.IsNullOrEmpty(asset.assetPath))
-                    result.Add(NormalizePath(asset.assetPath));
+                if (!string.IsNullOrEmpty(assetPaths[i]))
+                    result.Add(NormalizePath(assetPaths[i]));
             }
 
             return result;
+        }
+
+        internal static bool HasCurrentBundle(string bundleName)
+        {
+            if (string.IsNullOrEmpty(bundleName))
+                return false;
+            return AssetDatabase.GetAssetPathsFromAssetBundle(bundleName).Length > 0;
         }
 
         internal static string FormatTypes(Dictionary<string, int> types)

@@ -1,3 +1,7 @@
+using System;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using UnityEngine;
 
 namespace PowerCellStudio.Editor
@@ -8,9 +12,16 @@ namespace PowerCellStudio.Editor
     /// </summary>
     internal static class BundleReferenceCompareSettings
     {
-        internal const string HistoryBuildDirectoryKey = "BundleReferenceCompare_BuildDirectory";
-        internal const string HistoryManifestNameKey = "BundleReferenceCompare_ManifestName";
-        internal const string HistoryBaselineFileKey = "BundleReferenceCompare_BaselineFile";
+        private const string HistoryKeyPrefix = "BundleReferenceCompare";
+        private const string BuildDirectorySuffix = "BuildDirectory";
+        private const string ManifestNameSuffix = "ManifestName";
+        private const string BaselineFileSuffix = "BaselineFile";
+
+        private static readonly string ProjectKeyPrefix = CreateProjectKeyPrefix();
+
+        internal static readonly string HistoryBuildDirectoryKey = CreateHistoryKey(BuildDirectorySuffix);
+        internal static readonly string HistoryManifestNameKey = CreateHistoryKey(ManifestNameSuffix);
+        internal static readonly string HistoryBaselineFileKey = CreateHistoryKey(BaselineFileSuffix);
         internal const string HeaderTitle = "Bundle 构建对比";
         internal const string HeaderSubtitle = "比较已构建 Bundle 与当前项目配置，快速定位资源变化。";
         internal const string InitialSummary = "请选择已构建 Bundle 目录并开始对比。";
@@ -25,5 +36,32 @@ namespace PowerCellStudio.Editor
         internal static readonly Color AssetTextColor = new Color(0.82f, 0.86f, 0.94f, 1f);
         internal static readonly Color BaselineAddedColor = new Color(0.35f, 0.72f, 1f, 1f);
         internal static readonly Color BaselineRemovedColor = new Color(0.82f, 0.48f, 1f, 1f);
+
+        private static string _cachedProjectKeyPrefix;
+
+        private static string CreateHistoryKey(string suffix)
+        {
+            return $"{ProjectKeyPrefix}_{HistoryKeyPrefix}_{suffix}";
+        }
+
+        private static string CreateProjectKeyPrefix()
+        {
+            if (!string.IsNullOrEmpty(_cachedProjectKeyPrefix))
+                return _cachedProjectKeyPrefix;
+            var projectPath = GetProjectPath();
+            using (var sha256 = SHA256.Create())
+            {
+                var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(projectPath));
+                _cachedProjectKeyPrefix = BitConverter.ToString(bytes, 0, 8).Replace("-", string.Empty);
+                return _cachedProjectKeyPrefix;
+            }
+        }
+
+        private static string GetProjectPath()
+        {
+            var assetsPath = Application.dataPath;
+            var projectPath = Directory.GetParent(assetsPath)?.FullName;
+            return string.IsNullOrEmpty(projectPath) ? assetsPath : projectPath;
+        }
     }
 }

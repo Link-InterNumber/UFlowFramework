@@ -55,7 +55,7 @@ namespace PowerCellStudio.Editor
 
         public static BundleReferenceQueryer GenerateQueryerByExitedBuild()
         {
-            if (!BundleReferenceManifest.manifest)
+            if (BundleReferenceManifest.manifest == null)
             {
                 EditorUtility.DisplayDialog("先调用BundleReferenceManifest.PrepareManifest()", "", "Ok");
                 return null;

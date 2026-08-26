@@ -5,6 +5,7 @@ namespace PowerCellStudio.Editor
 {
     internal enum BundleCompareStatus
     {
+        Unanalyzed,
         Same,
         Added,
         Removed,
@@ -26,17 +27,18 @@ namespace PowerCellStudio.Editor
     internal sealed class BundleCompareItem
     {
         public readonly string bundleName;
-        public readonly BundleCompareStatus status;
+        public BundleCompareStatus status;
         public BundleCompareStatus baselineStatus;
         public readonly long builtSize;
-        public readonly HashSet<string> builtAssets;
-        public readonly HashSet<string> currentAssets;
-        public readonly Dictionary<string, int> builtTypes;
-        public readonly List<string> dependentBundles;
-        public readonly long loadCost;
-        public readonly List<string> allAssets;
-        public readonly HashSet<string> addedAssets;
-        public readonly HashSet<string> removedAssets;
+        public HashSet<string> builtAssets;
+        public HashSet<string> currentAssets;
+        public Dictionary<string, int> builtTypes;
+        public List<string> dependentBundles;
+        public long loadCost;
+        public List<string> allAssets;
+        public HashSet<string> addedAssets;
+        public HashSet<string> removedAssets;
+        public bool isAnalyzed;
         public bool hasBaseline;
         public long baselineSize;
         public HashSet<string> baselineAssets;
@@ -56,26 +58,42 @@ namespace PowerCellStudio.Editor
             status = itemStatus;
             baselineStatus = BundleCompareStatus.Same;
             builtSize = size;
-            builtAssets = built;
-            currentAssets = current;
-            builtTypes = types;
+            builtAssets = built ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            currentAssets = current ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            builtTypes = types ?? new Dictionary<string, int>();
             dependentBundles = dependencies ?? new List<string>();
             loadCost = totalLoadCost;
+            addedAssets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            removedAssets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            allAssets = new List<string>();
+            isAnalyzed = false;
+        }
 
-            addedAssets = new HashSet<string>(current, StringComparer.OrdinalIgnoreCase);
-            addedAssets.ExceptWith(built);
-
-            removedAssets = new HashSet<string>(built, StringComparer.OrdinalIgnoreCase);
-            removedAssets.ExceptWith(current);
-
-            allAssets = new List<string>(built.Count + current.Count);
-            allAssets.AddRange(built);
-            foreach (var asset in current)
+        public void SetAnalysisResult(
+            HashSet<string> built,
+            HashSet<string> current,
+            Dictionary<string, int> types,
+            List<string> dependencies,
+            long totalLoadCost)
+        {
+            builtAssets = built ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            currentAssets = current ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            builtTypes = types ?? new Dictionary<string, int>();
+            dependentBundles = dependencies ?? new List<string>();
+            loadCost = totalLoadCost;
+            addedAssets = new HashSet<string>(currentAssets, StringComparer.OrdinalIgnoreCase);
+            addedAssets.ExceptWith(builtAssets);
+            removedAssets = new HashSet<string>(builtAssets, StringComparer.OrdinalIgnoreCase);
+            removedAssets.ExceptWith(currentAssets);
+            allAssets = new List<string>(builtAssets.Count + currentAssets.Count);
+            allAssets.AddRange(builtAssets);
+            foreach (var asset in currentAssets)
             {
-                if (!built.Contains(asset))
+                if (!builtAssets.Contains(asset))
                     allAssets.Add(asset);
             }
             allAssets.Sort(StringComparer.OrdinalIgnoreCase);
+            isAnalyzed = true;
         }
     }
 }

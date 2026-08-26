@@ -29,6 +29,11 @@ namespace PowerCellStudio.Editor
         private VisualElement _bundleListResizer;
         private ScrollView _detailView;
         private readonly List<BundleCompareItem> _items = new List<BundleCompareItem>();
+        private readonly Dictionary<string, BuiltBundleData> _builtData = new Dictionary<string, BuiltBundleData>(StringComparer.OrdinalIgnoreCase);
+        private HashSet<string> _currentBundleNames;
+        private List<BundleBuildBaselineInfo> _baseline;
+        private string _comparisonDirectory;
+        private string _comparisonManifestName;
         private long _totalBuiltSize;
         
         private void CreateGUI()
@@ -61,7 +66,6 @@ namespace PowerCellStudio.Editor
             _buildDirectoryField = new TextField("已构建目录")
             {
                 value = historyPath,
-                isReadOnly = true,
             };
             _buildDirectoryField.style.minWidth = 300;
             
@@ -85,7 +89,6 @@ namespace PowerCellStudio.Editor
             _baselineFileField = new TextField("基准文件")
             {
                 value = EditorPrefs.GetString(BundleReferenceCompareSettings.HistoryBaselineFileKey, string.Empty),
-                isReadOnly = true
             };
             _baselineFileField.style.minWidth = 260f;
             baselineToolbar.Add(_baselineFileField);
@@ -181,7 +184,14 @@ namespace PowerCellStudio.Editor
         private void OnBundleSelected(IEnumerable<object> obj)
         {
             var data = obj.FirstOrDefault(o => o is BundleCompareItem) as BundleCompareItem;
-            if (data != null) ShowDetails(data);
+            if (data == null)
+                return;
+
+            BundleReferenceComparisonService.Analyze(
+                data,
+                _baseline,
+                _builtData);
+            ShowDetails(data);
         }
 
         private VisualElement MakeBundleItem()
@@ -253,6 +263,7 @@ namespace PowerCellStudio.Editor
         private void BindBundleItem(VisualElement element, int index)
         {
             var item = _items[index];
+            AnalyzeBundleItem(item);
             var sizeLabel = element.Q<Label>("BundleSizeLabel");
             var nameLabel = element.Q<Label>("BundleNameLabel");
             var sizeBar = element.Q<ProgressBar>("BundleSizeProgressBar");
@@ -261,7 +272,7 @@ namespace PowerCellStudio.Editor
                 : 0f;
 
             sizeLabel.text = BundleReferenceCompareUtility.FormatSize(item.builtSize);
-            var baselineStatusText = item.hasBaseline && item.baselineStatus != BundleCompareStatus.Same
+            var baselineStatusText = _baseline != null && item.hasBaseline && item.baselineStatus != BundleCompareStatus.Same
                 ? $"[对比基准{GetStatusText(item.baselineStatus)}]"
                 : string.Empty;
             var editorStatusText = item.status != BundleCompareStatus.Same
@@ -274,10 +285,22 @@ namespace PowerCellStudio.Editor
             element.tooltip = $"已构建：{BundleReferenceCompareUtility.FormatSize(item.builtSize)}，占比：{percentage:0.##}%，当前配置：{item.currentAssets.Count} 个资源";
         }
 
+        private void AnalyzeBundleItem(BundleCompareItem item)
+        {
+            if (item == null || item.isAnalyzed)
+                return;
+
+            BundleReferenceComparisonService.Analyze(
+                item,
+                _baseline,
+                _builtData);
+        }
+
         private static string GetStatusText(BundleCompareStatus status)
         {
             switch (status)
             {
+                case BundleCompareStatus.Unanalyzed: return "待分析";
                 case BundleCompareStatus.Added: return "新增";
                 case BundleCompareStatus.Removed: return "移除";
                 case BundleCompareStatus.Changed: return "变化";
@@ -294,6 +317,7 @@ namespace PowerCellStudio.Editor
         {
             switch (status)
             {
+                case BundleCompareStatus.Unanalyzed: return BundleReferenceCompareSettings.MutedTextColor;
                 case BundleCompareStatus.Added: return new Color(0.35f, 0.86f, 0.52f, 1f);
                 case BundleCompareStatus.Removed: return new Color(1f, 0.42f, 0.42f, 1f);
                 case BundleCompareStatus.Changed: return new Color(1f, 0.78f, 0.3f, 1f);
@@ -342,7 +366,7 @@ namespace PowerCellStudio.Editor
             }
 
             BundleReferenceManifest.PrepareManifest(directory, manifestName);
-            if (!BundleReferenceManifest.manifest)
+            if (BundleReferenceManifest.manifest == null)
                 return;
 
             try
@@ -372,6 +396,8 @@ namespace PowerCellStudio.Editor
         private void Compare()
         {
             Clear();
+            _builtData.Clear();
+            _currentBundleNames = null;
             var directory = _buildDirectoryField.value?.Trim();
             var manifestName = _manifestNameField.value?.Trim();
             if (string.IsNullOrEmpty(directory) || string.IsNullOrEmpty(manifestName))
@@ -381,22 +407,34 @@ namespace PowerCellStudio.Editor
             }
 
             BundleReferenceManifest.PrepareManifest(directory, manifestName);
-            if (!BundleReferenceManifest.manifest)
+            if (BundleReferenceManifest.manifest == null)
                 return;
 
-            BundleReferenceQueryer queryer = null;
             try
             {
-                List<BundleBuildBaselineInfo> baseline = null;
+                _baseline = null;
                 var baselinePath = _baselineFileField.value?.Trim();
                 if (!string.IsNullOrEmpty(baselinePath))
-                    baseline = BundleBuildBaselineUtility.Load(baselinePath);
-                queryer = QueryerFactory.GenerateQueryerByCurrentProjectSync();
-                if (queryer == null)
-                    return;
-                foreach (var bundle in queryer.GetAllBundleData().Values)
-                    queryer.EnsureAssets(bundle.bundleName);
-                _items.AddRange(BundleReferenceComparisonService.Compare(directory, manifestName, queryer, baseline));
+                {
+                    try
+                    {
+                        _baseline = BundleBuildBaselineUtility.Load(baselinePath);
+                    }
+                    catch (Exception exception)
+                    {
+                        _baseline = null;
+                        Debug.LogWarning($"Bundle 基准文件读取失败，将跳过基准比较：{exception.Message}");
+                    }
+                }
+                _comparisonDirectory = directory;
+                _comparisonManifestName = manifestName;
+
+                _currentBundleNames = new HashSet<string>(
+                    AssetDatabase.GetAllAssetBundleNames(),
+                    StringComparer.OrdinalIgnoreCase);
+
+                _items.AddRange(BundleReferenceComparisonService.Compare(_baseline,
+                    _currentBundleNames));
                 EditorPrefs.SetString(BundleReferenceCompareSettings.HistoryBuildDirectoryKey, directory);
                 EditorPrefs.SetString(BundleReferenceCompareSettings.HistoryManifestNameKey, manifestName);
                 _totalBuiltSize = _items.Sum(item => item.builtSize);
@@ -409,11 +447,6 @@ namespace PowerCellStudio.Editor
             {
                 Debug.LogException(exception);
                 EditorUtility.DisplayDialog("Bundle 对比失败", exception.Message, "确定");
-            }
-            finally
-            {
-                queryer?.Dispose();
-                BundleReferenceManifest.ClearManifest();
             }
         }
 
@@ -432,7 +465,7 @@ namespace PowerCellStudio.Editor
             var status = new Label($"状态    {GetStatusText(item.status)}");
             status.style.color = GetStatusColor(item.status);
             _detailView.Add(status);
-            if (item.hasBaseline || item.baselineStatus == BundleCompareStatus.Added)
+            if (_baseline != null && (item.hasBaseline || item.baselineStatus == BundleCompareStatus.Added))
             {
                 var baselineStatus = new Label($"基准状态    {GetBaselineStatusText(item.baselineStatus)}");
                 baselineStatus.style.color = GetStatusColor(item.baselineStatus);
@@ -445,7 +478,7 @@ namespace PowerCellStudio.Editor
                 _detailView.Add(CreateDetailLabel("依赖列表: " + string.Join("、", item.dependentBundles)));
             _detailView.Add(CreateDetailLabel($"资源: 已构建 {item.builtAssets.Count}  |  当前配置 {item.currentAssets.Count}  |  新增 {item.addedAssets.Count}  |  移除 {item.removedAssets.Count}"));
             _detailView.Add(CreateDetailLabel("类型: " + BundleReferenceCompareFormatter.FormatTypes(item.builtTypes)));
-            if (item.hasBaseline)
+            if (_baseline != null && item.hasBaseline)
             {
                 var sizeDelta = item.builtSize - item.baselineSize;
                 var baselineAssets = item.baselineAssets ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -492,7 +525,6 @@ namespace PowerCellStudio.Editor
             header.Add(CreateAssetColumnHeader("当前 Editor 配置资源"));
             _detailView.Add(header);
 
-
             var newColor = GetStatusColor(BundleCompareStatus.Added);
             var removeColor = GetStatusColor(BundleCompareStatus.Removed);
             var baselineAddedColor = BundleReferenceCompareSettings.BaselineAddedColor;
@@ -502,14 +534,23 @@ namespace PowerCellStudio.Editor
                 var asset = item.allAssets[index];
                 var existsBuilt = item.builtAssets.Contains(asset);
                 var existsCurrent = item.currentAssets.Contains(asset);
-                var existsBaseline = item.hasBaseline && item.baselineAssets.Contains(asset);
+                var existsBaseline = _baseline != null && item.hasBaseline && item.baselineAssets.Contains(asset);
                 var builtLabel = element.Q<Label>("BuiltAssetLabel");
                 var currentLabel = element.Q<Label>("CurrentAssetLabel");
-                var builtMarker = existsBuilt && !existsBaseline
-                    ? "【对比基准新增】"
-                    : !existsBuilt && existsBaseline
-                        ? "【对比基准移除】"
-                        : existsBuilt && !existsCurrent ? "【移除】" : string.Empty;
+                var builtMarker = string.Empty;
+                if (_baseline == null)
+                {
+                    builtMarker = existsBuilt && !existsCurrent ? "【移除】" : string.Empty;
+                }
+                else
+                {
+                    if (existsBuilt && !existsBaseline)
+                        builtMarker = "【对比基准新增】";
+                    else if (!existsBuilt && existsBaseline)
+                        builtMarker = "【对比基准移除】";
+                    else if (existsBuilt && !existsCurrent)
+                        builtMarker = "【移除】";
+                }
                 var builtColor = existsBuilt && !existsBaseline
                     ? baselineAddedColor
                     : !existsBuilt && existsBaseline
@@ -596,6 +637,11 @@ namespace PowerCellStudio.Editor
         private void Clear()
         {
             _items.Clear();
+            _builtData.Clear();
+            _currentBundleNames = null;
+            _baseline = null;
+            _comparisonDirectory = null;
+            _comparisonManifestName = null;
             _totalBuiltSize = 0;
             _bundleList?.Rebuild();
             _detailView?.Clear();
