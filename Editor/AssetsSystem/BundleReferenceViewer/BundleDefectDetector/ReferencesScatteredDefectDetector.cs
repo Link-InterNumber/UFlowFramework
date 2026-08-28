@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.Pool;
 
 namespace PowerCellStudio.Editor
@@ -15,8 +16,9 @@ namespace PowerCellStudio.Editor
         public string tag => "引用分散或冗余";
         public DefectLevel defectLevel => DefectLevel.Medium;
 
-        public bool Detect(BundleReferenceQueryer queryer, BundleReferenceData bundleData)
+        public bool Detect(BundleReferenceQueryer queryer, BundleReferenceData bundleData, out string defectDetail)
         {
+            defectDetail = null;
             if (queryer == null || bundleData == null || string.IsNullOrEmpty(bundleData.bundleName))
                 return false;
             if (bundleData.bundleReferenced == null || bundleData.bundleReferenced.Count == 0)
@@ -27,14 +29,15 @@ namespace PowerCellStudio.Editor
             var bundleReferencedDict = DictionaryPool<string, HashSet<string>>.Get();
             try
             {
-                foreach (var assetReferenceData in bundleData.assets)
+                foreach (var assetName in bundleData.assets)
                 {
+                    var assetReferenceData = queryer.GetAssetData(assetName);
                     if (assetReferenceData?.bundleReferenced == null)
                         continue;
 
                     foreach (var se in assetReferenceData.bundleReferenced)
                     {
-                        var referencingAsset = queryer.GetAsset(se);
+                        var referencingAsset = queryer.GetAssetData(se);
                         if (referencingAsset == null ||
                             string.IsNullOrEmpty(referencingAsset.bundleName) ||
                             string.Equals(referencingAsset.bundleName, bundleData.bundleName,
@@ -66,7 +69,10 @@ namespace PowerCellStudio.Editor
                     }
 
                     if (!firstReferencedAssets.SetEquals(referencedAssets))
+                    {
+                        defectDetail = BuildDefectDetail(bundleData.bundleName, bundleReferencedDict);
                         return true;
+                    }
                 }
 
                 return false;
@@ -79,6 +85,18 @@ namespace PowerCellStudio.Editor
             }
         }
 
+        private static string BuildDefectDetail(string bundleName,
+            Dictionary<string, HashSet<string>> referencedAssets)
+        {
+            var details = new List<string>();
+            foreach (var pair in referencedAssets.OrderBy(pair => pair.Key))
+            {
+                var assets = pair.Value.OrderBy(asset => asset);
+                details.Add($"'{pair.Key}' 使用: {string.Join(", ", assets)}");
+            }
+            return $"Bundle '{bundleName}' 的资源被多个外部 Bundle 分散引用，各引用方使用的资源集合不同：{string.Join("；", details)}。";
+        }
+
         public bool HasDefect(BundleReferenceQueryer queryer, BundleReferenceGroup group)
         {
             if (queryer == null || group?.bundleNames == null)
@@ -86,7 +104,7 @@ namespace PowerCellStudio.Editor
 
             foreach (var bundleName in group.bundleNames)
             {
-                if (Detect(queryer, queryer.GetBundleData(bundleName)))
+                if (Detect(queryer, queryer.GetBundleData(bundleName), out _))
                     return true;
             }
 

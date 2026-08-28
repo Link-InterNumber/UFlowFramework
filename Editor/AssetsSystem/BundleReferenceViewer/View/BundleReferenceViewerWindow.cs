@@ -18,20 +18,25 @@ namespace PowerCellStudio.Editor
         }
 
         private static string _analysisFileDirectoty = "Analysis/";
+
+        // View
         private BundleReferenceGraphView _graphView;
-        private BundleReferenceQueryer _queryer;
         private ListView _groupListPanel;
         private Label _groupCountLabel;
-        private readonly List<GroupListItem> _groupListItems = new List<GroupListItem>();
         private VisualElement _listPanel;
         private VisualElement _listPanelResizer;
         private TextField _searchField;
         private IntegerField _referenceDepthField;
-        private readonly Dictionary<string, bool> _groupExpandedState = new Dictionary<string, bool>();
-        private string _selectedBundleName;
+        
+        // Data
+        private BundleReferenceQueryer _queryer;
         private BundleDefectDetectorBox _defectDetectorBox;
+        private readonly List<GroupListItem> _groupListItems = new List<GroupListItem>();
+        private readonly Dictionary<string, bool> _groupExpandedState = new Dictionary<string, bool>();
+        
+        // View Control
+        private string _selectedBundleName;
         private int _analysisVersion;
-        private int _groupDetectionVersion;
         private Func<bool> _simplifyModeFun;
         public bool isSimplifyMode => this._simplifyModeFun != null && this._simplifyModeFun();
 
@@ -175,17 +180,6 @@ namespace PowerCellStudio.Editor
         private VisualElement MakeGroupListItem()
         {
             var foldout = new Foldout();
-            var btnShowAll = new Button(() =>
-            {
-                if (foldout.userData is string groupName && _queryer != null)
-                    _graphView.ShowGroup(_queryer, groupName, _defectDetectorBox, isSimplifyMode);
-            })
-            {
-                text = "显示所有 Bundle",
-                tooltip = "显示此组内所有 Bundle 的引用/被引用链条",
-            };
-            foldout.Add(btnShowAll);
-
             foldout.RegisterValueChangedCallback(evt =>
             {
                 if (foldout.userData is string groupName)
@@ -200,13 +194,25 @@ namespace PowerCellStudio.Editor
             var item = _groupListItems[index];
             foldout.userData = item.groupName;
             foldout.text = $"{item.groupName} ({item.bundleNames.Count}/{item.totalBundleCount})";
+            foldout.style.color = item.defectLevel != DefectLevel.None
+                ? BundleReferenceUtils.GetDefectColor(item.defectLevel)
+                : Color.whiteSmoke;
+            
             foldout.SetValueWithoutNotify(_groupExpandedState[item.groupName]);
             foldout.Clear();
             
             var btnShowAll = new Button(() =>
             {
                 if (foldout.userData is string groupName && _queryer != null)
-                    _graphView.ShowGroup(_queryer, groupName, _defectDetectorBox, isSimplifyMode);
+                {
+                    var group = _queryer.GetGroupData(groupName);
+                    if (group == null)
+                        return;
+                    var tempList = new List<AssetReferenceData>();
+                    BundleReferenceAnalyzer.CollectGroupAssetData(_queryer, group, ref tempList);
+                    // BundleReferenceAnalyzer.DetectorBundlesDefect(_queryer, _defectDetectorBox, group);
+                    _graphView.ShowGroup(_queryer, groupName, isSimplifyMode);
+                }
             })
             {
                 text = "显示所有 Bundle",
@@ -232,8 +238,13 @@ namespace PowerCellStudio.Editor
                 (child, bundleIndex) =>
                 {
                     var button = (Button)child;
-                    button.text = item.bundleNames[bundleIndex];
-                    button.userData = item.bundleNames[bundleIndex];
+                    var bundleName = item.bundleNames[bundleIndex];
+                    button.text = bundleName;
+                    button.userData = bundleName;
+                    var bundleData = _queryer.GetBundleData(bundleName);
+                    button.style.color = (bundleData != null && bundleData.defectLevel != DefectLevel.None)
+                        ? BundleReferenceUtils.GetDefectColor(bundleData.defectLevel)
+                        : Color.whiteSmoke;
                 });
             bundleList.selectionType = SelectionType.None;
             bundleList.style.height = Mathf.Min(item.bundleNames.Count * 22f, 220f);
@@ -251,6 +262,7 @@ namespace PowerCellStudio.Editor
             public string groupName;
             public List<string> bundleNames;
             public int totalBundleCount;
+            public DefectLevel defectLevel;
         }
 
         private VisualElement CreateToolbar()
@@ -325,17 +337,18 @@ namespace PowerCellStudio.Editor
             _queryer = QueryerFactory.GenerateQueryerByCurrentProjectSync();
             if (_queryer == null || analysisVersion != _analysisVersion)
                 return;
-
+            
+            // 此处已经给所有group打上缺陷标记
+            BundleReferenceAnalyzer.DetectorGroupDefect(_queryer, _defectDetectorBox);
+            
             RebuildGroupList();
-            DetectGroups();
-            RebuildGroupList();
-            SelectFirstBundle(analysisVersion);
+            _selectedBundleName = null;
+            _graphView.ClearGraph();
         }
 
         private void ClearGraph()
         {
             _analysisVersion++;
-            _groupDetectionVersion++;
             DisposeQueryer();
             _groupListItems.Clear();
             if (_groupListPanel != null)
@@ -360,35 +373,6 @@ namespace PowerCellStudio.Editor
             _queryer = null;
         }
 
-        private void DetectGroups()
-        {
-            var groups = _queryer?.GetAllGroups()?.Values?.ToArray();
-            if (groups == null || groups.Length == 0)
-                return;
-
-            foreach (var bundleData in _queryer.GetAllBundleData().Values)
-                _queryer.EnsureAssets(bundleData.bundleName);
-
-            for (var i = 0; i < groups.Length; i++)
-                _defectDetectorBox.DetectGroups(new[] { groups[i] }, _queryer);
-        }
-
-        private void SelectFirstBundle(int analysisVersion)
-        {
-            if (analysisVersion != _analysisVersion || _queryer == null)
-                return;
-
-            var firstBundle = _queryer.GetAllBundleData().Keys.OrderBy(name => name).FirstOrDefault();
-            if (!string.IsNullOrEmpty(firstBundle))
-            {
-                // SelectBundle(firstBundle);
-                return;
-            }
-
-            _selectedBundleName = null;
-            _graphView.ClearGraph();
-        }
-
         private void RebuildGroupList()
         {
             if (_groupListPanel == null)
@@ -404,7 +388,7 @@ namespace PowerCellStudio.Editor
 
             _groupCountLabel.text = $"共 {_queryer.bundleCount} 个 Bundle";
             var search = _searchField?.value?.Trim() ?? string.Empty;
-            foreach (var groupPair in _queryer.GetAllGroups().OrderByDescending(pair => pair.Value.bundleNames.Count))
+            foreach (var groupPair in _queryer.GetAllGroups().OrderByDescending(pair => pair.Value.defectLevel))
             {
                 var bundleNames = groupPair.Value.bundleNames
                     .Where(name => string.IsNullOrEmpty(search) ||
@@ -419,6 +403,7 @@ namespace PowerCellStudio.Editor
                 {
                     groupName = groupPair.Key,
                     bundleNames = bundleNames,
+                    defectLevel = groupPair.Value.defectLevel,
                     totalBundleCount = groupPair.Value.bundleNames.Count
                 });
             }
@@ -431,20 +416,14 @@ namespace PowerCellStudio.Editor
         {
             _selectedBundleName = bundleName;
             var referenceDepth = _referenceDepthField?.value ?? 1;
+            var group = _queryer.GetGroupByBundle(bundleName);
+            if (group == null)
+                return;
+            var tempList = new List<AssetReferenceData>();
+            BundleReferenceAnalyzer.CollectGroupAssetData(_queryer, group, ref tempList);
+            // BundleReferenceAnalyzer.DetectorBundlesDefect(_queryer, _defectDetectorBox, group);
             _graphView.ShowBundle(_queryer, _selectedBundleName, _defectDetectorBox,
                 isSimplifyMode, Mathf.Max(0, referenceDepth));
-        }
-
-        private void ReadAnalysisFile()
-        {
-            var path = EditorUtility.OpenFilePanelWithFilters(
-                "选择分析文件",
-                _analysisFileDirectoty,
-                new[] { "AssetBundle Reference Analysis", "BRAnalysis" });
-            if (!string.IsNullOrEmpty(path))
-            {
-                Debug.LogWarning($"分析文件读取尚未接入: {path}");
-            }
         }
 
         private void CreateGUI()

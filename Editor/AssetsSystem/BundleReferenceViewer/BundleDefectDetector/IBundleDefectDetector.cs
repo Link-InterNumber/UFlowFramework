@@ -10,7 +10,7 @@
         
         public DefectLevel defectLevel { get; }
 
-        public bool Detect(BundleReferenceQueryer queryer, BundleReferenceData bundleData);
+        public bool Detect(BundleReferenceQueryer queryer, BundleReferenceData bundleData, out string defectDetail);
 
         public bool HasDefect(BundleReferenceQueryer queryer, BundleReferenceGroup group);
     }

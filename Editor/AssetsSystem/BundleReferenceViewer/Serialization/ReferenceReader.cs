@@ -36,5 +36,19 @@ namespace PowerCellStudio.Editor
                 yield return reference;
             }
         }
+
+        public T ReadSingle<T>(string filePath) where T : IBundleReferenceBinary, new()
+        {
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException($"The file '{filePath}' does not exist.");
+
+            var bytes = File.ReadAllBytes(filePath);
+            _memoryStream.SetLength(0);
+            _memoryStream.Write(bytes, 0, bytes.Length);
+            _memoryStream.Position = 0;
+            var reference = new T();
+            reference.ReadBytes(_reader);
+            return reference;
+        }
     }
 }

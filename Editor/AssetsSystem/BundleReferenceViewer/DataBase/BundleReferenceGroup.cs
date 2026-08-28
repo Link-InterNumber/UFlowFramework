@@ -1,28 +1,36 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine.Pool;
 
 namespace PowerCellStudio.Editor
 {
     public class BundleReferenceGroup : IDisposable
     {
-        public string groupName;
-        public HashSet<string> bundleNames;
+        public string _groupName;
+        public string groupName => _groupName;
+        private HashSet<string> _bundleNames;
+        public HashSet<string> bundleNames => _bundleNames;
         public DefectLevel defectLevel = DefectLevel.None;
-        public Dictionary<string, GroupDefectInfo> defectInfos = new Dictionary<string, GroupDefectInfo>();
+        private Dictionary<string, GroupDefectInfo> _defectInfos;
+        public Dictionary<string, GroupDefectInfo> defectInfos => _defectInfos;
+
+        public BundleReferenceGroup(string groupName)
+        {
+            _groupName = groupName;
+            _bundleNames =new HashSet<string>();
+            _defectInfos = new Dictionary<string, GroupDefectInfo>();
+        }
 
         public void Dispose()
         {
-            groupName = null;
-            if (bundleNames != null) HashSetPool<string>.Release(bundleNames);
-            bundleNames = null;
-            if (defectInfos != null)
+            _groupName = null;
+            _bundleNames = null;
+            if (_defectInfos != null)
             {
-                foreach (var defectInfo in defectInfos.Values)
+                foreach (var defectInfo in _defectInfos.Values)
                     defectInfo.bundleNames?.Clear();
-                defectInfos.Clear();
+                _defectInfos.Clear();
             }
-            defectInfos = null;
+            _defectInfos = null;
         }
     }
 

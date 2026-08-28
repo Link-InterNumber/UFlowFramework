@@ -1,203 +1,70 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using UnityEditor;
-using UnityEngine;
 
 namespace PowerCellStudio.Editor
 {
-    public class BundleReferenceAnalyzer : IDisposable
+    public static class BundleReferenceAnalyzer
     {
-        [MenuItem("Tools/UFlow/Analyze All Bundles", priority = 100)]
-        public static void ReferenceAnalyzerEditorHandler()
+        public static void DetectorGroupDefect(BundleReferenceQueryer queryer, BundleDefectDetectorBox detectorBox)
         {
-            _ = RunAnalysisAsync();
-        }
-
-        private static async Task RunAnalysisAsync()
-        {
-            using var analyzer = new BundleReferenceAnalyzer();
-            try
-            {
-                await analyzer.InitAsync();
-                await analyzer.AnalyzeAsync();
-            }
-            catch (OperationCanceledException)
-            {
-                Debug.Log("Bundle 分析已取消。");
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception);
-                EditorUtility.DisplayDialog("Bundle 分析失败", exception.Message, "OK");
-            }
-            finally
-            {
-                EditorUtility.ClearProgressBar();
-            }
-        }
-        
-        private BundleDefectDetectorBox _defectDetectorBox;
-        
-        private BundleReferenceQueryer _queryer;
-
-        public BundleReferenceAnalyzer()
-        {
-            _defectDetectorBox = new BundleDefectDetectorBox();
-        }
-        
-        public void Dispose()
-        {
-            _defectDetectorBox?.Dispose();
-            _queryer?.Dispose();
-        }
-
-        public void AnalyzeSync()
-        {
-            if (_queryer != null) _queryer.Dispose();
-            Debug.Log("正在分析所有Bundle，请稍等...");
-            _queryer = QueryerFactory.GenerateQueryerByCurrentProjectSync();
-            var allGroup = _queryer.GetAllGroups();
-            var totalBundleCount = _queryer.bundleCount;
-            var processedBundleCount = 0;
-
-            Debug.Log("分析完成，正在采集资源并检测缺陷...");
-            foreach (var bundleReferenceGroup in allGroup.Values)
-            {
-                foreach (var bundleName in bundleReferenceGroup.bundleNames)
-                {
-                    var bundleInfo = _queryer.GetBundleData(bundleName);
-                    var assets = AssetDatabase.GetAssetPathsFromAssetBundle(bundleInfo.bundleName);
-                    var assetData = new List<AssetReferenceData>();
-                    for (var i = 0; i < assets.Length; i++)
-                    {
-                        var d = AssetReferenceCollector.FindDirectReferences(bundleInfo.bundleName, assets[i]);
-                        if (d == null) continue;
-                        assetData.Add(d);
-                    }
-                    _queryer.SetAssets(bundleInfo.bundleName, assetData);
-                    assetData = null;
-                    assets = null;
-
-                    processedBundleCount++;
-                    if (EditorUtility.DisplayCancelableProgressBar(
-                            "Bundle 分析",
-                            $"采集资源: {bundleInfo.bundleName}",
-                            totalBundleCount == 0 ? 1f : (float)processedBundleCount / totalBundleCount))
-                    {
-                        throw new OperationCanceledException();
-                    }
-
-                    // AssetDatabase、Graph/Editor API 必须留在 Unity 主线程；
-                    // 分帧而不是 Task.Run，避免阻塞 Editor，同时保持线程安全。
-                }
-
-                foreach (var bundleName in bundleReferenceGroup.bundleNames)
-                {
-                    var bundleInfo = _queryer.GetBundleData(bundleName);
-                    _defectDetectorBox.DetectBundle(bundleInfo, _queryer);
-
-                    if (EditorUtility.DisplayCancelableProgressBar(
-                            "Bundle 分析",
-                            $"检测缺陷: {bundleInfo.bundleName}",
-                            totalBundleCount == 0 ? 1f : (float)processedBundleCount / totalBundleCount))
-                    {
-                        throw new OperationCanceledException();
-                    }
-                }
-
-                // foreach (var bundleName in bundleReferenceGroup.bundleNames)
-                // {
-                //     var bundleInfo = _queryer.GetBundleData(bundleName);
-                //     foreach (var assetReferenceData in bundleInfo.assets)
-                //     {
-                //         assetReferenceData.Inactivate();
-                //     }
-                // }
-            }
-            
-            var filePath = $"{QueryerFactory.serializedAssetDirectory}{DateTime.Now:yyyyMMddHHmmss}.bin";
-            QueryerFactory.SaveSerializedDataFromQueryer(_queryer, filePath);
-            EditorUtility.DisplayDialog("分析完成", $"分析完成，数据已保存到 {filePath}", "OK");
-        }
-        
-        public async Task InitAsync()
-        {
-            if (_queryer != null) _queryer.Dispose();
-            Debug.Log("正在分析所有Bundle，请稍等...");
-            _queryer = await QueryerFactory.GenerateQueryerByCurrentProject();
-        }
-
-        public async Task AnalyzeAsync()
-        {
-            if (_queryer == null)
+            if (queryer == null || detectorBox == null)
                 return;
+            queryer.EnsureGroups();
 
-            var allGroup = _queryer.GetAllGroups();
-            var totalBundleCount = _queryer.bundleCount;
-            var processedBundleCount = 0;
-
-            Debug.Log("分析完成，正在采集资源并检测缺陷...");
-            foreach (var bundleReferenceGroup in allGroup.Values)
+            var allGroup = queryer.GetAllGroups();
+            var tempAssetList = new List<AssetReferenceData>();
+            foreach (var bundleReferenceGroup in allGroup)
             {
-                foreach (var bundleName in bundleReferenceGroup.bundleNames)
+                var group = bundleReferenceGroup.Value;
+
+                // 收集数据
+                CollectGroupAssetData(queryer, group, ref tempAssetList);
+
+                var allBundle = group.bundleNames;
+                // 执行检查
+                foreach (var bundleName in allBundle)
                 {
-                    var bundleInfo = _queryer.GetBundleData(bundleName);
-                    var assets = AssetDatabase.GetAssetPathsFromAssetBundle(bundleInfo.bundleName);
-                    var assetData = new List<AssetReferenceData>();
-                    for (var i = 0; i < assets.Length; i++)
-                    {
-                        var d = AssetReferenceCollector.FindDirectReferences(bundleInfo.bundleName, assets[i]);
-                        if (d == null) continue;
-                        assetData.Add(d);
-                    }
-                    _queryer.SetAssets(bundleInfo.bundleName, assetData);
-                    assetData = null;
-                    assets = null;
-
-                    processedBundleCount++;
-                    if (EditorUtility.DisplayCancelableProgressBar(
-                            "Bundle 分析",
-                            $"采集资源: {bundleInfo.bundleName}",
-                            totalBundleCount == 0 ? 1f : (float)processedBundleCount / totalBundleCount))
-                    {
-                        throw new OperationCanceledException();
-                    }
-
-                    // AssetDatabase、Graph/Editor API 必须留在 Unity 主线程；
-                    // 分帧而不是 Task.Run，避免阻塞 Editor，同时保持线程安全。
-                }
-                await Task.Yield();
-
-                foreach (var bundleName in bundleReferenceGroup.bundleNames)
-                {
-                    var bundleInfo = _queryer.GetBundleData(bundleName);
-                    _defectDetectorBox.DetectBundle(bundleInfo, _queryer);
-
-                    if (EditorUtility.DisplayCancelableProgressBar(
-                            "Bundle 分析",
-                            $"检测缺陷: {bundleInfo.bundleName}",
-                            totalBundleCount == 0 ? 1f : (float)processedBundleCount / totalBundleCount))
-                    {
-                        throw new OperationCanceledException();
-                    }
-
-                    // await Task.Yield();
+                    detectorBox.DetectBundleAndMarkGroup(queryer.GetBundleData(bundleName), queryer);
                 }
 
-                // foreach (var bundleName in bundleReferenceGroup.bundleNames)
+                // // 释放数据
+                // foreach (var bundleName in allBundle)
                 // {
-                //     var bundleInfo = _queryer.GetBundleData(bundleName);
-                //     foreach (var assetReferenceData in bundleInfo.assets)
-                //     {
-                //         assetReferenceData.Inactivate();
-                //     }
+                //     queryer.ReleaseBundleAssetsData(bundleName);
                 // }
             }
-            
-            var filePath = $"{QueryerFactory.serializedAssetDirectory}{DateTime.Now:yyyyMMddHHmmss}.bin";
-            QueryerFactory.SaveSerializedDataFromQueryer(_queryer, filePath);
-            EditorUtility.DisplayDialog("分析完成", $"分析完成，数据已保存到 {filePath}", "OK");
+        }
+
+        public static void CollectGroupAssetData(BundleReferenceQueryer queryer,  BundleReferenceGroup group, ref List<AssetReferenceData> tempAssetList)
+        {
+            var allBundle = group.bundleNames;
+            foreach (var bundleName in allBundle)
+            {
+                if (queryer.GetBundleData(bundleName) == null)
+                {
+                    var bundleDependents = AssetDatabase.GetAssetBundleDependencies(bundleName, false);
+                    queryer.AddBundleData(bundleName, bundleDependents);
+                }
+                var bundleData = queryer.GetBundleData(bundleName);
+                if (bundleData.assets.Count == 0)
+                {
+                    var assets = AssetDatabase.GetAssetPathsFromAssetBundle(bundleData.bundleName);
+                    AssetReferenceCollector.FindDirectReferences(bundleData.bundleName, assets, ref tempAssetList);
+                    queryer.SetAssets(bundleData.bundleName, tempAssetList);
+                }
+            }
+        }
+        
+        public static void DetectorBundlesDefect(BundleReferenceQueryer queryer, BundleDefectDetectorBox detectorBox, BundleReferenceGroup group)
+        {
+            var allBundle = group.bundleNames;
+            foreach (var bundleName in allBundle)
+            {
+                var bundleData = queryer.GetBundleData(bundleName);
+                if (bundleData.tags.Count > 0)
+                    continue;
+                detectorBox.DetectBundleOnly(queryer.GetBundleData(bundleName), queryer);
+            }
         }
     }
 }

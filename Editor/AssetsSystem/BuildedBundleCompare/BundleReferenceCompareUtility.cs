@@ -100,6 +100,15 @@ namespace PowerCellStudio.Editor
                     // result.types[typeName] = count + 1;
                     // Resources.UnloadAsset(asset);
                 }
+                foreach (var assetName in bundle.GetAllScenePaths())
+                {
+                    var normalized = NormalizePath(assetName);
+                    result.assetNames.Add(normalized);
+
+                    var typeName = "Scene";
+                    result.types.TryGetValue(typeName, out var count);
+                    result.types[typeName] = count + 1;
+                }
             }
             finally
             {
@@ -182,6 +191,44 @@ namespace PowerCellStudio.Editor
             }
 
             return result;
+        }
+
+        internal static string FindMatchingAsset(string assetName, IEnumerable<string> candidates)
+        {
+            if (string.IsNullOrEmpty(assetName) || candidates == null)
+                return null;
+
+            foreach (var candidate in candidates)
+            {
+                if (IsAssetMatch(assetName, candidate))
+                    return candidate;
+            }
+
+            return null;
+        }
+
+        internal static bool IsAssetMatch(string left, string right)
+        {
+            if (string.IsNullOrEmpty(left) || string.IsNullOrEmpty(right))
+                return false;
+
+            left = NormalizePath(left);
+            right = NormalizePath(right);
+            if (string.Equals(left, right, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var leftExtension = Path.GetExtension(left);
+            var rightExtension = Path.GetExtension(right);
+            if (!string.IsNullOrEmpty(leftExtension) && !string.IsNullOrEmpty(rightExtension))
+                return false;
+
+            var leftFileName = string.IsNullOrEmpty(leftExtension)
+                ? Path.GetFileName(left)
+                : Path.GetFileNameWithoutExtension(left);
+            var rightFileName = string.IsNullOrEmpty(rightExtension)
+                ? Path.GetFileName(right)
+                : Path.GetFileNameWithoutExtension(right);
+            return string.Equals(leftFileName, rightFileName, StringComparison.OrdinalIgnoreCase);
         }
 
         internal static bool HasCurrentBundle(string bundleName)

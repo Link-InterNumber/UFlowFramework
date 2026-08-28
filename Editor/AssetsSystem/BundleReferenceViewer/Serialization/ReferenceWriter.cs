@@ -41,5 +41,10 @@ namespace PowerCellStudio.Editor
             dataFile.Write(_memoryStream.ToArray());
             dataFile.Flush();
         }
+
+        public void Write<T>(T reference) where T : IBundleReferenceBinary
+        {
+            reference.WriteBytes(_writer);
+        }
     }
 }

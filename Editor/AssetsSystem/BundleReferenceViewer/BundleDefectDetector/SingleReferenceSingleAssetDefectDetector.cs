@@ -18,14 +18,21 @@ namespace PowerCellStudio.Editor
 
         public DefectLevel defectLevel => DefectLevel.Low;
 
-        public bool Detect(BundleReferenceQueryer queryer, BundleReferenceData bundleData)
+        public bool Detect(BundleReferenceQueryer queryer, BundleReferenceData bundleData, out string defectDetail)
         {
+            defectDetail = null;
             if (queryer == null || bundleData == null || string.IsNullOrEmpty(bundleData.bundleName))
                 return false;
             if (bundleData.bundleReferenced == null || bundleData.bundleReferenced.Count != 1)
                 return false;
 
-            return bundleData.assets?.Count == 1;
+            if (bundleData.assets?.Count == 1)
+            {
+                defectDetail = $"Bundle仅被 Bundle '{bundleData.bundleReferenced.First()}' 引用，且只包含资源 '{bundleData.assets[0]}'，可能存在过度拆包。";
+                return true;
+            }
+
+            return false;
         }
 
         public bool HasDefect(BundleReferenceQueryer queryer, BundleReferenceGroup group)
@@ -35,7 +42,7 @@ namespace PowerCellStudio.Editor
 
             foreach (var bundleName in group.bundleNames)
             {
-                if (Detect(queryer, queryer.GetBundleData(bundleName)))
+                if (Detect(queryer, queryer.GetBundleData(bundleName), out _))
                     return true;
             }
 

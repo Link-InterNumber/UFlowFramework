@@ -17,14 +17,16 @@ namespace PowerCellStudio.Editor
         public string tag => "依赖链路过长";
         public DefectLevel defectLevel => DefectLevel.Medium;
 
-        public bool Detect(BundleReferenceQueryer queryer, BundleReferenceData bundleData)
+        public bool Detect(BundleReferenceQueryer queryer, BundleReferenceData bundleData, out string defectDetail)
         {
+            defectDetail = null;
             if (queryer == null || bundleData == null || string.IsNullOrEmpty(bundleData.bundleName))
                 return false;
 
             // 计算从当前Bundle出发的最长依赖深度（BFS）
             var visited = new HashSet<string>();
             var queue = new Queue<(string name, int depth)>();
+            var parent = new Dictionary<string, string>();
             queue.Enqueue((bundleData.bundleName, 0));
             visited.Add(bundleData.bundleName);
 
@@ -33,7 +35,12 @@ namespace PowerCellStudio.Editor
             {
                 var (current, depth) = queue.Dequeue();
                 if (depth > maxDepth) maxDepth = depth;
-                if (depth >= MAX_DEPTH) return true; // 提前退出
+                if (depth >= MAX_DEPTH)
+                {
+                    var chain = BuildChain(current, parent);
+                    defectDetail = $"Bundle '{bundleData.bundleName}' 的依赖链路超过 {MAX_DEPTH} 层，最长链路: {string.Join(" -> ", chain)}（共 {depth} 层）。";
+                    return true;
+                }
 
                 var data = queryer.GetBundleData(current);
                 if (data?.bundleDependent == null) continue;
@@ -43,12 +50,26 @@ namespace PowerCellStudio.Editor
                     if (!visited.Contains(dep))
                     {
                         visited.Add(dep);
+                        parent[dep] = current;
                         queue.Enqueue((dep, depth + 1));
                     }
                 }
             }
 
-            return maxDepth >= MAX_DEPTH;
+            return false;
+        }
+
+        private static List<string> BuildChain(string node, Dictionary<string, string> parent)
+        {
+            var chain = new List<string>();
+            while (!string.IsNullOrEmpty(node))
+            {
+                chain.Add(node);
+                if (!parent.TryGetValue(node, out node))
+                    break;
+            }
+            chain.Reverse();
+            return chain;
         }
 
         public bool HasDefect(BundleReferenceQueryer queryer, BundleReferenceGroup group)
@@ -58,7 +79,7 @@ namespace PowerCellStudio.Editor
 
             foreach (var bundleName in group.bundleNames)
             {
-                if (Detect(queryer, queryer.GetBundleData(bundleName)))
+                if (Detect(queryer, queryer.GetBundleData(bundleName), out _))
                     return true;
             }
             return false;

@@ -30,6 +30,7 @@ namespace PowerCellStudio.Editor
                     await Task.Yield();
             }
 
+            queryer.SeBundleCount();
             return queryer;
         }
 
@@ -49,7 +50,7 @@ namespace PowerCellStudio.Editor
                     Debug.LogException(e);
                 }
             }
-
+            queryer.SeBundleCount();
             return queryer;
         }
 
@@ -69,6 +70,7 @@ namespace PowerCellStudio.Editor
                 var bundleReference = BundleReferenceManifest.manifest.GetDirectDependencies(bundleFiles[i]);
                 queryer.AddBundleData(fileName, bundleReference ?? Array.Empty<string>());
             }
+            queryer.SeBundleCount();
             return queryer;
         }
 
@@ -90,6 +92,7 @@ namespace PowerCellStudio.Editor
                 queryer.AddBundleData(data.bundleName, data.bundleDependent);
                 queryer.SetBundleDefects(data.bundleName, data.defects?.ToList() ?? new List<string>());
             }
+            queryer.SeBundleCount();
             return queryer;
         }
 

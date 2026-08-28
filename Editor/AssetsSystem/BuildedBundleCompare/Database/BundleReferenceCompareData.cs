@@ -81,15 +81,25 @@ namespace PowerCellStudio.Editor
             builtTypes = types ?? new Dictionary<string, int>();
             dependentBundles = dependencies ?? new List<string>();
             loadCost = totalLoadCost;
-            addedAssets = new HashSet<string>(currentAssets, StringComparer.OrdinalIgnoreCase);
-            addedAssets.ExceptWith(builtAssets);
-            removedAssets = new HashSet<string>(builtAssets, StringComparer.OrdinalIgnoreCase);
-            removedAssets.ExceptWith(currentAssets);
+            addedAssets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var asset in currentAssets)
+            {
+                if (BundleReferenceCompareUtility.FindMatchingAsset(asset, builtAssets) == null)
+                    addedAssets.Add(asset);
+            }
+
+            removedAssets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var asset in builtAssets)
+            {
+                if (BundleReferenceCompareUtility.FindMatchingAsset(asset, currentAssets) == null)
+                    removedAssets.Add(asset);
+            }
+
             allAssets = new List<string>(builtAssets.Count + currentAssets.Count);
             allAssets.AddRange(builtAssets);
             foreach (var asset in currentAssets)
             {
-                if (!builtAssets.Contains(asset))
+                if (BundleReferenceCompareUtility.FindMatchingAsset(asset, builtAssets) == null)
                     allAssets.Add(asset);
             }
             allAssets.Sort(StringComparer.OrdinalIgnoreCase);

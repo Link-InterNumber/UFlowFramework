@@ -42,7 +42,7 @@ namespace PowerCellStudio.Editor
                 //     EditorUtility.DisplayDialog("CompatibilityAssetBundleManifest 读取失败", "目标分包中不存在 CompatibilityAssetBundleManifest 资源.", "OK");
                 //     return;
                 // }
-
+                //
                 // if (compatibilityManifest != null)
                 // {
                 //     manifest = new CompatibilityBundleReferenceManifest(compatibilityManifest, bundleDi);

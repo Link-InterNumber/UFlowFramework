@@ -86,9 +86,8 @@ namespace PowerCellStudio.Editor
                 {
                     for (var i = 0; i < assets.Count; i++)
                     {
-                        var asset = assets[i];
+                        var assetPath = assets[i];
                         var assetLabel = new Label();
-                        var assetPath = asset.assetPath;
                         assetLabel.text = assetPath;
                         assetLabel.RegisterCallback<MouseDownEvent>(_ => BundleReferenceUtils.PingAsset(assetPath));
                         scrollView.Add(assetLabel);
@@ -108,12 +107,12 @@ namespace PowerCellStudio.Editor
                 {
                     for (var i = 0; i < assets.Count; i++)
                     {
-                        var asset = assets[i];
-                        if (asset == null || string.IsNullOrEmpty(asset.assetPath))
+                        var assetPath = assets[i];
+                        if (string.IsNullOrEmpty(assetPath))
                             continue;
 
-                        var assetNode = new AssetReferenceNode(asset);
-                        _assetNodes[asset.assetPath] = assetNode;
+                        var assetNode = new AssetReferenceNode(assetPath);
+                        _assetNodes[assetPath] = assetNode;
                         contentContainer.Add(assetNode);
                         assetCount++;
                     }
@@ -186,9 +185,9 @@ namespace PowerCellStudio.Editor
 
             private const float HighlightOutlineWidth = 2f;
 
-            public AssetReferenceNode(AssetReferenceData data)
+            public AssetReferenceNode(string assetPath)
             {
-                AssetPath = data.assetPath;
+                AssetPath = assetPath;
                 title = Path.GetFileName(AssetPath);
                 capabilities &= _capabilities;
                 tooltip = AssetPath;
@@ -198,13 +197,11 @@ namespace PowerCellStudio.Editor
                 style.minHeight = ResourceNodeHeight;
                 style.maxHeight = ResourceNodeHeight;
 
-                InputPort = InstantiatePort(Orientation.Horizontal, Direction.Input,
-                    Port.Capacity.Multi, typeof(bool));
+                InputPort = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, typeof(bool));
                 InputPort.portName = "被引用";
                 inputContainer.Add(InputPort);
 
-                OutputPort = InstantiatePort(Orientation.Horizontal, Direction.Output,
-                    Port.Capacity.Multi, typeof(bool));
+                OutputPort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(bool));
                 OutputPort.portName = "引用";
                 outputContainer.Add(OutputPort);
 

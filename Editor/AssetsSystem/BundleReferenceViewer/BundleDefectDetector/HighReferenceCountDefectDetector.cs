@@ -15,18 +15,22 @@ namespace PowerCellStudio.Editor
         public string tag => "引用分散";
         public DefectLevel defectLevel => DefectLevel.Medium;
 
-        public bool Detect(BundleReferenceQueryer queryer, BundleReferenceData bundleData)
+        public bool Detect(BundleReferenceQueryer queryer, BundleReferenceData bundleData, out string defectDetail)
         {
+            defectDetail = null;
             if (queryer == null || bundleData == null || string.IsNullOrEmpty(bundleData.bundleName))
                 return false;
 
             if (bundleData.bundleReferenced == null || bundleData.bundleReferenced.Count < REFERENCE_THRESHOLD)
                 return false;
 
-            // 确保资源列表已加载
-            queryer.EnsureAssets(bundleData.bundleName);
             int assetCount = bundleData.assets?.Count ?? 0;
-            return assetCount >= ASSET_THRESHOLD;
+            if (assetCount >= ASSET_THRESHOLD)
+            {
+                defectDetail = $"Bundle '{bundleData.bundleName}' 被 {bundleData.bundleReferenced.Count} 个其他 Bundle 引用，且包含 {assetCount} 个资源；引用方: {string.Join(", ", bundleData.bundleReferenced)}，可能加载大量无关资源。";
+                return true;
+            }
+            return false;
         }
 
         public bool HasDefect(BundleReferenceQueryer queryer, BundleReferenceGroup group)
@@ -36,7 +40,7 @@ namespace PowerCellStudio.Editor
 
             foreach (var bundleName in group.bundleNames)
             {
-                if (Detect(queryer, queryer.GetBundleData(bundleName)))
+                if (Detect(queryer, queryer.GetBundleData(bundleName), out _))
                     return true;
             }
             return false;

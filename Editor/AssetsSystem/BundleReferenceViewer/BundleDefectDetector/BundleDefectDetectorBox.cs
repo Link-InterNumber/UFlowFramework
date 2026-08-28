@@ -16,7 +16,7 @@ namespace PowerCellStudio.Editor
                 // new OrphanBundleDefectDetector(),               // Low
                 new ReferencesScatteredDefectDetector(),        // Medium
                 new DeepDependencyDefectDetector(),             // Medium
-                new HighReferenceCountDefectDetector(),         // Medium
+                // new HighReferenceCountDefectDetector(),         // Medium
                 new CircularBundleReferenceDefectDetector()     // High
             };
         }
@@ -61,28 +61,25 @@ namespace PowerCellStudio.Editor
             }
         }
 
-        public void DetectBundle(BundleReferenceData data, BundleReferenceQueryer queryer)
+        public void DetectBundleAndMarkGroup(BundleReferenceData data, BundleReferenceQueryer queryer)
         {
             if (data == null || queryer == null || detectors == null)
                 return;
 
-            if (data.tags == null)
-            {
-                data.tags = ListPool<string>.Get();
-            }
-            else
-            {
-                data.tags.Clear();
-            }
+            data.defectLevel = DefectLevel.None;
+            data.tags.Clear();
+            data.defectDetail.Clear();
             var group = queryer.GetGroupByBundle(data.bundleName);
             var defectInfos = group?.defectInfos;
             for (var i = 0; i < detectors.Count; i++)
             {
                 var detector = detectors[i];
-                if (!detector.Detect(queryer, data)) continue;
+                if (!detector.Detect(queryer, data, out var defectDetail)) continue;
                 data.defectLevel |= detector.defectLevel;
                 data.tags.Add(detector.tag);
+                data.defectDetail.Add(defectDetail);
                 if (defectInfos == null) continue;
+                group.defectLevel |= detector.defectLevel;
                 if (defectInfos.TryGetValue(detector.tag, out var info))
                 {
                     info.count++;
@@ -102,30 +99,48 @@ namespace PowerCellStudio.Editor
             }
         }
 
-        public List<GroupDefectInfo> EvaluateBundle(BundleReferenceData data, BundleReferenceQueryer queryer)
+        public void DetectBundleOnly(BundleReferenceData data, BundleReferenceQueryer queryer)
         {
-            var results = new List<GroupDefectInfo>();
             if (data == null || queryer == null || detectors == null)
-                return results;
-
+                return;
+        
+            data.defectLevel = DefectLevel.None;
+            data.tags.Clear();
+            data.defectDetail.Clear();
             for (var i = 0; i < detectors.Count; i++)
             {
                 var detector = detectors[i];
-                if (!detector.Detect(queryer, data))
-                    continue;
-
-                results.Add(new GroupDefectInfo
-                {
-                    level = detector.defectLevel,
-                    count = 1,
-                    bundleNames = new List<string> { data.bundleName },
-                    tag = detector.tag,
-                    toolTips = detector.toolTips
-                });
+                if (!detector.Detect(queryer, data, out var defectDetail)) continue;
+                data.defectLevel |= detector.defectLevel;
+                data.tags.Add(detector.tag);
+                data.defectDetail.Add(defectDetail);
             }
-
-            return results;
         }
+        
+        // public List<GroupDefectInfo> EvaluateBundle(BundleReferenceData data, BundleReferenceQueryer queryer)
+        // {
+        //     var results = new List<GroupDefectInfo>();
+        //     if (data == null || queryer == null || detectors == null)
+        //         return results;
+        //
+        //     for (var i = 0; i < detectors.Count; i++)
+        //     {
+        //         var detector = detectors[i];
+        //         if (!detector.Detect(queryer, data, out var defectDetail))
+        //             continue;
+        //
+        //         results.Add(new GroupDefectInfo
+        //         {
+        //             level = detector.defectLevel,
+        //             count = 1,
+        //             bundleNames = new List<string> { data.bundleName },
+        //             tag = detector.tag,
+        //             toolTips = detector.toolTips
+        //         });
+        //     }
+        //
+        //     return results;
+        // }
         
     }
 }

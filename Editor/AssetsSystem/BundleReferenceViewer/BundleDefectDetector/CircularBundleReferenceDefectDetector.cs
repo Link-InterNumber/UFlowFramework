@@ -18,23 +18,40 @@ namespace PowerCellStudio.Editor
 
         private int _maxRecursionDepth = 6;
 
-        public bool Detect(BundleReferenceQueryer queryer, BundleReferenceData bundleData)
+        public bool Detect(BundleReferenceQueryer queryer, BundleReferenceData bundleData, out string defectDetail)
         {
+            defectDetail = null;
             if (queryer == null || bundleData == null || string.IsNullOrEmpty(bundleData.bundleName))
                 return false;
 
             // 使用DFS检测从当前节点出发是否存在环
             var state = DictionaryPool<string, int>.Get(); // 0-未访问，1-访问中，2-已访问
-            var result = HasCycle(queryer, bundleData.bundleName, state, 0);
+            var path = new List<string>(_maxRecursionDepth + 2);
+            var result = HasCycle(queryer, bundleData.bundleName, state, path, 0, out var cyclePath);
             DictionaryPool<string, int>.Release(state);
+            if (result)
+            {
+                defectDetail = $"Bundle '{bundleData.bundleName}' 存在循环依赖，环路: {string.Join(" -> ", cyclePath)}。";
+            }
             return result;
         }
 
-        private bool HasCycle(BundleReferenceQueryer queryer, string node, Dictionary<string, int> state, int depth)
+        private bool HasCycle(BundleReferenceQueryer queryer, string node,
+            Dictionary<string, int> state, List<string> path, int depth, out List<string> cyclePath)
         {
+            cyclePath = null;
             if (state.TryGetValue(node, out int status))
             {
-                return status == 1; // 访问中，说明存在环
+                if (status != 1)
+                    return false;
+
+                var cycleStartIndex = path.IndexOf(node);
+                if (cycleStartIndex < 0)
+                    return false;
+
+                cyclePath = path.GetRange(cycleStartIndex, path.Count - cycleStartIndex);
+                cyclePath.Add(node);
+                return true;
             }
 
             if (depth > _maxRecursionDepth)
@@ -44,17 +61,19 @@ namespace PowerCellStudio.Editor
             }
 
             state[node] = 1; // 标记访问中
+            path.Add(node);
 
             var data = queryer.GetBundleData(node);
             if (data?.bundleDependent != null)
             {
                 foreach (var dep in data.bundleDependent)
                 {
-                    if (HasCycle(queryer, dep, state, depth + 1))
+                    if (HasCycle(queryer, dep, state, path, depth + 1, out cyclePath))
                         return true;
                 }
             }
 
+            path.RemoveAt(path.Count - 1);
             state[node] = 2; // 标记已访问
             return false;
         }
@@ -68,7 +87,7 @@ namespace PowerCellStudio.Editor
             // 这里简单遍历，但会重复计算，可优化但忽略。
             foreach (var bundleName in group.bundleNames)
             {
-                if (Detect(queryer, queryer.GetBundleData(bundleName)))
+                if (Detect(queryer, queryer.GetBundleData(bundleName), out _))
                     return true;
             }
             return false;

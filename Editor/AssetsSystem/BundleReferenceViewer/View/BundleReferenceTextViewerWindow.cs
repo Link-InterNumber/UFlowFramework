@@ -9,8 +9,8 @@ using UnityEngine.UIElements;
 namespace PowerCellStudio.Editor
 {
     /// <summary>
-    /// 读取并以纯文本方式显示 BundleReferenceData 分析文件。
-    /// Reads and displays BundleReferenceData analysis files as plain text.
+    /// 读取并以纯文本方式显示 BundleReferenceReport 分析文件。
+    /// Reads and displays BundleReferenceReport analysis files as plain text.
     /// </summary>
     public sealed class BundleReferenceTextViewerWindow : EditorWindow
     {
@@ -93,13 +93,14 @@ namespace PowerCellStudio.Editor
                 makeItem = () =>
                 {
                     var label = new Label();
-                    label.style.whiteSpace = WhiteSpace.Normal;
+                    label.style.whiteSpace = WhiteSpace.PreWrap;
                     return label;
                 },
                 bindItem = (element, index) =>
                 {
                     var label = (Label)element;
                     label.text = _contentLines[index];
+                    label.style.minHeight = 18f;
                     label.style.paddingLeft = 6f;
                     label.style.paddingRight = 6f;
                     label.style.color = index == 0
@@ -110,7 +111,7 @@ namespace PowerCellStudio.Editor
                         : FontStyle.Normal;
                 },
                 itemsSource = _contentLines,
-                fixedItemHeight = 18f,
+                virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight,
                 selectionType = SelectionType.None
             };
             _contentView.style.flexGrow = 1f;
@@ -129,7 +130,7 @@ namespace PowerCellStudio.Editor
         private void OpenAnalysisFile()
         {
             var path = EditorUtility.OpenFilePanel(
-                "选择 BundleReferenceData 分析文件",
+                "选择 BundleReferenceReport 分析文件",
                 ResolveInitialDirectory(),
                 "bin");
             if (string.IsNullOrEmpty(path))
@@ -166,32 +167,27 @@ namespace PowerCellStudio.Editor
 
             using (var reader = new ReferenceReader())
             {
-                foreach (var data in reader.Read<BundleReferenceInfo>(path)
-                             .OrderByDescending(item => item.defects.Length))
+                var report = reader.ReadSingle<BundleReferenceReport>(path);
+                lines.Add($"分析时间: {report.dateTime}");
+                lines.Add($"Bundle 总数: {report.bundleCount}");
+                lines.Add($"缺陷 Bundle 数: {report.bundleDefectReports.Count}");
+                lines.Add(new string('-', 80));
+
+                foreach (var data in report.bundleDefectReports
+                             .OrderByDescending(item => item.defectLevel)
+                             .ThenBy(item => item.bundleName))
                 {
                     bundleCount++;
                     lines.Add($"Bundle: {data.bundleName}");
-                    lines.Add($"  依赖 Bundle ({data.bundleDependent?.Length ?? 0}):");
-
-                    if (data.bundleDependent == null || data.bundleDependent.Length == 0)
-                    {
+                    lines.Add($"  缺陷等级: {data.defectLevel}");
+                    lines.Add($"  缺陷标签: {data.tag}");
+                    lines.Add("  缺陷详情:");
+                    if (string.IsNullOrEmpty(data.defectDetail))
                         lines.Add("    无");
-                    }
                     else
                     {
-                        for (var i = 0; i < data.bundleDependent.Length; i++)
-                            lines.Add($"    - {data.bundleDependent[i]}");
-                    }
-
-                    lines.Add($"  缺陷标签 ({data.defects?.Length ?? 0}):");
-                    if (data.defects == null || data.defects.Length == 0)
-                    {
-                        lines.Add("    无");
-                    }
-                    else
-                    {
-                        for (var i = 0; i < data.defects.Length; i++)
-                            lines.Add($"    - {data.defects[i]}");
+                        foreach (var detail in data.defectDetail.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                            lines.Add($"    {detail}");
                     }
 
                     lines.Add(new string('-', 80));
@@ -199,7 +195,7 @@ namespace PowerCellStudio.Editor
             }
 
             if (bundleCount == 0)
-                lines.Add("分析文件中没有 Bundle 数据。");
+                lines.Add("分析报告中没有缺陷 Bundle 数据。");
 
             return lines;
         }

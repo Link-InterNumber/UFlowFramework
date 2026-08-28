@@ -24,11 +24,13 @@ namespace PowerCellStudio.Editor
         private TextField _buildDirectoryField;
         private TextField _manifestNameField;
         private TextField _baselineFileField;
+        private UnityEditor.UIElements.ToolbarSearchField _bundleSearchField;
         private Label _summaryLabel;
         private ListView _bundleList;
         private VisualElement _bundleListResizer;
         private ScrollView _detailView;
         private readonly List<BundleCompareItem> _items = new List<BundleCompareItem>();
+        private readonly List<BundleCompareItem> _allItems = new List<BundleCompareItem>();
         private readonly Dictionary<string, BuiltBundleData> _builtData = new Dictionary<string, BuiltBundleData>(StringComparer.OrdinalIgnoreCase);
         private HashSet<string> _currentBundleNames;
         private List<BundleBuildBaselineInfo> _baseline;
@@ -79,6 +81,13 @@ namespace PowerCellStudio.Editor
             toolbar.Add(_manifestNameField);
             toolbar.Add(new Button(Compare) { text = "开始对比" });
             toolbar.Add(new Button(Clear) { text = "清空" });
+            _bundleSearchField = new UnityEditor.UIElements.ToolbarSearchField
+            {
+                tooltip = "模糊搜索 Bundle 名称"
+            };
+            _bundleSearchField.style.width = 220f;
+            _bundleSearchField.RegisterValueChangedCallback(evt => ApplyBundleSearch(evt.newValue));
+            toolbar.Add(_bundleSearchField);
 
             rootVisualElement.Add(toolbar);
 
@@ -296,6 +305,43 @@ namespace PowerCellStudio.Editor
                 _builtData);
         }
 
+        private void ApplyBundleSearch(string searchText)
+        {
+            _items.Clear();
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                _items.AddRange(_allItems);
+            }
+            else
+            {
+                var keywords = searchText.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                for (var i = 0; i < _allItems.Count; i++)
+                {
+                    var item = _allItems[i];
+                    if (MatchesAllKeywords(item.bundleName, keywords))
+                        _items.Add(item);
+                }
+            }
+
+            _bundleList?.ClearSelection();
+            _bundleList?.Rebuild();
+            _detailView?.Clear();
+        }
+
+        private static bool MatchesAllKeywords(string bundleName, IReadOnlyList<string> keywords)
+        {
+            if (string.IsNullOrEmpty(bundleName))
+                return false;
+
+            for (var i = 0; i < keywords.Count; i++)
+            {
+                if (bundleName.IndexOf(keywords[i], StringComparison.OrdinalIgnoreCase) < 0)
+                    return false;
+            }
+
+            return true;
+        }
+
         private static string GetStatusText(BundleCompareStatus status)
         {
             switch (status)
@@ -433,13 +479,13 @@ namespace PowerCellStudio.Editor
                     AssetDatabase.GetAllAssetBundleNames(),
                     StringComparer.OrdinalIgnoreCase);
 
-                _items.AddRange(BundleReferenceComparisonService.Compare(_baseline,
+                _allItems.AddRange(BundleReferenceComparisonService.Compare(_baseline,
                     _currentBundleNames));
+                _totalBuiltSize = _allItems.Sum(item => item.builtSize);
+                ApplyBundleSearch(_bundleSearchField?.value);
                 EditorPrefs.SetString(BundleReferenceCompareSettings.HistoryBuildDirectoryKey, directory);
                 EditorPrefs.SetString(BundleReferenceCompareSettings.HistoryManifestNameKey, manifestName);
-                _totalBuiltSize = _items.Sum(item => item.builtSize);
-                _bundleList.Rebuild();
-                _summaryLabel.text = BundleReferenceComparisonService.BuildSummary(_items);
+                _summaryLabel.text = BundleReferenceComparisonService.BuildSummary(_allItems);
                 // if (_items.Count > 0)
                 //     _bundleList.SetSelection(0);
             }
@@ -475,7 +521,7 @@ namespace PowerCellStudio.Editor
             _detailView.Add(CreateDetailLabel($"加载成本: {BundleReferenceCompareUtility.FormatSize(item.loadCost)}（包含自身及全部依赖）"));
             _detailView.Add(CreateDetailLabel($"依赖分包: {item.dependentBundles.Count} 个"));
             if (item.dependentBundles.Count > 0)
-                _detailView.Add(CreateDetailLabel("依赖列表: " + string.Join("、", item.dependentBundles)));
+                _detailView.Add(CreateDependencyBundleList(item.dependentBundles));
             _detailView.Add(CreateDetailLabel($"资源: 已构建 {item.builtAssets.Count}  |  当前配置 {item.currentAssets.Count}  |  新增 {item.addedAssets.Count}  |  移除 {item.removedAssets.Count}"));
             _detailView.Add(CreateDetailLabel("类型: " + BundleReferenceCompareFormatter.FormatTypes(item.builtTypes)));
             if (_baseline != null && item.hasBaseline)
@@ -515,6 +561,40 @@ namespace PowerCellStudio.Editor
             return label;
         }
 
+        private static VisualElement CreateDependencyBundleList(IReadOnlyList<string> bundleNames)
+        {
+            var container = new VisualElement();
+            container.style.marginBottom = 6f;
+            container.Add(CreateDetailLabel("依赖列表（可选择并复制 Bundle 名称）:"));
+
+            var items = bundleNames as System.Collections.IList ?? new List<string>(bundleNames);
+            var list = new ListView(items, 22f, MakeDependencyBundleItem, (element, index) =>
+            {
+                if (element is TextField field && index >= 0 && index < items.Count)
+                    field.SetValueWithoutNotify(items[index] as string ?? string.Empty);
+            })
+            {
+                virtualizationMethod = CollectionVirtualizationMethod.FixedHeight,
+                selectionType = SelectionType.Single
+            };
+            list.style.height = Mathf.Min(200f, bundleNames.Count * 22f + 4f);
+            list.style.maxHeight = 200f;
+            list.style.minHeight = 26f;
+            container.Add(list);
+            return container;
+        }
+
+        private static VisualElement MakeDependencyBundleItem()
+        {
+            var field = new TextField
+            {
+                isReadOnly = true
+            };
+            field.style.flexGrow = 1f;
+            field.style.height = 22f;
+            return field;
+        }
+
         private void AddAssetList(BundleCompareItem item)
         {
             var header = new VisualElement();
@@ -532,9 +612,14 @@ namespace PowerCellStudio.Editor
             var list = new ListView(item.allAssets, 24f, MakeAssetRow, (element, index) =>
             {
                 var asset = item.allAssets[index];
-                var existsBuilt = item.builtAssets.Contains(asset);
-                var existsCurrent = item.currentAssets.Contains(asset);
-                var existsBaseline = _baseline != null && item.hasBaseline && item.baselineAssets.Contains(asset);
+                var builtAsset = BundleReferenceCompareUtility.FindMatchingAsset(asset, item.builtAssets);
+                var existsBuilt = builtAsset != null;
+                var currentAsset = BundleReferenceCompareUtility.FindMatchingAsset(asset, item.currentAssets);
+                var existsCurrent = currentAsset != null;
+                var baselineAsset = _baseline != null && item.hasBaseline
+                    ? BundleReferenceCompareUtility.FindMatchingAsset(asset, item.baselineAssets)
+                    : null;
+                var existsBaseline = baselineAsset != null;
                 var builtLabel = element.Q<Label>("BuiltAssetLabel");
                 var currentLabel = element.Q<Label>("CurrentAssetLabel");
                 var builtMarker = string.Empty;
@@ -556,8 +641,8 @@ namespace PowerCellStudio.Editor
                     : !existsBuilt && existsBaseline
                         ? baselineRemovedColor
                         : existsBuilt && !existsCurrent ? removeColor : newColor;
-                BindAssetLabel(builtLabel, existsBuilt || existsBaseline ? asset : null, builtMarker, builtColor);
-                BindAssetLabel(currentLabel, existsCurrent ? asset : null, !existsBuilt && existsCurrent ? "【新增】" : string.Empty, newColor);
+                BindAssetLabel(builtLabel, existsBuilt || existsBaseline ? builtAsset ?? baselineAsset : null, builtMarker, builtColor);
+                BindAssetLabel(currentLabel, existsCurrent ? currentAsset : null, !existsBuilt && existsCurrent ? "【新增】" : string.Empty, newColor);
             });
             list.style.minHeight = 180;
             list.style.flexGrow = 1;
@@ -637,6 +722,7 @@ namespace PowerCellStudio.Editor
         private void Clear()
         {
             _items.Clear();
+            _allItems.Clear();
             _builtData.Clear();
             _currentBundleNames = null;
             _baseline = null;

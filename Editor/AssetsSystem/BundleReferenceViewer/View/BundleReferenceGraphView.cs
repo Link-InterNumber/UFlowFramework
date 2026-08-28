@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -15,8 +14,7 @@ namespace PowerCellStudio.Editor
         private const float VerticalGap = 30f;
         private const float VerticalSpacing = 120f;
         private static readonly Color CanvasColor = new Color(0.3f, 0.3f, 0.3f, 1f);
-        private readonly Dictionary<string, BundleReferenceBundleNode> _bundleNodeMap =
-            new Dictionary<string, BundleReferenceBundleNode>();
+        private readonly Dictionary<string, BundleReferenceBundleNode> _bundleNodeMap = new Dictionary<string, BundleReferenceBundleNode>();
         private List<Button> _tipButtons = new List<Button>();
 
         public BundleReferenceGraphView()
@@ -50,24 +48,21 @@ namespace PowerCellStudio.Editor
             var visibleBundles = group == null
                 ? null
                 : CollectVisibleBundles(queryer, group, bundleName, referenceDepth);
-            ShowBundles(queryer, group, visibleBundles, bundleName, defectDetectorBox, isSimplifyMode);
+            ShowBundles(queryer, group, visibleBundles, bundleName, isSimplifyMode);
         }
 
-        public void ShowGroup(BundleReferenceQueryer queryer, string groupName,
-            BundleDefectDetectorBox defectDetectorBox, bool isSimplifyMode)
+        public void ShowGroup(BundleReferenceQueryer queryer, string groupName, bool isSimplifyMode)
         {
             if (queryer == null || string.IsNullOrEmpty(groupName))
                 return;
 
             if (!queryer.GetAllGroups().TryGetValue(groupName, out var group))
                 return;
-
-            ShowBundles(queryer, group, group.bundleNames, null, defectDetectorBox, isSimplifyMode);
+            ShowBundles(queryer, group, group.bundleNames, null, isSimplifyMode);
         }
 
         private void ShowBundles(BundleReferenceQueryer queryer, BundleReferenceGroup group,
-            IReadOnlyCollection<string> visibleBundles, string focusedBundleName,
-            BundleDefectDetectorBox defectDetectorBox, bool isSimplifyMode)
+            IReadOnlyCollection<string> visibleBundles, string focusedBundleName, bool isSimplifyMode)
         {
             ClearGraph();
             if (queryer == null || group?.bundleNames == null || visibleBundles == null || visibleBundles.Count == 0)
@@ -76,11 +71,9 @@ namespace PowerCellStudio.Editor
             // 构建节点
             var nodeMap = new Dictionary<string, BundleReferenceBundleNode>();
             var assetNodeMap = new Dictionary<string, BundleReferenceBundleNode.AssetReferenceNode>();
-            group.defectInfos.Clear();
             foreach (var visibleBundle in visibleBundles)
             {
                 var bundleInfo = queryer.GetBundleData(visibleBundle);
-                defectDetectorBox.DetectBundle(bundleInfo, queryer);
                 var node = new BundleReferenceBundleNode(bundleInfo, isSimplifyMode);
                 nodeMap.Add(visibleBundle, node);
                 _bundleNodeMap[visibleBundle] = node;
@@ -100,8 +93,9 @@ namespace PowerCellStudio.Editor
                     if (bundleInfo.assets == null)
                         continue;
 
-                    foreach (var asset in bundleInfo.assets)
+                    foreach (var assetName in bundleInfo.assets)
                     {
+                        var asset = queryer.GetAssetData(assetName);
                         if (asset == null || asset.assetPath == null || !assetNodeMap.TryGetValue(asset.assetPath, out var sourceNode))
                             continue;
 

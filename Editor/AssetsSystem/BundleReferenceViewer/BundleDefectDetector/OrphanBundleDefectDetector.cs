@@ -12,15 +12,21 @@ namespace PowerCellStudio.Editor
         public string tag => "孤立";
         public DefectLevel defectLevel => DefectLevel.Low;
 
-        public bool Detect(BundleReferenceQueryer queryer, BundleReferenceData bundleData)
+        public bool Detect(BundleReferenceQueryer queryer, BundleReferenceData bundleData, out string defectDetail)
         {
+            defectDetail = null;
             if (queryer == null || bundleData == null || string.IsNullOrEmpty(bundleData.bundleName))
                 return false;
 
             bool noReferenced = bundleData.bundleReferenced == null || bundleData.bundleReferenced.Count == 0;
             bool noDependent = bundleData.bundleDependent == null || bundleData.bundleDependent.Count == 0;
             bool hasAssets = (bundleData.assets?.Count ?? 0) > 0;
-            return noReferenced && noDependent && hasAssets;
+            if (noReferenced && noDependent && hasAssets)
+            {
+                defectDetail = $"Bundle '{bundleData.bundleName}' 没有被其他 Bundle 引用，也不依赖其他 Bundle，包含 {bundleData.assets.Count} 个资源（{string.Join(", ", bundleData.assets)}），可能是废弃资源。";
+                return true;
+            }
+            return false;
         }
 
         public bool HasDefect(BundleReferenceQueryer queryer, BundleReferenceGroup group)
@@ -30,7 +36,7 @@ namespace PowerCellStudio.Editor
 
             foreach (var bundleName in group.bundleNames)
             {
-                if (Detect(queryer, queryer.GetBundleData(bundleName)))
+                if (Detect(queryer, queryer.GetBundleData(bundleName), out _))
                     return true;
             }
             return false;
