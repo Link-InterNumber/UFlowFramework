@@ -32,11 +32,6 @@ Generate a Chinese `.md` document with this structure unless the user requests a
 
 Briefly describe what the feature does and why it exists.
 
-## Location
-
-- Source: `<relative/path/to/file>`
-- Main symbols: `<ClassOrStruct>`, `<Method>`, `<Interface>`
-
 ## Core Concepts
 
 Explain the important concepts, data structures, dependencies, and execution flow.
@@ -66,11 +61,6 @@ Provide a realistic, compilable or near-compilable code example.
 - Null/default handling
 - Performance notes
 - Threading/ECS/world lifecycle notes if relevant
-
-## Related Files
-
-- `<path>` - why it is related
-```
 
 ## Procedure
 
