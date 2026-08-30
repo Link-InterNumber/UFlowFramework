@@ -173,7 +173,7 @@ namespace PowerCellStudio.Editor
             }
         }
 
-        [MenuItem("Tools/UFlow/设置图片压缩格式（整个文件夹）")]
+        [MenuItem("Tools/UFlow/Texture/设置图片压缩格式（整个文件夹）")]
         static void SetTextureFormat()
         {
             EditorWindow.GetWindow<TextureFormatSetter>(false, "设置图片压缩格式", true).Show();

@@ -9,7 +9,7 @@ namespace PowerCellStudio.Editor
 {
     public class BundleReferenceViewerWindow : EditorWindow
     {
-        [MenuItem("Tools/UFlow/Bundle Reference")]
+        [MenuItem("Tools/UFlow/Bundle Analysis/Bundle Reference", priority = 100)]
         private static void ShowWindow()
         {
             var window = GetWindow<BundleReferenceViewerWindow>();
@@ -196,7 +196,7 @@ namespace PowerCellStudio.Editor
             foldout.text = $"{item.groupName} ({item.bundleNames.Count}/{item.totalBundleCount})";
             foldout.style.color = item.defectLevel != DefectLevel.None
                 ? BundleReferenceUtils.GetDefectColor(item.defectLevel)
-                : Color.whiteSmoke;
+                : Color.white;
             
             foldout.SetValueWithoutNotify(_groupExpandedState[item.groupName]);
             foldout.Clear();
@@ -244,7 +244,7 @@ namespace PowerCellStudio.Editor
                     var bundleData = _queryer.GetBundleData(bundleName);
                     button.style.color = (bundleData != null && bundleData.defectLevel != DefectLevel.None)
                         ? BundleReferenceUtils.GetDefectColor(bundleData.defectLevel)
-                        : Color.whiteSmoke;
+                        : Color.white;
                 });
             bundleList.selectionType = SelectionType.None;
             bundleList.style.height = Mathf.Min(item.bundleNames.Count * 22f, 220f);

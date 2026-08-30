@@ -8,11 +8,11 @@ namespace PowerCellStudio.Editor
 {
     public class BundleReferenceExporter : IDisposable
     {
-        [MenuItem("Tools/UFlow/Analyze All Bundles", priority = 100)]
+        [MenuItem("Tools/UFlow/Bundle Analysis/Create Analysis File", priority = 101)]
         public static void BundleReferenceExporterHandler()
         {
             using var analyzer = new BundleReferenceExporter();
-            analyzer.AnalyzeSync();
+            analyzer.AnalyzeSync(true, true);
         }
 
         private static async Task RunAnalysisAsync()
@@ -53,15 +53,20 @@ namespace PowerCellStudio.Editor
             _queryer?.Dispose();
         }
 
-        public void AnalyzeSync()
+        public void AnalyzeSync(bool writeFile, bool showWindow)
         {
             if (_queryer != null) _queryer.Dispose();
             Debug.Log("正在分析所有Bundle，请稍等...");
             _queryer = QueryerFactory.GenerateQueryerByCurrentProjectSync();
             BundleReferenceAnalyzer.DetectorGroupDefect(_queryer, _defectDetectorBox);
-            var filePath = $"{QueryerFactory.serializedAssetDirectory}{DateTime.Now:yyyyMMddHHmmss}.bin";
-            WriteReport(filePath);
-            EditorUtility.DisplayDialog("分析完成", $"分析完成，数据已保存到 {filePath}", "OK");
+            if (writeFile)
+            {
+                var filePath = $"{QueryerFactory.serializedAssetDirectory}{DateTime.Now:yyyyMMddHHmmss}.bin";
+                WriteReport(filePath);
+                EditorUtility.DisplayDialog("分析完成", $"分析完成，数据已保存到 {filePath}", "OK");
+                if (showWindow)
+                    BundleReferenceTextViewerWindow.ShowWindow(filePath);
+            }
         }
         
         private async Task InitAsync()

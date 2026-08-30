@@ -17,7 +17,6 @@ namespace PowerCellStudio.Editor
         // private static string _localizationCsvHeader =
         //     "Key,Id,Chinese (Simplified)(zh-Hans),Chinese (Traditional)(zh-Hant),English(en),Japanese(ja)\n";
         
-        [MenuItem("Tools/Config/Create Cs Files", false, 100)]
         public static void CreateCsFiles()
         {
             try

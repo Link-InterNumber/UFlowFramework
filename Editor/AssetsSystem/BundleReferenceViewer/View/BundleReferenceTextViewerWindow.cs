@@ -22,13 +22,27 @@ namespace PowerCellStudio.Editor
         private Label _summaryLabel;
         private string _currentFilePath;
 
-        [MenuItem("Tools/UFlow/Bundle Reference Text Viewer")]
+        [MenuItem("Tools/UFlow/Bundle Analysis/Read Analysis File", priority = 102)]
         private static void ShowWindow()
         {
             var window = GetWindow<BundleReferenceTextViewerWindow>();
             window.titleContent = new GUIContent("Bundle Reference Text Viewer");
             window.minSize = new Vector2(640f, 400f);
             window.Show();
+        }
+        
+        public static void ShowWindow(string filePath)
+        {
+            var window = GetWindow<BundleReferenceTextViewerWindow>();
+            window.titleContent = new GUIContent("Bundle Reference Text Viewer");
+            window.minSize = new Vector2(640f, 400f);
+            window.Show();
+            
+            var lines = ReadAnalysisLines(filePath);
+            window._currentFilePath = filePath;
+            window._fileLabel.text = Path.GetFileName(filePath);
+            window._fileLabel.tooltip = filePath;
+            window.ShowLines(lines);
         }
 
         private void CreateGUI()
