@@ -10,7 +10,6 @@ namespace PowerCellStudio.Editor
 {
     public class FolderBundleEditorWindow : EditorWindow
     {
-        [MenuItem("Build/AssetBundle/Folder AssetBundle Settings")]
         public static void ShowWindow()
         {
             GetWindow<FolderBundleEditorWindow>("Folder AssetBundle Settings");

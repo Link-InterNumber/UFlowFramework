@@ -22,7 +22,6 @@ namespace PowerCellStudio.Editor
         private string _currentSavePath;
         private string _currentEnumPath;
 
-        [MenuItem("Tools/UFlow/Notify/Editor Graph")]
         public static void OpenWindow()
         {
             NotifyGraphWindow window = GetWindow<NotifyGraphWindow>();

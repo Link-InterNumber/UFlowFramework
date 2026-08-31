@@ -8,103 +8,120 @@ disable-model-invocation: false
 
 # Code Feature Documentation
 
-## Goal
+## 目标
 
-生成中文 Markdown 文档，说明现有代码功能，包括功能作用、使用场景、工作原理和实际代码示例。
-生成的文档行文和排版风格应与现有项目文档保持一致。
-Create clear Chinese Markdown documentation for an existing code feature, including what it does, when to use it, how it works, and practical code examples.
+生成面向开发者的中文 Markdown 功能文档，依据现有代码说明系统的职责、运行机制、接入方式和扩展方式。文档应与项目现有文档的语言、标题层级和示例风格保持一致。
 
-Use this skill when the user asks to:
-- Write docs for a class, struct, interface, method, component, system, module, or feature.
-- Explain code behavior in Markdown.
-- Generate usage examples for existing code.
-- Create developer-facing documentation from source code.
-- Document Unity, C#, ECS, gameplay, networking, asset, config, or tool code.
+本技能适用于类、接口、组件、模块、工具、系统及其他可独立使用的代码功能。
 
-## Required Output
+## 必须遵循的输出结构
 
-Generate a Chinese `.md` document with this structure unless the user requests a different format:
+除非用户明确指定其他格式，文档必须按以下顺序组织。标题名称可以根据功能语义调整，但六个主题不可缺失。
 
 ```markdown
-# <Feature Name>
+# <功能名称>
 
-## Overview
+## 1. 系统概述
+## 2. 工作原理与优化
+## 3. 使用方法
+## 4. 扩展方法
+## 5. 注意事项
+## 6. 推荐使用场景
+```
 
-Briefly describe what the feature does and why it exists.
+### 1. 系统概述
 
-## Core Concepts
+必须包含：
 
-Explain the important concepts, data structures, dependencies, and execution flow.
+- 系统解决的问题、核心职责和适用边界。
+- 2～6 条真正有意义的特点，避免把普通 API 能力包装成特点。
+- “主要组件 / 接口”列表：只列出理解系统所必需的核心类型，并用一句话说明职责；不要罗列全部字段、属性和方法。
+- “组件 / 接口依赖关系”：用 Mermaid 图、缩进关系图或流程图表达核心调用链、数据流和生命周期关系。依赖方向必须以代码为依据。
 
-## API / Fields / Methods
+### 2. 工作原理与优化
 
-| Name | Type | Description |
-|---|---|---|
-| `<name>` | `<type>` | `<meaning and usage>` |
+说明系统从初始化到运行时调用的关键流程，包括：
 
-## How It Works
+- 初始化、注册、创建、查询、更新、释放或销毁流程（仅写实际存在的流程）。
+- 核心数据结构、缓存、索引、事件、序列化、异步或线程模型等机制。
+- 性能和内存优化策略，以及这些策略带来的约束。
+- 只解释影响使用和设计理解的内部机制，不要把源码逐行翻译成文档。
 
-Describe the runtime behavior step by step.
+### 3. 使用方法
 
-## Usage Example
+提供从接入到完成一次典型操作的最小路径：
 
-Provide a realistic, compilable or near-compilable code example.
+1. 必要的初始化或配置。
+2. 最常见的调用流程。
+3. 生命周期结束时的释放或清理。
 
-## Common Use Cases
+代码示例必须优先使用项目中真实存在的类型、命名空间和 API，保持短小、可复制，并在代码前说明示例目的。根据系统需要补充 Unity 生命周期、ECS World、主线程或异步调用约束。
 
-- Use case 1
-- Use case 2
+不要建立“API / 字段 / 方法大全”章节。只有当某个 API 对完成接入不可替代时，才在使用流程中解释它。
 
-## Edge Cases and Notes
+### 4. 扩展方法
 
-- Important constraints
-- Null/default handling
-- Performance notes
-- Threading/ECS/world lifecycle notes if relevant
+先判断系统是否存在可扩展点。若存在，必须说明：
 
-## Procedure
+- 扩展点的接口、基类、注册入口或约定。
+- 扩展生命周期及其与默认实现的关系。
+- 一个基于项目真实 API 的最小自定义扩展示例。
+- 扩展时需要保持的不变量，例如序列化格式一致、注册时机、线程限制、资源释放或 key 规则。
 
-1. Identify the feature target from the user request, current editor file, selected code, or mentioned symbol.
-2. Read the source code and nearby related files if needed.
-3. Determine:
-   - Feature purpose
-   - Public API or important fields
-   - Data flow and control flow
-   - Dependencies and related systems
-   - Expected usage pattern
-4. Write the documentation in concise technical Chinese. The final `.md` content must be Chinese unless the user explicitly requests another language.
-5. Keep symbol names, file names, namespaces, and code identifiers unchanged.
-6. Prefer examples that match the existing project style instead of generic examples.
-7. If code behavior is uncertain, state the uncertainty explicitly instead of inventing details.
-8. If the user asks to save the document, create or update a Markdown file in the requested path. If no path is given, suggest a path before editing unless the intended location is obvious.
+如果系统没有实际扩展能力，明确写出“当前系统未提供可支持的公共扩展点”，不要虚构插件机制或伪 API。示例中不存在的代码只能标记为伪代码，不能伪装成可编译代码。
 
-## Code Example Rules
+### 5. 注意事项
 
-- Use fenced code blocks with the correct language tag, for example `csharp`.
-- Examples should be minimal but realistic.
-- Do not introduce APIs that do not exist in the project unless clearly marked as pseudo-code.
-- Prefer existing constructors, factories, systems, components, and naming conventions.
-- For Unity/C# code:
-  - Mention Unity lifecycle constraints where relevant.
-  - Mention ECS/world/component ownership where relevant.
-  - Avoid unnecessary allocations in examples when documenting performance-sensitive systems.
+集中说明会导致接入失败、运行时异常、数据错误或明显性能问题的约束，例如：
 
-## Documentation Style
+- 初始化和生命周期顺序。
+- null、default、空集合、重复 key、越界和异常输入。
+- 线程 / Unity 主线程 / ECS World 限制。
+- 资源、事件、缓存、句柄和监听器的释放责任。
+- 版本兼容、序列化格式、生成文件或配置一致性要求。
 
-- Use Chinese for headings, paragraphs, tables, notes, and explanations by default.
-- Keep code identifiers, file paths, namespaces, class names, method names, field names, and enum values in their original language.
-- Use Markdown headings and tables.
-- Prefer short paragraphs and bullet lists.
-- Be accurate over exhaustive.
-- Explain intent before implementation details.
-- Include warnings only when they are directly supported by the code.
-- Do not expose secrets, local machine paths, or unrelated implementation details.
+只记录能从源码、现有文档或明确项目约定中确认的事项；不确定时说明不确定性，不要猜测。
 
-## Quality Checklist
+### 6. 推荐使用场景
 
-Before finishing, verify that:
-- The documented feature name matches the code.
-- All referenced symbols exist or are clearly marked as pseudo-code.
-- The usage example is consistent with the source code.
-- Important edge cases are covered.
-- The Markdown is readable and can be copied directly into project docs.
+列出 3～6 个与系统特性匹配的实际场景，并说明为什么适合。必要时同时说明不推荐使用的场景或替代方案，避免将系统描述成万能方案。
+
+## 内容取舍规则
+
+- **减少 API 罗列**：不生成完整 API 表；将核心 API 放入使用步骤或机制说明中。
+- **减少文件罗列**：不单独生成“相关文件”章节。文件名只在需要定位实现、配置入口或扩展入口时顺带提及，通常不超过 5 个。
+- **优先解释关系**：优先说明组件之间如何协作、数据如何流动、调用者应负责什么。
+- **优先解释决策**：说明为什么采用某种缓存、索引、异步或生命周期策略，而不是重复实现细节。
+- **准确优先**：符号名、命名空间、文件名和代码标识符保持原样；不存在的 API 不得被引用。
+- **避免重复**：相同约束只在最相关的章节完整说明，其他章节使用简短引用。
+- **控制篇幅**：段落简短，列表服务于结构；除非系统确实复杂，不要为了凑内容扩写基础 API 定义。
+
+## 工作步骤
+
+1. 确定文档对象：优先使用用户指定的功能、当前打开文件和附带上下文。
+2. 按搜索范围规则读取源码和直接相关内容；除非用户明确要求，不进行无关的全项目扫描。
+3. 提取系统职责、核心组件、调用链、生命周期、数据流、扩展点和约束。
+4. 先设计依赖关系图，再按六个主题撰写文档，避免把组件说明写成文件清单或 API 清单。
+5. 使用真实代码验证示例中的类型和调用关系；无法确认的内容明确标注。
+6. 用户要求保存时，创建或更新指定 Markdown 文件；路径明显时直接保存，否则先确认目标路径。
+
+## 示例规则
+
+- 使用带语言标记的 Markdown 代码块，例如 `csharp` 或 `mermaid`。
+- 示例应覆盖一个完整的最小闭环，而不是展示零散方法。
+- Unity / C# 示例应遵守项目现有生命周期、命名和低分配风格。
+- 扩展示例必须展示“实现扩展点 + 注册或接入 + 使用结果”中的必要部分。
+- 不暴露密钥、机器本地绝对路径或与功能无关的实现细节。
+
+## 质量检查清单
+
+完成前确认：
+
+- 文档包含六个主题，且顺序正确。
+- 概述中有核心组件 / 接口列表和依赖关系图。
+- 没有无意义的完整 API、字段、方法或相关文件清单。
+- 工作原理解释了关键机制和优化，而不是逐行复述源码。
+- 使用示例能表达最小可用流程，且引用的符号真实存在。
+- 有扩展点时包含自定义扩展示例；无扩展点时明确说明。
+- 注意事项和推荐场景均与源码及实际行为相符。
+- 文档使用中文说明，代码标识符保持原文，内容简洁且可直接放入项目文档。

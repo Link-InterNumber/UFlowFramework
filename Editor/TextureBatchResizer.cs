@@ -30,7 +30,6 @@ namespace PowerCellStudio.Editor
         // float scalePercent = 50f;
         // int textureMinSize = 64;
 
-        [MenuItem("Tools/UFlow/Texture/Batch Resize and Save Images")]
         public static void ShowWindow()
         {
             GetWindow(typeof(TextureBatchResizer), false, "Batch Resize and Save Images");

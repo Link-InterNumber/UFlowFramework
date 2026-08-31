@@ -64,8 +64,7 @@ namespace PowerCellStudio.Editor
         private List<ScriptFileInfo> _pendingScriptFiles;
         private PendingBindInfo _pendingBindInfo;
 
-        [MenuItem(MenuPath)]
-        private static void Open()
+        public static void Open()
         {
             GetWindow<AdvancedUICodeGeneratorWindow>("UI Code Generator");
         }

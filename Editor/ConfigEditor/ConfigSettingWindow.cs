@@ -8,8 +8,7 @@ namespace PowerCellStudio.Editor
 {
     public class ConfigSettingWindow : EditorWindow
     {
-        [MenuItem("Tools/Config/Config Setting Window", false, 99)]
-        static void OpenEditorSettingWindow()
+        public static void OpenEditorSettingWindow()
         {
             EditorWindow.GetWindow<ConfigSettingWindow>(false, "Config Setting Window", true).Show();
         }

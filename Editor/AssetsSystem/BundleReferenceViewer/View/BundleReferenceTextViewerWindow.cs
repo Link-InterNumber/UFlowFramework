@@ -22,8 +22,7 @@ namespace PowerCellStudio.Editor
         private Label _summaryLabel;
         private string _currentFilePath;
 
-        [MenuItem("Tools/UFlow/Bundle Analysis/Read Analysis File", priority = 102)]
-        private static void ShowWindow()
+        public static void ShowWindow()
         {
             var window = GetWindow<BundleReferenceTextViewerWindow>();
             window.titleContent = new GUIContent("Bundle Reference Text Viewer");

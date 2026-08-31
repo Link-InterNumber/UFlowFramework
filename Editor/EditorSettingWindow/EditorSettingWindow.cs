@@ -10,8 +10,7 @@ namespace PowerCellStudio.Editor
     public class EditorSettingWindow : EditorWindow
     {
         
-        [MenuItem("Tools/UFlow/Editor Setting Window", false, 901)]
-        static void OpenEditorSettingWindow()
+        public static void ShowWindow()
         {
             EditorWindow.GetWindow<EditorSettingWindow>(false, "Editor Setting Window", true).Show();
         }

@@ -7,8 +7,7 @@ namespace PowerCellStudio.Editor
 {
     public class SmoothNormalsProcessor : EditorWindow
     {
-        [MenuItem("Tools/UFlow/Mesh/Smooth Normals for Outline")]
-        static void Init()
+        public static void Init()
         {
             SmoothNormalsProcessor window =
                 (SmoothNormalsProcessor)EditorWindow.GetWindow(typeof(SmoothNormalsProcessor));

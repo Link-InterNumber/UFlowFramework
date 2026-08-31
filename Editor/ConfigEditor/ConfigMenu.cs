@@ -100,13 +100,11 @@ namespace PowerCellStudio.Editor
 
         }
 
-        [MenuItem("Tools/Config/Create Config Assets", false, 101)]
         public static void CreateConfigAsset()
         {
             CreateConfigAssetsInternal(false);
         }
 
-        [MenuItem("Tools/Config/Create Config Assets By Force", false, 102)]
         public static void CreateConfigAssetByForce()
         {
             CreateConfigAssetsInternal(true);
@@ -278,7 +276,6 @@ namespace PowerCellStudio.Editor
             return string.Empty;
         }
 
-        [MenuItem("Tools/Config/Delete Config Assets", false, 102)]
         public static void DeleteConfigAsset()
         {
             var assetPath = ConfigInitTool.assetFolderPath;

@@ -362,7 +362,6 @@ namespace PowerCellStudio.Editor
             treeView.searchString = m_SearchField.OnGUI(rect, m_TreeView.searchString);
         }
         
-        [MenuItem ("Tools/UFlow/Notify/TreeView Window")]
         public static void ShowWindow ()
         {
             // 获取现有打开的窗口；如果没有，则新建一个窗口：

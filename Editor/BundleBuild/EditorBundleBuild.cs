@@ -10,7 +10,6 @@ namespace PowerCellStudio.Editor
     public class EditorBundleBuild
     {
 
-        [MenuItem("Build/AssetBundle/Build AssetBundle", false, 2)]
         public static void BuildAsserBundleOnly()
         {
             ConfigMenu.CreateConfigAssetByForce();
@@ -48,7 +47,6 @@ namespace PowerCellStudio.Editor
                 onRemoteManifestGenerated?.Invoke();
         }
         
-        [MenuItem("Build/AssetBundle/Build AssetBundle Incrementally", false, 2)]
         public static void BuildAsserBundleIncrementally()
         {
             ConfigMenu.CreateConfigAssetByForce();
@@ -65,7 +63,6 @@ namespace PowerCellStudio.Editor
             GenerateRemoteManifestWindow.ShowWindowWithHandle(()=> Debug.Log("Build AsserBundle Successfully!"));
         }
 
-        [MenuItem("Build/AssetBundle/Build Play", false, 4)]
         public static void BuildPlayApp()
         {
             ConfirmEditorWindow.ShowWindow(() =>
@@ -80,7 +77,6 @@ namespace PowerCellStudio.Editor
                 "需要重新设置远程分包配置吗？\nNeed to reset the [Remote Manifest]?");
         }
         
-        [MenuItem("Build/AssetBundle/Build Play Only", false, 5)]
         public static void BuildPlayAppOnly()
         {
             var options = new BuildPlayerOptions();

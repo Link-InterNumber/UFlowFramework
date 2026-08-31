@@ -9,7 +9,6 @@ namespace PowerCellStudio.Editor
 {
     public class ButtonExMenu
     {
-        [MenuItem("GameObject/UI/ButtonEx", false, 2000)]
         public static void AddButton(MenuCommand menuCommand)
         {
             GameObject go = new GameObject("ButtonEx");

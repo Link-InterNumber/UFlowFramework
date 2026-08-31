@@ -14,7 +14,6 @@ namespace PowerCellStudio.Editor
         private bool _autoRefresh = true;
         private double _lastRefreshTime;
 
-        [MenuItem("Tools/UFlow/Assets/Runtime Loaded Assets", false, 950)]
         public static void ShowWindow()
         {
             var window = GetWindow<RuntimeLoadedAssetViewerWindow>();

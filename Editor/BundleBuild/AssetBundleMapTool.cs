@@ -7,7 +7,6 @@ namespace PowerCellStudio.Editor
 {
     public class AssetBundleMapTool
     {
-        [MenuItem("Build/AssetBundle/AssetBundleMap", false, 1)]
         public static void CreateAssetBundleMap()
         {
             string[] assetBuneleNames = AssetDatabase.GetAllAssetBundleNames();

@@ -16,7 +16,6 @@ namespace PowerCellStudio.Editor
 {
     public class FolderAddressableGroupEditorWindow : EditorWindow
     {
-        [MenuItem("Build/Addressable/Folder Addressable Settings", false, 800)]
         public static void ShowWindow()
         {
             GetWindow<FolderAddressableGroupEditorWindow>("Folder Addressable Settings");

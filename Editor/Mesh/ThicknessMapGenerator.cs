@@ -15,7 +15,6 @@ namespace PowerCellStudio.Editor
         private bool showPreview = true;
         private Texture2D previewTexture;
 
-        [MenuItem("Tools/UFlow/Mesh/Generate Thickness Map")]
         public static void ShowWindow()
         {
             GetWindow<ThicknessMapGenerator>("Thickness Map Generator");

@@ -10,7 +10,6 @@ namespace PowerCellStudio.Editor
 {
     public class GenerateRemoteManifestWindow : EditorWindow
     {
-        [MenuItem("Build/Remote/Remote Manifest配置")]
         public static void ShowWindow()
         {
             var window = GetWindow<GenerateRemoteManifestWindow>();

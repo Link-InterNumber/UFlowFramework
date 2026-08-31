@@ -8,7 +8,6 @@ namespace PowerCellStudio.Editor
 {
     public class BundleReferenceExporter : IDisposable
     {
-        [MenuItem("Tools/UFlow/Bundle Analysis/Create Analysis File", priority = 101)]
         public static void BundleReferenceExporterHandler()
         {
             using var analyzer = new BundleReferenceExporter();

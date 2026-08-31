@@ -9,8 +9,7 @@ namespace PowerCellStudio.Editor
 {
     public class BundleReferenceViewerWindow : EditorWindow
     {
-        [MenuItem("Tools/UFlow/Bundle Analysis/Bundle Reference", priority = 100)]
-        private static void ShowWindow()
+        public static void ShowWindow()
         {
             var window = GetWindow<BundleReferenceViewerWindow>();
             window.titleContent = new GUIContent("Bundle Reference Viewer");

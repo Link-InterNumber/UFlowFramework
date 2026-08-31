@@ -138,8 +138,7 @@ namespace PowerCellStudio.Editor
             text.Clear();
         }
 
-        [MenuItem("Tools/UFlow/Bundle Analysis/查找资源bundle（整个文件夹）")]
-        static void SetTextureFormat()
+        public static void SetTextureFormat()
         {
             EditorWindow.GetWindow<FindBundleWindow>(false, "查找资源bundle", true).Show();
         }
