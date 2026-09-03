@@ -1,262 +1,238 @@
-﻿# Bundle Reference Viewer
+# BundleReferenceViewer
 
 ## 1. 系统概述
 
-Bundle Reference Viewer 是 UFlowFramework 提供的 Unity Editor AssetBundle 依赖分析工具，用于收集当前项目或已构建 Bundle 的依赖关系，并以分组、关系图和缺陷报告的方式定位资源分包问题。
+`BundleReferenceViewer` 是一个 Unity Editor 工具，用于分析当前工程中的 AssetBundle 引用关系、资源依赖关系和常见 Bundle 结构缺陷，并以图形或文本形式查看分析结果。它面向编辑器分析和构建前检查，不参与运行时资源加载，也不会自动修改 AssetBundle 配置。
 
-它关注的是 **AssetBundle 之间的依赖关系以及 Bundle 内资源的直接依赖关系**，不负责构建 AssetBundle，也不负责修改资源的分包配置。分析结果可以保存为二进制报告，之后通过序列化数据重新打开和查看。
+主要特点：
 
-### 主要特点
-
-- 同时分析 Bundle 依赖和 Bundle 内资源依赖，能够定位分包层级之外的资源组织问题。
-- 将相互关联的 Bundle 自动组织为 `BundleReferenceGroup`，便于按关系组查看，而不是只查看孤立节点。
-- 通过多个 `IBundleDefectDetector` 检查单资源引用、引用分散、依赖过深和循环引用等问题。
-- 支持同步分析、分批异步初始化和已构建 Bundle 分析，降低 Editor 长时间无响应的风险。
-- 分析结果可序列化为报告文件，查看阶段不必重复扫描整个项目。
+- 从 `AssetDatabase` 收集 Bundle 及其直接依赖，并同时建立“依赖”和“被引用”两个方向的索引。
+- 按资源建立跨 Bundle 的直接依赖关系，可在图中切换 Bundle 简化模式和资源级关系模式。
+- 通过缺陷检测器组合识别单引用单资源、引用分散或冗余、依赖链路过长和循环依赖。
+- 支持同步分析、分批异步分析，以及将 Bundle 关系和缺陷结果保存为二进制文件后再查看。
+- 支持按连通关系划分 Bundle 组，并按 Bundle、组和缺陷等级筛选分析结果。
 
 ### 主要组件 / 接口
 
-| 组件 / 接口 | 职责 |
-| --- | --- |
-| `BundleReferenceExporter` | 组织分析生命周期，生成查询数据、执行检测并写出报告。 |
-| `QueryerFactory` | 从当前项目、已构建 Bundle 或序列化报告创建 `BundleReferenceQueryer`。 |
-| `BundleReferenceQueryer` | 保存 Bundle、资源和关系组数据，并提供查询入口。 |
-| `BundleReferenceAnalyzer` | 收集资源依赖并驱动分组缺陷检测或单组缺陷检测。 |
-| `BundleDefectDetectorBox` | 管理缺陷检测器，并将检测结果写入 Bundle 或分组数据。 |
-| `IBundleDefectDetector` | 定义一个缺陷检测规则需要提供的名称、标签、等级和检测方法。 |
-| `BundleReferenceData` / `AssetReferenceData` | 分别保存 Bundle 层和资源层的依赖、被引用关系及缺陷信息。 |
-| `BundleReferenceGroup` | 保存一组相互关联的 Bundle 及其汇总缺陷信息。 |
-| `BundleReferenceViewerWindow` | 提供 Bundle 分组列表、搜索、引用深度和关系图等 Editor UI。 |
+- `BundleReferenceViewerWindow`：Bundle 引用关系图形窗口，负责生成分析、筛选 Bundle、选择显示范围和控制图形视图。
+- `BundleReferenceGraphView`：基于 Unity GraphView 创建 Bundle 节点、资源节点及其连接，并执行布局和关系高亮。
+- `BundleReferenceQueryer`：保存 Bundle、资源、分组和缺陷索引，提供查询与释放能力。
+- `QueryerFactory`：从当前工程、已构建数据或序列化数据创建 `BundleReferenceQueryer`。
+- `BundleReferenceAnalyzer` / `AssetReferenceCollector`：收集 Bundle 和资源依赖，并驱动分组与资源分析。
+- `BundleDefectDetectorBox`：持有缺陷检测器集合，将检测结果写回 Bundle 和分组数据。
+- `IBundleDefectDetector`：缺陷检测扩展契约，定义单 Bundle 检测和分组检测行为。
+- `BundleReferenceExporter`：执行完整分析并生成 `BundleReferenceReport` 二进制报告。
+- `ReferenceWriter` / `ReferenceReader`：使用 `IBundleReferenceBinary` 完成分析数据的二进制写入和读取。
 
-### 组件 / 接口依赖关系
+### 组件依赖关系
 
-```mermaid
-flowchart TD
-    Menu[Unity 菜单入口] --> Exporter[BundleReferenceExporter]
-    Exporter --> Factory[QueryerFactory]
-    Factory --> Queryer[BundleReferenceQueryer]
-    Factory --> ProjectDB[AssetDatabase / BundleManifest / 报告文件]
-    Queryer --> Analyzer[BundleReferenceAnalyzer]
-    Analyzer --> Collector[AssetReferenceCollector]
-    Collector --> AssetDB[Unity AssetDatabase]
-    Analyzer --> DetectorBox[BundleDefectDetectorBox]
-    DetectorBox --> Detector[IBundleDefectDetector]
-    Queryer --> Group[BundleReferenceGroup]
-    Queryer --> BundleData[BundleReferenceData]
-    Queryer --> AssetData[AssetReferenceData]
-    Exporter --> Writer[ReferenceWriter]
-    Writer --> Report[分析报告 .bin]
-    Report --> Viewer[BundleReferenceViewerWindow / 文本查看器]
-    Viewer --> Queryer
+```text
+BundleReferenceViewerWindow
+|
+|──> BundleReferenceGraphView
+|       |
+|       └──> BundleReferenceBundleNode
+|               |
+|               └──> AssetReferenceNode
+|
+|──> QueryerFactory
+|       |
+|       └──> BundleReferenceQueryer
+|               |
+|               |──> BundleReferenceData
+|               |──> AssetReferenceData
+|               └──> BundleReferenceGroup
+|
+└──> BundleDefectDetectorBox
+        |
+        └──> IBundleDefectDetector
+                |
+                |──> SingleReferenceSingleAssetDefectDetector
+                |──> ReferencesScatteredDefectDetector
+                |──> DeepDependencyDefectDetector
+                └──> CircularBundleReferenceDefectDetector
+
+BundleReferenceExporter
+|
+|──> BundleReferenceAnalyzer
+|       |
+|       └──> AssetReferenceCollector
+|
+|──> BundleDefectDetectorBox（同上）
+|
+└──> ReferenceWriter
+        |
+        └──> BundleReferenceReport
 ```
 
-其中，`QueryerFactory` 负责提供数据源，`BundleReferenceQueryer` 负责建立关系模型，`BundleReferenceAnalyzer` 负责补充资源依赖并触发检测，UI 只消费查询结果，不直接承担分析逻辑。
+依赖树表示类型之间的持有、参数传递、实现或实际调用关系：窗口持有查询器、检测器盒和图视图；`QueryerFactory` 创建查询器；`BundleDefectDetectorBox` 创建并调用检测器；导出器通过分析器、检测器盒和 `ReferenceWriter` 生成报告。初始化、分析、显示和释放的先后顺序见下一节，不在此树中用时序关系代替组件层级。
 
 ## 2. 工作原理与优化
 
-### 2.1 建立 Bundle 关系模型
+### 当前工程分析流程
 
-分析开始时，`QueryerFactory` 从 `AssetDatabase.GetAllAssetBundleNames()` 获取 Bundle 名称，再通过 `AssetDatabase.GetAssetBundleDependencies(..., false)` 获取每个 Bundle 的直接依赖。查询器会把这些关系保存为：
+1. `BundleReferenceViewerWindow.GenerateGraph` 创建或重建 `BundleReferenceQueryer`，调用 `QueryerFactory.GenerateQueryerByCurrentProjectSync`。
+2. `QueryerFactory` 使用 `AssetDatabase.GetAllAssetBundleNames` 枚举 Bundle，再用 `AssetDatabase.GetAssetBundleDependencies` 写入每个 Bundle 的依赖关系。
+3. `BundleReferenceQueryer.AddBundleData` 同时建立 `bundleDependent` 和 `bundleReferenced`，因此可以从依赖方或被引用方遍历关系。
+4. `BundleReferenceAnalyzer.DetectorGroupDefect` 调用 `EnsureGroups`，通过双向邻接关系将 Bundle 划分为连通组，然后收集组内资源并执行 Bundle 缺陷检测。
+5. `CollectGroupAssetData` 使用 `AssetDatabase.GetAssetPathsFromAssetBundle` 获取资源，`AssetReferenceCollector.FindDirectReferences` 再用 `AssetDatabase.GetDependencies(path, false)` 收集直接资源依赖。
+6. `BundleReferenceQueryer.AddAsset` 合并重复资源的依赖信息，并为依赖资源补充反向引用索引。
+7. 用户选择组或 Bundle 后，`BundleReferenceGraphView` 创建 Bundle 节点；普通模式连接资源节点，简化模式则直接连接 Bundle 节点。
+8. 选择单个 Bundle 时，图视图按关系层数从当前 Bundle 向 `bundleDependent` 和 `bundleReferenced` 两个方向收集可见节点；选择整个组时显示组内全部 Bundle。
 
-- `bundleDependent`：当前 Bundle 依赖的 Bundle 集合。
-- `bundleReferenced`：反向引用当前 Bundle 的 Bundle 集合。
-- `BundleReferenceGroup`：根据 Bundle 邻接关系自动生成的关联分组。
+### 缺陷检测
 
-`EnsureGroups()` 使用未分组集合和队列遍历相邻 Bundle，将互相可达的关系组织到同一个 `BundleReferenceGroup` 中。这样 UI 和缺陷汇总可以以关系组为单位工作。
+`BundleDefectDetectorBox` 当前默认启用四个检测器：
 
-### 2.2 收集 Bundle 内资源依赖
+- `SingleReferenceSingleAssetDefectDetector`：低等级，检测只包含一个资源且仅被一个 Bundle 引用的 Bundle。
+- `ReferencesScatteredDefectDetector`：中等级，检测同一 Bundle 的资源被多个外部 Bundle 以不同资源集合分散引用的情况。
+- `DeepDependencyDefectDetector`：中等级，检测从当前 Bundle 出发超过 5 层的依赖链路。
+- `CircularBundleReferenceDefectDetector`：高等级，使用 DFS 检测依赖图中的循环引用，递归检测深度上限为 6。
 
-仅有 Bundle 级依赖还不足以解释问题。分析器会对每个 Bundle 获取资源路径，再由 `AssetReferenceCollector` 调用 `AssetDatabase.GetDependencies(assetPath, false)` 收集直接依赖。
+检测结果会写入 `BundleReferenceData.defectLevel`、`tags` 和 `defectDetail`。分组检测结果则聚合到 `BundleReferenceGroup.defectLevel` 和 `defectInfos`，用于列表颜色、图形提示按钮和工具提示展示。
 
-收集时会忽略：
+### 缓存、异步和内存策略
 
-- 当前资源自身。
-- 与当前资源属于同一个 Bundle 的依赖资源。
+- `BundleReferenceQueryer` 使用字典按 Bundle 名称、组名称和资源路径建立索引，使图视图和检测器可以直接查询，而不必重复遍历全部数据。
+- 资源依赖使用 `HashSet<string>` 去重，避免同一依赖路径被重复记录。
+- `AssetReferenceData` 的部分集合使用 `HashSetPool<string>`，缺陷检测器也使用 Unity 的集合池减少临时集合分配。
+- 异步入口 `GenerateQueryerByCurrentProject` 按 `analysisBatchSize` 调用 `Task.Yield`，使编辑器能够分批让出执行权；资源收集阶段还会显示可取消进度条。
+- 窗口使用 `_analysisVersion` 防止旧分析结果在新一轮分析后继续写入界面。
+- `BundleReferenceExporter` 可只在内存中分析，也可写出 `BundleReferenceReport`；写出后的数据能够通过 `QueryerFactory.GenerateQueryerBySerializedData` 恢复 Bundle 关系和缺陷标签。
 
-因此，`AssetReferenceData.assetDependent` 主要描述跨 Bundle 的资源依赖。查询器同时维护资源路径到 `AssetReferenceData` 的索引，并将资源数据挂接到对应的 `BundleReferenceData`。
-
-### 2.3 缺陷检测流程
-
-检测器由 `BundleDefectDetectorBox` 按顺序持有。对每个 Bundle，检测器可以：
-
-1. 通过 `Detect(...)` 判断单个 Bundle 是否存在某类缺陷，并返回详情。
-2. 将标签和详情写入 `BundleReferenceData`。
-3. 通过 `HasDefect(...)` 判断整个 `BundleReferenceGroup` 是否命中该规则。
-4. 将命中数量、等级和 Bundle 名称汇总到 `GroupDefectInfo`。
-
-当前内置规则覆盖单引用单资源、引用分散、依赖深度和循环引用等典型分包问题。检测结果会保存在查询器中，因此关系图和序列化报告可以复用同一份结果。
-
-### 2.4 分析结果的序列化
-
-`BundleReferenceExporter.WriteReport()` 将有缺陷的 Bundle 汇总到 `BundleReferenceReport`，再使用 `ReferenceWriter` 写入 `Analysis/` 下的二进制文件。`QueryerFactory.GenerateQueryerBySerializedData(...)` 可以重新读取该文件并恢复 Bundle 关系和缺陷标签。
-
-序列化报告保存的是用于查看和汇总的 Bundle 级数据，不等同于实时重新读取 Unity `AssetDatabase`。项目分包配置发生变化后，应重新执行分析。
-
-### 2.5 异步与内存优化
-
-- `GenerateQueryerByCurrentProject(int analysisBatchSize)` 每处理指定数量的 Bundle 就 `await Task.Yield()`，让 Editor 有机会处理界面和取消操作。
-- 资源收集使用可复用的临时 `List<AssetReferenceData>`，避免每个分组重复创建列表。
-- `AssetReferenceData` 使用 `HashSetPool<string>` 管理依赖集合，释放时归还对象池，降低大量资源分析时的短期分配压力。
-- 查询器、检测器和资源数据均实现 `IDisposable`，分析器和窗口关闭时应及时释放它们持有的集合和缓存。
-
-异步初始化只改善 Editor 调度，不代表 Unity `AssetDatabase` 可以在后台线程安全调用；项目资源查询仍应遵循 Unity Editor API 的线程限制。
+这些优化带来相应约束：字典和集合中的数据由 `BundleReferenceQueryer` 统一拥有，分析结束必须调用 `Dispose`；异步流程仍然调用 Unity Editor API，不能因此推断为可在后台线程执行。
 
 ## 3. 使用方法
 
-### 3.1 从当前项目生成分析报告
+### 3.1 在编辑器中生成关系图
 
-在 Unity Editor 中执行 `Tools > UFlow > Bundle Analysis > Create Analysis File`。该入口会：
+使用统一菜单入口打开 `BundleReferenceViewerWindow`，然后按以下步骤操作：
 
-1. 创建 `BundleReferenceExporter`。
-2. 从当前项目生成 `BundleReferenceQueryer`。
-3. 收集 Bundle 内资源依赖并执行缺陷检测。
-4. 将报告写入分析目录。
-5. 打开文本查看窗口。
+1. 点击“生成分析”，从当前工程的 AssetBundle 配置创建查询数据。
+2. 在左侧组列表中展开目标组，选择“显示所有 Bundle”或选择单个 Bundle。
+3. 使用“简化模式”只查看 Bundle 之间的关系；关闭后查看 Bundle 内资源节点之间的关系。
+4. 需要限制单 Bundle 图的范围时，在“关系层数”中设置两侧遍历层数。
+5. 点击资源节点可在 Project 窗口中定位资源，并高亮其下游依赖。
+6. 使用“重新布局”重新排列当前显示的 Bundle 节点，使用“清空”释放当前分析数据并清除图形。
 
-对应的代码入口如下：
+图形窗口依赖 Unity Editor 的 `AssetDatabase` 和 GraphView API，应在 Unity 主线程的编辑器环境中使用。
 
-```csharp
-using UnityEditor;
+### 3.2 导出并查看二进制报告
 
-// 等价于执行菜单：Tools/UFlow/Bundle Analysis/Create Analysis File
-EditorApplication.ExecuteMenuItem(
-    "Tools/UFlow/Bundle Analysis/Create Analysis File");
-```
-
-如果工具菜单不可用，应先确认项目中已经存在 AssetBundle 名称；没有分包数据时不会产生有意义的关系图。
-
-### 3.2 在 Editor 工具中直接分析并读取结果
-
-当其他 Editor 工具需要复用分析结果时，可以直接组合工厂、分析器和查询器：
+下面是项目中真实的同步导出入口调用方式，适合从编辑器菜单或其他编辑器工具触发一次完整分析：
 
 ```csharp
 using PowerCellStudio.Editor;
 
-using var queryer = QueryerFactory.GenerateQueryerByCurrentProjectSync();
-using var detectorBox = new BundleDefectDetectorBox();
-
-BundleReferenceAnalyzer.DetectorGroupDefect(queryer, detectorBox);
-
-foreach (var pair in queryer.GetAllBundleData())
+public static class BundleReferenceAnalysisEntry
 {
-    var bundleData = pair.Value;
-    if (bundleData.defectLevel != DefectLevel.None)
+    public static void Export()
     {
-        UnityEngine.Debug.Log(
-            $"Bundle {bundleData.bundleName} 存在：{string.Join(", ", bundleData.tags)}");
+        using var exporter = new BundleReferenceExporter();
+        exporter.AnalyzeSync(writeFile: true, showWindow: true);
     }
 }
 ```
 
-`using` 结束后会释放查询数据和检测器。若要保留结果供之后查看，应使用 `BundleReferenceExporter` 写出报告，而不是在释放查询器后继续访问它。
+`AnalyzeSync` 会重新创建查询器、分析当前工程、生成时间戳命名的二进制报告，并可打开 `BundleReferenceTextViewerWindow`。文本查看器通过 `ReferenceReader.ReadSingle<BundleReferenceReport>` 读取报告并显示缺陷信息。
 
-### 3.3 读取已有分析文件
+### 3.3 加载已保存的查询数据
 
-已有报告可以直接恢复查询器，不需要再次扫描当前项目：
+如果只需要恢复已保存的 Bundle 关系和缺陷标签，可以使用 `QueryerFactory.GenerateQueryerBySerializedData`：
 
 ```csharp
 using PowerCellStudio.Editor;
 
-var queryer = QueryerFactory.GenerateQueryerBySerializedData("Analysis/20260831120000.bin");
-if (queryer == null)
-    return;
-
-try
+public static BundleReferenceQueryer LoadAnalysis(string assetPath)
 {
-    var group = queryer.GetGroupByBundle("characters");
-    if (group != null)
-        UnityEngine.Debug.Log($"关联 Bundle 数量：{group.bundleNames.Count}");
-}
-finally
-{
-    queryer.Dispose();
+    return QueryerFactory.GenerateQueryerBySerializedData(assetPath);
 }
 ```
 
-实际使用时应将示例中的报告路径和 Bundle 名称替换为项目中的有效值。关系图窗口则由 `BundleReferenceViewerWindow` 负责展示查询器中的分组和 Bundle 数据。
+调用者使用完成后必须释放返回的查询器：
+
+```csharp
+using var queryer = QueryerFactory.GenerateQueryerBySerializedData(assetPath);
+```
+
+该序列化查询器包含 Bundle 依赖和缺陷标签，但不会恢复完整的资源依赖对象；若需要资源级关系，应重新执行当前工程分析并收集资源数据。
 
 ## 4. 扩展方法
 
-### 4.1 当前可用的扩展点
+### 4.1 添加 Bundle 缺陷检测器
 
-缺陷检测规则通过 `IBundleDefectDetector` 抽象。自定义检测器需要实现：
+`IBundleDefectDetector` 是当前明确的检测扩展点。实现需要提供标题、提示文本、标签、缺陷等级，并实现 `Detect` 和 `HasDefect`。检测器由 `BundleDefectDetectorBox` 持有，在 `Dispose` 时释放实现了 `IDisposable` 的检测器。
 
-- 展示名称、提示文本、标签和缺陷等级。
-- `Detect(...)`：判断单个 Bundle 并生成详情。
-- `HasDefect(...)`：判断整个关系组是否命中规则。
-
-不过，当前 `BundleDefectDetectorBox` 在构造函数中直接创建内置检测器列表，没有公开的 `Register` 或注入入口。因此，自定义检测器目前属于 **源码级扩展**：实现接口后，还需要将实例加入 `BundleDefectDetectorBox` 的 `detectors` 初始化列表。以下示例展示检测器本身的实现方式；接入列表的修改需要同步维护框架源码。
+以下示例使用项目中真实的接口和数据类型，检测 Bundle 是否没有任何直接依赖：
 
 ```csharp
 using PowerCellStudio.Editor;
 
-public sealed class LargeBundleDefectDetector : IBundleDefectDetector
+public sealed class NoDependencyDefectDetector : IBundleDefectDetector
 {
-    public string title => "Large Bundle";
-    public string toolTips => "Bundle 内资源数量超过阈值";
-    public string tag => "LargeBundle";
-    public DefectLevel defectLevel => DefectLevel.Warning;
+    public string title => "无直接依赖";
+    public string toolTips => "Bundle 没有直接依赖，需结合项目规则判断是否符合预期。";
+    public string tag => "无直接依赖";
+    public DefectLevel defectLevel => DefectLevel.Low;
 
-    public bool Detect(
-        BundleReferenceQueryer queryer,
-        BundleReferenceData bundleData,
-        out string defectDetail)
+    public bool Detect(BundleReferenceQueryer queryer,
+        BundleReferenceData bundleData, out string defectDetail)
     {
-        const int maxAssetCount = 500;
-        var hasDefect = bundleData != null && bundleData.assets.Count > maxAssetCount;
-        defectDetail = hasDefect
-            ? $"资源数量：{bundleData.assets.Count}"
-            : string.Empty;
-        return hasDefect;
+        defectDetail = null;
+        if (queryer == null || bundleData == null ||
+            string.IsNullOrEmpty(bundleData.bundleName))
+            return false;
+
+        if (bundleData.bundleDependent == null ||
+            bundleData.bundleDependent.Count != 0)
+            return false;
+
+        defectDetail = $"Bundle '{bundleData.bundleName}' 没有直接依赖。";
+        return true;
     }
 
-    public bool HasDefect(
-        BundleReferenceQueryer queryer,
+    public bool HasDefect(BundleReferenceQueryer queryer,
         BundleReferenceGroup group)
     {
-        if (group == null)
+        if (queryer == null || group?.bundleNames == null)
             return false;
 
         foreach (var bundleName in group.bundleNames)
         {
-            var data = queryer.GetBundleData(bundleName);
-            if (data != null && data.assets.Count > 500)
+            if (Detect(queryer, queryer.GetBundleData(bundleName), out _))
                 return true;
         }
-
         return false;
     }
 }
 ```
 
-接入后，`BundleDefectDetectorBox` 会在执行 `DetectGroupDefect(...)` 或单 Bundle 检测时调用该规则，检测结果会和内置规则一样写入 `tags`、`defectDetail` 及分组汇总数据。
+当前 `BundleDefectDetectorBox` 没有公开注册方法，默认检测器在其构造函数中直接创建。因此接入自定义检测器还需要修改 `BundleDefectDetectorBox` 的初始化列表，将 `new NoDependencyDefectDetector()` 加入其中；仅实现接口不会被自动发现。检测器应保持无状态或自行管理可释放资源，且不能修改 Bundle 依赖集合后再继续依赖原索引。
 
-### 4.2 扩展时需要保持的约束
+### 4.2 替换数据来源
 
-- `tag` 应保持稳定且唯一，否则报告中的缺陷信息可能互相覆盖。
-- `Detect(...)` 和 `HasDefect(...)` 应使用同一判定标准，避免 Bundle 明细与分组汇总结果不一致。
-- 检测器不要修改 `BundleReferenceQueryer` 的关系结构；检测结果应通过既有检测流程写入数据。
-- 如果检测器持有缓存、文件句柄或其他资源，应实现 `IDisposable`，因为 `BundleDefectDetectorBox.Dispose()` 会释放可释放的检测器。
-- 若需要运行时动态注册检测器，当前版本没有公共 API，应先改造 `BundleDefectDetectorBox` 的构造或增加显式注册入口，再接入业务代码。
+`QueryerFactory` 已提供当前工程、已构建 Bundle 和序列化数据三种创建路径，但没有通用的数据源注册接口。若要接入新的数据源，应在项目代码中新增等价的工厂方法，将有效的 Bundle 名称和依赖传递给 `BundleReferenceQueryer.AddBundleData`，并在需要资源级图形时调用 `SetAssets`。这一接入属于项目定制，不存在可直接配置的插件注册机制。
 
 ## 5. 注意事项
 
-- 分析当前项目时依赖 Unity `AssetDatabase`，应在 Unity Editor 环境执行，不能当作运行时系统使用。
-- `GetAssetBundleDependencies(..., false)` 和 `GetDependencies(..., false)` 获取的是直接依赖；文档中的关系深度和循环判断由分析器基于这些直接关系推导。
-- 资源必须已经被正确分配到 AssetBundle。未分配 Bundle 的资源不会作为目标 Bundle 节点参与同等层级的分析。
-- 分析报告是项目状态的快照。修改 AssetBundle 名称、依赖或资源归属后，旧报告不会自动更新。
-- `GenerateQueryerByExitedBuild()` 依赖 `BundleReferenceManifest.manifest` 和已构建 Bundle 目录；调用前必须完成 Manifest 准备，否则工厂会提示先执行 `BundleReferenceManifest.PrepareManifest()`。
-- 查询器、检测器和相关数据实现了释放逻辑。窗口关闭、分析重启或读取完成后，不要继续使用已经 `Dispose()` 的实例。
-- 异步分析可以通过进度条取消，但取消发生在分析流程中时会抛出 `OperationCanceledException`；调用方应确保进度条最终被清理。
-- 大型项目的资源依赖收集可能耗时较长。应优先使用异步初始化或读取已有序列化报告，避免在 Editor 主界面执行不必要的重复分析。
-- 当前缺陷检测器列表由代码固定创建。添加自定义规则前需要评估源码修改、版本合并和报告兼容性成本。
+- `GenerateQueryerByCurrentProject` 和 `GenerateQueryerByCurrentProjectSync` 依赖 `AssetDatabase`，必须在 Unity Editor 中运行；异步方法的 `Task.Yield` 只用于分批让出执行权，不代表 Unity API 可以在后台线程调用。
+- `BundleReferenceQueryer`、`BundleReferenceData`、`AssetReferenceData` 和 `BundleReferenceGroup` 均包含可释放的集合或索引。分析窗口关闭、重新生成分析或导出器结束时必须调用 `Dispose`。
+- `EnsureGroups` 只在组字典为空时构建分组；如果在同一个查询器生命周期内改变 Bundle 关系，必须重新创建查询器，不能依赖旧分组结果。
+- `AddBundleData` 需要有效的依赖数组。当前 `QueryerFactory` 的调用会传入 Unity 返回的数组，但自定义数据源应将空依赖转换为空数组，避免对空引用执行 `UnionWith` 或遍历。
+- 序列化报告只保存 `BundleReferenceReport` 中的时间、Bundle 数量和缺陷报告；`BundleReferenceInfo` 路径保存的是 Bundle 依赖和标签，不等同于完整资源关系图。
+- `ReferenceReader.Read` 按文件头的数量读取记录，文件必须由兼容的 `ReferenceWriter` 写出；损坏文件或版本不兼容文件可能在读取阶段抛出异常。
+- 当前循环依赖检测器的递归深度上限为 6，深度超过该限制的路径不会继续用于判定循环；文档或工具显示的结果应按此实现边界理解。
+- 单 Bundle 图的关系层数会通过 `Mathf.Max(0, referenceDepth)` 限制为非负值；设置为 0 时只显示选中的 Bundle。
+- 简化模式只连接 Bundle 节点，普通模式只连接当前可见资源节点；被过滤或不在可见范围内的节点不会生成对应连接。
+- `BundleReferenceExporter` 的异步分析可通过进度条取消，取消或异常时会清理进度条；外部异步调用仍应等待任务结束并处理异常。
+- 缺陷等级是带 `[Flags]` 的组合值，系统展示时优先显示高、中、低中的最高等级，但一个 Bundle 可能同时包含多个缺陷标签。
 
 ## 6. 推荐使用场景
 
-- **AssetBundle 分包方案检查**：在发布前发现跨 Bundle 依赖、依赖过深和循环引用，减少加载链路和包体组织问题。
-- **资源依赖可视化**：通过关系图查看一个 Bundle 所依赖的资源和 Bundle，辅助定位异常引用来源。
-- **分包规则回归检查**：每次修改资源归属或构建策略后生成报告，与历史分析结果结合检查缺陷是否增加。
-- **大型项目的 Editor 诊断**：使用分批异步初始化和序列化报告，避免反复扫描全部 AssetDatabase 数据。
-- **自定义资源规范检查**：通过 `IBundleDefectDetector` 增加项目特有规则，例如 Bundle 资源数量上限、特定资源类型禁止跨包引用等。
+- **AssetBundle 配置提交前检查**：生成当前工程分析并查看缺陷等级，尽早发现循环依赖、过深依赖和过度拆包。
+- **资源依赖定位**：关闭简化模式查看资源节点，点击资源即可定位 Project 资源，并观察其下游依赖。
+- **公共资源拆包评估**：查看某个资源被哪些 Bundle 使用，判断是否存在引用分散、冗余加载或 Bundle 划分不合理。
+- **构建前后关系对比**：导出二进制分析报告并在后续流程中恢复查询数据，保存特定版本的缺陷结果。
+- **编辑器工具集成**：通过 `BundleReferenceExporter.AnalyzeSync` 将完整分析接入自定义构建检查或编辑器菜单流程。
 
-不推荐将该系统用于运行时资源管理、AssetBundle 自动构建或实时监控；这些职责不属于 Bundle Reference Viewer，应由构建流程、资源加载系统或专门的运行时监控模块承担。
+不推荐将该工具用于运行时依赖查询、运行时资源加载或持续每帧监控；这些需求应使用运行时资源系统或专用性能分析工具。对于超大规模工程，优先使用异步分析或导出报告，避免在编辑器交互期间一次性执行过长的同步分析。

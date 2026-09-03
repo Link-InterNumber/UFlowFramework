@@ -213,6 +213,8 @@ namespace PowerCellStudio.Editor
                     var current = queue.Dequeue();
                     group.bundleNames.Add(current);
                     var currentData = _bundleReferenceDict[current];
+                    if (currentData.isSharedBundle)
+                        continue;
                     AddGroupNeighbors(currentData.bundleDependent, queue, unassigned);
                     AddGroupNeighbors(currentData.bundleReferenced, queue, unassigned);
                 }
