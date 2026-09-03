@@ -50,6 +50,9 @@ namespace PowerCellStudio
         {
             if(_spawned) return;
             if(_refCount == null) _refCount = DictionaryPool<string, int>.Get();
+#if UNITY_EDITOR
+            if (_editorCache == null) _editorCache = DictionaryPool<string, Object>.Get();
+#endif
             _spawned = true;
         }
 
@@ -65,6 +68,11 @@ namespace PowerCellStudio
             }
             if (_refCount != null) DictionaryPool<string, int>.Release(_refCount);
             _refCount = null;
+            
+#if UNITY_EDITOR
+            if (_editorCache != null) DictionaryPool<string, Object>.Release(_editorCache);
+            _editorCache = null;
+#endif
             _spawned = false;
             tag = null;
         }
@@ -95,6 +103,10 @@ namespace PowerCellStudio
                     if (AssetsBundleManager.simulateAssetBundleInEditor)
 #endif
                         _assetsBundleManager.DelAssetRef(address);
+                    
+#if UNITY_EDITOR
+                    _editorCache.Remove(address);
+#endif
                 }
                 else
                 {
@@ -165,10 +177,24 @@ namespace PowerCellStudio
         #endregion
 
 #if UNITY_EDITOR
+        private Dictionary<string, Object> _editorCache;
+        
         private T EditorSimulateLoad<T>(string address, float delay, OnLoadSuccess<T> callback, OnLoadFailed onLoadFailed = null) 
             where T : Object
         {
+            if (_editorCache.TryGetValue(address, out var cachedAsset) && cachedAsset && cachedAsset is T cachedTypedAsset)
+            {
+                callback?.Invoke(cachedTypedAsset);
+                return cachedTypedAsset;
+            }
             T asset = null;
+            if (LoadSampleCollector.instance != null)
+            {
+                var hashCode = address.GetHashCode();
+                var abName = _assetsBundleManager.bundleIndex.GetBundleNameByAsset(address);
+                LoadSampleCollector.instance.BeginLoad(address, abName, hashCode);
+                LoadSampleCollector.instance.SetLoadState(hashCode, LoadState.LoadingAsset);
+            }
             // 检查address是否最后有[xxx]
             if (AssetUtils.TryGetSubAssetName(address, out var mainPath, out var subAsset))
             {
@@ -183,12 +209,24 @@ namespace PowerCellStudio
             if(!asset)
             {
                 AssetLogger.LogError($"Can not Find Asset, path:<{address}>");
+                LoadSampleCollector.instance?.SetLoadState(address.GetHashCode(), LoadState.End);
+                _editorCache.Remove(address);
                 onLoadFailed?.Invoke();
                 return null;
             }
+            _editorCache[address] = asset;
             AddRef(address);
             if(delay > 0)
             {
+                if (LoadSampleCollector.instance != null)
+                {
+                    var hashCode = address.GetHashCode();
+                    ApplicationManager.instance.DelayedCall(delay, () =>
+                    {
+                        LoadSampleCollector.instance?.SetLoadState(hashCode, LoadState.End);
+                    });
+                }
+                
                 ApplicationManager.instance.DelayedCall(delay, () =>
                 {
                     callback?.Invoke(asset);
@@ -196,6 +234,7 @@ namespace PowerCellStudio
             }
             else
             {
+                LoadSampleCollector.instance?.SetLoadState(address.GetHashCode(), LoadState.End);
                 callback?.Invoke(asset);
             }
             return asset;

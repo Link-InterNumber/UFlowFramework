@@ -10,6 +10,7 @@ namespace PowerCellStudio
     public partial class AssetsBundleManager
     {
         private AssetBundleIndex _bundleIndex;
+        public AssetBundleIndex bundleIndex => _bundleIndex;
         // 计划加载的资源，key为BundleName，value为资源路径列表
         private LoadPlan _loadPlan;
         private LoadedCache<Object> _loadedAssets;
@@ -173,7 +174,21 @@ namespace PowerCellStudio
                 loadAssetRequest.SetAsset(cachedAsset);
                 return;
             }
-
+#if UNITY_EDITOR
+            if (LoadSampleCollector.instance != null)
+            {
+                var hashCode = loadAssetRequest.GetHashCode();
+                if (!LoadSampleCollector.instance.HasLoadSample(hashCode))
+                {
+                    LoadSampleCollector.instance.BeginLoad(assetPath, _bundleIndex.GetBundleNameByAsset(assetPath), hashCode);
+                }
+                LoadSampleCollector.instance.SetLoadState(hashCode, LoadState.LoadingBundle);
+                loadAssetRequest.OnLoadCompleted((_, _) =>
+                {
+                    LoadSampleCollector.instance?.SetLoadState(hashCode, LoadState.End);
+                });
+            }
+#endif
             if (_loadingAssets.IsLoading(assetPath))
             {
                 _loadingAssets.AddLoadingHandle(assetPath, loadAssetRequest as LoaderYieldInstruction<Object>);
@@ -197,7 +212,19 @@ namespace PowerCellStudio
                 _loadingAssets.SetLoaded(assetPath, null);
                 return;
             }
-
+#if UNITY_EDITOR
+            if (LoadSampleCollector.instance != null)
+            {
+                if (_loadingAssets.TryGetLoadingHandle(assetPath, out var handlers))
+                {
+                    for (var i = 0; i < handlers.Count; i++)
+                    {
+                        var handler = handlers[i];
+                        LoadSampleCollector.instance.SetLoadState(handler.GetHashCode(), LoadState.LoadingAsset);
+                    }
+                }
+            }
+#endif
             if (AssetUtils.TryGetSubAssetName(assetPath, out var mainPath, out var subAssetName))
             {
                 var assetRequest = bundle.LoadAssetWithSubAssetsAsync(mainPath, assetType);
