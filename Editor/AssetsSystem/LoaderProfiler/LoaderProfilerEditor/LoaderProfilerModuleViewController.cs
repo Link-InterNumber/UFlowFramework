@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using PowerCellStudio;
 using Unity.Profiling.Editor;
 using UnityEditor;
@@ -105,7 +104,7 @@ namespace PowerCellStudio.Editor
             metrics.style.marginBottom = 8f;
             metrics.Add(CreateMetricCard("SAMPLES", new Color(0.30f, 0.66f, 1f), out _sampleMetric));
             metrics.Add(CreateMetricCard("BUNDLES", new Color(0.66f, 0.48f, 1f), out _bundleMetric));
-            metrics.Add(CreateMetricCard("MAX DEPTH", new Color(1f, 0.67f, 0.25f), out _depthMetric));
+            metrics.Add(CreateMetricCard("MAX DEPENDENCY", new Color(1f, 0.67f, 0.25f), out _depthMetric));
             metrics.Add(CreateMetricCard("ACTIVE", new Color(0.30f, 0.82f, 0.52f), out _activeMetric));
             dashboard.Add(metrics);
 
@@ -174,8 +173,7 @@ namespace PowerCellStudio.Editor
                 {
                     var label = element.Q<Label>("sample-label");
                     var summary = GetBundleAt(index);
-                    label.text = $"{summary.Name}  ({summary.SampleCount})\n" +
-                                 $"Assets: {summary.AssetCount}  Depth: {summary.MaxDepth}";
+                    label.text = $"{summary.Name}  ({summary.SampleCount})\nAssets: {summary.AssetCount}\nMax Dependency Count: {summary.MaxDepth}";
                     label.style.whiteSpace = WhiteSpace.Normal;
                     label.style.paddingLeft = 8f;
                     label.style.paddingRight = 6f;
@@ -205,28 +203,41 @@ namespace PowerCellStudio.Editor
                 makeItem = () =>
                 {
                     var row = new VisualElement();
+                    row.name = "sample-row";
                     row.style.flexGrow = 0f;
                     row.style.flexShrink = 0f;
                     row.style.paddingBottom = 3f;
 
-                    var label = new Label();
-                    label.name = "sample-label";
-                    label.style.whiteSpace = WhiteSpace.Normal;
-                    label.style.flexGrow = 0f;
-                    label.style.flexShrink = 0f;
-                    row.Add(label);
+                    var mainLabel = new Label();
+                    mainLabel.name = "sample-main-label";
+                    mainLabel.style.whiteSpace = WhiteSpace.Normal;
+                    mainLabel.style.flexGrow = 0f;
+                    mainLabel.style.flexShrink = 0f;
+                    mainLabel.style.paddingLeft = 9f;
+                    mainLabel.style.paddingRight = 8f;
+                    mainLabel.style.paddingTop = 7f;
+                    mainLabel.style.paddingBottom = 2f;
+                    row.Add(mainLabel);
+
+                    var dependencyContainer = new VisualElement();
+                    dependencyContainer.name = "dependency-container";
+                    dependencyContainer.style.flexGrow = 0f;
+                    dependencyContainer.style.flexShrink = 0f;
+                    dependencyContainer.style.paddingLeft = 9f;
+                    dependencyContainer.style.paddingRight = 8f;
+                    dependencyContainer.style.paddingBottom = 7f;
+                    row.Add(dependencyContainer);
                     return row;
                 },
                 bindItem = (element, index) =>
                 {
-                    var label = element.Q<Label>("sample-label");
                     var sample = _samples[index];
-                    label.text = FormatSample(sample);
-                    label.style.paddingLeft = 9f;
-                    label.style.paddingRight = 8f;
-                    label.style.paddingTop = 7f;
-                    label.style.paddingBottom = 7f;
-                    ApplySampleStyle(label, sample, index);
+                    var mainLabel = element.Q<Label>("sample-main-label");
+                    mainLabel.text = FormatSample(sample);
+                    ApplySampleStyle(mainLabel, sample, index);
+
+                    var dependencyContainer = element.Q<VisualElement>("dependency-container");
+                    PopulateDependencyLabels(dependencyContainer, sample);
                 }
             };
             _sampleList.style.flexGrow = 1f;
@@ -323,8 +334,8 @@ namespace PowerCellStudio.Editor
                 assetPath = assetPath,
                 state = (LoadState)data.state,
                 beginThisFrame = data.beginThisFrame != 0,
-                assetDependencies = LoadSampleCollector.instance?.dependencyProvider.GetAssetDependencies(assetPath),
-                bundleDependencies = LoadSampleCollector.instance?.dependencyProvider.GetAssetBundleDependencies(assetBundleName)
+                assetDependencies = LoadSampleCollector.instance?.dependencyProvider.GetAssetDependencies(assetPath) ?? AssetDatabase.GetDependencies(assetPath, true),
+                bundleDependencies = LoadSampleCollector.instance?.dependencyProvider.GetAssetBundleDependencies(assetBundleName) ?? AssetDatabase.GetAssetBundleDependencies(assetBundleName, true)
             };
             _samples.Add(displayData);
             var bundleName = string.IsNullOrEmpty(assetBundleName)
@@ -335,7 +346,7 @@ namespace PowerCellStudio.Editor
                 summary = new BundleSummary(bundleName);
                 _bundles.Add(bundleName, summary);
             }
-            summary.Add(GetDepth(displayData));
+            summary.Add(GetMaxDependencyCount(displayData));
         }
 
         private void RebuildSampleList()
@@ -366,19 +377,20 @@ namespace PowerCellStudio.Editor
             var loading = 0;
             var ended = 0;
             var maxDepth = 0;
+            var activeMetric = 0;
             for (var i = 0; i < _samples.Count; i++)
             {
                 var sample = _samples[i];
-                maxDepth = Math.Max(maxDepth, GetDepth(sample));
+                maxDepth = Math.Max(maxDepth, GetMaxDependencyCount(sample));
                 if (sample.beginThisFrame) begin++;
-                
+                if (sample.beginThisFrame || (sample.state & LoadState.End) == 0) activeMetric++;
                 if ((sample.state & LoadState.End) > 0) ended++;
                 else loading++;
             }
             _sampleMetric.text = _samples.Count.ToString();
             _bundleMetric.text = _bundles.Count.ToString();
             _depthMetric.text = maxDepth.ToString();
-            _activeMetric.text = loading.ToString();
+            _activeMetric.text = activeMetric.ToString();
             _stateDistribution.SetValues(begin, loading, ended);
         }
 
@@ -387,15 +399,69 @@ namespace PowerCellStudio.Editor
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"{(sample.beginThisFrame ? "[New]" : string.Empty)} [{GetSampleLoadState(sample.state)}] {sample.assetPath}");
             sb.AppendLine($"----Bundle: {sample.assetBundleName}");
-            sb.AppendLine($"----Depth: {GetDepth(sample)}");
-            if (_showDependencies.value)
-            {
-                var assetDependencies = sample.assetDependencies;
-                sb.AppendLine($"----Asset Dependencies:\n {FormatDependencies(assetDependencies)}");
-                var bundleDependencies = sample.bundleDependencies;
-                sb.AppendLine($"----Bundle Dependencies:\n {FormatDependencies(bundleDependencies)}");
-            }
+            sb.AppendLine($"----Max Dependency Count: {GetMaxDependencyCount(sample)}");
             return sb.ToString();
+        }
+
+        private void PopulateDependencyLabels(
+            VisualElement container,
+            LoadProfilerFrameDataDisplay sample)
+        {
+            container.Clear();
+
+            if (_showDependencies == null || !_showDependencies.value)
+            {
+                container.style.display = DisplayStyle.None;
+                return;
+            }
+
+            container.style.display = DisplayStyle.Flex;
+            AddDependencySection(container, $"----Asset Dependencies({sample.assetDependencies?.Length ?? 0})", sample.assetDependencies);
+            AddDependencySection(container, $"----Bundle Dependencies({sample.bundleDependencies?.Length ?? 0})", sample.bundleDependencies);
+        }
+
+        private static void AddDependencySection(
+            VisualElement container,
+            string title,
+            string[] dependencies)
+        {
+            var titleLabel = CreateDependencyLabel(title);
+            titleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            titleLabel.style.marginTop = 2f;
+            container.Add(titleLabel);
+
+            if (dependencies == null || dependencies.Length == 0)
+            {
+                container.Add(CreateDependencyLabel("--------None"));
+                return;
+            }
+
+            var hasValidDependency = false;
+            for (var i = 0; i < dependencies.Length; i++)
+            {
+                var dependency = dependencies[i];
+                if (string.IsNullOrEmpty(dependency))
+                    continue;
+
+                hasValidDependency = true;
+                container.Add(CreateDependencyLabel($"--------{dependency}"));
+            }
+
+            if (!hasValidDependency)
+                container.Add(CreateDependencyLabel("--------None"));
+        }
+
+        private static Label CreateDependencyLabel(string text)
+        {
+            var label = new Label(text);
+            label.style.whiteSpace = WhiteSpace.Normal;
+            label.style.flexGrow = 0f;
+            label.style.flexShrink = 0f;
+            label.style.paddingLeft = 4f;
+            label.style.paddingRight = 2f;
+            label.style.marginBottom = 1f;
+            label.style.color = new Color(0.72f, 0.75f, 0.82f);
+            return label;
         }
 
         private LoadState GetSampleLoadState(LoadState loadState)
@@ -411,25 +477,11 @@ namespace PowerCellStudio.Editor
             return LoadState.Fail;
         }
 
-        private static string FormatDependencies(string[] dependencies)
+        private static int GetMaxDependencyCount(LoadProfilerFrameDataDisplay sample)
         {
-            if (dependencies == null || dependencies.Length == 0)
-                return "--------None";
-            var sb = new StringBuilder();
-            for (var i = 0; i < dependencies.Length; i++)
-            {
-                var str = dependencies[i];
-                if (string.IsNullOrEmpty(str))
-                    continue;
-                sb.AppendLine($"--------{dependencies[i]}");
-            }
-            return sb.ToString();
-        }
-
-        private static int GetDepth(LoadProfilerFrameDataDisplay sample)
-        {
-            return Math.Max(sample.assetDependencies?.Length ?? 0,
-                sample.bundleDependencies?.Length ?? 0);
+            return sample.assetDependencies?.Length ?? 0;
+            // return Math.Max(sample.assetDependencies?.Length ?? 0,
+            //     sample.bundleDependencies?.Length ?? 0);
         }
 
         private BundleSummary GetBundleAt(int index)

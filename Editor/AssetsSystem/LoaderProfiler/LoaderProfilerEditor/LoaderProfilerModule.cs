@@ -17,7 +17,7 @@ namespace PowerCellStudio.Editor
             new ProfilerCounterDescriptor(LoadSampleCollector.BeginLoadsCounterName, Unity.Profiling.ProfilerCategory.Loading),
             new ProfilerCounterDescriptor(LoadSampleCollector.CompletedLoadsCounterName, Unity.Profiling.ProfilerCategory.Loading),
             new ProfilerCounterDescriptor(LoadSampleCollector.BundleCountCounterName, Unity.Profiling.ProfilerCategory.Loading),
-            new ProfilerCounterDescriptor(LoadSampleCollector.DependencyDepthCounterName, Unity.Profiling.ProfilerCategory.Loading)
+            new ProfilerCounterDescriptor(LoadSampleCollector.DependencyMaxCounterName, Unity.Profiling.ProfilerCategory.Loading)
         };
 
         public LoaderProfilerModule()

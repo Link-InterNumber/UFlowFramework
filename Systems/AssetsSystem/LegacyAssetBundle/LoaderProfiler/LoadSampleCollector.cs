@@ -19,7 +19,7 @@ namespace PowerCellStudio
         // 当前帧主动请求加载的bundle数量
         public const string BundleCountCounterName = "Loader AssetBundles";
         // 当前帧主动请求加载的最大依赖深度
-        public const string DependencyDepthCounterName = "Loader Max Dependency Depth";
+        public const string DependencyMaxCounterName = "Loader Max Dependency Count";
         
         public static readonly Guid ProfilerGuid = new Guid("a4d4e1a5-49db-4d4b-9c03-6ca1d0edc9a3");
         public const int ProfilerSampleTag = 0;
@@ -46,8 +46,8 @@ namespace PowerCellStudio
         private static readonly ProfilerCounterValue<int> BundleCountCounter =
             new ProfilerCounterValue<int>(ProfilerCategory.Loading, BundleCountCounterName, ProfilerMarkerDataUnit.Count);
         
-        private static readonly ProfilerCounterValue<int> DependencyDepthCounter =
-            new ProfilerCounterValue<int>(ProfilerCategory.Loading, DependencyDepthCounterName, ProfilerMarkerDataUnit.Count);
+        private static readonly ProfilerCounterValue<int> DependencyMaxCounter =
+            new ProfilerCounterValue<int>(ProfilerCategory.Loading, DependencyMaxCounterName, ProfilerMarkerDataUnit.Count);
         
         private static readonly ProfilerMarker BeginLoadMarker =
             new ProfilerMarker(ProfilerCategory.Loading, "LoaderProfiler.BeginLoad");
@@ -221,6 +221,7 @@ namespace PowerCellStudio
             var tempBeginLoadsCounter = 0;
             var tempCompletedLoadsCounter = 0;
             var tempDependencyDepthCounter = 0;
+            var tempActiveLoadsCounter = 0;
             
             _metadataBuffer.Clear();
             for (var i = 0; i < _loadSamples.Count; i++)
@@ -235,6 +236,10 @@ namespace PowerCellStudio
                     state = (int)sample.loadState,
                     beginThisFrame = sample.beginThisFrame ? 1 : 0,
                 });
+                if (sample.beginThisFrame | (sample.loadState & LoadState.End) == 0)
+                {
+                    tempActiveLoadsCounter++;
+                }
                 if (sample.beginThisFrame)
                 {
                     sample.beginThisFrame = false;
@@ -243,19 +248,19 @@ namespace PowerCellStudio
                 if ((sample.loadState & LoadState.End) > 0)
                     tempCompletedLoadsCounter++;
                 
-                tempDependencyDepthCounter = Math.Max(tempDependencyDepthCounter, GetDepth(sample));
+                tempDependencyDepthCounter = Math.Max(tempDependencyDepthCounter, GetBundleDependenciesCount(sample));
             }
             BeginLoadsCounter.Value = tempBeginLoadsCounter;
             CompletedLoadsCounter.Value = tempCompletedLoadsCounter;
-            DependencyDepthCounter.Value = tempDependencyDepthCounter;
-            ActiveLoadsCounter.Value = _loadSamples.Count;
+            DependencyMaxCounter.Value = tempDependencyDepthCounter;
+            ActiveLoadsCounter.Value = tempActiveLoadsCounter;
             BundleCountCounter.Value = _bundleNames.Count;
             
             Profiler.EmitFrameMetaData(ProfilerGuid, ProfilerSampleTag, _metadataBuffer.ToArray());
 #endif
         }
 
-        private static int GetDepth(LoadSample sample)
+        private static int GetBundleDependenciesCount(LoadSample sample)
         {
             return sample.assetBundleDependencies?.Length ?? 0;
             // return Math.Max(sample.assetDependencies?.Length ?? 0,
