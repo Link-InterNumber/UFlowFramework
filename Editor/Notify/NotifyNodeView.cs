@@ -1,9 +1,6 @@
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental.GraphView;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace PowerCellStudio.Editor
 {

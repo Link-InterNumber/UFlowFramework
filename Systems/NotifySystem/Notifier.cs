@@ -1,11 +1,16 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace PowerCellStudio
 {
     public class Notifier : MonoBehaviour
     {
-        public NotifyType notifyType;
+        private Type _notifyType;
+        public Type notifyType => _notifyType;
+        
+        public string typeName;
+        public int notifyTypeIndex;
         public GameObject redPoint;
         public Text numberTxt;
         public Text valueTxt;
@@ -13,19 +18,19 @@ namespace PowerCellStudio
         private void Awake()
         {
             if (!redPoint) redPoint = gameObject;
-            NotifyManager.instance.Register(notifyType, OnNotifyChanged);
-
+            _notifyType = ReflectionUtils.GetTypeByName(typeName);
+            NotifyManager.instance.Register(_notifyType, notifyTypeIndex, OnNotifyChanged);
         }
 
         private void OnEnable()
         {
-            NotifyManager.instance.GetNotifyInfo(notifyType, out bool isOn, out int notifyNum, out int notifyValue);
+            NotifyManager.instance.GetNotifyInfo(_notifyType, notifyTypeIndex, out bool isOn, out int notifyNum, out int notifyValue);
             OnNotifyChanged(isOn, notifyNum, notifyValue);
         }
 
         private void OnDestroy()
         {
-            NotifyManager.instance.UnRegister(notifyType, OnNotifyChanged);
+            NotifyManager.instance.UnRegister(_notifyType, notifyTypeIndex, OnNotifyChanged);
         }
 
         private void OnNotifyChanged(bool isOn, int notifyNum, int notifyValue)
@@ -36,14 +41,17 @@ namespace PowerCellStudio
             if (valueTxt) valueTxt.text = notifyValue.ToString();
         }
 
-        public void Init(NotifyType type)
+        public void Init<T>(T type) where T : Enum
         {
-            if(notifyType == type || !gameObject) return;
-            NotifyManager.instance.UnRegister(notifyType, OnNotifyChanged);
-            notifyType = type;
-            NotifyManager.instance.Register(notifyType, OnNotifyChanged);
-
-            NotifyManager.instance.GetNotifyInfo(notifyType, out bool isOn, out int notifyNum, out int notifyValue);
+            var enumType = typeof(T);
+            if(_notifyType == enumType || !gameObject) return;
+            NotifyManager.instance.UnRegister(_notifyType, notifyTypeIndex, OnNotifyChanged);
+            _notifyType = enumType;
+            var enumValues = Enum.GetValues(enumType) as T[];
+            if (enumValues == null) return;
+            notifyTypeIndex = Array.IndexOf(enumValues, type);
+            NotifyManager.instance.Register(_notifyType, notifyTypeIndex, OnNotifyChanged);
+            NotifyManager.instance.GetNotifyInfo(_notifyType, notifyTypeIndex, out bool isOn, out int notifyNum, out int notifyValue);
             OnNotifyChanged(isOn, notifyNum, notifyValue);
         }
 

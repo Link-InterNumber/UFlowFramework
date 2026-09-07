@@ -22,14 +22,22 @@ namespace PowerCellStudio.Editor
 
         private void OnEnable()
         {
+            minSize = new Vector2(760f, 480f);
+            rootVisualElement.Clear();
+            EditorUIStyle.ApplyRoot(rootVisualElement);
+
+            rootVisualElement.Add(EditorUIStyle.CreateHeader("Guidance Graph",
+                "Build guidance sequences from configuration data or reusable graph assets."));
+
             _graphView = new GuidanceGraphView(this);
-            rootVisualElement.style.flexDirection = FlexDirection.Column;
-            rootVisualElement.Add(_graphView);
-            _graphView.StretchToParentSize();
+            _graphView.style.flexGrow = 1f;
+            _graphView.style.minHeight = 260f;
 
             var toolbarText = new Toolbar();
+            EditorUIStyle.ApplyToolbar(toolbarText, EditorUIStyle.SectionSpacing);
             var savePathField = new TextField("Save Path");
-            savePathField.style.minWidth = 400;
+            savePathField.style.minWidth = 280f;
+            savePathField.style.flexGrow = 1f;
             _currentSavePath = EditorSaveUtils.GetEditorPref("GuidanceGraphSavePath", "Assets/GuidanceGraphAsset");
             savePathField.value = _currentSavePath;
             savePathField.RegisterValueChangedCallback(evt =>
@@ -40,7 +48,7 @@ namespace PowerCellStudio.Editor
             toolbarText.Add(savePathField);
 
             var configIdField = new IntegerField("Config ID");
-            configIdField.style.minWidth = 200;
+            configIdField.style.width = 150f;
             configIdField.value = _currentConfigId;
             configIdField.RegisterValueChangedCallback(evt =>
             {
@@ -52,16 +60,20 @@ namespace PowerCellStudio.Editor
                 _graphView.ReadFromConfigs(_currentConfigId);
             })
             { text = "Read Config" };
+            ConfigureToolbarButton(configBtn);
             toolbarText.Add(configBtn);
             rootVisualElement.Add(toolbarText);
 
             var toolbar = new Toolbar();
+            EditorUIStyle.ApplyToolbar(toolbar, EditorUIStyle.ContentSpacing);
 
             _assetObjectField = new ObjectField("Graph Asset")
             {
                 objectType = typeof(GuidanceGraphAsset),
                 allowSceneObjects = false
             };
+            _assetObjectField.style.minWidth = 280f;
+            _assetObjectField.style.flexGrow = 1f;
             _assetObjectField.RegisterValueChangedCallback(evt =>
             {
                 var asset = evt.newValue as GuidanceGraphAsset;
@@ -83,12 +95,18 @@ namespace PowerCellStudio.Editor
             var createBtn = new Button(() =>
             {
                 var newAsset = ScriptableObject.CreateInstance<GuidanceGraphAsset>();
-                var assetName = EditorUtility.SaveFilePanelInProject("Sava Asset", "", "asset", "");
+                var assetName = EditorUtility.SaveFilePanelInProject("Save Guidance Graph Asset", "GuidanceGraphAsset", "asset", "");
+                if (string.IsNullOrEmpty(assetName))
+                {
+                    DestroyImmediate(newAsset);
+                    return;
+                }
                 AssetDatabase.CreateAsset(newAsset, assetName);
                 _currentAsset = newAsset;
                 _assetObjectField.value = _currentAsset;
             })
             { text = "Create" };
+            ConfigureToolbarButton(createBtn);
             toolbar.Add(createBtn);
 
             var saveBtn = new Button(() =>
@@ -131,8 +149,25 @@ namespace PowerCellStudio.Editor
                 AssetDatabase.Refresh();
             })
             { text = "Save" };
+            ConfigurePrimaryButton(saveBtn);
             toolbar.Add(saveBtn);
             rootVisualElement.Add(toolbar);
+            rootVisualElement.Add(_graphView);
+        }
+
+        private static void ConfigureToolbarButton(Button button)
+        {
+            button.style.minWidth = 80f;
+            button.style.height = 22f;
+            button.style.marginLeft = 4f;
+        }
+
+        private static void ConfigurePrimaryButton(Button button)
+        {
+            ConfigureToolbarButton(button);
+            button.style.unityFontStyleAndWeight = FontStyle.Bold;
+            button.style.backgroundColor = EditorUIStyle.AccentColor;
+            button.style.color = Color.white;
         }
     }
 }

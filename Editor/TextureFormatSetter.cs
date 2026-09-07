@@ -59,11 +59,10 @@ namespace PowerCellStudio.Editor
 
         public void Awake()
         {
+            minSize = new Vector2(560f, 440f);
             //设置绘制下拉框的格式
             guiStyle = new GUIStyle(EditorStyles.popup);
-            guiStyle.fontSize = 15;
-            guiStyle.fixedHeight = 25;
-            guiStyle.fixedWidth = 200;
+            guiStyle.fixedHeight = 22;
 
             _textureFormatMapping = new Dictionary<string, string[]>();
 
@@ -82,94 +81,101 @@ namespace PowerCellStudio.Editor
 
         void OnGUI()
         {
+            EditorUIStyle.DrawWindowBackground(new Rect(Vector2.zero, position.size));
+            EditorUIStyle.DrawImguiHeader("Texture Format Setter",
+                "Apply platform compression and size settings to every texture in the selected Project folder.");
+
+            string selectedFolder = null;
             if (Selection.assetGUIDs.Length <= 0)
             {
-                GUILayout.Label("请先选择一个文件夹!!! ");
+                EditorGUILayout.HelpBox("请先在 Project 窗口中选择一个文件夹。", MessageType.Warning);
             }
             else
             {
-                var folder = AssetDatabase.GUIDToAssetPath(Selection.assetGUIDs[0]);
-                if (!Directory.Exists(folder))
+                selectedFolder = AssetDatabase.GUIDToAssetPath(Selection.assetGUIDs[0]);
+                if (!Directory.Exists(selectedFolder))
                 {
-                    GUILayout.Label("请先选择一个文件夹!!! ");
-                    return;
+                    EditorGUILayout.HelpBox("当前选择不是有效文件夹。", MessageType.Warning);
+                    selectedFolder = null;
                 }
-                GUILayout.Label($"当前选中的文件夹：{folder}");
+                else
+                {
+                    using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
+                    {
+                        EditorGUILayout.LabelField("Selected Folder", EditorUIStyle.SectionTitle);
+                        EditorGUILayout.SelectableLabel(selectedFolder, EditorStyles.textField,
+                            GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                    }
+                }
             }
 
-            GUILayout.FlexibleSpace();
-
-            GUILayout.Label("设置平台： ");
-            setPl = (EPlatform) EditorGUILayout.EnumPopup(curPl, guiStyle);
-            if (setPl != curPl)
+            GUILayout.Space(EditorUIStyle.ContentSpacing);
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
             {
-                curTFIndex = 0;
-            }
-            GUILayout.FlexibleSpace();
+                EditorGUILayout.LabelField("Import Settings", EditorUIStyle.SectionTitle);
+                setPl = (EPlatform)EditorGUILayout.EnumPopup("Platform", curPl, guiStyle);
+                if (setPl != curPl)
+                    curTFIndex = 0;
 
-            GUILayout.Label("设置格式： ");
-            string[] canSetFormats = null;
-            if (!_textureFormatMapping.TryGetValue(setPl.ToString(), out canSetFormats))
-            {
-                canSetFormats = _DEFAULT_FORMAT;
-            }
-            setTFIndex = EditorGUILayout.Popup(curTFIndex, canSetFormats, guiStyle);
+                if (!_textureFormatMapping.TryGetValue(setPl.ToString(), out var canSetFormats))
+                    canSetFormats = _DEFAULT_FORMAT;
+                setTFIndex = EditorGUILayout.Popup("Format", curTFIndex, canSetFormats, guiStyle);
 
-            // isConvertRGBA = EditorGUILayout.ToggleLeft("是否将RGB强制转成RGBA", isConvertRGBA);
-            GUILayout.FlexibleSpace();
-            
-            GUILayout.Label("设置最大尺寸： ");
-            setSize = (TextureFormatSetterSize) EditorGUILayout.EnumPopup(curSize, guiStyle);
-            // isConvertRGBA = EditorGUILayout.ToggleLeft("是否将RGB强制转成RGBA", isConvertRGBA);
-            GUILayout.FlexibleSpace();
-            autoOptimize = EditorGUILayout.ToggleLeft("自动优化", autoOptimize);
-            autoSize = EditorGUILayout.ToggleLeft("自动尺寸", autoSize);
+                setSize = (TextureFormatSetterSize)EditorGUILayout.EnumPopup("Maximum Size", curSize, guiStyle);
+                EditorUIStyle.DrawSeparator();
+                autoOptimize = EditorGUILayout.ToggleLeft("自动优化压缩格式", autoOptimize);
+                autoSize = EditorGUILayout.ToggleLeft("根据源纹理自动选择尺寸", autoSize);
+            }
 
             PrintSetting();
 
-            if (GUILayout.Button("开始设置"))
+            GUILayout.Space(EditorUIStyle.ContentSpacing);
+            using (new EditorGUI.DisabledScope(selectedFolder == null))
             {
-                _printResult = null;
-                if (!CheckSelection())
-                    return;
-
-                ParseTexture2DFormat(true);
-                AssetDatabase.SaveAssets();
-                Debug.Log("完成");
-            }
-
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("获取当前文件夹下所有文件当前平台的压缩格式"))
-            {
-                if (!CheckSelection())
-                    return;
-
-                _allSettings = new Dictionary<string, List<string>>();
-                ParseTexture2DFormat(false);
-
-                //打印日志
-                StringBuilder sb = new StringBuilder();
-                foreach (var dic in _allSettings)
+                if (GUILayout.Button("应用纹理设置", EditorUIStyle.PrimaryButton))
                 {
-                    sb.Append($"类型<color=#FF722F>{dic.Key}</color>累计{dic.Value.Count}个:\n");
-                    foreach (var path in dic.Value)
-                    {
-                        sb.Append($"\t{path}\n");
-                    }
-                    sb.Append($"\n");
+                    _printResult = null;
+                    if (!CheckSelection())
+                        return;
+
+                    ParseTexture2DFormat(true);
+                    AssetDatabase.SaveAssets();
+                    Debug.Log("完成");
                 }
-                _printResult = sb.ToString();
-                _allSettings.Clear();
-                _allSettings = null;
-                sb.Clear();
-                sb = null;
+
+                GUILayout.Space(EditorUIStyle.SectionSpacing);
+                if (GUILayout.Button("扫描当前平台压缩格式", GUILayout.Height(EditorUIStyle.SecondaryButtonHeight)))
+                {
+                    if (!CheckSelection())
+                        return;
+
+                    _allSettings = new Dictionary<string, List<string>>();
+                    ParseTexture2DFormat(false);
+
+                    StringBuilder sb = new StringBuilder();
+                    foreach (var dic in _allSettings)
+                    {
+                        sb.Append($"类型<color=#FF722F>{dic.Key}</color>累计{dic.Value.Count}个:\n");
+                        foreach (var path in dic.Value)
+                            sb.Append($"\t{path}\n");
+                        sb.Append("\n");
+                    }
+                    _printResult = sb.ToString();
+                    _allSettings.Clear();
+                    _allSettings = null;
+                }
             }
 
             if (!string.IsNullOrEmpty(_printResult))
             {
-                _scrollPosition =  GUILayout.BeginScrollView(_scrollPosition);
-                GUILayout.Label(_printResult, new GUIStyle(){richText = true, normal = new GUIStyleState{textColor = Color.white}});
-                GUILayout.EndScrollView();
+                GUILayout.Space(EditorUIStyle.ContentSpacing);
+                using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
+                {
+                    EditorGUILayout.LabelField("Scan Result", EditorUIStyle.SectionTitle);
+                    _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
+                    GUILayout.Label(_printResult, EditorUIStyle.RichTextLabel);
+                    EditorGUILayout.EndScrollView();
+                }
             }
         }
 

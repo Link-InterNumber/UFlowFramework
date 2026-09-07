@@ -83,34 +83,33 @@ namespace PowerCellStudio.Editor
 
         private void OnGUI()
         {
-            EditorGUILayout.LabelField($"将资源放到{Application.streamingAssetsPath}后可进行配置", EditorStyles.boldLabel);
-            // in English
-            EditorGUILayout.LabelField($"Place the assets in {Application.streamingAssetsPath} for configuration", EditorStyles.boldLabel);
-            EditorGUILayout.Space();
-            if (_remoteManifest == null) return;
-            _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
-            GUILayout.BeginVertical();
+            EditorUIStyle.DrawWindowBackground(new Rect(Vector2.zero, position.size));
+            EditorUIStyle.DrawImguiHeader("Remote Manifest", "Choose which StreamingAssets files should be delivered remotely.");
+            EditorGUILayout.HelpBox($"资源目录 / Asset directory\n{Application.streamingAssetsPath}", MessageType.Info);
+            if (_remoteManifest == null)
+            {
+                EditorGUILayout.HelpBox("No manifest data is available.", MessageType.Warning);
+                return;
+            }
+
+            using var scroll = new EditorGUILayout.ScrollViewScope(_scrollPosition);
+            _scrollPosition = scroll.scrollPosition;
             var needClose = false;
-            // 设定区域的高度，可以容纳三行LabelFields
-            float lineHeight = EditorGUIUtility.singleLineHeight; // 每行的高度
-            float padding = 4; // 行间距
-            float totalHeight = lineHeight * 3 + padding * 2 + 20; 
-            
+
             for (var i = 0; i < _remoteManifest.bundles.Count; i++)
             {
                 var bundle = _remoteManifest.bundles[i];
-                GUI.Box(new Rect(0, (totalHeight + 6) * i, position.width - 20, totalHeight), GUIContent.none);
-                
-                // 恢复背景颜色为空，以便绘制文本（重要）
-                EditorGUILayout.LabelField("Asset Name", bundle.name);
-                bundle.isRemote = EditorGUILayout.Toggle("IsRemote", bundle.isRemote);
-                EditorGUILayout.LabelField("Asset md5", bundle.md5);
-                EditorGUILayout.LabelField("Asset size", $"{bundle.size / 1024f / 1024f} MB");
-                EditorGUILayout.Space();
+                using (new EditorGUILayout.VerticalScope(EditorUIStyle.ManifestCard))
+                {
+                    EditorGUILayout.LabelField(bundle.name, EditorUIStyle.SectionTitle);
+                    bundle.isRemote = EditorGUILayout.Toggle("Remote delivery", bundle.isRemote);
+                    EditorGUILayout.SelectableLabel(bundle.md5, EditorStyles.textField, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                    EditorGUILayout.LabelField("Size", $"{bundle.size / 1024f / 1024f:F2} MB");
+                }
+                GUILayout.Space(EditorUIStyle.ManifestCardSpacing);
             }
-            GUILayout.EndVertical();
 
-            if (GUILayout.Button("Generate"))
+            if (GUILayout.Button("Generate Manifest", EditorUIStyle.PrimaryButton))
             {
                 string savePath = Path.Combine(Application.streamingAssetsPath, "remoteManifest.json");
                 string json = JsonConvert.SerializeObject(_remoteManifest, Formatting.Indented);
@@ -124,7 +123,6 @@ namespace PowerCellStudio.Editor
                 }
             }
             
-            GUILayout.EndScrollView();
             if (needClose) Close();
         }
     }

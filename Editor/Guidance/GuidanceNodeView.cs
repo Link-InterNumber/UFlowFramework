@@ -2,7 +2,6 @@ using System.Text;
 using UnityEditor;
 using UnityEditor.Experimental.GraphView;
 using UnityEditor.UIElements;
-using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -82,8 +81,17 @@ namespace PowerCellStudio.Editor
             }
             Draw();
             RefreshView(_guidanceId);
-            // 设置Node为固定宽度
-            style.width = 300;
+            style.width = 320f;
+            style.borderTopWidth = 1f;
+            style.borderBottomWidth = 1f;
+            style.borderLeftWidth = 1f;
+            style.borderRightWidth = 1f;
+            style.borderTopColor = EditorUIStyle.ImguiBorderColor;
+            style.borderBottomColor = EditorUIStyle.ImguiBorderColor;
+            style.borderLeftColor = EditorUIStyle.ImguiBorderColor;
+            style.borderRightColor = EditorUIStyle.ImguiBorderColor;
+            titleContainer.style.backgroundColor = EditorUIStyle.SummaryBackground;
+            mainContainer.style.backgroundColor = EditorUIStyle.PanelBackground;
         }
 
         private IntegerField _intField;
@@ -100,6 +108,7 @@ namespace PowerCellStudio.Editor
         {
             _intField = new IntegerField();
             _intField.label = "Guidance Id";
+            ConfigureField(_intField);
             _intField.RegisterValueChangedCallback(evt =>
             {
                 _guidanceId = evt.newValue;
@@ -113,7 +122,9 @@ namespace PowerCellStudio.Editor
             };
             // 确保允许换行显示
             _guidanceDecsField.style.whiteSpace = WhiteSpace.Normal;
+            _guidanceDecsField.style.minHeight = 58f;
             _guidanceDecsField.label = "Description";
+            ConfigureField(_guidanceDecsField);
 
             _guidanceDecsField.RegisterValueChangedCallback(evt =>
             {
@@ -122,6 +133,7 @@ namespace PowerCellStudio.Editor
             mainContainer.Add(_guidanceDecsField);
 
             _touchSkipToggle = new Toggle("Touch Screen To Skip");
+            ConfigureField(_touchSkipToggle);
 
             _touchSkipToggle.RegisterValueChangedCallback(evt =>
             {
@@ -130,6 +142,7 @@ namespace PowerCellStudio.Editor
             mainContainer.Add(_touchSkipToggle);
 
             _blockInteractionToggle = new Toggle("Block Interaction");
+            ConfigureField(_blockInteractionToggle);
 
             _blockInteractionToggle.RegisterValueChangedCallback(evt =>
             {
@@ -141,6 +154,7 @@ namespace PowerCellStudio.Editor
             _handField.objectType = typeof(UnityEngine.GameObject);
             _handField.allowSceneObjects = false;
             _handField.label = "Hand";
+            ConfigureField(_handField);
 
             _handField.RegisterValueChangedCallback(evt =>
             {
@@ -152,6 +166,7 @@ namespace PowerCellStudio.Editor
             _windowField.objectType = typeof(UnityEngine.GameObject);
             _windowField.allowSceneObjects = false;
             _windowField.label = "Window";
+            ConfigureField(_windowField);
 
             _windowField.RegisterValueChangedCallback(evt =>
             {
@@ -167,12 +182,16 @@ namespace PowerCellStudio.Editor
                     AssetDatabase.OpenAsset(_windowPrefab);
             })
             { text = "Open Prefab" };
+            openButton.style.height = 24f;
+            openButton.style.marginTop = 3f;
+            openButton.style.marginBottom = 6f;
             mainContainer.Add(openButton);
 
             _tagTargetField = new ObjectField();
             _tagTargetField.objectType = typeof(UnityEngine.GameObject);
             _tagTargetField.allowSceneObjects = true;
             _tagTargetField.label = "Target Node";
+            ConfigureField(_tagTargetField);
 
             _tagTargetField.RegisterValueChangedCallback(evt =>
             {
@@ -183,18 +202,32 @@ namespace PowerCellStudio.Editor
 
             _exitingTag = new Label();
             _exitingTag.name = "ExitingTag";
+            _exitingTag.style.marginTop = 4f;
+            _exitingTag.style.paddingLeft = 6f;
+            _exitingTag.style.paddingRight = 6f;
+            _exitingTag.style.paddingTop = 4f;
+            _exitingTag.style.paddingBottom = 4f;
+            _exitingTag.style.whiteSpace = WhiteSpace.Normal;
+            _exitingTag.style.color = EditorUIStyle.MutedTextColor;
+            _exitingTag.style.backgroundColor = EditorUIStyle.SummaryBackground;
             mainContainer.Add(_exitingTag);
 
             // 端口
             var inputPort = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Single, typeof(bool));
             inputPort.portName = "Previous";
-            inputPort.portColor = Color.green;
+            inputPort.portColor = EditorUIStyle.AccentHoverColor;
             inputContainer.Add(inputPort);
 
             var outputPort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, typeof(bool));
             outputPort.portName = "Next";
-            outputPort.portColor = Color.red;
+            outputPort.portColor = new Color(1f, 0.58f, 0.3f, 1f);
             outputContainer.Add(outputPort);
+        }
+
+        private static void ConfigureField(VisualElement field)
+        {
+            field.style.marginTop = 2f;
+            field.style.marginBottom = 2f;
         }
 
         private void RefreshView(int guidanceId)

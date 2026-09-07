@@ -37,9 +37,10 @@ namespace PowerCellStudio.Editor
 
         void OnEnable()
         {
+            minSize = new Vector2(560f, 420f);
             sourceFolder = EditorSaveUtils.GetEditorPref("TextureBatchResizer_SourceFolder", "");
             var configJson = EditorSaveUtils.GetEditorPref("TextureBatchResizer_Config", "{}");
-            configSettings = JsonConvert.DeserializeObject<List<configSetting>>(configJson);
+            configSettings = JsonConvert.DeserializeObject<List<configSetting>>(configJson) ?? new List<configSetting>();
         }
 
         void OnDisable()
@@ -50,75 +51,95 @@ namespace PowerCellStudio.Editor
 
         void OnGUI()
         {
-            GUILayout.Label("Batch Resize and Save Images", EditorStyles.boldLabel);
-            EditorGUILayout.BeginHorizontal();
-            sourceFolder = EditorGUILayout.TextField("Source Folder (absolute path)", sourceFolder);
-            if (GUILayout.Button("Browse", GUILayout.MaxWidth(80)))
+            EditorUIStyle.DrawWindowBackground(new Rect(Vector2.zero, position.size));
+            EditorUIStyle.DrawImguiHeader("Batch Texture Resizer",
+                "Resize image folders into multiple output profiles while preserving their directory structure.");
+
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
             {
-                string selectedPath = EditorUtility.OpenFolderPanel("Select Source Folder", "", "");
-                if (!string.IsNullOrEmpty(selectedPath))
+                EditorGUILayout.LabelField("Source", EditorUIStyle.SectionTitle);
+                using (new EditorGUILayout.HorizontalScope())
                 {
-                    sourceFolder = selectedPath;
+                    sourceFolder = EditorGUILayout.TextField("Absolute Folder", sourceFolder);
+                    if (GUILayout.Button("Browse...", GUILayout.Width(EditorUIStyle.ToolbarButtonWidth)))
+                    {
+                        string selectedPath = EditorUtility.OpenFolderPanel("Select Source Folder", "", "");
+                        if (!string.IsNullOrEmpty(selectedPath))
+                        {
+                            sourceFolder = selectedPath;
+                        }
+                    }
                 }
             }
 
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.LabelField("Config:", EditorStyles.boldLabel);
-            // EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(EditorUIStyle.ContentSpacing);
+            EditorGUILayout.LabelField($"Output Profiles ({configSettings.Count})", EditorUIStyle.SectionTitle);
             var removeIndex = -1;
             for (var i = 0; i < configSettings.Count; i++)
             {
                 var configSetting = configSettings[i];
-                configSetting.targetFolder =
-                    EditorGUILayout.TextField("Target Folder (Assets path)", configSetting.targetFolder);
-                if (GUILayout.Button("Browse", GUILayout.MaxWidth(80)))
+                using (new EditorGUILayout.VerticalScope(EditorUIStyle.SectionBox))
                 {
-                    string selectedPath =
-                        EditorUtility.OpenFolderPanel("Select Target Folder", Application.dataPath, "");
-                    if (!string.IsNullOrEmpty(selectedPath))
+                    using (new EditorGUILayout.HorizontalScope())
                     {
-                        if (selectedPath.StartsWith(Application.dataPath))
+                        EditorGUILayout.LabelField($"Profile {i + 1}", EditorUIStyle.SectionTitle);
+                        GUILayout.FlexibleSpace();
+                        if (GUILayout.Button("Remove", EditorStyles.miniButton, GUILayout.Width(60f)))
                         {
-                            configSetting.targetFolder = "Assets" + selectedPath.Substring(Application.dataPath.Length);
-                        }
-                        else
-                        {
-                            Debug.LogError("Target folder must be inside the Assets folder!");
+                            removeIndex = i;
                         }
                     }
+
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        configSetting.targetFolder = EditorGUILayout.TextField("Target Folder", configSetting.targetFolder);
+                        if (GUILayout.Button("Browse...", GUILayout.Width(EditorUIStyle.ToolbarButtonWidth)))
+                        {
+                            string selectedPath = EditorUtility.OpenFolderPanel("Select Target Folder", Application.dataPath, "");
+                            if (!string.IsNullOrEmpty(selectedPath))
+                            {
+                                if (selectedPath.StartsWith(Application.dataPath))
+                                {
+                                    configSetting.targetFolder = "Assets" + selectedPath.Substring(Application.dataPath.Length);
+                                }
+                                else
+                                {
+                                    Debug.LogError("Target folder must be inside the Assets folder!");
+                                }
+                            }
+                        }
+                    }
+
+                    configSetting.scalePercent = EditorGUILayout.Slider("Scale Percent", configSetting.scalePercent, 1, 100);
+                    configSetting.textureMinSize = EditorGUILayout.IntField("Minimum Size", configSetting.textureMinSize);
                 }
 
-                configSetting.scalePercent = EditorGUILayout.Slider("Scale Percent", configSetting.scalePercent, 1, 100);
-                configSetting.textureMinSize = EditorGUILayout.IntField("Minimum Size (pixels)", configSetting.textureMinSize);
-                if (GUILayout.Button("-"))
-                {
-                    removeIndex = i;
-                }
-
-                EditorGUILayout.Space();
+                GUILayout.Space(EditorUIStyle.SectionSpacing);
             }
-            // EditorGUILayout.EndHorizontal();
 
-            if (removeIndex > 0) configSettings.RemoveAt(removeIndex);
+            if (removeIndex >= 0) configSettings.RemoveAt(removeIndex);
 
-            if (GUILayout.Button("+")) configSettings.Add(new configSetting());
+            if (GUILayout.Button("+ Add Output Profile", GUILayout.Height(EditorUIStyle.SecondaryButtonHeight)))
+                configSettings.Add(new configSetting());
 
-            if (GUILayout.Button("Start Processing"))
+            GUILayout.Space(EditorUIStyle.ContentSpacing);
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
             {
-                if (Directory.Exists(sourceFolder))
+                EditorGUILayout.LabelField("Actions", EditorUIStyle.SectionTitle);
+                using (new EditorGUI.DisabledScope(configSettings.Count == 0))
                 {
-                    ProcessImages();
-                }
-                else
-                {
-                    Debug.LogError("Source folder does not exist!");
-                }
-            }
+                    if (GUILayout.Button("Start Processing", EditorUIStyle.PrimaryButton))
+                    {
+                        if (Directory.Exists(sourceFolder))
+                            ProcessImages();
+                        else
+                            Debug.LogError("Source folder does not exist!");
+                    }
 
-            if (GUILayout.Button("Batch Set pixelPerUnit"))
-            {
-                SetPixelPerUnit();
+                    GUILayout.Space(EditorUIStyle.SectionSpacing);
+                    if (GUILayout.Button("Apply Sprite Pixels Per Unit", GUILayout.Height(EditorUIStyle.SecondaryButtonHeight)))
+                        SetPixelPerUnit();
+                }
             }
         }
 

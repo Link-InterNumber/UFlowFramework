@@ -395,6 +395,68 @@ namespace PowerCellStudio
         }
 
         /// <summary>
+        /// Gets a type by assembly-qualified name, full name, or simple name.
+        /// 根据程序集限定名、完整名称或简单名称获取类型。
+        /// </summary>
+        /// <param name="typeName">The type name to search. 要搜索的类型名称。</param>
+        /// <param name="assemblise">Assemblies to search; all loaded assemblies are searched when omitted. 要搜索的程序集；省略时搜索所有已加载程序集。</param>
+        /// <returns>The first matching type; otherwise, null. 第一个匹配的类型；找不到时返回 null。</returns>
+        public static Type GetTypeByName(string typeName, params Assembly[] assemblise)
+        {
+            if (string.IsNullOrWhiteSpace(typeName))
+                throw new ArgumentNullException(nameof(typeName));
+
+            typeName = typeName.Trim();
+
+            // This also handles assembly-qualified names without scanning every assembly.
+            var type = Type.GetType(typeName, false, false);
+            if (type != null)
+                return type;
+
+            var assemblies = assemblise == null || assemblise.Length == 0
+                ? AppDomain.CurrentDomain.GetAssemblies()
+                : assemblise;
+
+            for (var assemblyIndex = 0; assemblyIndex < assemblies.Length; assemblyIndex++)
+            {
+                var assembly = assemblies[assemblyIndex];
+                if (assembly == null)
+                    continue;
+
+                // Assembly.GetType is faster and supports namespace-qualified names.
+                type = assembly.GetType(typeName, false, false);
+                if (type != null)
+                    return type;
+
+                Type[] types;
+                try
+                {
+                    types = assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException exception)
+                {
+                    types = exception.Types;
+                }
+
+                if (types == null)
+                    continue;
+
+                for (var typeIndex = 0; typeIndex < types.Length; typeIndex++)
+                {
+                    type = types[typeIndex];
+                    if (type == null)
+                        continue;
+
+                    if (string.Equals(type.FullName, typeName, StringComparison.Ordinal) ||
+                        string.Equals(type.Name, typeName, StringComparison.Ordinal))
+                        return type;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Gets instances of all instantiable subclasses (including generic subclasses) of a given type in the specified assembly.
         /// 获取指定类型（包括泛型类型）在指定程序集中的所有可实例化子类的实例。
         /// </summary>

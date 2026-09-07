@@ -15,17 +15,28 @@ namespace PowerCellStudio.Editor
 
         protected override void OnGUI()
         {
-            _bundleName = GUILayout.TextField(_bundleName, 100);
-            DrawButton("计算bundle加载消耗", ShowLoadBundleCost);
+            EditorUIStyle.DrawWindowBackground(new Rect(Vector2.zero, position.size));
+            EditorUIStyle.DrawImguiHeader("Bundle Analyzer", "Estimate dependency size or export bundle dependency information.");
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
+            {
+                EditorGUILayout.LabelField("Load Cost", EditorUIStyle.SectionTitle);
+                _bundleName = EditorGUILayout.TextField("Bundle name", _bundleName);
+                DrawButton("计算 Bundle 加载消耗", ShowLoadBundleCost, EditorUIStyle.PrimaryButton);
+            }
+
             if (!string.IsNullOrEmpty(_printResult))
             {
-                _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
-                GUILayout.Label(_printResult, new GUIStyle(){richText = true, normal = new GUIStyleState{textColor = Color.white}});
-                GUILayout.EndScrollView();
+                using (var scroll = new EditorGUILayout.ScrollViewScope(_scrollPosition, EditorUIStyle.SectionBox,
+                           GUILayout.MinHeight(100f), GUILayout.MaxHeight(260f)))
+                {
+                    _scrollPosition = scroll.scrollPosition;
+                    GUILayout.Label(_printResult, EditorUIStyle.RichTextLabel);
+                }
             }
-            GUILayout.Space(50);
+
+            GUILayout.Space(EditorUIStyle.ContentSpacing);
             base.OnGUI();
-            DrawButton("输出Bundle信息", CollectAssetBundleData);
+            DrawButton("输出 Bundle 信息", CollectAssetBundleData, EditorUIStyle.PrimaryButton);
         }
 
         private void ShowLoadBundleCost(string[] guids)

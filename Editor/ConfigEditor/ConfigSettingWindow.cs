@@ -83,35 +83,44 @@ namespace PowerCellStudio.Editor
                 Initialize();
             }
 
-            _save.excelPath = EditorGUILayout.TextField("excel file Path:", _save.excelPath);
-            _save.csFilePath = EditorGUILayout.TextField("cs file Path:", _save.csFilePath);
+            EditorUIStyle.DrawWindowBackground(new Rect(Vector2.zero, GUILayoutUtility.GetRect(0f, 0f).size));
+            EditorUIStyle.DrawImguiHeader("Configuration Generator", "Configure source and output paths, then generate configuration content.");
+
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
+            {
+                EditorGUILayout.LabelField("Paths", EditorUIStyle.SectionTitle);
+                _save.excelPath = EditorGUILayout.TextField("Excel folder", _save.excelPath);
+                _save.csFilePath = EditorGUILayout.TextField("C# output folder", _save.csFilePath);
+            }
             // _save.localizationCSVPath = EditorGUILayout.TextField("Output CSV File Path", _save.localizationCSVPath);
 
-            GUILayout.Space(30);
-            if (GUILayout.Button("Save Settings"))
+            GUILayout.Space(EditorUIStyle.ContentSpacing);
+            if (GUILayout.Button("Save Settings", EditorUIStyle.PrimaryButton))
             {
                 SaveData();
             }
 
-            GUILayout.Space(10);
-            if (GUILayout.Button("Create Cs Files"))
+            GUILayout.Space(EditorUIStyle.ContentSpacing);
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
             {
-                SaveData();
-                ConfigMenu.CreateCsFiles();
-                _save.excelPath = EditorSaveUtils.GetEditorPref(SaveKey.excelPath, string.Empty);
-            }
+                EditorGUILayout.LabelField("Generation", EditorUIStyle.SectionTitle);
+                if (GUILayout.Button("Create C# Files", GUILayout.Height(EditorUIStyle.SecondaryButtonHeight)))
+                {
+                    SaveData();
+                    ConfigMenu.CreateCsFiles();
+                    _save.excelPath = EditorSaveUtils.GetEditorPref(SaveKey.excelPath, string.Empty);
+                }
 
-            GUILayout.Space(10);
-            if (GUILayout.Button("Create Config Assets"))
-            {
-                SaveData();
-                ConfigMenu.CreateConfigAsset();
-            }
+                if (GUILayout.Button("Create Config Assets", GUILayout.Height(EditorUIStyle.SecondaryButtonHeight)))
+                {
+                    SaveData();
+                    ConfigMenu.CreateConfigAsset();
+                }
 
-            GUILayout.Space(10);
-            if (GUILayout.Button("Delete Config Assets"))
-            {
-                ConfigMenu.DeleteConfigAsset();
+                if (GUILayout.Button("Delete Config Assets", EditorUIStyle.DestructiveButton))
+                {
+                    ConfigMenu.DeleteConfigAsset();
+                }
             }
 
             GUILayout.Space(10);
@@ -130,29 +139,33 @@ namespace PowerCellStudio.Editor
                 }
             }
 
-            GUILayout.Space(10);
-            GUILayout.Label("Export 【TextEx】 components on prefab to CSV", EditorStyles.boldLabel);
-            _save.UIPrefabPath = EditorGUILayout.TextField("Prefab Folder Path", _save.UIPrefabPath);
-
-            if (GUILayout.Button("Export"))
+            GUILayout.Space(EditorUIStyle.ContentSpacing);
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
             {
-                if (string.IsNullOrEmpty(_save.UIPrefabPath))
+                GUILayout.Label("Prefab Text Export", EditorUIStyle.SectionTitle);
+                EditorGUILayout.LabelField("Export TextEx components from prefabs to localization CSV.", EditorUIStyle.MutedLabel);
+                _save.UIPrefabPath = EditorGUILayout.TextField("Prefab folder", _save.UIPrefabPath);
+
+                if (GUILayout.Button("Export Prefab Text", EditorUIStyle.PrimaryButton))
                 {
-                    EditorUtility.DisplayDialog("Error", "Please specify a valid folder path.", "OK");
-                    return;
-                }
-                EditorSaveUtils.SetEditorPref(SaveKey.UIPrefabPath, _save.UIPrefabPath);
-                UnityLocalizationWriter.CollectTextsFromGameObject(_save.UIPrefabPath);
-                UnityLocalizationCsvExporter.Export();
-                var csvPath = Path.Combine(_save.excelPath, LocalizationFolderName)+"/";
-                var fullPath = Path.GetFullPath(csvPath);
-                if (File.Exists(fullPath) || Directory.Exists(fullPath))
-                {
-                    EditorUtility.RevealInFinder(fullPath);
-                }
-                else
-                {
-                    EditorUtility.DisplayDialog("Error", $"Path not found:\n{fullPath}", "OK");
+                    if (string.IsNullOrEmpty(_save.UIPrefabPath))
+                    {
+                        EditorUtility.DisplayDialog("Error", "Please specify a valid folder path.", "OK");
+                        return;
+                    }
+                    EditorSaveUtils.SetEditorPref(SaveKey.UIPrefabPath, _save.UIPrefabPath);
+                    UnityLocalizationWriter.CollectTextsFromGameObject(_save.UIPrefabPath);
+                    UnityLocalizationCsvExporter.Export();
+                    var csvPath = Path.Combine(_save.excelPath, LocalizationFolderName)+"/";
+                    var fullPath = Path.GetFullPath(csvPath);
+                    if (File.Exists(fullPath) || Directory.Exists(fullPath))
+                    {
+                        EditorUtility.RevealInFinder(fullPath);
+                    }
+                    else
+                    {
+                        EditorUtility.DisplayDialog("Error", $"Path not found:\n{fullPath}", "OK");
+                    }
                 }
             }
         }

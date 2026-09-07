@@ -71,6 +71,7 @@ namespace PowerCellStudio.Editor
 
         private void OnEnable()
         {
+            minSize = new Vector2(680f, 520f);
             _namespaceName = EditorPrefs.GetString(NamespaceEditorPrefsKey, string.Empty);
 
             if (TryRestoreCachedPrefab()) return;
@@ -83,28 +84,39 @@ namespace PowerCellStudio.Editor
 
         private void OnGUI()
         {
+            EditorUIStyle.DrawWindowBackground(new Rect(Vector2.zero, position.size));
             DrawHeader();
-            DrawPrefabField();
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
+            {
+                EditorGUILayout.LabelField("Source Prefab", EditorUIStyle.SectionTitle);
+                DrawPrefabField();
+                if (_prefab != null)
+                {
+                    EditorGUILayout.LabelField(_prefabPath, EditorUIStyle.MutedLabel);
+                }
+            }
 
             using (new EditorGUI.DisabledScope(_prefab == null))
             {
+                GUILayout.Space(EditorUIStyle.ContentSpacing);
                 DrawSettings();
+                GUILayout.Space(EditorUIStyle.ContentSpacing);
                 DrawGenerationOptions();
 
-                EditorGUILayout.Space();
+                GUILayout.Space(EditorUIStyle.ContentSpacing);
                 DrawToolbar();
-                EditorGUILayout.Space();
+                GUILayout.Space(EditorUIStyle.SectionSpacing);
                 DrawNodeTree();
-                EditorGUILayout.Space();
 
+                GUILayout.Space(EditorUIStyle.ContentSpacing);
                 DrawActionButtons();
             }
         }
 
         private void DrawHeader()
         {
-            EditorGUILayout.LabelField("Advanced UI Script Generator", EditorStyles.boldLabel);
-            EditorGUILayout.Space();
+            EditorUIStyle.DrawImguiHeader("Advanced UI Script Generator",
+                "Select prefab components, generate strongly typed window scripts, and bind them automatically.");
         }
 
         private void DrawPrefabField()
@@ -119,57 +131,81 @@ namespace PowerCellStudio.Editor
 
         private void DrawSettings()
         {
-            EditorGUI.BeginChangeCheck();
-            _namespaceName = EditorGUILayout.TextField("Namespace", _namespaceName);
-            if (EditorGUI.EndChangeCheck())
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
             {
-                EditorPrefs.SetString(NamespaceEditorPrefsKey, _namespaceName);
-            }
+                EditorGUILayout.LabelField("Script Settings", EditorUIStyle.SectionTitle);
+                EditorGUI.BeginChangeCheck();
+                _namespaceName = EditorGUILayout.TextField("Namespace", _namespaceName);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorPrefs.SetString(NamespaceEditorPrefsKey, _namespaceName);
+                }
 
-            _className = EditorGUILayout.TextField("UIWindow Class", _className);
+                _className = EditorGUILayout.TextField("UIWindow Class", _className);
 
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.TextField("Output Folder", _outputFolder);
-            if (GUILayout.Button("Select", GUILayout.Width(70)))
-            {
-                SelectOutputFolder();
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.TextField("Output Folder", _outputFolder);
+                    if (GUILayout.Button("Browse...", GUILayout.Width(EditorUIStyle.ToolbarButtonWidth)))
+                    {
+                        SelectOutputFolder();
+                    }
+                }
             }
-            EditorGUILayout.EndHorizontal();
         }
 
         private void DrawGenerationOptions()
         {
-            EditorGUI.BeginChangeCheck();
-            _generateVariableWindow = EditorGUILayout.ToggleLeft("Generate UIVariableWindow script", _generateVariableWindow);
-            if (EditorGUI.EndChangeCheck() && _generateVariableWindow)
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
             {
-                _generateVirtualWindow = false;
-            }
+                EditorGUILayout.LabelField("Generation Mode", EditorUIStyle.SectionTitle);
+                EditorGUI.BeginChangeCheck();
+                _generateVariableWindow = EditorGUILayout.ToggleLeft(
+                    new GUIContent("UIVariableWindow", "Generate variable window and controller partial scripts."),
+                    _generateVariableWindow);
+                if (EditorGUI.EndChangeCheck() && _generateVariableWindow)
+                {
+                    _generateVirtualWindow = false;
+                }
 
-            using (new EditorGUI.DisabledScope(_generateVariableWindow))
-            {
-                _generateVirtualWindow = EditorGUILayout.ToggleLeft("Generate UIVirtualWindow script", _generateVirtualWindow);
-            }
+                using (new EditorGUI.DisabledScope(_generateVariableWindow))
+                {
+                    _generateVirtualWindow = EditorGUILayout.ToggleLeft(
+                        new GUIContent("UIVirtualWindow", "Generate an additional virtual window script."),
+                        _generateVirtualWindow);
+                }
 
-            if (_generateVariableWindow)
-            {
-                EditorGUILayout.HelpBox("UIVariableWindow mode only generates variable window and ctrl partial scripts.", MessageType.Info);
+                if (_generateVariableWindow)
+                {
+                    EditorGUILayout.HelpBox("Variable mode generates the window and controller partial scripts only.", MessageType.Info);
+                }
             }
         }
 
         private void DrawActionButtons()
         {
-            using (new EditorGUI.DisabledScope(!CanGenerate()))
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
             {
-                if (GUILayout.Button("Generate Scripts", GUILayout.Height(30)))
-                {
-                    GenerateScripts();
-                }
-            }
+                var selectedCount = GetSelectedFields().Count;
+                EditorGUILayout.LabelField($"Ready to generate: {selectedCount} component{(selectedCount == 1 ? string.Empty : "s")} selected",
+                    EditorUIStyle.MutedLabel);
 
-            if (GUILayout.Button("Add/Bind UIWindow Script To Prefab", GUILayout.Height(26)))
-            {
-                TryBindCurrentPrefabComponent();
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    using (new EditorGUI.DisabledScope(!CanGenerate()))
+                    {
+                        if (GUILayout.Button("Generate Scripts", EditorUIStyle.PrimaryButton))
+                        {
+                            GenerateScripts();
+                        }
+                    }
+
+                    GUILayout.Space(EditorUIStyle.ContentSpacing);
+                    if (GUILayout.Button("Bind Script To Prefab", GUILayout.Height(EditorUIStyle.SecondaryButtonHeight)))
+                    {
+                        TryBindCurrentPrefabComponent();
+                    }
+                }
             }
         }
 

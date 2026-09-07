@@ -120,11 +120,11 @@ sample.loadState = sample.loadState | state;
 
 `LoadProfilerModule` 注册以下五个图表计数器：
 
-- `Loader Active Loads`
-- `Loader Begin Loads`
-- `Loader Completed Loads`
-- `Loader AssetBundles`
-- `Loader Max Dependency Depth`
+- Loader Active Loads 活跃的加载请求，包括当前帧开始/正在加载的请求
+- Loader Begin Loads 当前帧开始的请求
+- Loader Completed Loads 当前帧完成的请求
+- Loader AssetBundles 当前帧主动请求加载的bundle数量
+- Loader Max Dependency Count 当前帧最大加载请求中最大的依赖分包数量
 
 详细样本则通过 `LoadProfilerFrameData` 写入帧元数据。由于 `Profiler.EmitFrameMetaData<T>` 要求数据结构满足 blittable 约束，元数据不直接保存 `string` 或 `string[]`，而是使用：
 

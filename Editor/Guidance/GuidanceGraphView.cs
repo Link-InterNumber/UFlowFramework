@@ -16,6 +16,15 @@ namespace PowerCellStudio.Editor
         public GuidanceGraphView(GuidanceGraphWindow editorWindow)
         {
             _editorWindow = editorWindow;
+            style.backgroundColor = EditorUIStyle.GraphBackground;
+            style.borderTopWidth = 1f;
+            style.borderBottomWidth = 1f;
+            style.borderLeftWidth = 1f;
+            style.borderRightWidth = 1f;
+            style.borderTopColor = EditorUIStyle.ImguiBorderColor;
+            style.borderBottomColor = EditorUIStyle.ImguiBorderColor;
+            style.borderLeftColor = EditorUIStyle.ImguiBorderColor;
+            style.borderRightColor = EditorUIStyle.ImguiBorderColor;
             this.AddManipulator(new ContentZoomer() { maxScale = 2f });
             this.AddManipulator(new ContentDragger());
             this.AddManipulator(new SelectionDragger());

@@ -11,6 +11,7 @@ namespace PowerCellStudio.Editor
         {
             SmoothNormalsProcessor window =
                 (SmoothNormalsProcessor)EditorWindow.GetWindow(typeof(SmoothNormalsProcessor));
+            window.titleContent = new GUIContent("Smooth Normals");
             window.Show();
         }
 
@@ -26,22 +27,28 @@ namespace PowerCellStudio.Editor
 
         void OnGUI()
         {
-            GUILayout.Label("Smooth Normals for Outline", EditorStyles.boldLabel);
-            targetMesh = EditorGUILayout.ObjectField("Target Mesh", targetMesh, typeof(Mesh), false) as Mesh;
-            // textureSize = EditorGUILayout.IntField("Texture Size", textureSize);
-            writeToUVIndex = EditorGUILayout.IntPopup(writeToUVIndex, uvOptions, uvOptionValues);
-            // showPreview = EditorGUILayout.Toggle("Show Preview", showPreview);
+            EditorUIStyle.DrawWindowBackground(new Rect(Vector2.zero, position.size));
+            EditorUIStyle.DrawImguiHeader("Smooth Normals for Outline",
+                "Average normals across shared vertices and write the result into a selected UV channel.");
 
-            GUI.enabled = targetMesh != null;
-            if (GUILayout.Button("Generate Smooth Normal To " + uvOptions[writeToUVIndex]))
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
             {
-                var smoothNormals = SmoothNormals(targetMesh);
-                targetMesh.SetUVs(writeToUVIndex + 1, smoothNormals);
-                AssetDatabase.Refresh();
-                Debug.Log("Smooth normal generated and assigned.");
+                EditorGUILayout.LabelField("Output Settings", EditorUIStyle.SectionTitle);
+                targetMesh = EditorGUILayout.ObjectField("Target Mesh", targetMesh, typeof(Mesh), false) as Mesh;
+                writeToUVIndex = EditorGUILayout.IntPopup("Write Channel", writeToUVIndex, uvOptions, uvOptionValues);
             }
 
-            GUI.enabled = true;
+            GUILayout.Space(EditorUIStyle.ContentSpacing);
+            using (new EditorGUI.DisabledScope(targetMesh == null))
+            {
+                if (GUILayout.Button("Generate To " + uvOptions[writeToUVIndex], EditorUIStyle.PrimaryButton))
+                {
+                    var smoothNormals = SmoothNormals(targetMesh);
+                    targetMesh.SetUVs(writeToUVIndex + 1, smoothNormals);
+                    AssetDatabase.Refresh();
+                    Debug.Log("Smooth normal generated and assigned.");
+                }
+            }
 
             // if (showPreview && previewTexture != null)
             // {

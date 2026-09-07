@@ -13,7 +13,8 @@ namespace PowerCellStudio.Editor
     [Serializable]
     public class NotifyTreeElement : TreeViewItem
     {
-        public NotifyType notifyType;
+        public Type notifyEnumType;
+        public int notifyIndex;
         public bool isOn;
         public int notifyNumber;
         public int notifyValue;
@@ -21,17 +22,20 @@ namespace PowerCellStudio.Editor
 
     public class NotifyTree : TreeView
     {
+        private readonly Type _notifyEnumType;
         private float _kRowHeights = 20f;
         private float _kToggleWidth = 20f;
 
-        public NotifyTree(TreeViewState state) : base(state)
+        public NotifyTree(TreeViewState state, Type notifyEnumType) : base(state)
         {
+            _notifyEnumType = notifyEnumType;
             if(!Application.isPlaying) return;
             Reload();
         }
 
-        public NotifyTree(TreeViewState state, MultiColumnHeader multiColumnHeader) : base(state, multiColumnHeader)
+        public NotifyTree(TreeViewState state, MultiColumnHeader multiColumnHeader, Type notifyEnumType) : base(state, multiColumnHeader)
         {
+            _notifyEnumType = notifyEnumType;
             rowHeight = 20;
             // columnIndexForTreeFoldouts = 2;
             showAlternatingRowBackgrounds = true;
@@ -88,40 +92,29 @@ namespace PowerCellStudio.Editor
 
         protected override TreeViewItem BuildRoot()
         {
-            NotifyManager.instance.GetNotifyInfo(NotifyType.Root, out var isOn, out var notifyNumber, out var notifyValue);
             var id = 0;
             var root = new NotifyTreeElement()
             {
-                notifyType = NotifyType.Root,
-                isOn = isOn,
-                notifyNumber = notifyNumber,
-                notifyValue = notifyValue,
                 id = id,
                 depth = -1,
-                displayName = Enum.GetName(typeof(NotifyType), NotifyType.Root)
+                displayName = _notifyEnumType == null ? "Root" : _notifyEnumType.Name
             };
             id++;
-            if(!Application.isPlaying) return root;
-            var allTypes = Enum.GetValues(typeof(NotifyType)) as  NotifyType[];
+            if (!Application.isPlaying || _notifyEnumType == null) return root;
+
+            var allTypes = Enum.GetValues(_notifyEnumType);
+            if (allTypes.Length == 0) return root;
+
+            var rootIndex = FindRootIndex(allTypes);
+            if (rootIndex < 0) return root;
+
+            NotifyManager.instance.TryGetNotifyNodeInfo(_notifyEnumType, rootIndex, out root.isOn,
+                out root.notifyNumber, out root.notifyValue, out _, out _);
+
             var childrenNode = new List<NotifyTreeElement>();
             for (var i = 0; i < allTypes.Length; i++)
             {
-                var  type = allTypes[i];
-                if (type == NotifyType.Root) continue;
-                if (NotifyManager.instance.GetParent(type) != NotifyType.Root) continue;
-                NotifyManager.instance.GetNotifyInfo(type, out bool On, out var N, out var V);
-                var node = new NotifyTreeElement()
-                {
-                    notifyType = type,
-                    isOn = On,
-                    notifyNumber = N,
-                    notifyValue = V,
-                    id = id,
-                    displayName = Enum.GetName(typeof(NotifyType), type)
-                };
-                root.AddChild(node);
-                childrenNode.Add(node);
-                id++;
+                AddNodeIfChildOfRoot(allTypes, i, rootIndex, root, childrenNode, ref id);
             }
 
             while (childrenNode.Count > 0)
@@ -131,27 +124,58 @@ namespace PowerCellStudio.Editor
                 for (var i = 0; i < executeList.Count; i++)
                 {
                     var parent = executeList[i];
-                    var childrenType = NotifyManager.instance.GetChildren(parent.notifyType);
-                    foreach (var notifyType in childrenType)
+                    if (!NotifyManager.instance.TryGetNotifyNodeInfo(_notifyEnumType, parent.notifyIndex,
+                            out _, out _, out _, out _, out var childIndices))
+                        continue;
+                    foreach (var childIndex in childIndices)
                     {
-                        NotifyManager.instance.GetNotifyInfo(notifyType, out bool On, out var N, out var V);
-                        var node = new NotifyTreeElement()
-                        {
-                            notifyType = notifyType,
-                            isOn = On,
-                            notifyNumber = N,
-                            notifyValue = V,
-                            id = id,
-                            displayName = Enum.GetName(typeof(NotifyType), notifyType)
-                        };
+                        var node = CreateNode(allTypes, childIndex, id++);
                         parent.AddChild(node);
                         childrenNode.Add(node);
-                        id++;
                     }
                 }
             }
             SetupDepthsFromParentsAndChildren(root);
             return root;
+        }
+
+        private int FindRootIndex(Array enumValues)
+        {
+            for (var i = 0; i < enumValues.Length; i++)
+            {
+                if (string.Equals(Enum.GetName(_notifyEnumType, enumValues.GetValue(i)), "Root",
+                        StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+            return -1;
+        }
+
+        private void AddNodeIfChildOfRoot(Array enumValues, int index, int rootIndex, NotifyTreeElement root,
+            List<NotifyTreeElement> childrenNode, ref int id)
+        {
+            if (!NotifyManager.instance.TryGetNotifyNodeInfo(_notifyEnumType, index,
+                    out _, out _, out _, out var parentIndex, out _) || index == rootIndex || parentIndex != rootIndex)
+                return;
+            var node = CreateNode(enumValues, index, id++);
+            root.AddChild(node);
+            childrenNode.Add(node);
+        }
+
+        private NotifyTreeElement CreateNode(Array enumValues, int index, int id)
+        {
+            NotifyManager.instance.TryGetNotifyNodeInfo(_notifyEnumType, index, out var isOn, out var number,
+                out var value, out _, out _);
+            var enumValue = enumValues.GetValue(index);
+            return new NotifyTreeElement
+            {
+                notifyEnumType = _notifyEnumType,
+                notifyIndex = index,
+                isOn = isOn,
+                notifyNumber = number,
+                notifyValue = value,
+                id = id,
+                displayName = Enum.GetName(_notifyEnumType, enumValue) ?? enumValue.ToString()
+            };
         }
     }
     
@@ -235,6 +259,8 @@ namespace PowerCellStudio.Editor
         [SerializeField] MultiColumnHeaderState m_MultiColumnHeaderState;
         SearchField m_SearchField;
         NotifyTree m_TreeView;
+        [NonSerialized] List<Type> m_NotifyGroupTypes;
+        [NonSerialized] Type m_SelectedNotifyGroup;
 
         public NotifyTree treeView
         {
@@ -243,7 +269,7 @@ namespace PowerCellStudio.Editor
         
         Rect multiColumnTreeViewRect
         {
-            get { return new Rect(20, 30, position.width-40, position.height-60); }
+            get { return new Rect(20, 55, position.width - 40, position.height - 85); }
         }
 
         Rect refreshButtonRect
@@ -255,10 +281,17 @@ namespace PowerCellStudio.Editor
         {
             get { return new Rect (90f, 10f, position.width-110f, 20f); }
         }
+
+        Rect groupToolbarRect
+        {
+            get { return new Rect(90f, 32f, position.width - 110f, 20f); }
+        }
         
         void InitIfNeeded ()
         {
             if (m_Initialized) return;
+            RefreshNotifyGroups();
+            if (m_SelectedNotifyGroup == null) return;
             // Check if it already exists (deserialized from window layout file or scriptable object)
             if (m_TreeViewState == null)
                 m_TreeViewState = new TreeViewState();
@@ -272,7 +305,7 @@ namespace PowerCellStudio.Editor
             var multiColumnHeader = new MyMultiColumnHeader(headerState);
             if (firstInit)
                 multiColumnHeader.ResizeToFit();
-            m_TreeView = new NotifyTree(m_TreeViewState, multiColumnHeader);
+            m_TreeView = new NotifyTree(m_TreeViewState, multiColumnHeader, m_SelectedNotifyGroup);
             m_SearchField = new SearchField();
             m_SearchField.downOrUpArrowKeyPressed += m_TreeView.SetFocusAndEnsureSelectedItem;
             m_Initialized = true;
@@ -353,19 +386,59 @@ namespace PowerCellStudio.Editor
             {
                 m_Initialized = false;
             }
+            DrawNotifyGroupButtons(groupToolbarRect);
             SearchBar (toolbarRect);
             if(m_TreeView != null) m_TreeView.OnGUI(multiColumnTreeViewRect);
+        }
+
+        private void RefreshNotifyGroups()
+        {
+            var registeredTypes = NotifyManager.instance.GetNotifyGroupTypes();
+            m_NotifyGroupTypes = registeredTypes == null ? new List<Type>() : new List<Type>(registeredTypes);
+            if (m_SelectedNotifyGroup == null || !m_NotifyGroupTypes.Contains(m_SelectedNotifyGroup))
+                m_SelectedNotifyGroup = m_NotifyGroupTypes.Count > 0 ? m_NotifyGroupTypes[0] : null;
+        }
+
+        private void DrawNotifyGroupButtons(Rect rect)
+        {
+            if (m_NotifyGroupTypes == null || m_NotifyGroupTypes.Count == 0)
+            {
+                EditorGUI.LabelField(rect, "No notification enum group is registered.");
+                return;
+            }
+
+            var buttonRect = rect;
+            for (var i = 0; i < m_NotifyGroupTypes.Count; i++)
+            {
+                var enumType = m_NotifyGroupTypes[i];
+                var label = enumType == null ? "<null>" : enumType.Name;
+                var width = Mathf.Max(80f, GUI.skin.button.CalcSize(new GUIContent(label)).x + 12f);
+                buttonRect.width = Mathf.Min(width, rect.xMax - buttonRect.x);
+                if (buttonRect.width <= 0) break;
+
+                var selected = enumType == m_SelectedNotifyGroup;
+                var oldColor = GUI.backgroundColor;
+                if (selected) GUI.backgroundColor = new Color(0.35f, 0.65f, 1f);
+                if (GUI.Button(buttonRect, label) && !selected)
+                {
+                    m_SelectedNotifyGroup = enumType;
+                    m_Initialized = false;
+                    GUI.FocusControl(null);
+                }
+                GUI.backgroundColor = oldColor;
+                buttonRect.x += buttonRect.width + 4f;
+            }
         }
         
         void SearchBar (Rect rect)
         {
+            if (m_TreeView == null || m_SearchField == null) return;
             treeView.searchString = m_SearchField.OnGUI(rect, m_TreeView.searchString);
         }
         
         public static void ShowWindow ()
         {
             // 获取现有打开的窗口；如果没有，则新建一个窗口：
-            if (Enum.GetValues(typeof(NotifyType)).Length <= 1) return;
             var window = GetWindow<NotifyTreeViewWindow>();
             window.titleContent = new GUIContent("Notify Tree Window");
             window.Show();

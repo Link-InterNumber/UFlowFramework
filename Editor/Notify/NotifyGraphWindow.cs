@@ -17,10 +17,14 @@ namespace PowerCellStudio.Editor
 
         private const string _savePathSaveKey = "NotifyGraphWindow_SavePath";
         private const string _enumPathSaveKey = "NotifyGraphWindow_EnumPath";
+        private const string _enumTypeSaveKey = "NotifyGraphWindow_EnumType";
+        private const string _namespaceSaveKey = "NotifyGraphWindow_Namespace";
         private const string _bindingCsPathSaveKey = "NotifyGraphWindow_BindingCsPath";
 
         private string _currentSavePath;
         private string _currentEnumPath;
+        private string _currentEnumType;
+        private string _currentNamespace;
 
         public static void OpenWindow()
         {
@@ -39,10 +43,15 @@ namespace PowerCellStudio.Editor
         private string _findNodeName = "";
         private string _currentBindingCsPath = "";
         private ObjectField _bindingCsFileField;
+        private TextField _namespaceField;
+        private TextField _enumTypeField;
+
         private void OnEnable()
         {
             _currentSavePath = EditorSaveUtils.GetEditorPref(_savePathSaveKey, _savePath);
             _currentEnumPath = EditorSaveUtils.GetEditorPref(_enumPathSaveKey, _enumPath);
+            _currentEnumType = EditorSaveUtils.GetEditorPref(_enumTypeSaveKey, "");
+            _currentNamespace = EditorSaveUtils.GetEditorPref(_namespaceSaveKey, "");
             _currentBindingCsPath = EditorSaveUtils.GetEditorPref(_bindingCsPathSaveKey, "");
 
             _graphView = new NotifyGraphView(this)
@@ -54,6 +63,27 @@ namespace PowerCellStudio.Editor
             rootVisualElement.Add(_graphView);
 
             Toolbar toolbarText = new Toolbar();
+            
+            // namespace
+            _namespaceField = new TextField("Namespace");
+            _namespaceField.style.minWidth = 300;
+            _namespaceField.value = _currentNamespace;
+            _namespaceField.RegisterValueChangedCallback(evt =>
+            {
+                _currentNamespace = evt.newValue;
+            });
+            toolbarText.Add(_namespaceField);
+            
+            // enumType
+            _enumTypeField = new TextField("Enum Type");
+            _enumTypeField.style.minWidth = 300;
+            _enumTypeField.value = _currentEnumType;
+            _enumTypeField.RegisterValueChangedCallback(evt =>
+            {
+                _currentEnumType = evt.newValue;
+            });
+            toolbarText.Add(_enumTypeField);
+            
             // enumPath
             var enumTextField = new TextField("Enum Cs Path");
             enumTextField.style.minWidth = 400;
@@ -78,7 +108,7 @@ namespace PowerCellStudio.Editor
             Toolbar toolbar = new Toolbar();
             // 脚本文件
             _bindingCsFileField = new ObjectField("Binding Cs File");
-            _bindingCsFileField.objectType = typeof(UnityEngine.Object);
+            _bindingCsFileField.objectType = typeof(UnityEngine.TextAsset);
             _bindingCsFileField.value = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(_currentBindingCsPath);
             Debug.Log($"Load Binding Cs Path: {_currentBindingCsPath}");
             Debug.Log($"_bindingCsFileField.value: {_bindingCsFileField.value}");
@@ -158,13 +188,26 @@ namespace PowerCellStudio.Editor
                 var csLines = File.ReadAllLines(bindFilePath);
                 foreach (var line in csLines)
                 {
+                    if (line.Contains("namespace"))
+                    {
+                        _currentNamespace = line.Trim().Replace("namespace", "").Trim();
+                        _namespaceField.SetValueWithoutNotify(_currentNamespace);
+                    }
                     if (line.Contains("manager.SetNodeParent"))
                     {
-                        var parts = line.Trim().Replace("manager.SetNodeParent(", "").Replace(");", "").Split(',');
+                        var trimLine = line.Trim();
+                        if (trimLine.StartsWith("//")) continue;
+                        var parts = trimLine.Replace("manager.SetNodeParent(", "").Replace(");", "").Split(',');
                         if (parts.Length == 2)
                         {
-                            var child = parts[0].Trim().Replace("NotifyType.", "");
-                            var parent = parts[1].Trim().Replace("NotifyType.", "");
+                            var enumType = parts[0].Trim().Split('.')[0];
+                            if (!string.Equals(enumType, _currentEnumType))
+                            {
+                                _currentEnumType = enumType;
+                                _enumTypeField.SetValueWithoutNotify(_currentEnumType);
+                            }
+                            var child = parts[0].Trim().Replace($"{_currentEnumType}.", "");
+                            var parent = parts[1].Trim().Replace($"{_currentEnumType}.", "");
                             nodeRelations.Add((child, parent));
                         }
                     }
@@ -221,6 +264,11 @@ namespace PowerCellStudio.Editor
                 EditorUtility.DisplayDialog("Save Graph", "Please resolve duplicate node names before saving.", "OK");
                 return; 
             }
+            if (string.IsNullOrEmpty(_currentEnumType))
+            {
+                EditorUtility.DisplayDialog("Save Graph", "Please specify the Enum Type before saving.", "OK");
+                return;
+            }
             
             var nodes = _graphView.nodes.ToList();
             List<string> nodeNames = new List<string>();
@@ -250,13 +298,14 @@ namespace PowerCellStudio.Editor
             EditorSaveUtils.SetEditorPref(_savePathSaveKey, _currentSavePath);
             EditorSaveUtils.SetEditorPref(_enumPathSaveKey, _currentEnumPath);
             EditorSaveUtils.SetEditorPref(_bindingCsPathSaveKey, _currentBindingCsPath);
-            
+            EditorSaveUtils.SetEditorPref(_enumTypeSaveKey, _currentEnumType);
+            EditorSaveUtils.SetEditorPref(_namespaceSaveKey, _currentNamespace);
             AssetDatabase.Refresh();
         }
 
         private void SaveEnum(List<string> nodeNames)
         {
-            var enumSavePath = Path.Combine(_currentEnumPath, "NotifyType.cs");
+            var enumSavePath = Path.Combine(_currentEnumPath, $"{_currentEnumType}.cs");
             string currentFileContent = null;
             if (File.Exists(enumSavePath))
             {
@@ -283,24 +332,29 @@ namespace PowerCellStudio.Editor
             nodeNamesFinal.Insert(0, "Root");
 
             using CsWriter csWriter = new CsWriter();
-            csWriter.WriteLine("namespace PowerCellStudio");
-            csWriter.StartWriteBody();
-            csWriter.WriteLine("public enum NotifyType");
+            if (!string.IsNullOrEmpty(_currentNamespace))
+            {
+                csWriter.WriteLine($"namespace {_currentNamespace}");
+                csWriter.StartWriteBody();
+            }
+
+            csWriter.WriteLine($"public enum {_currentEnumType}");
             csWriter.StartWriteBody();
             foreach (var name in nodeNamesFinal)
             {
                 csWriter.WriteLine(name + ",");
             }
             csWriter.EndWriteBody();
-            csWriter.EndWriteBody();
+            if (!string.IsNullOrEmpty(_currentNamespace))
+                csWriter.EndWriteBody();
             File.WriteAllText(enumSavePath, csWriter.ToString());
         }
 
         private bool SaveBinding(List<(string child, string parent)> relationships)
         {
-            if (string.IsNullOrEmpty(_currentBindingCsPath))
+            if (string.IsNullOrEmpty(_currentBindingCsPath) || _bindingCsFileField.value == null)
             {
-                var defaultPath = "NotifyPreset_NewFile";
+                var defaultPath = $"NotifyPreset_{_currentEnumType}";
                 _currentBindingCsPath = EditorUtility.SaveFilePanel("Save Binding Cs, The filename must start with \"NotifyPreset_\"", _currentSavePath, defaultPath, "cs");
                 if (string.IsNullOrEmpty(_currentBindingCsPath)) return false;
                 // 处理为项目内路径, 去掉Application.dataPath
@@ -321,13 +375,18 @@ namespace PowerCellStudio.Editor
             }
             using CsWriter csWriter = new CsWriter();
             csWriter.WriteUsing("System");
+            csWriter.WriteUsing("PowerCellStudio");
             csWriter.Space(2);
-            csWriter.WriteLine("namespace PowerCellStudio");
-            csWriter.StartWriteBody();
-            csWriter.WriteLine($"public sealed class NotifyPreset_{partialName} : INotifyBindPreset");
+            if (!string.IsNullOrEmpty(_currentNamespace))
+            {
+                csWriter.WriteLine($"namespace {_currentNamespace}");
+                csWriter.StartWriteBody();
+            }
+            csWriter.WriteLine($"public sealed class {fileName} : INotifyBindPreset");
             csWriter.StartWriteBody();
             csWriter.WriteLine($"public void BindNodes(NotifyManager manager)");
             csWriter.StartWriteBody();
+            csWriter.WriteLine($"manager.SetNotifyGroup<{_currentEnumType}>();");
             relationships.Sort((a, b) =>
             {
                 if (a.parent == "Root") return -1;
@@ -339,11 +398,12 @@ namespace PowerCellStudio.Editor
             });
             foreach (var (child, parent) in relationships)
             {
-                csWriter.WriteLine($"manager.SetNodeParent(NotifyType.{child}, NotifyType.{parent});");
+                csWriter.WriteLine($"manager.SetNodeParent({_currentEnumType}.{child}, {_currentEnumType}.{parent});");
             }
             csWriter.EndWriteBody();
             csWriter.EndWriteBody();
-            csWriter.EndWriteBody();
+            if (!string.IsNullOrEmpty(_currentNamespace))
+                csWriter.EndWriteBody();
             File.WriteAllText(_currentBindingCsPath, csWriter.ToString());
             return true;
         }

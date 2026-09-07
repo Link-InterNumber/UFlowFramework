@@ -20,30 +20,54 @@ namespace PowerCellStudio.Editor
             GetWindow<ThicknessMapGenerator>("Thickness Map Generator");
         }
 
+        private void OnEnable()
+        {
+            minSize = new Vector2(480f, 540f);
+        }
+
+        private void OnDisable()
+        {
+            if (previewTexture == null)
+                return;
+
+            DestroyImmediate(previewTexture);
+            previewTexture = null;
+        }
+
         private void OnGUI()
         {
-            GUILayout.Label("Thickness Map Generator", EditorStyles.boldLabel);
+            EditorUIStyle.DrawWindowBackground(new Rect(Vector2.zero, position.size));
+            EditorUIStyle.DrawImguiHeader("Thickness Map Generator",
+                "Bake normalized mesh thickness into a grayscale texture using inward ray tests.");
 
-            EditorGUI.BeginChangeCheck();
-            targetMesh = EditorGUILayout.ObjectField("Target Mesh", targetMesh, typeof(Mesh), false) as Mesh;
-            maxRayDistance = EditorGUILayout.FloatField("Max Ray Distance", maxRayDistance);
-            textureSize = EditorGUILayout.IntField("Texture Size", textureSize);
-            rayCount = EditorGUILayout.IntField("Ray Count per Direction", rayCount);
-            showPreview = EditorGUILayout.Toggle("Show Preview", showPreview);
-
-            GUI.enabled = targetMesh != null;
-            if (GUILayout.Button("Generate Thickness Map"))
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
             {
-                GenerateThicknessMap();
+                EditorGUILayout.LabelField("Bake Settings", EditorUIStyle.SectionTitle);
+                targetMesh = EditorGUILayout.ObjectField("Target Mesh", targetMesh, typeof(Mesh), false) as Mesh;
+                maxRayDistance = EditorGUILayout.FloatField(new GUIContent("Max Ray Distance", "Use 0 or less for an automatic range."), maxRayDistance);
+                textureSize = EditorGUILayout.IntField("Texture Size", textureSize);
+                rayCount = EditorGUILayout.IntField("Ray Count per Direction", rayCount);
+                showPreview = EditorGUILayout.Toggle("Show Preview", showPreview);
             }
 
-            GUI.enabled = true;
+            GUILayout.Space(EditorUIStyle.ContentSpacing);
+            using (new EditorGUI.DisabledScope(targetMesh == null))
+            {
+                if (GUILayout.Button("Generate Thickness Map", EditorUIStyle.PrimaryButton))
+                    GenerateThicknessMap();
+            }
 
             if (showPreview && previewTexture != null)
             {
-                GUILayout.Label("Preview:");
-                Rect rect = GUILayoutUtility.GetRect(256, 256);
-                EditorGUI.DrawPreviewTexture(rect, previewTexture);
+                GUILayout.Space(EditorUIStyle.ContentSpacing);
+                using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
+                {
+                    EditorGUILayout.LabelField("Preview", EditorUIStyle.SectionTitle);
+                    float previewSize = Mathf.Min(320f, position.width - EditorUIStyle.PanelPadding * 4f);
+                    Rect rect = GUILayoutUtility.GetRect(previewSize, previewSize, GUILayout.ExpandWidth(false));
+                    rect.x = (position.width - rect.width) * 0.5f;
+                    EditorGUI.DrawPreviewTexture(rect, previewTexture, null, ScaleMode.ScaleToFit);
+                }
             }
         }
 

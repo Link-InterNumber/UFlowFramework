@@ -53,6 +53,7 @@ namespace PowerCellStudio.Editor
 
         private void OnDisable()
         {
+            if (items == null) return;
             for (var i = 0; i < items.Count; i++)
             {
                 items[i].OnDestroy();
@@ -63,11 +64,18 @@ namespace PowerCellStudio.Editor
         private int _selectIndex;
         void OnGUI()
         {
-            if (items == null && items.Count > 0) return;
+            EditorUIStyle.DrawWindowBackground(new Rect(Vector2.zero, position.size));
+            if (items == null || items.Count == 0)
+            {
+                EditorGUILayout.HelpBox("No editor setting modules were found.", MessageType.Info);
+                return;
+            }
+
+            EditorUIStyle.DrawImguiHeader("Editor Settings", "Configure UFlow editor tools from one place.");
 
             float currentWidth = position.width - 20; // Leave space for scroll bar
             float xOffset = 0;
-            float yOffset = 0;
+            float yOffset = 50;
 
 
             GUILayout.BeginVertical();
@@ -87,32 +95,31 @@ namespace PowerCellStudio.Editor
                 // Use a rect to create a button position
                 Rect tabRect = new Rect(xOffset, yOffset, tabWidth, tabHeight);
                 
-                if (GUI.Button(tabRect, tab.itemName))
+                var previousColor = GUI.backgroundColor;
+                if (i == _selectIndex) GUI.backgroundColor = EditorUIStyle.AccentColor;
+                if (GUI.Button(tabRect, tab.itemName, EditorUIStyle.TabButton))
                 {
                     items[_selectIndex].SaveData();
                     items[_selectIndex].OnDestroy();
                     _selectIndex = i;
                     items[_selectIndex].InitSave();
                 }
+                GUI.backgroundColor = previousColor;
 
                 xOffset += tabWidth + 5; // Increment x position with margin
             }
-            yOffset += tabHeight; // Adjust for the last line
-            GUILayout.Space(yOffset);
+            GUILayout.Space(tabHeight);
             GUILayout.EndVertical();
 
-            var titleStyle = new GUIStyle(EditorStyles.label)
+            GUILayout.Label(items[_selectIndex].itemName, EditorUIStyle.WindowTitle);
+            using (var scroll = new EditorGUILayout.ScrollViewScope(scrollPosition, EditorUIStyle.PanelBox))
             {
-                fontSize = 25,
-                fontStyle = FontStyle.Bold,
-            };
-            GUILayout.Label(items[_selectIndex].itemName, titleStyle);
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition);
-            items[_selectIndex].OnGUI(this);
-            GUILayout.EndScrollView();
+                scrollPosition = scroll.scrollPosition;
+                items[_selectIndex].OnGUI(this);
+            }
             
             GUILayout.Space(10);
-            if (GUILayout.Button("Save"))
+            if (GUILayout.Button("Save", EditorUIStyle.PrimaryButton))
             {
                 items[_selectIndex].SaveData();
             }

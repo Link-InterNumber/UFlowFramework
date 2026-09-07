@@ -94,37 +94,50 @@ namespace PowerCellStudio.Editor
 
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("Set Folder's Addressable Group", EditorStyles.boldLabel);
-            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
-            Rect rect = GUILayoutUtility.GetRect(0, 100000, 0, position.height - 60);
-            treeView.OnGUI(rect);
-            EditorGUILayout.EndScrollView();
-
-            EditorGUILayout.Space();
-            EditorGUILayout.BeginHorizontal();
-
-            // 红色的Clear Setting按钮
-            GUI.backgroundColor = Color.red;
-            if (GUILayout.Button("Clear Setting"))
+            EditorUIStyle.DrawWindowBackground(new Rect(Vector2.zero, position.size));
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.WindowBackground))
             {
-                // 弹出对话框确认
-                treeView.ClearGroup();
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-                treeView.Reload();
+                EditorUIStyle.DrawImguiHeader("Addressable Folder Groups", "Assign explicit groups to folders and review inherited settings.");
+                if (treeView == null)
+                {
+                    EditorGUILayout.HelpBox("Addressable settings are not ready.", MessageType.Warning);
+                    return;
+                }
+
+                using (var scroll = new EditorGUILayout.ScrollViewScope(scrollPosition, EditorUIStyle.SectionBox))
+                {
+                    scrollPosition = scroll.scrollPosition;
+                    var rect = GUILayoutUtility.GetRect(0, EditorUIStyle.TreeViewMaxLayoutSize, 0,
+                        Mathf.Max(120f, position.height - 150f));
+                    treeView.OnGUI(rect);
+                }
+
+                GUILayout.Space(EditorUIStyle.ContentSpacing);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Clear Settings", EditorUIStyle.DestructiveButton))
+                    {
+                        if (EditorUtility.DisplayDialog("Clear Addressable Settings",
+                                "Remove all folder Addressable group settings? This action cannot be undone.",
+                                "Clear", "Cancel"))
+                        {
+                            treeView.ClearGroup();
+                            AssetDatabase.SaveAssets();
+                            AssetDatabase.Refresh();
+                            treeView.Reload();
+                        }
+                    }
+
+                    GUILayout.Space(EditorUIStyle.ContentSpacing);
+                    if (GUILayout.Button("Apply Settings", EditorUIStyle.PrimaryButton))
+                    {
+                        treeView.ApplyGroup();
+                        AssetDatabase.SaveAssets();
+                        AssetDatabase.Refresh();
+                        treeView.Reload();
+                    }
+                }
             }
-
-            GUI.backgroundColor = Color.white;
-            if (GUILayout.Button("Apply Setting"))
-            {
-                treeView.ApplyGroup();
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-                treeView.Reload();
-            }
-
-            EditorGUILayout.EndHorizontal();
-
         }
 
         class FolderTreeView : TreeView
