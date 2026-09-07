@@ -30,6 +30,7 @@ namespace PowerCellStudio.Editor
         {
             NotifyGraphWindow window = GetWindow<NotifyGraphWindow>();
             window.titleContent = new GUIContent("Notify Graph");
+            window.minSize = new Vector2(760f, 480f);
         }
 
         void OnDestroy()
@@ -48,25 +49,30 @@ namespace PowerCellStudio.Editor
 
         private void OnEnable()
         {
+            minSize = new Vector2(760f, 480f);
             _currentSavePath = EditorSaveUtils.GetEditorPref(_savePathSaveKey, _savePath);
             _currentEnumPath = EditorSaveUtils.GetEditorPref(_enumPathSaveKey, _enumPath);
             _currentEnumType = EditorSaveUtils.GetEditorPref(_enumTypeSaveKey, "");
             _currentNamespace = EditorSaveUtils.GetEditorPref(_namespaceSaveKey, "");
             _currentBindingCsPath = EditorSaveUtils.GetEditorPref(_bindingCsPathSaveKey, "");
 
+            rootVisualElement.Clear();
+            EditorUIStyle.ApplyRoot(rootVisualElement);
+            rootVisualElement.Add(EditorUIStyle.CreateHeader(
+                "Notify Graph",
+                "Design notification hierarchies, validate node names, and generate binding code."));
+
             _graphView = new NotifyGraphView(this)
             {
                 name = "Notify Graph View"
             };
-            _graphView.StretchToParentSize();
-            rootVisualElement.style.flexDirection = FlexDirection.Column;
-            rootVisualElement.Add(_graphView);
 
             Toolbar toolbarText = new Toolbar();
+            EditorUIStyle.ApplyToolbar(toolbarText);
             
             // namespace
             _namespaceField = new TextField("Namespace");
-            _namespaceField.style.minWidth = 300;
+            ConfigureFlexibleField(_namespaceField, 180f);
             _namespaceField.value = _currentNamespace;
             _namespaceField.RegisterValueChangedCallback(evt =>
             {
@@ -76,43 +82,45 @@ namespace PowerCellStudio.Editor
             
             // enumType
             _enumTypeField = new TextField("Enum Type");
-            _enumTypeField.style.minWidth = 300;
+            ConfigureFlexibleField(_enumTypeField, 180f);
             _enumTypeField.value = _currentEnumType;
             _enumTypeField.RegisterValueChangedCallback(evt =>
             {
                 _currentEnumType = evt.newValue;
             });
             toolbarText.Add(_enumTypeField);
+            rootVisualElement.Add(toolbarText);
+
+            Toolbar pathToolbar = new Toolbar();
+            EditorUIStyle.ApplyToolbar(pathToolbar);
             
             // enumPath
             var enumTextField = new TextField("Enum Cs Path");
-            enumTextField.style.minWidth = 400;
+            ConfigureFlexibleField(enumTextField, 240f);
             enumTextField.value = _currentEnumPath;
             enumTextField.RegisterValueChangedCallback(evt =>
             {
                 _currentEnumPath = evt.newValue;
             });
-            toolbarText.Add(enumTextField);
+            pathToolbar.Add(enumTextField);
             // savePath
-            var saveTextField = new TextField("| Binding Cs Path");
-            // 设置saveTextField输入框长度
-            saveTextField.style.minWidth = 400;
+            var saveTextField = new TextField("Binding Cs Path");
+            ConfigureFlexibleField(saveTextField, 240f);
             saveTextField.value = _currentSavePath;
             saveTextField.RegisterValueChangedCallback(evt =>
             {
                 _currentSavePath = evt.newValue;
             });
-            toolbarText.Add(saveTextField);
-            rootVisualElement.Add(toolbarText);
+            pathToolbar.Add(saveTextField);
+            rootVisualElement.Add(pathToolbar);
 
             Toolbar toolbar = new Toolbar();
+            EditorUIStyle.ApplyToolbar(toolbar, 8f);
             // 脚本文件
             _bindingCsFileField = new ObjectField("Binding Cs File");
             _bindingCsFileField.objectType = typeof(UnityEngine.TextAsset);
+            ConfigureFlexibleField(_bindingCsFileField, 220f);
             _bindingCsFileField.value = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(_currentBindingCsPath);
-            Debug.Log($"Load Binding Cs Path: {_currentBindingCsPath}");
-            Debug.Log($"_bindingCsFileField.value: {_bindingCsFileField.value}");
-            Debug.Log(Application.dataPath);
             _bindingCsFileField.RegisterValueChangedCallback(evt =>
             {
                 if (evt.newValue == null)
@@ -144,27 +152,36 @@ namespace PowerCellStudio.Editor
                     EditorUtility.DisplayDialog("Load Binding Cs", "Binding Cs file not found!", "OK");
                 }
             }){ text = "Load Binding Cs" };
+            ConfigureToolbarButton(loadButton, 105f);
             toolbar.Add(loadButton);
             // 添加保存按钮
             var saveButton = new Button(SaveGraph) { text = "Save Graph" };
+            ConfigurePrimaryButton(saveButton, 92f);
             toolbar.Add(saveButton);
             // 添加保存按钮
             var autoLayout = new Button(() => _graphView.AutoLayout()) { text = "Auto Layout" };
+            ConfigureToolbarButton(autoLayout, 86f);
             toolbar.Add(autoLayout);
             // 检查按钮
             var checkButton = new Button(() => _graphView.CheckNodeDuplicate()) { text = "Check Node" };
+            ConfigureToolbarButton(checkButton, 88f);
             toolbar.Add(checkButton);
             // 查找按钮
             var findButton = new Button(() => _graphView.FindNodeByNamePrompt(_findNodeName)) { text = "Find Node" };
+            ConfigureToolbarButton(findButton, 82f);
             toolbar.Add(findButton);
-            var findTextField = new TextField();
-            findTextField.style.minWidth = 200;
+            var findTextField = new TextField("Search");
+            ConfigureFlexibleField(findTextField, 120f);
             findTextField.RegisterValueChangedCallback(evt =>
             {
                 _findNodeName = evt.newValue;
             });
             toolbar.Add(findTextField);
             rootVisualElement.Add(toolbar);
+
+            _graphView.style.flexGrow = 1f;
+            _graphView.style.minHeight = 220f;
+            rootVisualElement.Add(_graphView);
 
             // 添加键盘监听（Ctrl/Cmd + S）
             rootVisualElement.focusable = true;
@@ -176,6 +193,28 @@ namespace PowerCellStudio.Editor
                 _graphView.ClearGraph();
                 ReadBindingCs(_currentBindingCsPath);
             }
+        }
+
+        private static void ConfigureFlexibleField(VisualElement field, float minWidth)
+        {
+            field.style.flexGrow = 1f;
+            field.style.flexShrink = 1f;
+            field.style.minWidth = minWidth;
+            field.style.marginRight = 6f;
+        }
+
+        private static void ConfigureToolbarButton(Button button, float width)
+        {
+            button.style.width = width;
+            button.style.height = EditorUIStyle.SecondaryButtonHeight;
+        }
+
+        private static void ConfigurePrimaryButton(Button button, float width)
+        {
+            ConfigureToolbarButton(button, width);
+            button.style.backgroundColor = EditorUIStyle.AccentColor;
+            button.style.color = Color.white;
+            button.style.unityFontStyleAndWeight = FontStyle.Bold;
         }
 
         private void ReadBindingCs(string path)

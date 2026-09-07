@@ -23,8 +23,16 @@ namespace PowerCellStudio.Editor
     public class NotifyTree : TreeView
     {
         private readonly Type _notifyEnumType;
-        private float _kRowHeights = 20f;
-        private float _kToggleWidth = 20f;
+        private readonly float _kRowHeights = EditorUIStyle.TreeRowHeight;
+        private readonly float _kToggleWidth = EditorUIStyle.TreeToggleWidth;
+        private static GUIStyle _activeStatusStyle;
+        private static GUIStyle _inactiveStatusStyle;
+
+        private static GUIStyle ActiveStatusStyle => _activeStatusStyle ??
+            (_activeStatusStyle = CreateStatusStyle(new Color(0.38f, 0.82f, 0.56f)));
+
+        private static GUIStyle InactiveStatusStyle => _inactiveStatusStyle ??
+            (_inactiveStatusStyle = CreateStatusStyle(new Color(0.92f, 0.48f, 0.42f)));
 
         public NotifyTree(TreeViewState state, Type notifyEnumType) : base(state)
         {
@@ -36,7 +44,7 @@ namespace PowerCellStudio.Editor
         public NotifyTree(TreeViewState state, MultiColumnHeader multiColumnHeader, Type notifyEnumType) : base(state, multiColumnHeader)
         {
             _notifyEnumType = notifyEnumType;
-            rowHeight = 20;
+            rowHeight = EditorUIStyle.TreeRowHeight;
             // columnIndexForTreeFoldouts = 2;
             showAlternatingRowBackgrounds = true;
             showBorder = true;
@@ -75,9 +83,8 @@ namespace PowerCellStudio.Editor
                     base.RowGUI(args);
                     break;
                 case MyColumns.IsOn:
-                    var style = new GUIStyle(EditorStyles.label);
-                    style.normal.textColor =item.isOn ? Color.green : Color.red;
-                    EditorGUI.LabelField(cellRect, item.isOn ? "On" : "Off", style);
+                    EditorGUI.LabelField(cellRect, item.isOn ? "On" : "Off",
+                        item.isOn ? ActiveStatusStyle : InactiveStatusStyle);
                     break;
                 case MyColumns.Number:
                     EditorGUI.LabelField(cellRect, item.notifyNumber.ToString());
@@ -88,6 +95,17 @@ namespace PowerCellStudio.Editor
                 default:
                     throw new ArgumentOutOfRangeException(nameof(column), column, null);
             }
+        }
+
+        private static GUIStyle CreateStatusStyle(Color color)
+        {
+            var style = new GUIStyle(EditorStyles.label)
+            {
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft
+            };
+            style.normal.textColor = color;
+            return style;
         }
 
         protected override TreeViewItem BuildRoot()
@@ -254,6 +272,12 @@ namespace PowerCellStudio.Editor
     
     public class NotifyTreeViewWindow : EditorWindow
     {
+        private const float OuterPadding = 12f;
+        private const float HeaderHeight = 50f;
+        private const float ToolbarHeight = 24f;
+        private const float GroupToolbarHeight = 26f;
+        private const float VerticalSpacing = 6f;
+
         [NonSerialized] bool m_Initialized;
         [SerializeField] TreeViewState m_TreeViewState;
         [SerializeField] MultiColumnHeaderState m_MultiColumnHeaderState;
@@ -269,22 +293,35 @@ namespace PowerCellStudio.Editor
         
         Rect multiColumnTreeViewRect
         {
-            get { return new Rect(20, 55, position.width - 40, position.height - 85); }
+            get
+            {
+                var top = OuterPadding + VerticalSpacing + ToolbarHeight + VerticalSpacing + GroupToolbarHeight + VerticalSpacing;
+                return new Rect(OuterPadding, top, Mathf.Max(0f, position.width - OuterPadding * 2f),
+                    Mathf.Max(0f, position.height - top - OuterPadding));
+            }
         }
 
         Rect refreshButtonRect
         {
-            get { return new Rect(20, 10, 60, 20); }
+            get { return new Rect(OuterPadding, OuterPadding + HeaderHeight + VerticalSpacing, 76f, ToolbarHeight); }
         }
         
         Rect toolbarRect
         {
-            get { return new Rect (90f, 10f, position.width-110f, 20f); }
+            get
+            {
+                var x = refreshButtonRect.xMax + VerticalSpacing;
+                return new Rect(x, refreshButtonRect.y, Mathf.Max(0f, position.width - x - OuterPadding), ToolbarHeight);
+            }
         }
 
         Rect groupToolbarRect
         {
-            get { return new Rect(90f, 32f, position.width - 110f, 20f); }
+            get
+            {
+                return new Rect(OuterPadding, refreshButtonRect.yMax + VerticalSpacing,
+                    Mathf.Max(0f, position.width - OuterPadding * 2f), GroupToolbarHeight);
+            }
         }
         
         void InitIfNeeded ()
@@ -367,6 +404,7 @@ namespace PowerCellStudio.Editor
         void OnEnable()
         {
             m_Initialized = false;
+            minSize = new Vector2(440f, 300f);
         }
 
         private void OnFocus()
@@ -376,19 +414,46 @@ namespace PowerCellStudio.Editor
 
         void OnGUI ()
         {
+            EditorUIStyle.DrawWindowBackground(new Rect(Vector2.zero, position.size));
+            DrawHeader();
+
             if(!Application.isPlaying)
             {
-                EditorGUI.LabelField(multiColumnTreeViewRect, "This is only for use in the Playing mode");
+                EditorGUI.HelpBox(multiColumnTreeViewRect,
+                    "Notify runtime data is available only while the Editor is in Play Mode.", MessageType.Info);
                 return;
             }
             InitIfNeeded();
-            if (GUI.Button(refreshButtonRect, new GUIContent("Refresh")))
+            if (GUI.Button(refreshButtonRect, new GUIContent("Refresh"), EditorUIStyle.PrimaryButton))
             {
                 m_Initialized = false;
             }
             DrawNotifyGroupButtons(groupToolbarRect);
             SearchBar (toolbarRect);
-            if(m_TreeView != null) m_TreeView.OnGUI(multiColumnTreeViewRect);
+            if (m_TreeView != null)
+            {
+                GUI.Box(multiColumnTreeViewRect, GUIContent.none, EditorUIStyle.SectionBox);
+                var treeRect = new Rect(multiColumnTreeViewRect.x + 4f, multiColumnTreeViewRect.y + 4f,
+                    Mathf.Max(0f, multiColumnTreeViewRect.width - 8f),
+                    Mathf.Max(0f, multiColumnTreeViewRect.height - 8f));
+                m_TreeView.OnGUI(treeRect);
+            }
+        }
+
+        private void DrawHeader()
+        {
+            var headerRect = new Rect(OuterPadding, OuterPadding,
+                Mathf.Max(0f, position.width - OuterPadding * 2f), HeaderHeight);
+            GUI.Box(headerRect, GUIContent.none, EditorUIStyle.PanelBox);
+
+            var titleRect = new Rect(headerRect.x + 10f, headerRect.y + 6f, headerRect.width - 20f, 22f);
+            EditorGUI.LabelField(titleRect, "Notify Runtime Monitor", EditorUIStyle.HeaderTitle);
+
+            var subtitleRect = new Rect(headerRect.x + 10f, titleRect.yMax, headerRect.width - 20f, 18f);
+            var subtitle = Application.isPlaying
+                ? "Inspect registered notification groups and their live values."
+                : "Enter Play Mode to inspect live notification state.";
+            EditorGUI.LabelField(subtitleRect, subtitle, EditorUIStyle.MutedLabel);
         }
 
         private void RefreshNotifyGroups()
@@ -403,7 +468,7 @@ namespace PowerCellStudio.Editor
         {
             if (m_NotifyGroupTypes == null || m_NotifyGroupTypes.Count == 0)
             {
-                EditorGUI.LabelField(rect, "No notification enum group is registered.");
+                EditorGUI.LabelField(rect, "No notification enum group is registered.", EditorUIStyle.MutedLabel);
                 return;
             }
 
@@ -417,15 +482,13 @@ namespace PowerCellStudio.Editor
                 if (buttonRect.width <= 0) break;
 
                 var selected = enumType == m_SelectedNotifyGroup;
-                var oldColor = GUI.backgroundColor;
-                if (selected) GUI.backgroundColor = new Color(0.35f, 0.65f, 1f);
-                if (GUI.Button(buttonRect, label) && !selected)
+                var buttonStyle = selected ? EditorUIStyle.PrimaryButton : EditorStyles.miniButton;
+                if (GUI.Button(buttonRect, label, buttonStyle) && !selected)
                 {
                     m_SelectedNotifyGroup = enumType;
                     m_Initialized = false;
                     GUI.FocusControl(null);
                 }
-                GUI.backgroundColor = oldColor;
                 buttonRect.x += buttonRect.width + 4f;
             }
         }
@@ -440,7 +503,8 @@ namespace PowerCellStudio.Editor
         {
             // 获取现有打开的窗口；如果没有，则新建一个窗口：
             var window = GetWindow<NotifyTreeViewWindow>();
-            window.titleContent = new GUIContent("Notify Tree Window");
+            window.titleContent = new GUIContent("Notify Monitor");
+            window.minSize = new Vector2(440f, 300f);
             window.Show();
         }
     }

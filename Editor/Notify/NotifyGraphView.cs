@@ -14,6 +14,15 @@ namespace PowerCellStudio.Editor
         public NotifyGraphView(EditorWindow editorWindow)
         {
             _editorWindow = editorWindow;
+            style.backgroundColor = EditorUIStyle.GraphBackground;
+            style.borderTopWidth = 1f;
+            style.borderBottomWidth = 1f;
+            style.borderLeftWidth = 1f;
+            style.borderRightWidth = 1f;
+            style.borderTopColor = EditorUIStyle.ImguiBorderColor;
+            style.borderBottomColor = EditorUIStyle.ImguiBorderColor;
+            style.borderLeftColor = EditorUIStyle.ImguiBorderColor;
+            style.borderRightColor = EditorUIStyle.ImguiBorderColor;
             this.AddManipulator(new ContentZoomer());
             this.AddManipulator(new ContentDragger());
             this.AddManipulator(new SelectionDragger());
@@ -139,12 +148,11 @@ namespace PowerCellStudio.Editor
                 var name = notifyNode.GetNodeName();
                 if (duplicateNames.Contains(name))
                 {
-                    // 重复时背景变红
-                    notifyNode.style.backgroundColor = new StyleColor(Color.red);
+                    notifyNode.SetDuplicateState(true);
                 }
                 else
                 {
-                    notifyNode.style.backgroundColor = new StyleColor(Color.clear);
+                    notifyNode.SetDuplicateState(false);
                 }
             }
             return duplicateNames.Count > 0;
@@ -202,7 +210,7 @@ namespace PowerCellStudio.Editor
         /// 简单树形自动布局（按层、等间距排列）。
         /// horizontalSpacing / verticalSpacing 调整间距，startOffset 为起始偏移。
         /// </summary>
-        public void AutoLayout(float horizontalSpacing = 220f, float verticalSpacing = 80f, Vector2 startOffset = default)
+        public void AutoLayout(float horizontalSpacing = 300f, float verticalSpacing = 50f, Vector2 startOffset = default)
         {
             if (startOffset == default) startOffset = new Vector2(100, 100);
 
@@ -212,7 +220,7 @@ namespace PowerCellStudio.Editor
             Vector2 GetNodeSize(Node node)
             {
                 var size = node.GetPosition().size;
-                return size == Vector2.zero ? new Vector2(180, 120) : size;
+                return size == Vector2.zero ? new Vector2(200, 80) : size;
             }
 
             Port GetInputPort(Node node)
@@ -268,7 +276,7 @@ namespace PowerCellStudio.Editor
 
             var defaultNodeSize = orderedNodes
                 .Select(GetNodeSize)
-                .Aggregate(new Vector2(180f, 120f), (current, size) =>
+                .Aggregate(new Vector2(200f, 80f), (current, size) =>
                     new Vector2(Mathf.Max(current.x, size.x), Mathf.Max(current.y, size.y)));
 
             var nodeLookup = orderedNodes.ToDictionary(node => node, node => new TreeNode<Node>(node));
