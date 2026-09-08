@@ -9,9 +9,11 @@ namespace PowerCellStudio
         private readonly T[] _values;
         private readonly Dictionary<T, int> _indexMap;
         
-        public EnumNotifyIndexTranslator()
+        public EnumNotifyIndexTranslator(T[] values)
         {
-            _values = (T[])Enum.GetValues(typeof(T));
+            if (values == null || values.Length == 0)
+                throw new ArgumentException("Values array cannot be null or empty.", nameof(values));
+            _values = values;
             _indexMap = new Dictionary<T, int>(_values.Length);
 
             for (int i = 0; i < _values.Length; i++)

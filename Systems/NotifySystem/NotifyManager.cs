@@ -1,34 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Pool;
 
 namespace PowerCellStudio
 {
-    public delegate void OnNotifyChange(bool isOn, int notifyNum, int notifyValue);
-
-    public sealed partial class NotifyManager : SingletonBase<NotifyManager>, IModule
+    public sealed class NotifyManager : SingletonBase<NotifyManager>, IModule
     {
-        private class  NotifyNode
-        {
-            public int index;
-            public bool isOn;
-            public int notifyNumber;
-            public int notifyValue;
-            public int parent;
-            public HashSet<int> children;
-            public event OnNotifyChange onNotifyChange;
-
-            public void Notify()
-            {
-                onNotifyChange?.Invoke(isOn, notifyNumber, notifyValue);
-            }
-
-            public void ClearNotify()
-            {
-                onNotifyChange = null;
-            }
-        }
-
         private Dictionary<Type, NotifyNode[]>  _nodes;
 
         private Dictionary<Type, object> _translators;
@@ -42,35 +21,25 @@ namespace PowerCellStudio
             if (_nodes != null) return;
             _nodes = new Dictionary<Type, NotifyNode[]>();
             _translators = new Dictionary<Type, object>();
-            
-            // var notifyNumber = Enum.GetValues(typeof(NotifyType));
-            // _nodes = new NotifyNode[notifyNumber.Length];
-            // for (int i = 0; i < notifyNumber.Length; i++)
-            // {
-            //     var node = new NotifyNode
-            //     {
-            //         index = i,
-            //         isOn = false,
-            //         notifyValue = 0,
-            //         notifyNumber = 0,
-            //         parent = -1,
-            //         children = new HashSet<int>(),
-            //     };
-            //     _nodes[i] = node;
-            // }
             BindNodes();
         }
 
+        /// <summary>
+        /// Sets up a notification group based on the specified enum type.
+        /// 设置一个通知分组，基于指定的枚举类型。
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
         public void SetNotifyGroup<T>() where T : Enum
         {
+            if (_nodes == null) OnInit();
             var enumType = typeof(T);
             if (_nodes.ContainsKey(enumType))
             {
                 ModuleLogger.LogWarning<NotifyManager>($"Notify group for enum type {enumType} already exists.");
                 return;
             }
-            var translator = new EnumNotifyIndexTranslator<T>();
-
+            var values = (T[])Enum.GetValues(typeof(T));
+            var translator = new EnumNotifyIndexTranslator<T>(values);
             var notifyNumber = translator.GetNotifyCount();
             var nodes = new NotifyNode[notifyNumber];
             for (int i = 0; i < notifyNumber; i++)
@@ -83,6 +52,7 @@ namespace PowerCellStudio
                     notifyNumber = 0,
                     parent = -1,
                     children = new HashSet<int>(),
+                    otherGroupChildren = new List<OtherGroupNode>(),
                 };
                 nodes[i] = node;
             }
@@ -90,36 +60,59 @@ namespace PowerCellStudio
             _translators[enumType] = translator;
         }
 
-        public void SetNotifyGroup(Type enumType)
+        public void SetNotifyGroupByType(Type enumType)
         {
             if (enumType == null || !enumType.IsEnum)
             {
                 ModuleLogger.LogError<NotifyManager>($"Type {enumType} is not an enum type.");
                 return;
             }
-            if (_nodes.ContainsKey(enumType))
+            // 反射调用SetNotifyGroup<T>();
+            GetType()
+                .GetMethod("SetNotifyGroup", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+                ?.MakeGenericMethod(enumType)
+                .Invoke(this, null);
+        }
+        
+        /// <summary>
+        /// Removes a notification group and clears all its nodes and relationships.
+        /// 移除一个通知组
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public void RemoveNotifyGroup<T>() where T :Enum
+        {
+            var enumType = typeof(T);
+            if (!_nodes.TryGetValue(enumType, out var nodes))
             {
-                ModuleLogger.LogWarning<NotifyManager>($"Notify group for enum type {enumType} already exists.");
+                ModuleLogger.LogWarning<NotifyManager>($"Notify group for enum type {enumType} does not exist.");
                 return;
             }
-            var translator = Activator.CreateInstance(typeof(EnumNotifyIndexTranslator<>).MakeGenericType(enumType));
-            var notifyNumber = Enum.GetValues(enumType).Length;
-            var nodes = new NotifyNode[notifyNumber];
-            for (int i = 0; i < notifyNumber; i++)
+            foreach (var notifyNode in nodes)
             {
-                var node = new NotifyNode
+                notifyNode.ClearNotify();
+                if (notifyNode.otherGroupParent != null)
                 {
-                    index = i,
-                    isOn = false,
-                    notifyValue = 0,
-                    notifyNumber = 0,
-                    parent = -1,
-                    children = new HashSet<int>(),
-                };
-                nodes[i] = node;
+                    var parentGroup = _nodes[notifyNode.otherGroupParent.nodeType];
+                    var parentNode = parentGroup[notifyNode.otherGroupParent.nodeIndex];
+                    parentNode.otherGroupChildren.RemoveAll(n => n.nodeType == enumType && n.nodeIndex == notifyNode.index);
+                    notifyNode.otherGroupParent = null;
+                }
+                for (var i = 0; i < notifyNode.otherGroupChildren.Count; i++)
+                {
+                    var otherNodeInfo = notifyNode.otherGroupChildren[i];
+                    var group = _nodes[otherNodeInfo.nodeType];
+                    var otherNode = group[otherNodeInfo.nodeIndex];
+                    otherNode.otherGroupParent = null;
+                }
+                notifyNode.otherGroupChildren.Clear();
             }
-            _nodes[enumType] = nodes;
-            _translators[enumType] = translator;
+            _crossGroupRelations.Remove(enumType);
+            foreach (var crossGroupRelation in _crossGroupRelations)
+            {
+                crossGroupRelation.Value.Remove(enumType);
+            }
+            _nodes.Remove(enumType);
+            _translators.Remove(enumType);
         }
 
         /// <summary>
@@ -190,7 +183,8 @@ namespace PowerCellStudio
         private bool TryGetNode<T>(T type, out NotifyNode node, out Type enumType, out EnumNotifyIndexTranslator<T> translator) where T : Enum
         {
             enumType = typeof(T);
-            translator = _translators[enumType] as EnumNotifyIndexTranslator<T>;
+            _translators.TryGetValue(enumType, out var outValue);
+            translator = outValue as EnumNotifyIndexTranslator<T>;
             if (translator == null)
             {
                 ModuleLogger.LogError<NotifyManager>($"Translator for enum type {enumType} not found.");
@@ -252,7 +246,7 @@ namespace PowerCellStudio
             notifyValue = 0;
         }
 
-        private bool CheckIsChainLoop<T>(NotifyNode child, NotifyNode parent, EnumNotifyIndexTranslator<T> translator) where T : Enum
+        private bool CheckIsChainLoop<T>(NotifyNode child, NotifyNode parent, NotifyNode[] nodes) where T : Enum
         {
 #if UNITY_EDITOR
             if( child.children.Contains(parent.index) || parent.parent == child.index)
@@ -260,20 +254,11 @@ namespace PowerCellStudio
                 return true;
             }
             var checkNode = parent;
-            while (checkNode.parent >= 0)
+            while (checkNode.parent >= 0 && checkNode.parent < nodes.Length)
             {
                 if (checkNode.parent == child.index)
                     return true;
-                var notifyType = translator.ByIndex(checkNode.parent);
-                if (TryGetNode(notifyType, out var node, out _, out _))
-                {
-                    checkNode = node;
-                }
-                else
-                {
-                    ModuleLogger.LogError<NotifyManager>($"Failed to get node for enum value {notifyType} of type {typeof(T)}.");
-                    return false;
-                }
+                checkNode = nodes[checkNode.parent];
             }
 #endif
             return false;
@@ -293,7 +278,8 @@ namespace PowerCellStudio
                 return;
             }
             var enumType = typeof(T);
-            var translator = _translators[enumType] as EnumNotifyIndexTranslator<T>;
+            _translators.TryGetValue(enumType, out var outValue);
+            var translator = outValue as EnumNotifyIndexTranslator<T>;
             if (translator == null)
             {
                 ModuleLogger.LogError<NotifyManager>($"Translator for enum type {enumType} not found.");
@@ -318,7 +304,7 @@ namespace PowerCellStudio
             }
             var childNode = nodes[childIndex];
             var parentNode = nodes[parentIndex];
-            if (CheckIsChainLoop(childNode, parentNode, translator))
+            if (CheckIsChainLoop<T>(childNode, parentNode, nodes))
             {
                 ModuleLogger.LogError<NotifyManager>($"Can not set [{child}] as child node to [{parent}], because the two nodes forming a loop");
                 return;
@@ -327,15 +313,24 @@ namespace PowerCellStudio
             {
                 var oldParentNode = nodes[childNode.parent];
                 oldParentNode.children.Remove(childNode.index);
+                ReCalNodeNotifyInternal(oldParentNode, nodes);
             }
             childNode.parent = parentNode.index;
             parentNode.children.Add(childNode.index);
+            ReCalNodeNotifyInternal(parentNode, nodes);
         }
 
-        public void RemoveNodeParent<T>(T child, T parent) where T : Enum
+        /// <summary>
+        /// Removes the parent-child relationship between notification nodes.
+        /// 移除通知节点的父子关系。
+        /// </summary>
+        /// <param name="child"></param>
+        /// <typeparam name="T"></typeparam>
+        public void RemoveNodeParent<T>(T child) where T : Enum
         {
             var enumType = typeof(T);
-            var translator = _translators[enumType] as EnumNotifyIndexTranslator<T>;
+            _translators.TryGetValue(enumType, out var outValue);
+            var translator = outValue as EnumNotifyIndexTranslator<T>;
             if (translator == null)
             {
                 ModuleLogger.LogError<NotifyManager>($"Translator for enum type {enumType} not found.");
@@ -353,71 +348,230 @@ namespace PowerCellStudio
                 ModuleLogger.LogError<NotifyManager>($"Index {childIndex} for enum value {child} is out of range for enum type {enumType}.");
                 return;
             }
-            var parentIndex = translator.ToIndex(parent);
+            
+            var childNode = nodes[childIndex];
+            var parentIndex = childNode.parent;
+            if (parentIndex == -1) return;
+            
             if (parentIndex < 0 || parentIndex >= nodes.Length)
             {
-                ModuleLogger.LogError<NotifyManager>($"Index {parentIndex} for enum value {parent} is out of range for enum type {enumType}.");
+                ModuleLogger.LogError<NotifyManager>($"Index {parentIndex} is out of range for enum type {enumType}.");
                 return;
             }
 
-            var childNode = nodes[childIndex];
             var parentNode = nodes[parentIndex];
             childNode.parent = -1;
             parentNode.children.Remove(childNode.index);
+            ReCalNodeNotifyInternal(parentNode, nodes);
         }
+        
+        private Dictionary<Type, HashSet<Type>> _crossGroupRelations = new Dictionary<Type, HashSet<Type>>();
 
-        /// <summary>
-        /// Clears all notification states and relationships.
-        /// 清除所有通知状态和关系。
-        /// </summary>
-        public void ClearAll()
+        private bool CheckIsGroupLoop(Type parentType, Type childType)
         {
-            foreach (var nodes in _nodes.Values)
+            var stack = ListPool<Type>.Get();
+            var visited = HashSetPool<Type>.Get();
+            stack.Add(childType);
+            visited.Add(childType);
+            var point = 0;
+            var result = false;
+            while (point < stack.Count)
             {
-                for (var i = 0; i < nodes.Length; i++)
+                var currentType = stack[point];
+
+                if (_crossGroupRelations.TryGetValue(currentType, out var relatedTypes))
                 {
-                    var notifyNode = nodes[i];
-                    notifyNode.isOn = false;
-                    notifyNode.notifyNumber = 0;
-                    notifyNode.children.Clear();
-                    notifyNode.parent = -1;
-                    notifyNode.ClearNotify();
+                    if (relatedTypes.Contains(parentType))
+                    {
+                        result = true;
+                        break;
+                    }
+                    foreach (var relatedType in relatedTypes)
+                    {
+                        if (visited.Contains(relatedType)) continue;
+                        stack.Add(relatedType);
+                        visited.Add(relatedType);
+                    }
+                }
+                point++;
+            }
+            ListPool<Type>.Release(stack);
+            HashSetPool<Type>.Release(visited);
+            return result;
+        }
+        
+        /// <summary>
+        /// Sets the parent-child relationship between notification nodes across groups.
+        /// 设置节点的父节点
+        /// </summary>
+        /// <param name="child"></param>
+        /// <param name="parent"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="K"></typeparam>
+        public void SetNodeParentCrossGroup<T, K>(T child, K parent)
+            where T : Enum
+            where K : Enum
+        {
+            if (!TryGetNode(child, out var childNode, out var childType, out _))
+                return;
+            if (!TryGetNode(parent, out var parentNode, out var parentType, out _))
+                return;
+            
+            if (childNode.otherGroupParent != null && childNode.otherGroupParent.nodeType == parentType)
+                return;
+            if (childType == parentType)
+            {
+                ModuleLogger.LogError<NotifyManager>($"Can not set [{child}] as child node to [{parent}], because the two nodes are in the same group");
+                return;
+            }
+            if (parentNode.otherGroupChildren.Any(n => n.nodeType == childType && n.nodeIndex == childNode.index))
+                return;
+            
+            // // parent必须是叶节点
+            // if (parentNode.children.Count > 0)
+            // {
+            //     ModuleLogger.LogError<NotifyManager>($"Can not set [{parent}] as parent node to [{child}], because [{parent}] is not a leaf node");
+            //     return;
+            // }
+            if (CheckIsGroupLoop(parentType, childType))
+            {
+                ModuleLogger.LogError<NotifyManager>($"Can not set [{child}] as child node to [{parent}], because the two nodes forming a loop across groups");
+                return;
+            }
+            RemoveNodeParentCrossGroup(child);
+            
+            childNode.otherGroupParent = new OtherGroupNode()
+            {
+                nodeType = parentType,
+                nodeIndex = parentNode.index
+            };
+            
+            parentNode.otherGroupChildren.Add(new OtherGroupNode()
+            {
+                nodeType = childType,
+                nodeIndex = childNode.index
+            });
+            
+            if (_crossGroupRelations.TryGetValue(parentType, out var relatedTypes))
+            {
+                relatedTypes.Add(childType);
+            }
+            else
+            {
+                _crossGroupRelations[parentType] = new HashSet<Type> { childType };
+            }
+            ReCalNodeNotifyInternal(parentNode, _nodes[parentType]);
+        }
+        
+        /// <summary>
+        /// Removes the parent-child relationship between notification nodes across groups.
+        /// 移除节点的父节点
+        /// </summary>
+        /// <param name="child"></param>
+        /// <typeparam name="T"></typeparam>
+        public void RemoveNodeParentCrossGroup<T>(T child)
+            where T : Enum
+        {
+            if (!TryGetNode(child, out var childNode, out var childType, out _))
+                return;
+            var parentNodeInfo = childNode.otherGroupParent;
+            if (parentNodeInfo == null) return;
+            
+            childNode.otherGroupParent = null;
+
+            Type parentType = parentNodeInfo.nodeType;
+            if (parentType == null)
+            {
+                ModuleLogger.LogError<NotifyManager>($"Parent type for child [{child}] not found in cross-group relations.");
+                return;
+            }
+            if (_crossGroupRelations.TryGetValue(parentType, out var relatedTypes))
+            {
+                relatedTypes.Remove(childType);
+                if (relatedTypes.Count == 0)
+                {
+                    _crossGroupRelations.Remove(parentType);
                 }
             }
+            if (!_nodes.TryGetValue(parentType, out var parentNodes))
+            {
+                ModuleLogger.LogError<NotifyManager>($"Parent nodes for enum type {parentType} not found.");
+                return;
+            }
+            if (parentNodeInfo.nodeIndex < 0 || parentNodeInfo.nodeIndex >= parentNodes.Length)
+            {
+                ModuleLogger.LogError<NotifyManager>($"Parent node index {parentNodeInfo.nodeIndex} is out of range for enum type {parentType}.");
+                return;
+            }
+            var parentNode = parentNodes[parentNodeInfo.nodeIndex];
+            parentNode.otherGroupChildren.RemoveAll(n => n.nodeType == childType && n.nodeIndex == childNode.index);
+            ReCalNodeNotifyInternal(parentNode, parentNodes);
         }
 
-        private void CalNodeNotify<T>(NotifyNode node, bool isOn, int notifyValue, Type enumType, EnumNotifyIndexTranslator<T> translator) where T : Enum
+        private void CalNodeNotify(NotifyNode node, bool isOn, int notifyValue, NotifyNode[] nodeGroup)
         {
-            var nodes = _nodes[enumType];
+            var tempNotifyNumber = 0;
+            var tempNotifyValue = 0;
             if (node.children.Count > 0)
             {
-                var tempNotifyNumber = 0;
-                var tempNotifyValue = 0;
                 foreach (var nodeChild in node.children)
                 {
-                    var childNode = nodes[nodeChild];
+                    var childNode = nodeGroup[nodeChild];
                     if (!childNode.isOn) continue;
                     tempNotifyNumber++;
                     tempNotifyValue += childNode.notifyValue;
                 }
-                node.notifyValue = tempNotifyValue;
-                node.notifyNumber = tempNotifyNumber;
-            }
-            else
-            {
-                node.notifyValue = notifyValue;
-                node.notifyNumber = isOn ? 1 : 0;
             }
             
-            node.isOn = node.notifyNumber > 0;
-            node.Notify();
-            if (node.parent < 0 || node.parent >= nodes.Length)
+            if (node.otherGroupChildren.Count > 0)
             {
-                // notifyTreeChanged?.Invoke();
-                return;
+                foreach (var otherNodeInfo in node.otherGroupChildren)
+                {
+                    if (!_nodes.TryGetValue(otherNodeInfo.nodeType, out var otherGroup)) continue;
+                    if (otherNodeInfo.nodeIndex < 0 || otherNodeInfo.nodeIndex >= otherGroup.Length) continue;
+                    var otherNode = otherGroup[otherNodeInfo.nodeIndex];
+                    if (!otherNode.isOn) continue;
+                    tempNotifyNumber++;
+                    tempNotifyValue += otherNode.notifyValue;
+                }
             }
-            var parent = nodes[node.parent];
-            CalNodeNotify(parent, isOn, notifyValue, enumType, translator);
+            else if (isOn)
+            {
+                tempNotifyNumber++;
+                tempNotifyValue += notifyValue;
+            }
+            
+            var nodeIsOn = tempNotifyNumber > 0;
+            if (tempNotifyValue == node.notifyValue && tempNotifyNumber == node.notifyNumber && nodeIsOn == node.isOn) return;
+            
+            node.notifyValue = tempNotifyValue;
+            node.notifyNumber = tempNotifyNumber;
+            node.isOn = nodeIsOn;
+            node.Notify();
+            
+            if (node.otherGroupParent != null)
+            {
+                var parent = node.otherGroupParent;
+                if (_nodes.TryGetValue(parent.nodeType, out var parentGroup) 
+                    && parent.nodeIndex >= 0
+                    && parent.nodeIndex < parentGroup.Length)
+                {
+                    var parentNode = parentGroup[parent.nodeIndex];
+                    CalNodeNotify(parentNode, nodeIsOn, tempNotifyValue, parentGroup);
+                }
+            }
+            
+            if (node.parent >= 0 && node.parent < nodeGroup.Length)
+            {
+                var parent = nodeGroup[node.parent];
+                CalNodeNotify(parent, nodeIsOn, tempNotifyValue, nodeGroup);
+            }
+        }
+        
+        private void ReCalNodeNotifyInternal(NotifyNode node, NotifyNode[] nodeGroup)
+        {
+            if (node == null) return;
+            CalNodeNotify(node, node.isOn, node.notifyValue, nodeGroup);
         }
 
         /// <summary>
@@ -427,8 +581,9 @@ namespace PowerCellStudio
         /// <param name="nodeType">Node type | 节点类型</param>
         public void ReCalNodeNotify<T>(T nodeType) where T : Enum
         {
-            if (!TryGetNode(nodeType, out var node, out var enumType, out var translator)) return;
-            CalNodeNotify(node, node.isOn, node.notifyValue, enumType, translator);
+            if (!TryGetNode(nodeType, out var node, out var enumType, out _)) return;
+            var nodeGroup = _nodes[enumType];
+            ReCalNodeNotifyInternal(node, nodeGroup);
         }
 
         /// <summary>
@@ -441,7 +596,7 @@ namespace PowerCellStudio
             if (!TryGetNode(nodeType, out var node, out var enumType, out _)) return;
             var nodes = _nodes[enumType];
             ClearNodeNotify(node, nodes);
-            ReCalNodeNotify(nodeType);
+            ReCalNodeNotifyInternal(node, nodes);
         }
 
         private void ClearNodeNotify(NotifyNode node, NotifyNode[] nodes)
@@ -456,6 +611,41 @@ namespace PowerCellStudio
                 if (!childNode.isOn) continue;
                 ClearNodeNotify(childNode, nodes);
             }
+            foreach (var nodeOtherGroupChild in node.otherGroupChildren)
+            {
+                if (_nodes.TryGetValue(nodeOtherGroupChild.nodeType, out var otherGroup) 
+                    && nodeOtherGroupChild.nodeIndex >= 0
+                    && nodeOtherGroupChild.nodeIndex < otherGroup.Length)
+                {
+                    var childNode = otherGroup[nodeOtherGroupChild.nodeIndex];
+                    if (!childNode.isOn) continue;
+                    ClearNodeNotify(childNode, otherGroup);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Clears all notification states and relationships.
+        /// 清除所有通知状态和关系。
+        /// </summary>
+        public void ClearAll()
+        {
+            foreach (var nodes in _nodes.Values)
+            {
+                for (var i = 0; i < nodes.Length; i++)
+                {
+                    var notifyNode = nodes[i];
+                    notifyNode.isOn = false;
+                    notifyNode.notifyNumber = 0;
+                    notifyNode.notifyValue = 0;
+                    notifyNode.parent = -1;
+                    notifyNode.children.Clear();
+                    notifyNode.otherGroupParent = null;
+                    notifyNode.otherGroupChildren.Clear();
+                    notifyNode.ClearNotify();
+                }
+            }
+            _crossGroupRelations.Clear();
         }
 
         /// <summary>
@@ -467,14 +657,15 @@ namespace PowerCellStudio
         /// <param name="notifyValue">Notification value | 通知值</param>
         public void SetNotify<T>(T nodeType, bool isOn, int notifyValue = 0) where T : Enum
         {
-            if (!TryGetNode(nodeType, out var node, out var enumType, out var translator)) return;
-            if (node.children.Count > 0)
+            if (!TryGetNode(nodeType, out var node, out var enumType, out _)) return;
+            if (node.children.Count > 0 || node.otherGroupChildren.Count > 0)
             {
                 ModuleLogger.LogError<NotifyManager>($"Can not set [{nodeType}], because [{nodeType}] is driven by its child nodes!");
                 return;
             }  
             if (node.isOn == isOn && node.notifyValue == notifyValue) return;
-            CalNodeNotify(node, isOn, notifyValue, enumType, translator);
+            var nodeGroup = _nodes[enumType];
+            CalNodeNotify(node, isOn, notifyValue, nodeGroup);
         }
         
         /// <summary>
@@ -486,11 +677,11 @@ namespace PowerCellStudio
         /// <param name="notifyValue">Notification value | 通知值</param>
         public void ForceNotify<T>(T nodeType, bool isOn, int notifyValue = 0) where T : Enum
         {
-            if (!TryGetNode(nodeType, out var node, out var enumType, out var translator)) return;
+            if (!TryGetNode(nodeType, out var node, out var enumType, out _)) return;
             node.isOn = isOn;
             node.notifyValue = notifyValue;
             var nodes = _nodes[enumType];
-            if (node.children.Count > 0 && isOn)
+            if (isOn)
             {
                 var onNumber = 0;
                 foreach (var nodeChild in node.children)
@@ -499,15 +690,40 @@ namespace PowerCellStudio
                     if (childNode.isOn)
                         onNumber++;
                 }
+                foreach (var nodeOtherGroupChild in node.otherGroupChildren)
+                {
+                    if (_nodes.TryGetValue(nodeOtherGroupChild.nodeType, out var parentGroup)
+                        && nodeOtherGroupChild.nodeIndex >= 0
+                        && nodeOtherGroupChild.nodeIndex < parentGroup.Length)
+                    {
+                        var otherGroupParent = parentGroup[nodeOtherGroupChild.nodeIndex];
+                        if (otherGroupParent.isOn)
+                            onNumber++;
+                    }
+                }
                 node.notifyNumber = Mathf.Max(1, onNumber);
             }
             else
             {
-                node.notifyNumber = isOn ? 1 : 0;
+                node.notifyNumber = 0;
             }
             node.Notify();
-            if (node.parent < 0) return;
-            ReCalNodeNotify(translator.ByIndex(node.parent));
+            if (node.parent >= 0 && node.parent < nodes.Length)
+            {
+                var parentNode = nodes[node.parent];
+                ReCalNodeNotifyInternal(parentNode, nodes);
+            }
+            if (node.otherGroupParent != null)
+            {
+                var parent = node.otherGroupParent;
+                if (_nodes.TryGetValue(parent.nodeType, out var parentGroup) 
+                    && parent.nodeIndex >= 0
+                    && parent.nodeIndex < parentGroup.Length)
+                {
+                    var parentNode = parentGroup[parent.nodeIndex];
+                    ReCalNodeNotifyInternal(parentNode, parentGroup);
+                }
+            }
         }
 
         /// <summary>
@@ -523,17 +739,13 @@ namespace PowerCellStudio
             node.onNotifyChange += fun;
         }
         
-        /// <summary>
-        /// Registers a notification callback.
-        /// 注册通知回调。
-        /// </summary>
-        /// <param name="enumType">Node type | 节点类型</param>
-        /// <param name="nodeTypeIndex">Node type index | 节点类型索引</param>
-        /// <param name="fun">Callback function | 回调函数</param>
         internal void Register(Type enumType, int nodeTypeIndex, OnNotifyChange fun)
         {
-            SetNotifyGroup(enumType);
-            var node = _nodes[enumType][nodeTypeIndex];
+            if (enumType == null) return;
+            SetNotifyGroupByType(enumType);
+            if (!_nodes.TryGetValue(enumType, out var nodes) || nodeTypeIndex < 0 ||
+                nodeTypeIndex >= nodes.Length) return;
+            var node = nodes[nodeTypeIndex];
             node.onNotifyChange += fun;
         }
 
@@ -551,6 +763,7 @@ namespace PowerCellStudio
 
         internal void UnRegister(Type enumType, int nodeTypeIndex, OnNotifyChange fun)
         {
+            if (enumType == null || !enumType.IsEnum) return;
             if (!_nodes.TryGetValue(enumType, out var nodes)) return;
             if (nodeTypeIndex < 0 || nodeTypeIndex >= nodes.Length) return;
             var node = nodes[nodeTypeIndex];

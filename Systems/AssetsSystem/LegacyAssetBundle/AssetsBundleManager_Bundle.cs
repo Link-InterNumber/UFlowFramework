@@ -489,6 +489,7 @@ namespace PowerCellStudio
             var unusedAssets = _loadedAssets.ClearUnusedAssets();
             foreach (var asset in unusedAssets)
             {
+                // 比较危险的卸载
                 Resources.UnloadAsset(asset);
             }
             var cached = _loadedBundles.GetAll();

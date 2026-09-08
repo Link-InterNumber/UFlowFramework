@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Pool;
 
 namespace PowerCellStudio
 {
@@ -397,8 +398,6 @@ namespace PowerCellStudio
             {
                 ClearClosedWindow(uiParent);
             }
-            ClearClosedWindow(_poolPage);
-            ClearClosedWindow(_standAlonePage);
             foreach (var keyValuePair in _cachedUIs)
             {
                 var page = keyValuePair.Value as IUIParent;
@@ -406,6 +405,8 @@ namespace PowerCellStudio
                 UIUtils.ClosePageInstance(page, true, null, _poolPage);
             }
             _cachedUIs.Clear();
+            ClearClosedWindow(_poolPage);
+            ClearClosedWindow(_standAlonePage);
             UIEventHostPool.Clear();
         }
 
@@ -417,14 +418,15 @@ namespace PowerCellStudio
         public void ClearClosedWindow(IUIParent page)
         {
             if (page == null) return;
-            var windows = new IUIChild[page.children.Count];
-            page.children.Values.CopyTo(windows, 0);
+            var windows = ListPool<IUIChild>.Get();
+            windows.AddRange(page.children.Values);
             foreach (var uiChild in windows)
             {
                 if (uiChild.isOpened) continue;
                 UIUtils.RemoveChild(uiChild);
                 UIUtils.DestroyUI(uiChild, null);
             }
+            ListPool<IUIChild>.Release(windows);
         }
     }
 }
