@@ -106,7 +106,9 @@ namespace PowerCellStudio.Editor
                 makeItem = () =>
                 {
                     var label = new Label();
+#if UNITY_6000_0_OR_NEWER
                     label.style.whiteSpace = WhiteSpace.PreWrap;
+#endif
                     return label;
                 },
                 bindItem = (element, index) =>

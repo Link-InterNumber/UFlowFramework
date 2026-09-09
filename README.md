@@ -57,11 +57,12 @@ UFlow 是面向 Unity 项目的模块化开发框架，提供一组常用系统�
  ### 强制依赖包
  必须通过 **Package Manager** 安装以下官方插件包：
  
- | 包名称 | 用途 | 安装验证方式 |
- |--------|------|--------------|
- | [Addressables](https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/index.html) | 资源动态加载系统 | 检查 `Window > Asset Management > Addressables` 菜单是否存在 |
- | [Localization](https://docs.unity3d.com/Packages/com.unity.localization@1.4/manual/index.html) | 多语言本地化系统 | 确认 `Window > Asset Management > Localization Tables` 配置面板 |
- | [TextMeshPro](https://docs.unity3d.com/Packages/com.unity.textmeshpro@3.0/manual/index.html) | 高级文本渲染方案 | 需导入 `TMP Essential Resources` |
+ | 包名称 | 用途 | 安装验证方式                                                          |
+ |--------|------|-----------------------------------------------------------------------|
+ | [Addressables](https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/index.html) | 资源动态加载系统 | 检查 `Window > Asset Management > Addressables` 菜单是否存在          |
+ | [Localization](https://docs.unity3d.com/Packages/com.unity.localization@1.4/manual/index.html) | 多语言本地化系统 | 确认 `Window > Asset Management > Localization Tables` 配置面板       |
+ | [TextMeshPro](https://docs.unity3d.com/Packages/com.unity.textmeshpro@3.0/manual/index.html) | 高级文本渲染方案 | 需导入 `TMP Essential Resources`                                      |
+ | [Unity Profiling Core API](https://docs.unity3d.com/Packages/com.unity.profiling.core@1.0/api/Unity.Profiling.html)| Profiler | 检查 `Window > Package Manager > Unity Profiling Core API` 包是否存在 |
  
  ### 安装验证步骤
  1. 打开 Package Manager (`Window > Package Manager`)
