@@ -15,7 +15,7 @@ namespace PowerCellStudio.Editor
             ConfigMenu.CreateConfigAssetByForce();
             var buildPath = Path.Combine(Application.streamingAssetsPath,
                 AssetsBundleBuildUtils.GetBuildFoldName(EditorUserBuildSettings.activeBuildTarget));
-            Directory.Delete(buildPath, true);
+            if (Directory.Exists(buildPath)) Directory.Delete(buildPath, true);
             if (!Directory.Exists(buildPath))
             {
                 Directory.CreateDirectory(buildPath);
@@ -32,7 +32,7 @@ namespace PowerCellStudio.Editor
             ConfigMenu.CreateConfigAssetByForce();
             var buildPath = Path.Combine(Application.streamingAssetsPath,
                 AssetsBundleBuildUtils.GetBuildFoldName(EditorUserBuildSettings.activeBuildTarget));
-            Directory.Delete(buildPath, true);
+            if (Directory.Exists(buildPath)) Directory.Delete(buildPath, true);
             if (!Directory.Exists(buildPath))
             {
                 Directory.CreateDirectory(buildPath);

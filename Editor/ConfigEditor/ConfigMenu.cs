@@ -112,14 +112,14 @@ namespace PowerCellStudio.Editor
 
         private static void CreateConfigAssetsInternal(bool force)
         {
+            var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingLogic.SaveKey.excelPath, "");
+            if (!Directory.Exists(excelPath))
+            {
+                EditorUtility.DisplayDialog("ConfigMenu", "Excel files path doesn't exist.", "OK");
+                return;
+            }
             try
             {
-                var excelPath = EditorSaveUtils.GetEditorPref(ConfigSettingLogic.SaveKey.excelPath, "");
-                if (!Directory.Exists(excelPath))
-                {
-                    EditorUtility.DisplayDialog("ConfigMenu", "Excel files path doesn't exist.", "OK");
-                    return;
-                }
                 md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
                 var historyMap = force ? null : LoadHistoryFile(excelPath);
 
