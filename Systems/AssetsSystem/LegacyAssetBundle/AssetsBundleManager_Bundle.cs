@@ -487,11 +487,11 @@ namespace PowerCellStudio
         {
             _bundleIndex.ClearUnused();
             var unusedAssets = _loadedAssets.ClearUnusedAssets();
-            foreach (var asset in unusedAssets)
-            {
-                // 比较危险的卸载
-                Resources.UnloadAsset(asset);
-            }
+            // foreach (var asset in unusedAssets)
+            // {
+            //     // 比较危险的卸载
+            //     Resources.UnloadAsset(asset);
+            // }
             var cached = _loadedBundles.GetAll();
             var removeBundle = ListPool<string>.Get();
             foreach (var cacheRef in cached)
