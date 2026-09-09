@@ -36,9 +36,13 @@ namespace PowerCellStudio
                 _loadingAssets.TryGetLoadingHandle(assetPath, out var handlerChain);
                 if (handlerChain != null)
                 {
-                    var lastHandler = handlerChain[handlerChain.Count - 1];
-                    handlerChain.RemoveAt(handlerChain.Count - 1);
-                    lastHandler.SetAsset(null);
+                    var removeCount = Math.Min(delCount, handlerChain.Count);
+                    for (int i = 0; i < removeCount; i++)
+                    {
+                        var lastHandler = handlerChain[handlerChain.Count - 1];
+                        handlerChain.RemoveAt(handlerChain.Count - 1);
+                        lastHandler.SetAsset(null);
+                    }
                     if (handlerChain.Count == 0)
                     {
                         _loadingAssets.RemoveLoading(assetPath);
@@ -119,6 +123,7 @@ namespace PowerCellStudio
                     }
                     onSuccess?.Invoke(assets as IList<T>);
                 };
+                return;
             }
             Action<AssetBundle> onLoaded = bundle =>
             {
@@ -259,7 +264,7 @@ namespace PowerCellStudio
                 assetRequest.completed += (operation) =>
                 {
                     var operationHandle = operation as AssetBundleRequest;
-                    if(operationHandle == null)
+                    if(operationHandle == null || !operationHandle.asset)
                     {
                         _loadingAssets.SetLoaded(assetPath, null);
                         DelBundleRef(bundleName, 1);

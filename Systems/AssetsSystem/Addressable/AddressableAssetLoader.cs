@@ -278,6 +278,7 @@ namespace PowerCellStudio
                 var asyncHandle = handle.Convert<T>();
                 if (asyncHandle.IsValid())
                     return asyncHandle;
+                _handles.Remove(address);
             }
             var newHandle = _manager.LoadAsync<T>(address);
             _handles.Add(address, newHandle);
@@ -355,6 +356,7 @@ namespace PowerCellStudio
                 else
                 {
                     AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
+                    Release(address);
                     onFail?.Invoke();
                 }
                 return;
@@ -366,6 +368,7 @@ namespace PowerCellStudio
                 else
                 {
                     AssetLogger.LogError($"Load {typeof(T).Name} Asset [{address}] Fail!");
+                    Release(address);
                     onFail?.Invoke();
                 }
             };
@@ -423,7 +426,7 @@ namespace PowerCellStudio
                 else
                 {
                     AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
-                    _manager.Release(handle);
+                    Release(address);
                     instruction.SetAsset(null);
                 }
             };
@@ -443,11 +446,31 @@ namespace PowerCellStudio
                 var asyncHandle = handle.Convert<IList<T>>();
                 if (asyncHandle.IsValid())
                     handler = asyncHandle;
+                else
+                {
+                    _handles.Remove(label);
+                    handler = _manager.LoadAllAsync<T>(label);
+                    _handles.Add(label, handler);
+                }
             }
             else
             {
                 handler = _manager.LoadAllAsync<T>(label);
                 _handles.Add(label, handler);
+            }
+            if (handler.IsDone)
+            {
+                if (handler.Status == AsyncOperationStatus.Succeeded)
+                {
+                    onSuccess?.Invoke(handler.Result);
+                }
+                else
+                {
+                    AssetLogger.LogError($"Load Assets With Label [{label}] Fail!");
+                    Release(label);
+                    onFail?.Invoke();
+                }
+                return;
             }
             handler.Completed += operationHandle =>
             {
@@ -458,6 +481,7 @@ namespace PowerCellStudio
                 else
                 {
                     AssetLogger.LogError($"Load Assets With Label [{label}] Fail!");
+                    Release(label);
                     onFail?.Invoke();
                 }
             };
@@ -489,19 +513,21 @@ namespace PowerCellStudio
                 var asyncHandle = handle.Convert<T>();
                 if(asyncHandle.IsValid())
                     return asyncHandle;
+                _handles.Remove(assetReference.AssetGUID);
             }
             var newHandle = assetReference.LoadAssetAsync();
             _handles.Add(assetReference.AssetGUID, newHandle);
             return newHandle;
         }
         
-        private  AsyncOperationHandle<T> GetLoadHandle<T>(AssetReference assetReference) where T : Object
+        private AsyncOperationHandle<T> GetLoadHandle<T>(AssetReference assetReference) where T : Object
         {
             if(_handles.TryGetValue(assetReference.AssetGUID, out var handle))
             {
                 var asyncHandle = handle.Convert<T>();
                 if(asyncHandle.IsValid())
                     return asyncHandle;
+                _handles.Remove(assetReference.AssetGUID);
             }
             var newHandle = assetReference.LoadAssetAsync<T>();
             _handles.Add(assetReference.AssetGUID, newHandle);
@@ -516,19 +542,34 @@ namespace PowerCellStudio
         /// <param name="action">资源成功加载时调用的回调</param>
         public void LoadAsync<T>(AssetReferenceT<T> assetReference, OnLoadSuccess<T> action) where T : Object
         {
+            if (!assetReference.IsValid() || string.IsNullOrEmpty(assetReference.AssetGUID))
+            {
+                AssetLogger.LogError($"Load Asset Failed, AssetReference is not valid, address:[{assetReference.AssetGUID}]");
+                return;
+            }
             var handle = GetLoadHandle<T>(assetReference);
             if (handle.IsDone)
             {
                 if(handle.Status == AsyncOperationStatus.Succeeded) 
                     action?.Invoke(handle.Result);
-                else AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
+                else
+                {
+                    AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
+                    Release(assetReference.AssetGUID);
+                }
                 return;
             }
             handle.Completed += operationHandle =>
             {
-                if(operationHandle.Status == AsyncOperationStatus.Succeeded) 
+                if(operationHandle.Status == AsyncOperationStatus.Succeeded)
+                {
                     action?.Invoke(operationHandle.Result);
-                else AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
+                }
+                else
+                {
+                    AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
+                    Release(assetReference.AssetGUID);
+                }
             };
         }
         
@@ -541,6 +582,11 @@ namespace PowerCellStudio
         /// <param name="onFail">资源加载失败时调用的回调</param>
         public void LoadAsync<T>(AssetReference assetReference, OnLoadSuccess<T> onSuccess, OnLoadFailed onFail) where T : Object
         {
+            if (!assetReference.IsValid() || string.IsNullOrEmpty(assetReference.AssetGUID))
+            {
+                AssetLogger.LogError($"Load Asset Failed, AssetReference is not valid, address:[{assetReference.AssetGUID}]");
+                return;
+            }
             var handle = GetLoadHandle<T>(assetReference);
             if (handle.IsDone)
             {
@@ -548,7 +594,7 @@ namespace PowerCellStudio
                     onSuccess?.Invoke(handle.Result);
                 else
                 {
-                    AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
+                    Release(assetReference.AssetGUID);
                     onFail?.Invoke();
                 }
                 return;
@@ -560,6 +606,7 @@ namespace PowerCellStudio
                 else
                 {
                     AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
+                    Release(assetReference.AssetGUID);
                     onFail?.Invoke();
                 }
             };
@@ -573,6 +620,11 @@ namespace PowerCellStudio
         /// <returns>表示异步加载操作的任务</returns>
         public Task<T> LoadTask<T>(AssetReferenceT<T> assetReference) where T : Object
         {
+            if (!assetReference.IsValid() || string.IsNullOrEmpty(assetReference.AssetGUID))
+            {
+                AssetLogger.LogError($"Load Asset Failed, AssetReference is not valid, address:[{assetReference.AssetGUID}]");
+                return Task.FromResult(default(T));
+            }
             var handle = GetLoadHandle<T>(assetReference);
             return handle.Task;
         }
@@ -586,6 +638,13 @@ namespace PowerCellStudio
         public LoaderYieldInstruction<T> LoaderYieldInstruction<T>(AssetReferenceT<T> assetReference)
             where T : Object
         {
+            if (!assetReference.IsValid() || string.IsNullOrEmpty(assetReference.AssetGUID))
+            {
+                AssetLogger.LogError($"Load Asset Failed, AssetReference is not valid, address:[{assetReference.AssetGUID}]");
+                var result = new LoaderYieldInstruction<T>(assetReference.AssetGUID);
+                result.SetAsset(null);
+                return result;
+            }
             var handle = GetLoadHandle<T>(assetReference);
             var instruction = AssetUtils.GetLoadHandler<T>(assetReference.AssetGUID);
             if (handle.IsDone)
@@ -602,7 +661,7 @@ namespace PowerCellStudio
                 else
                 {
                     AssetLogger.LogError($"Load {typeof(T).Name} Asset Fail!");
-                    _manager.Release(handle);
+                    Release(assetReference.AssetGUID);
                     instruction.SetAsset(null);
                 }
             };

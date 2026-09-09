@@ -199,17 +199,12 @@ namespace PowerCellStudio
             if (bundle)
             {
                 var dependencies = _bundleDependenceMap.GetBundleDependencies(bundleName);
-                var result = true;
                 foreach (var dependencyBundle in dependencies)
                 {
                     if (!GetAssetBundleCache(dependencyBundle))
                     {
-                        result = false;
+                        return null;
                     }
-                }
-                if (!result)
-                {
-                    return null;
                 }
             }
             return bundle;
@@ -224,6 +219,7 @@ namespace PowerCellStudio
             else if (_removedAssetHolder.TryGetBundle(bundleName, out bundle))
             {
                 _loadedBundles.AddCache(bundleName, bundle);
+                AddBundleRef(bundleName, 1);
                 return bundle;
             }
             return null;
@@ -454,7 +450,6 @@ namespace PowerCellStudio
             }
             _loadedBundles.RemoveCache(bundleName);
             Resources.UnloadUnusedAssets();
-            GC.Collect();
         }
 
         public void UnloadAllAssetsBundle()
@@ -480,7 +475,6 @@ namespace PowerCellStudio
             _loadedBundles.Clear();
             _bundleIndex.ClearUnused();
             Resources.UnloadUnusedAssets();
-            GC.Collect();
         }
 
         public void ClearUnusedAsset()
