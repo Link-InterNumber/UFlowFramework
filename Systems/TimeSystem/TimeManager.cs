@@ -198,7 +198,7 @@ namespace PowerCellStudio
             }
             if (timeSave.startTime == 0L)
             {
-                timeSave.startTime = DateTime.Now.Ticks;
+                timeSave.startTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 PlayerDataUtils.Save<TimeSave>(timeSave, PlayerDataType.PlayerPrefs);
             }
             return timeSave.startTime;
@@ -232,9 +232,8 @@ namespace PowerCellStudio
         /// </summary>
         public void StopRecord()
         {
-            Clear();
-            SaveStartTime();
             if (!_inTimeRecording) return;
+            SaveStartTime();
             _inTimeRecording = false;
         }
 
@@ -267,6 +266,16 @@ namespace PowerCellStudio
             UpdateTarget(0f);
         }
 
+        private bool CheckPaused()
+        {
+            if (_paused)
+            {
+                ModuleLogger.LogWarning<TimeManager>("Now time is paused, timeScale will not be set immediately.");
+                return true;
+            }
+            return false;
+        }
+
         /// <summary>
         /// 推入一个新的时间缩放。
         /// Push a new time scaling factor.
@@ -275,20 +284,13 @@ namespace PowerCellStudio
         /// <param name="duration">过渡时间 / Transition duration</param>
         public void Push(float timeScale, float duration = 0f)
         {
-            if (timeScale == 0)
+            if (timeScale <= 0)
             {
                 ModuleLogger.LogError<TimeManager>("If you want to push a zero TimeScaler, please use PauseTime().");
                 return;
             }
             var newScale = new TimeScaler(timeScale);
-            if (_paused)
-            {
-                ModuleLogger.LogWarning<TimeManager>("Now time is paused, timeScale will not be set immediately.");
-                var pauseTimeScale = _stack.Pop();
-                _stack.Push(newScale);
-                _stack.Push(pauseTimeScale);
-                return;
-            }
+            if (CheckPaused()) return;
             _stack.Push(newScale);
             UpdateTarget(duration);
         }
@@ -301,14 +303,7 @@ namespace PowerCellStudio
         public void Pop(float duration = 0)
         {
             if (_stack.Count == 1) return;
-            if (_paused)
-            {
-                ModuleLogger.LogWarning<TimeManager>("Now time is paused, timeScale will not be set immediately.");
-                var pauseTimeScale = _stack.Pop();
-                _stack.Pop();
-                _stack.Push(pauseTimeScale);
-                return;
-            }
+            if (CheckPaused()) return;
             _stack.Pop();
             UpdateTarget(duration);
         }
@@ -326,14 +321,7 @@ namespace PowerCellStudio
                 ModuleLogger.LogError<TimeManager>("If you want to push a zero TimeScaler, please use PauseTime().");
                 return;
             }
-            if (_paused)
-            {
-                ModuleLogger.LogWarning<TimeManager>("Now time is paused, timeScale will not be set immediately.");
-                var pauseTimeScale = _stack.Pop();
-                GetCurTimeScaler().UpdateValue(newValue);
-                _stack.Push(pauseTimeScale);
-                return;
-            }
+            if (CheckPaused()) return;
             GetCurTimeScaler().UpdateValue(newValue);
             UpdateTarget(duration);
         }
@@ -346,29 +334,15 @@ namespace PowerCellStudio
         /// <param name="duration">过渡时间 / Transition duration</param>
         public void UpdateTimeScale(Func<float, float> fun, float duration = 0)
         {
-            if (_paused)
-            {
-                ModuleLogger.LogWarning<TimeManager>("Now time is paused, timeScale will not be set immediately.");
-                var pauseTimeScale = _stack.Pop();
-                var pausedTimeScaler = GetCurTimeScaler();
-                var nv = fun.Invoke(pausedTimeScaler.baseValue);
-                if (nv <= 0)
-                {
-                    ModuleLogger.LogError<TimeManager>("If you want to push a zero TimeScaler, please use PauseTime().");
-                    return;
-                }
-                pausedTimeScaler.UpdateValue(nv);
-                _stack.Push(pauseTimeScale);
-                return;
-            }
             var curTimeScaler = GetCurTimeScaler();
-            var newValue = fun.Invoke(curTimeScaler.baseValue);
+            var newValue = fun?.Invoke(curTimeScaler.baseValue)?? curTimeScaler.baseValue;
             if (newValue <= 0)
             {
                 ModuleLogger.LogError<TimeManager>("If you want to push a zero TimeScaler, please use PauseTime().");
                 return;
             }
             curTimeScaler.UpdateValue(newValue);
+            if (CheckPaused()) return;
             UpdateTarget(duration);
         }
 
@@ -376,20 +350,18 @@ namespace PowerCellStudio
         /// 推入一个混合缩放值。
         /// Push a blend scaling value.
         /// </summary>
-        /// <param name="value">混合缩放值 / Blend scaling value</param>
+        /// <param name="blendValue">混合缩放值 / Blend scaling value</param>
         /// <param name="duration">过渡时间 / Transition duration</param>
-        public void PushBlend(float value, float duration = 0f)
+        public void PushBlend(float blendValue, float duration = 0f)
         {
-            if (_paused)
+            if (blendValue <= 0)
             {
-                ModuleLogger.LogError<TimeManager>("Now time is paused, timeScale will not be set immediately.");
-                var pauseTimeScale = _stack.Pop();
-                GetCurTimeScaler().PushBlend(value);
-                _stack.Push(pauseTimeScale);
+                ModuleLogger.LogError<TimeManager>("If you want to push a zero TimeScaler, please use PauseTime().");
                 return;
             }
             var curTimeScaler = GetCurTimeScaler();
-            curTimeScaler.PushBlend(value);
+            curTimeScaler.PushBlend(blendValue);
+            if (CheckPaused()) return;
             UpdateTarget(duration);
         }
 
@@ -397,20 +369,13 @@ namespace PowerCellStudio
         /// 移除一个混合缩放值。
         /// Remove a blend scaling value.
         /// </summary>
-        /// <param name="val">混合缩放值 / Blend scaling value</param>
+        /// <param name="blendValue">混合缩放值 / Blend scaling value</param>
         /// <param name="duration">过渡时间 / Transition duration</param>
-        public void RemoveBlend(float val, float duration = 0f)
+        public void RemoveBlend(float blendValue, float duration = 0f)
         {
-            if (_paused)
-            {
-                ModuleLogger.LogError<TimeManager>("Now time is paused, timeScale will not be set immediately.");
-                var pauseTimeScale = _stack.Pop();
-                GetCurTimeScaler().RemoveBlend(val);
-                _stack.Push(pauseTimeScale);
-                return;
-            }
             var curTimeScaler = GetCurTimeScaler();
-            curTimeScaler.RemoveBlend(val);
+            curTimeScaler.RemoveBlend(blendValue);
+            if (CheckPaused()) return;
             UpdateTarget(duration);
         }
 
@@ -421,16 +386,9 @@ namespace PowerCellStudio
         /// <param name="duration">过渡时间 / Transition duration</param>
         public void PopBlend(float duration = 0f)
         {
-            if (_paused)
-            {
-                ModuleLogger.LogError<TimeManager>("Now time is paused, timeScale will not be set immediately.");
-                var pauseTimeScale = _stack.Pop();
-                GetCurTimeScaler().PopBlend();
-                _stack.Push(pauseTimeScale);
-                return;
-            }
             var curTimeScaler = GetCurTimeScaler();
             curTimeScaler.PopBlend();
+            if (CheckPaused()) return;
             UpdateTarget(duration);
         }
         
@@ -438,11 +396,12 @@ namespace PowerCellStudio
         {
             var tsReplace = _stack.Peek();
             var calculatedValue = tsReplace.calculatedValue;
-            _target = calculatedValue * _globalScale;
-            _blending = true;
+            _target = _paused ? 0f : calculatedValue * _globalScale;
+            _blending = duration > 0f;
             _time = 0f;
             _duration = duration;
-            EventManager.instance.onTimeScaleReplaced?.Invoke(calculatedValue);
+            if (!_blending) Time.timeScale = _target;
+            EventManager.instance.onTimeScaleReplaced?.Invoke(_target);
         }
 
         /// <summary>
@@ -478,8 +437,6 @@ namespace PowerCellStudio
         {
             _paused++;
             if (_paused.refCount > 1) return;
-            var newScale = new TimeScaler(0);
-            _stack.Push(newScale);
             UpdateTarget(0);
             EventManager.instance.onTimeScalePause?.Invoke(true);
         }
@@ -493,9 +450,7 @@ namespace PowerCellStudio
             if (!_paused) return;
             _paused--;
             if (_paused) return;
-            Pop();
             UpdateTarget(0);
-            Time.timeScale = _target;
             EventManager.instance.onTimeScalePause?.Invoke(false);
         }
 
