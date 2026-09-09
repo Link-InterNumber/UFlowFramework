@@ -52,10 +52,10 @@ namespace PowerCellStudio
                 }
                 return;
             }
-            if (_loadedAssets.TryDelRef(assetPath, delCount, out var asset))
+            if (_loadedAssets.TryDelRef(assetPath, delCount, out _))
             {
                 _loadedAssets.RemoveCache(assetPath);
-                Resources.UnloadAsset(asset);
+                // Resources.UnloadAsset(asset);
                 var bundleName = _bundleIndex.GetBundleNameByAsset(assetPath);
                 DelBundleRef(bundleName, 1);
             }
