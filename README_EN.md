@@ -55,6 +55,15 @@ UFlow is a modular development framework for Unity projects. It provides a set o
 ## 🚨 Environment Requirements
 
 ### Mandatory Dependency Packages
+
+Runtime Packages：
+
+![AsmdefSetting.png](Doc/img/AsmdefSetting.png)
+
+Editor Packages：
+
+![EditorAsmdefSetting.png](Doc/img/EditorAsmdefSetting.png)
+
 The following official plugin packages must be installed via **Package Manager**:
 
 | Package Name | Purpose | Installation Verification |
@@ -62,7 +71,6 @@ The following official plugin packages must be installed via **Package Manager**
 | [Addressables](https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/index.html) | Dynamic resource loading system | Check if the `Window > Asset Management > Addressables` menu exists |
 | [Localization](https://docs.unity3d.com/Packages/com.unity.localization@1.4/manual/index.html) | Multilingual localization system | Confirm the `Window > Asset Management > Localization Tables` configuration panel |
 | [TextMeshPro](https://docs.unity3d.com/Packages/com.unity.textmeshpro@3.0/manual/index.html) | Advanced text rendering solution | Import `TMP Essential Resources` |
-| [Unity Profiling Core API](https://docs.unity3d.com/Packages/com.unity.profiling.core@1.0/api/Unity.Profiling.html)| Profiler | Check if the `Window > Package Manager > Unity Profiling Core API` package exists |
 
 ### Installation Verification Steps
 1. Open the Package Manager (`Window > Package Manager`)

@@ -69,13 +69,13 @@ namespace PowerCellStudio
             // mapModule.CreatStageMap(1);
             AssetLogger.Log("AddressableManager Inited!");
             ModuleManager.Create();
-            StartCoroutine(OnAddressableInited());
+            StartCoroutine(OnAssetUtilsInited());
 
         }
         
-        private IEnumerator OnAddressableInited()
+        protected virtual IEnumerator OnAssetUtilsInited()
         {
-            yield return LocalizationManager.instance.Init(new UnityLocalizationProvider(), null);
+            yield return LocalizationManager.instance.Init(GetLocalizationProvider(), null);
             ApplicationManager.instance.SetLoading(false);
             EventManager.instance.onStartGame.Invoke();
             ReadyForStart();
@@ -86,5 +86,12 @@ namespace PowerCellStudio
         /// The program initialization was completed, the game logic can be started
         /// </summary>
         protected abstract void ReadyForStart();
+        
+        /// <summary>
+        /// 初始化本地化工具
+        /// ILocalizationProvider is a database for localization system.
+        /// </summary>
+        /// <returns></returns>
+        protected abstract ILocalizationProvider GetLocalizationProvider();
     }
 }

@@ -6,5 +6,10 @@ namespace PowerCellStudio
         {
             
         }
+
+        protected override ILocalizationProvider GetLocalizationProvider()
+        {
+            return new UnityLocalizationProvider();
+        }
     }
 }

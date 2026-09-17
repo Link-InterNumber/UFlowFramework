@@ -16,6 +16,40 @@ namespace PowerCellStudio.Editor
 
         // private static string _localizationCsvHeader =
         //     "Key,Id,Chinese (Simplified)(zh-Hans),Chinese (Traditional)(zh-Hant),English(en),Japanese(ja)\n";
+
+        private static bool TryWriteCsFiles(string filePath, string runtimeCsFold, string editorCsFold, out string className)
+        {
+            className = null;
+            var fileName = Path.GetFileName(filePath);
+            if (fileName.StartsWith("~$")) return false;
+            var extension = Path.GetExtension(filePath);
+                    
+            IConfigReader reader = null;
+            if (extension == ".xlsx")
+                reader = new ExcelReader(filePath);
+            else if (extension == ".csv")
+                reader = new CsvReader(filePath);
+                    
+            if(reader == null || reader.fieldMap.Count == 0) return false;
+                    
+            var writer = new ConfigWriter();
+            writer.GenerateRuntimeCsString(reader);
+            var code = writer.GetCSFileString();
+                    
+            writer.Clear();
+            writer.GenerateEditorCsString(reader);
+            var editorCode = writer.GetCSFileString();
+            
+            var csFilePath = Path.Combine(runtimeCsFold, $"{reader.fileName}Data.cs");
+            File.WriteAllText(csFilePath, code, Encoding.UTF8);
+                    
+            var editorCsFilePath = Path.Combine(editorCsFold, $"{reader.fileName}Creator.cs");
+            File.WriteAllText(editorCsFilePath, editorCode, Encoding.UTF8);
+            ConfigLogger.Log($"Create Cs Files From [{reader.fileName}]");
+            className = reader.fileName;
+            reader.Dispose();
+            return true;
+        }
         
         public static void CreateCsFiles()
         {
@@ -52,35 +86,11 @@ namespace PowerCellStudio.Editor
                 for (var i = 0; i < filePaths.Length; i++)
                 {
                     var filePath = filePaths[i];
-                    var fileName = Path.GetFileName(filePath);
-                    if (fileName.StartsWith("~$")) continue;
-                    var extension = Path.GetExtension(filePath);
-                    
-                    IConfigReader reader = null;
-                    if (extension == ".xlsx")
-                        reader = new ExcelReader(filePath);
-                    else if (extension == ".csv")
-                        reader = new CsvReader(filePath);
-                    
-                    if(reader == null || reader.fieldMap.Count == 0) continue;
-                    
-                    var writer = new ConfigWriter();
-                    writer.GenerateRuntimeCsString(reader);
-                    var code = writer.GetCSFileString();
-                    
-                    writer.Clear();
-                    writer.GenerateEditorCsString(reader);
-                    var editorCode = writer.GetCSFileString();
-                    
-                    collectionList.Add($"{reader.fileName}Collections");
-                    EditorUtility.DisplayProgressBar("Create Cs Files", $"Running {reader.fileName}", 1f * i / filePaths.Length);
-                    var csFilePath = Path.Combine(csFileFold, $"{reader.fileName}Data.cs");
-                    File.WriteAllText(csFilePath, code, Encoding.UTF8);
-                    
-                    var editorCsFilePath = Path.Combine(editorCsFold, $"{reader.fileName}Creator.cs");
-                    File.WriteAllText(editorCsFilePath, editorCode, Encoding.UTF8);
-                    ConfigLogger.Log($"Create Cs Files From [{reader.fileName}]");
-                    reader.Dispose();
+                    if (TryWriteCsFiles(filePath, csFileFold, editorCsFold, out var className))
+                    {
+                        EditorUtility.DisplayProgressBar("Create Cs Files", $"Running {className}", 1f * i / filePaths.Length);
+                        collectionList.Add($"{className}Collections");
+                    }
                 }
                 EditorUtility.DisplayProgressBar("Create Cs Files", $"Running ConfigManager", 1f * (filePaths.Length -1) / filePaths.Length);
                 var managerCode = ConfigWriter.GenerateManagerCSString(collectionList);

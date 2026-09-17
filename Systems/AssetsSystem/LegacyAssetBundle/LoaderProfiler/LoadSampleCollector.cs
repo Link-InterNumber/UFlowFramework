@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
-using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
+#if UFLOW_HAS_PROFILING_CORE
+using Unity.Profiling;
+#endif
 
 namespace PowerCellStudio
 {
@@ -34,6 +36,8 @@ namespace PowerCellStudio
         private ILoadDependencyProvider _dependencyProvider;
         public ILoadDependencyProvider dependencyProvider => _dependencyProvider;
         
+#if UFLOW_HAS_PROFILING_CORE
+        
         private static readonly ProfilerCounterValue<int> ActiveLoadsCounter =
             new ProfilerCounterValue<int>(ProfilerCategory.Loading, ActiveLoadsCounterName, ProfilerMarkerDataUnit.Count);
         
@@ -54,6 +58,8 @@ namespace PowerCellStudio
         
         private static readonly ProfilerMarker StateChangeMarker =
             new ProfilerMarker(ProfilerCategory.Loading, "LoaderProfiler.SetLoadState");
+        
+#endif
         
         private readonly List<LoadProfilerFrameData> _metadataBuffer = new List<LoadProfilerFrameData>(64);
         private int _counterFrame = -1;
@@ -107,7 +113,9 @@ namespace PowerCellStudio
         public void BeginLoad(string assetPath, string assetBundleName, int hashCode)
         {
             EnsureProfilerFrame();
+#if UFLOW_HAS_PROFILING_CORE
             using (BeginLoadMarker.Auto())
+#endif
             {
                 BeginLoadInternal(assetPath, assetBundleName, hashCode);
             }
@@ -134,7 +142,9 @@ namespace PowerCellStudio
 
         public void SetLoadState(int hashCode, LoadState state)
         {
+#if UFLOW_HAS_PROFILING_CORE
             using (StateChangeMarker.Auto())
+#endif
             {
                 EnsureProfilerFrame();
                 if (!_loadSampleDict.TryGetValue(hashCode, out var sample)) return;
@@ -250,12 +260,13 @@ namespace PowerCellStudio
                 
                 tempDependencyDepthCounter = Math.Max(tempDependencyDepthCounter, GetBundleDependenciesCount(sample));
             }
+#if UFLOW_HAS_PROFILING_CORE
             BeginLoadsCounter.Value = tempBeginLoadsCounter;
             CompletedLoadsCounter.Value = tempCompletedLoadsCounter;
             DependencyMaxCounter.Value = tempDependencyDepthCounter;
             ActiveLoadsCounter.Value = tempActiveLoadsCounter;
             BundleCountCounter.Value = _bundleNames.Count;
-            
+#endif
             Profiler.EmitFrameMetaData(ProfilerGuid, ProfilerSampleTag, _metadataBuffer.ToArray());
 #endif
         }
