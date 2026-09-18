@@ -9,22 +9,26 @@ namespace UFlowFramework.Sample
         public bool TryGetEvent(out InputEvent<LegacyInputKey> inputEvent)
         {
             var moveDir = Vector2.zero;
+            
+#if ENABLE_LEGACY_INPUT_MANAGER
             if (Input.GetKey(KeyCode.W))
             {
-                moveDir.y = 1;
+                moveDir.y += 1;
             }
             if (Input.GetKey(KeyCode.S))
             {
-                moveDir.y = -1;
+                moveDir.y += -1;
             }
             if (Input.GetKey(KeyCode.A))
             {
-                moveDir.x = -1;
+                moveDir.x += -1;
             }
             if (Input.GetKey(KeyCode.D))
             {
-                moveDir.x = 1;
+                moveDir.x += 1;
             }
+#endif
+
             var moveState = InputEventState.NoInput;
             if (isMove && moveDir == Vector2.zero)
             {

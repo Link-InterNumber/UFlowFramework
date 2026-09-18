@@ -19,7 +19,7 @@ namespace UFlowFramework.Sample
 
         private void Awake()
         {
-            _inputStack = new InputStack<LegacyInputKey>();
+            _inputStack = new InputStack<LegacyInputKey>(() => new InputPage<LegacyInputKey>());
             _capturers = new List<ILegacyInputCapturer<LegacyInputKey>>();
             _capturers.Add(new MoveCapturer());
         }
@@ -38,8 +38,10 @@ namespace UFlowFramework.Sample
         
         private void Update()
         {
-// #if ENABLE_LEGACY_INPUT_MANAGER
-// #endif
+            if (_inputStack.GetCurrentPage()?.isEmpty ?? true)
+            {
+                return;
+            }
             for (int i = 0; i < _capturers.Count; i++)
             {
                 var capturer = _capturers[i];

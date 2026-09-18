@@ -7,8 +7,10 @@ namespace UFlowFramework
         private TKey _actionKey;
         public TKey actionKey => _actionKey;
         
-        private event Action<InputEvent<TKey>> callback;
+        internal event Action<InputEvent<TKey>> callback;
         
+        public int listenerCount => callback?.GetInvocationList().Length ?? 0;
+
         internal InputHandler(TKey actionKey)
         {
             _actionKey = actionKey;

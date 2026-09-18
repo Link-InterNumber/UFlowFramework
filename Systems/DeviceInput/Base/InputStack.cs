@@ -5,23 +5,29 @@ namespace UFlowFramework
 {
     public class InputStack<TKey> : IDisposable
     {
-        private Stack<InputPage<TKey>> _pages;
+        private Stack<IInputPage<TKey>> _pages;
+        private readonly Func<IInputPage<TKey>> pageFactory; 
         
-        public InputStack()
+        public InputStack(Func<IInputPage<TKey>> pageFactory)
         {
-            _pages = new Stack<InputPage<TKey>>();
+            _pages = new Stack<IInputPage<TKey>>();
+            this.pageFactory = pageFactory;
         }
 
         public void Dispose()
         {
-            _pages.Clear();
+            while (_pages.Count > 0)
+            {
+                var page = _pages.Pop();
+                page?.Dispose();
+            }
             _pages = null;
         }
 
-        public InputPage<TKey> PushPage()
+        public IInputPage<TKey> PushPage()
         {
             if (_pages == null) throw new ObjectDisposedException(nameof(InputStack<TKey>));
-            var page = new InputPage<TKey>();
+            var page = pageFactory();
             _pages.Push(page);
             return page;
         }
@@ -34,11 +40,19 @@ namespace UFlowFramework
             page?.Dispose();
         }
         
-        public InputPage<TKey> GetCurrentPage()
+        public IInputPage<TKey> GetCurrentPage()
         {
             if (_pages == null) throw new ObjectDisposedException(nameof(InputStack<TKey>));
             if (_pages.Count <= 0) return null;
             return _pages.Peek();
+        }
+
+        public bool HasListenerRightNow(TKey actionKey)
+        {
+            var currentPage = GetCurrentPage();
+            if (currentPage != null)
+                return currentPage.HasListener(actionKey);
+            return false;
         }
         
         public void AddListener(TKey actionKey, Action<InputEvent<TKey>> callback)
@@ -71,7 +85,9 @@ namespace UFlowFramework
 
         public void Dispatch(in InputEvent<TKey> input)
         {
-            GetCurrentPage()?.Handle(in input);
+            var currentPage = GetCurrentPage();
+            if (currentPage == null || currentPage.isEmpty) return;
+            currentPage.Handle(in input);
         }
     }
 }
