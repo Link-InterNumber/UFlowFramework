@@ -29,7 +29,7 @@ namespace UFlowFramework.Sample
             }
 #endif
 
-            var moveState = InputEventState.NoInput;
+            var moveState = InputEventState.Released;
             if (isMove && moveDir == Vector2.zero)
             {
                 moveState = InputEventState.ReleaseThisFrame;

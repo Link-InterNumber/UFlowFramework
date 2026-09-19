@@ -87,7 +87,7 @@ namespace UFlowFramework
         {
             var currentPage = GetCurrentPage();
             if (currentPage == null || currentPage.isEmpty) return;
-            currentPage.Handle(in input);
+            currentPage.Handle(input);
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using PowerCellStudio;
+using UnityEngine;
 
 namespace UFlowFramework
 {
@@ -7,19 +9,41 @@ namespace UFlowFramework
     public class InputPage<TKey> : IInputPage<TKey>
     {
         private Dictionary<TKey, InputHandler<TKey>> _handlers;
+        private Dictionary<TKey, float> _inputStartTime;
 
         public InputPage()
         {
             _handlers = new Dictionary<TKey, InputHandler<TKey>>();
+            _inputStartTime = new Dictionary<TKey, float>();
         }
         
         public bool isEmpty => _handlers == null || _handlers.Count == 0;
 
-        public void Handle(in InputEvent<TKey> input)
+        public void Handle(InputEvent<TKey> input)
         {
             if (_handlers == null) throw new ObjectDisposedException(nameof(InputPage<TKey>));
-            if (_handlers.TryGetValue(input.actionKey, out var handler))
-                handler.Invoke(input);
+            if (!_handlers.TryGetValue(input.actionKey, out var handler)) return;
+            if (input.state == InputEventState.ReleaseThisFrame)
+            {
+                if (_inputStartTime.Remove(input.actionKey, out var startTime))
+                {
+                    var holdTime = Time.time - startTime;
+                    input.SetHoldTime(holdTime);
+                }
+            }
+            else
+            {
+                if (_inputStartTime.TryGetValue(input.actionKey, out var startTime))
+                {
+                    var holdTime = Time.time - startTime;
+                    input.SetHoldTime(holdTime);
+                }
+                else if (input.state == InputEventState.PressThisFrame || input.state == InputEventState.Hold)
+                {
+                    _inputStartTime[input.actionKey] = Time.time;
+                }
+            }
+            handler.Invoke(input);
         }
 
         public bool HasListener(TKey actionKey)
@@ -28,6 +52,39 @@ namespace UFlowFramework
             if (_handlers.TryGetValue(actionKey, out var handler))
                 return handler.listenerCount > 0;
             return false;
+        }
+
+        public void OverlapListener(TKey actionKey, Action<InputEvent<TKey>> callback)
+        {
+            if (_handlers == null) throw new ObjectDisposedException(nameof(InputPage<TKey>));
+            if (_handlers.TryGetValue(actionKey, out var handler))
+                handler.OverlapListener(callback);
+            else
+            {
+                ModuleLogger.LogError($"No handler found for actionKey: {actionKey}, should AddListener first!");
+            }
+        }
+        
+        public void SeparateListener(TKey actionKey)
+        {
+            if (_handlers == null) throw new ObjectDisposedException(nameof(InputPage<TKey>));
+            if (_handlers.TryGetValue(actionKey, out var handler))
+                handler.SeparateListener();
+            else
+            {
+                ModuleLogger.LogError($"No handler found for actionKey: {actionKey}, should AddListener first!");
+            }
+        }
+
+        internal void ClearPeekListener(TKey actionKey)
+        {
+            if (_handlers == null) throw new ObjectDisposedException(nameof(InputPage<TKey>));
+            if (_handlers.TryGetValue(actionKey, out var handler))
+                handler.ClearPeekListener();
+            else
+            {
+                ModuleLogger.LogError($"No handler found for actionKey: {actionKey}, should AddListener first!");
+            }
         }
 
         public void AddListener(TKey actionKey, Action<InputEvent<TKey>> callback)

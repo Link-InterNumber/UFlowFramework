@@ -1,9 +1,13 @@
-﻿namespace UFlowFramework
+﻿using System;
+
+namespace UFlowFramework
 {
+    [Flags]
     public enum InputEventType
     {
-        Button,
-        Axis,
+        Button = 1 << 0,
+        Axis = 1 << 1,
+        Point = Button | Axis,
         // PointerMove,
         // PointerDown,
         // PointerUp,
@@ -12,7 +16,7 @@
 
     public enum InputEventState
     {
-        NoInput,
+        Released,
         PressThisFrame,
         Hold,
         ReleaseThisFrame,

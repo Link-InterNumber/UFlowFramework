@@ -22,6 +22,8 @@ namespace UFlowFramework.Sample
             _inputStack = new InputStack<LegacyInputKey>(() => new InputPage<LegacyInputKey>());
             _capturers = new List<ILegacyInputCapturer<LegacyInputKey>>();
             _capturers.Add(new MoveCapturer());
+            _capturers.Add(new FireCapturer());
+            _capturers.Add(new JumpCapturer());
         }
 
         private void OnDestroy()

@@ -6,7 +6,7 @@ namespace UFlowFramework
     {
         public bool isEmpty { get; }
         
-        public void Handle(in InputEvent<TKey> input);
+        public void Handle(InputEvent<TKey> input);
 
         public bool HasListener(TKey actionKey);
 
