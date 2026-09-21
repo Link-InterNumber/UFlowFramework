@@ -1,17 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine.Pool;
 
 namespace UFlowFramework
 {
     public class InputStack<TKey> : IDisposable
     {
         private Stack<IInputPage<TKey>> _pages;
-        private readonly Func<IInputPage<TKey>> pageFactory; 
+        private ObjectPool<IInputPage<TKey>> _pagePool;
         
         public InputStack(Func<IInputPage<TKey>> pageFactory)
         {
             _pages = new Stack<IInputPage<TKey>>();
-            this.pageFactory = pageFactory;
+            _pagePool = new ObjectPool<IInputPage<TKey>>(
+                pageFactory, 
+                null, 
+                page => page.ClearAll(),
+                page => page.Dispose(), 
+                false, 
+                5, 
+                10);
         }
 
         public void Dispose()
@@ -22,14 +30,14 @@ namespace UFlowFramework
                 page?.Dispose();
             }
             _pages = null;
+            _pagePool?.Dispose();
         }
 
-        public IInputPage<TKey> PushPage()
+        public void PushPage()
         {
             if (_pages == null) throw new ObjectDisposedException(nameof(InputStack<TKey>));
-            var page = pageFactory();
+            var page = _pagePool.Get();
             _pages.Push(page);
-            return page;
         }
         
         public void PopPage()
@@ -37,10 +45,10 @@ namespace UFlowFramework
             if (_pages == null) throw new ObjectDisposedException(nameof(InputStack<TKey>));
             if (_pages.Count <= 0) return;
             var page = _pages.Pop();
-            page?.Dispose();
+            _pagePool.Release(page);
         }
         
-        public IInputPage<TKey> GetCurrentPage()
+        internal IInputPage<TKey> GetCurrentPage()
         {
             if (_pages == null) throw new ObjectDisposedException(nameof(InputStack<TKey>));
             if (_pages.Count <= 0) return null;

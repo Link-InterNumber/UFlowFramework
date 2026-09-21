@@ -37,7 +37,7 @@ namespace UFlowFramework.Sample
             }
             else if (!isMove && moveDir != Vector2.zero)
             {
-                moveState = InputEventState.PressThisFrame;
+                moveState = InputEventState.PerformThisFrame;
                 isMove = true;
             }
             else if (isMove && moveDir != Vector2.zero)

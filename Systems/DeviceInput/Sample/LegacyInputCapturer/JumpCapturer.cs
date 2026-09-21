@@ -15,9 +15,8 @@ namespace UFlowFramework.Sample
 #if ENABLE_LEGACY_INPUT_MANAGER
             pressed = Input.GetKey(KeyCode.Space);
 #endif
-
             var state = pressed
-                ? (_isPressed ? InputEventState.Hold : InputEventState.PressThisFrame)
+                ? (_isPressed ? InputEventState.Hold : InputEventState.PerformThisFrame)
                 : (_isPressed ? InputEventState.ReleaseThisFrame : InputEventState.Released);
             _isPressed = pressed;
 

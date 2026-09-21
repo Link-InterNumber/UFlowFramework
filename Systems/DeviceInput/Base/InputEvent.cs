@@ -49,12 +49,12 @@ namespace UFlowFramework
         
         public static InputEvent<TKey> CreateValueEvent(TKey actionKey, InputEventType eventType, InputEventState state, float v, Vector2 v2 = default)
         {
-            return new InputEvent<TKey>(actionKey, eventType, state: state, v, v2.x, v2.y);
+            return new InputEvent<TKey>(actionKey, eventType, state, v, v2.x, v2.y);
         }
         
         public static InputEvent<TKey> CreateButtonDownEvent(TKey actionKey, float pressValue = 1)
         {
-            return new InputEvent<TKey>(actionKey, InputEventType.Button, InputEventState.PressThisFrame, pressValue);
+            return new InputEvent<TKey>(actionKey, InputEventType.Button, InputEventState.PerformThisFrame, pressValue);
         }
         
         public static InputEvent<TKey> CreateButtonUpEvent(TKey actionKey, float pressValue = 0)
@@ -69,7 +69,7 @@ namespace UFlowFramework
         
         public static InputEvent<TKey> CreatePointDownEvent(TKey actionKey, Vector2 pos)
         {
-            return new InputEvent<TKey>(actionKey, InputEventType.Point, InputEventState.PressThisFrame, 1, pos.x, pos.y);
+            return new InputEvent<TKey>(actionKey, InputEventType.Point, InputEventState.PerformThisFrame, 1, pos.x, pos.y);
         }
         
         public static InputEvent<TKey> CreatePointUpEvent(TKey actionKey, Vector2 pos)
@@ -90,6 +90,11 @@ namespace UFlowFramework
         public static InputEvent<TKey> CreateVector2Event(TKey actionKey, InputEventState state, Vector2 v, float pressValue = 0)
         {
             return new InputEvent<TKey>(actionKey, InputEventType.Axis, state, pressValue, v.x, v.y);
+        }
+
+        public static InputEvent<TKey> CreateScrollEvent(TKey actionKey, InputEventState state, float value)
+        {
+            return new InputEvent<TKey>(actionKey, InputEventType.Scroll, state, value);
         }
     }
 }

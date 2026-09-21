@@ -7,6 +7,7 @@ namespace UFlowFramework
     {
         Button = 1 << 0,
         Axis = 1 << 1,
+        Scroll = 1 << 2,
         Point = Button | Axis,
         // PointerMove,
         // PointerDown,
@@ -17,8 +18,9 @@ namespace UFlowFramework
     public enum InputEventState
     {
         Released,
-        PressThisFrame,
+        PerformThisFrame,
         Hold,
         ReleaseThisFrame,
+        // Cancel
     }
 }
