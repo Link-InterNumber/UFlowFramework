@@ -30,19 +30,15 @@
     |
     |──> IInputAdapter<TKey>
     |
-    |──> InputStack<TKey>
-    |       |
-    |       |──> Func<InputPage<TKey>> 页面工厂
-    |       |
-    |       └──> InputPage<TKey>
-    |               |
-    |               |──> IInputPage<TKey>
-    |               |
-    |               └──> InputHandler<TKey>
-    |
-    └──> 外部输入采集器（示例：`Sample/MoveCapturer`）
+    └──> InputStack<TKey>
             |
-            └──> UnityEngine.Input
+            |──> Func<InputPage<TKey>> 页面工厂
+            |
+            └──> InputPage<TKey>
+                    |
+                    |──> IInputPage<TKey>
+                    |
+                    └──> InputHandler<TKey>
 ```
 
 `InputEvent<TKey>` 是采集器、适配器和页面之间传递的数据结构；它不属于某个具体输入后端。依赖关系图中的适配器和采集器均为外部接入示例，不是框架核心类型。
