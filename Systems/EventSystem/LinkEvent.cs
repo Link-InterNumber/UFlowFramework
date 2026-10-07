@@ -1,14 +1,14 @@
 
 namespace PowerCellStudio
 {
-    public class LineEventBase
+    public class LinkEventBase
     {
         public bool enable = true;
 
         public virtual void RemoveAllListeners(){}
     }
 
-    public class LinkEvent : LineEventBase, IInvolke
+    public class LinkEvent : LinkEventBase, IInvolke
     {
         private event BaseLinkAction events;
 
@@ -64,7 +64,7 @@ namespace PowerCellStudio
         }
     }
 
-    public class LinkEvent<T> : LineEventBase, IInvolke<T>
+    public class LinkEvent<T> : LinkEventBase, IInvolke<T>
     {
         private event BaseLinkAction<T> events;
 
@@ -119,7 +119,7 @@ namespace PowerCellStudio
         }
     }
 
-    public class LinkEvent<T, TK> : LineEventBase, IInvolke<T, TK>
+    public class LinkEvent<T, TK> : LinkEventBase, IInvolke<T, TK>
     {
         private event BaseLinkAction<T, TK> events;
 
@@ -175,7 +175,7 @@ namespace PowerCellStudio
         }
     }
 
-    public class LinkEvent<T, TK, TL> : LineEventBase, IInvolke<T, TK, TL>
+    public class LinkEvent<T, TK, TL> : LinkEventBase, IInvolke<T, TK, TL>
     {
         private event BaseLinkAction<T, TK, TL> events;
 

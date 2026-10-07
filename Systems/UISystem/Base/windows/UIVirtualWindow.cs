@@ -18,6 +18,30 @@ namespace PowerCellStudio
         {
             this.window = window as T;
         }
+        
+        void IUIComponent.OnUIInstanced()
+        {
+            _assetsLoader = AssetUtils.SpawnLoader(this.GetType().Name);
+            OnInstanced();
+        }
+
+        /// <summary>
+        /// 在UI实例化后调用 /
+        /// Called when the UI is instantiated, override this method to perform additional initialization.
+        /// </summary>
+        protected virtual void OnInstanced() { }
+        
+        void IUIComponent.OnUIDestroy()
+        {
+            AssetUtils.DeSpawnLoader(_assetsLoader);
+            _assetsLoader = null;
+            OnDestroy();
+        }
+
+        /// <summary>
+        /// 在UI销毁时执行 / Executed on UI destruction
+        /// </summary>
+        protected virtual void OnDestroy(){}
 
         void IUIComponent.Open(object data)
         {
@@ -50,6 +74,7 @@ namespace PowerCellStudio
         public RectTransform rectTransform => window?.rectTransform ?? null;
         private bool _isOpened;
         public bool isOpened => _isOpened;
+        
         protected UIEventHost _eventHost;
 
         public void RegisterEvent()
@@ -104,11 +129,5 @@ namespace PowerCellStudio
         public abstract void OnFocus();
 
         public virtual void OnHide(){}
-        
-        public virtual void OnUIDestroy()
-        {
-            AssetUtils.DeSpawnLoader(_assetsLoader);
-            _assetsLoader = null;
-        }
     }
 }

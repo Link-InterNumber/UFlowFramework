@@ -38,6 +38,11 @@ namespace PowerCellStudio
             }
             instanceWindow.name = $"{instanceWindow.name}({windowType.Name})";
             var virtualWindowInstance = Activator.CreateInstance(windowType);
+            if (virtualWindowInstance == null)
+            {
+                UILogger.LogError($"无法创建{windowType.Name}的实例");
+                return null;
+            }
             ReflectionUtils.InvokeMethod(virtualWindowInstance, "BindWindow", windowInstance);
             _bindWindowType = null;
             return virtualWindowInstance as IUIChild;

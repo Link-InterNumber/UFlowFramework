@@ -92,6 +92,8 @@ namespace PowerCellStudio
             }
             UIUtils.SetUIChildToParent(ui, _parent);
             UIUtils.InitUI(ui, _ignoreRaycaster, _standaloneCanvas, UIManager.instance.canvasRenderMode);
+            // TODO 加载界面上自定义的组件预制体
+            
             if (_isPreLoad)
             {
                 ui.transform.gameObject.SetActive(false);

@@ -1,5 +1,3 @@
-using UnityEngine;
-
 namespace PowerCellStudio
 {
     public interface IUIChild : IUIComponent

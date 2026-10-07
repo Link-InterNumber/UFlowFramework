@@ -81,13 +81,12 @@ namespace PowerCellStudio
             _ctrl?.OnFocus();
         }
 
-        public override void OnUIDestroy()
+        protected override void OnDestroy()
         {
             _ctrl?.DisbindUIEvent(_eventHost);
             _ctrl?.Dispose();
             _ctrl = null;
-            _updateCtrl = null;
-            base.OnUIDestroy();
+            _updateCtrl = null; 
         }
 
         protected void Update()

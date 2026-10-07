@@ -19,6 +19,12 @@ namespace PowerCellStudio
         /// Whether the UI is displayed
         /// </summary>
         public bool isOpened { get;}
+
+        /// <summary>
+        /// UI被实例化 /
+        /// The UI is instantiated
+        /// </summary>
+        public void OnUIInstanced();
         
         /// <summary>
         /// 在UI销毁时执行 /

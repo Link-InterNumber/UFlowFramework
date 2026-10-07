@@ -34,6 +34,8 @@ namespace PowerCellStudio
 
         private bool _isOpened = false;
         public bool isOpened => _isOpened;
+
+        public void OnUIInstanced() { }
         
         public void OnUIDestroy()
         {

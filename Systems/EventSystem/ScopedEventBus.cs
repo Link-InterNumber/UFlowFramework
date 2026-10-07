@@ -6,7 +6,7 @@ namespace PowerCellStudio
 {
     public class ScopedEventBus : IDisposable
     {
-        private Dictionary<int, LineEventBase> _eventBus = new Dictionary<int, LineEventBase>();
+        private Dictionary<int, LinkEventBase> _eventBus = new Dictionary<int, LinkEventBase>();
 
 #region Listener Management
         public void AddListener(int eventId, BaseLinkAction action)

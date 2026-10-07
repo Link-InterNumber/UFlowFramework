@@ -1,6 +1,6 @@
 namespace PowerCellStudio
 {
-    public class LaterEvent : LineEventBase, IInvolke
+    public class LaterEvent : LinkEventBase, IInvolke
     {
         private event BaseLinkAction events;
         private bool _toInvoke = false;
@@ -63,7 +63,7 @@ namespace PowerCellStudio
         }
     }
 
-    public class LaterEvent<T> : LineEventBase, IInvolke
+    public class LaterEvent<T> : LinkEventBase, IInvolke
     {
         private event BaseLinkAction<T> events;
         private bool _toInvoke = false;
@@ -129,7 +129,7 @@ namespace PowerCellStudio
         }
     }
 
-    public class LaterEvent<T, TK> : LineEventBase, IInvolke
+    public class LaterEvent<T, TK> : LinkEventBase, IInvolke
     {
         private event BaseLinkAction<T, TK> events;
         private bool _toInvoke = false;
@@ -198,7 +198,7 @@ namespace PowerCellStudio
         }
     }
 
-    public class LaterEvent<T, TK, TL> : LineEventBase, IInvolke
+    public class LaterEvent<T, TK, TL> : LinkEventBase, IInvolke
     {
         private event BaseLinkAction<T, TK, TL> events;
         private bool _toInvoke = false;

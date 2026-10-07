@@ -18,15 +18,7 @@ namespace PowerCellStudio
         private IAssetLoader _assetsLoader;
         private IUIParent _parent;
 
-        public IAssetLoader assetsLoader
-        {
-            get
-            {
-                if (_assetsLoader == null || !_assetsLoader.spawned)
-                    _assetsLoader = AssetUtils.SpawnLoader(this.GetType().Name);
-                return _assetsLoader;
-            }
-        }
+        public IAssetLoader assetsLoader => _assetsLoader;
 
         private bool _isOpened;
         public bool isOpened => _isOpened;
@@ -93,12 +85,30 @@ namespace PowerCellStudio
         public virtual void OnFocus(){}
         
         public virtual void OnHide(){}
-        
-        public virtual void OnUIDestroy()
+
+        void IUIComponent.OnUIInstanced()
         {
+            _assetsLoader = AssetUtils.SpawnLoader(this.GetType().Name);
+            OnInstanced();
+        }
+
+        /// <summary>
+        /// 在UI实例化后调用 /
+        /// Called when the UI is instantiated, override this method to perform additional initialization.
+        /// </summary>
+        protected virtual void OnInstanced() { }
+
+        void IUIComponent.OnUIDestroy()
+        {
+            OnDestroy();
             AssetUtils.DeSpawnLoader(_assetsLoader);
             _assetsLoader = null;
         }
+
+        /// <summary>
+        /// 在UI销毁时执行 / Executed on UI destruction
+        /// </summary>
+        protected virtual void OnDestroy(){}
 
         protected UIEventHost _eventHost;
         
@@ -121,11 +131,16 @@ namespace PowerCellStudio
             }
         }
 
+        /// <summary>
+        /// 注册UI组件的事件。在OnOpen前调用 /
+        /// Register events for UI component. Call before OnOpen.
+        /// </summary>
+        /// <param name="eventHost"></param>
         protected virtual void RegisterEvent(UIEventHost eventHost)
         {
             
         }
-
+        
         public void DeregisterEvent()
         {
             var eventHost = _eventHost;
@@ -134,6 +149,10 @@ namespace PowerCellStudio
             _eventHost = null;
         }
         
+        /// <summary>
+        /// 注销UI组件的事件。在OnClose后调用 /
+        /// Remove the UI component events. Call after OnClose. 
+        /// </summary>
         protected virtual void DeregisterEvent(UIEventHost eventHost)
         {
             

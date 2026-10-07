@@ -164,6 +164,7 @@ namespace PowerCellStudio
         public static void InitUI<T>(T ui, bool ignoreRaycaster, bool standaloneCanvas, RenderMode renderMode) where T : IUIComponent
         {
             InitCanvas(ui, ignoreRaycaster, standaloneCanvas, renderMode);
+            ui.OnUIInstanced();
         }
         
         public static void OpenUI<T>(T ui, object data) where T : IUIComponent
