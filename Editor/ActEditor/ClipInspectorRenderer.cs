@@ -14,9 +14,10 @@ namespace PowerCellStudio.Editor
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.Space(ActEditorWindow.HeaderWidth);
-                using (new EditorGUILayout.VerticalScope("box"))
+                using (new EditorGUILayout.VerticalScope(EditorUIStyle.SectionBox))
                 {
-                    EditorGUILayout.LabelField(selection.editorName);
+                    EditorGUILayout.LabelField(selection.editorName, EditorUIStyle.SectionTitle);
+                    EditorUIStyle.DrawSeparator();
                     selection.start = Mathf.Max(0, EditorGUILayout.FloatField("Start", selection.start));
                     selection.length = Mathf.Max(0.01f, EditorGUILayout.FloatField("Length", selection.length));
                     // 获取并绘制特定类型的参数
@@ -128,7 +129,8 @@ namespace PowerCellStudio.Editor
                         }
                     }
 
-                    if (GUILayout.Button("Delete Clip"))
+                    GUILayout.Space(EditorUIStyle.SectionSpacing);
+                    if (GUILayout.Button("Delete Clip", EditorUIStyle.DestructiveButton))
                     {
                         foreach (var tk in asset.tracks)
                         {

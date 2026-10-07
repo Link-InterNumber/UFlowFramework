@@ -9,28 +9,27 @@ namespace PowerCellStudio.Editor
 {
     public partial class AdvancedUICodeGeneratorWindow
     {
-        private const float NodeIndentWidth = 18f;
-        private const float MinNodeNameWidth = 110f;
-        private const float MaxNodeNameWidth = 260f;
-        private const float MinComponentToggleWidth = 86f;
-        private const float MaxComponentToggleWidth = 170f;
+        private static readonly Color SelectedNodeColor = new Color(0.42f, 0.78f, 1f, 1f);
 
         private void DrawToolbar()
         {
-            EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Select Interactive"))
+            using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
             {
-                SetAllFieldSelection(field => IsInteractiveType(field.fieldType));
+                GUILayout.Label("Component Selection", EditorStyles.miniBoldLabel);
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("Interactive", EditorStyles.toolbarButton, GUILayout.Width(78f)))
+                {
+                    SetAllFieldSelection(field => IsInteractiveType(field.fieldType));
+                }
+                if (GUILayout.Button("All", EditorStyles.toolbarButton, GUILayout.Width(42f)))
+                {
+                    SetAllFieldSelection(_ => true);
+                }
+                if (GUILayout.Button("None", EditorStyles.toolbarButton, GUILayout.Width(48f)))
+                {
+                    SetAllFieldSelection(_ => false);
+                }
             }
-            if (GUILayout.Button("Select All"))
-            {
-                SetAllFieldSelection(_ => true);
-            }
-            if (GUILayout.Button("Clear"))
-            {
-                SetAllFieldSelection(_ => false);
-            }
-            EditorGUILayout.EndHorizontal();
         }
 
         private void SetAllFieldSelection(Func<ComponentFieldInfo, bool> selector)
@@ -45,40 +44,65 @@ namespace PowerCellStudio.Editor
 
         private void DrawNodeTree()
         {
-            EditorGUILayout.LabelField("Prefab Nodes", EditorStyles.boldLabel);
-            _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition, "box");
-            foreach (var node in _nodes)
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox, GUILayout.ExpandHeight(true)))
             {
-                DrawNode(node);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField("Prefab Nodes", EditorUIStyle.SectionTitle);
+                    GUILayout.FlexibleSpace();
+                    EditorGUILayout.LabelField($"{_nodes.Count} nodes", EditorUIStyle.MutedLabel, GUILayout.Width(70f));
+                }
+
+                EditorUIStyle.DrawSeparator();
+                using (var scroll = new EditorGUILayout.ScrollViewScope(_scrollPosition, EditorUIStyle.SectionBox, GUILayout.ExpandHeight(true)))
+                {
+                    _scrollPosition = scroll.scrollPosition;
+                    if (_nodes.Count == 0)
+                    {
+                        EditorGUILayout.LabelField("No child nodes were found in this prefab.", EditorUIStyle.MutedLabel);
+                    }
+                    else
+                    {
+                        foreach (var node in _nodes)
+                        {
+                            DrawNode(node);
+                        }
+                    }
+                }
             }
-            EditorGUILayout.EndScrollView();
         }
 
         private void DrawNode(NodeInfo node)
         {
-            EditorGUILayout.BeginHorizontal();
-            var indentWidth = node.depth * NodeIndentWidth;
-            GUILayout.Space(indentWidth);
-            var color = GUI.contentColor;
-            GUI.contentColor = node.HasSelectedField ? Color.green : color;
-            EditorGUILayout.LabelField(node.transform.name, GUILayout.Width(GetNodeNameWidth(indentWidth, node.fields.Count)));
-            GUI.contentColor = color;
-
-            if (node.fields.Count > 0)
+            using (new EditorGUILayout.HorizontalScope())
             {
-                var componentToggleWidth = GetComponentToggleWidth(indentWidth, node.fields.Count);
-                GUILayout.FlexibleSpace();
-                foreach (var field in node.fields)
+                var indentWidth = node.depth * EditorUIStyle.NodeIndentWidth;
+                GUILayout.Space(indentWidth);
+
+                var icon = EditorGUIUtility.IconContent(node.depth == 0 ? "Prefab Icon" : "GameObject Icon");
+                GUILayout.Label(icon, GUILayout.Width(18f), GUILayout.Height(EditorGUIUtility.singleLineHeight));
+
+                var previousColor = GUI.contentColor;
+                GUI.contentColor = node.HasSelectedField ? SelectedNodeColor : previousColor;
+                EditorGUILayout.LabelField(node.transform.name,
+                    GUILayout.Width(GetNodeNameWidth(indentWidth, node.fields.Count)));
+                GUI.contentColor = previousColor;
+
+                if (node.fields.Count > 0)
                 {
-                    EditorGUI.BeginChangeCheck();
-                    field.selected = DrawComponentToggle(field, componentToggleWidth);
-                    if (EditorGUI.EndChangeCheck())
+                    var componentToggleWidth = GetComponentToggleWidth(indentWidth, node.fields.Count);
+                    GUILayout.FlexibleSpace();
+                    foreach (var field in node.fields)
                     {
-                        ResolveDuplicateFieldNames();
+                        EditorGUI.BeginChangeCheck();
+                        field.selected = DrawComponentToggle(field, componentToggleWidth);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            ResolveDuplicateFieldNames();
+                        }
                     }
                 }
             }
-            EditorGUILayout.EndHorizontal();
         }
 
         private void BuildNodeInfos()
@@ -160,23 +184,30 @@ namespace PowerCellStudio.Editor
         {
             var windowWidth = Mathf.Max(position.width, 360f);
             var preferredWidth = componentCount > 0 ? windowWidth * 0.28f : windowWidth - indentWidth - 32f;
-            return Mathf.Clamp(preferredWidth, MinNodeNameWidth, MaxNodeNameWidth);
+            return Mathf.Clamp(preferredWidth, EditorUIStyle.MinNodeNameWidth, EditorUIStyle.MaxNodeNameWidth);
         }
 
         private float GetComponentToggleWidth(float indentWidth, int componentCount)
         {
-            if (componentCount <= 0) return MaxComponentToggleWidth;
+            if (componentCount <= 0) return EditorUIStyle.MaxComponentToggleWidth;
 
             var nodeNameWidth = GetNodeNameWidth(indentWidth, componentCount);
             var availableWidth = position.width - indentWidth - nodeNameWidth - 42f;
             var width = availableWidth / componentCount;
-            return Mathf.Clamp(width, MinComponentToggleWidth, MaxComponentToggleWidth);
+            return Mathf.Clamp(width, EditorUIStyle.MinComponentToggleWidth, EditorUIStyle.MaxComponentToggleWidth);
         }
 
         private static bool DrawComponentToggle(ComponentFieldInfo field, float width)
         {
             var rect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, GUILayout.Width(width));
-            var value = EditorGUI.Toggle(rect, field.selected);
+            if (field.selected)
+            {
+                EditorGUI.DrawRect(new Rect(rect.x, rect.y + 1f, rect.width, rect.height - 2f),
+                    new Color(EditorUIStyle.AccentColor.r, EditorUIStyle.AccentColor.g, EditorUIStyle.AccentColor.b, 0.18f));
+            }
+
+            var toggleRect = new Rect(rect.x + 2f, rect.y, 16f, rect.height);
+            var value = EditorGUI.Toggle(toggleRect, field.selected);
             var icon = EditorGUIUtility.ObjectContent(field.component, field.fieldType).image;
             var iconRect = new Rect(rect.x + 18f, rect.y + 1f, 16f, 16f);
             if (icon != null)

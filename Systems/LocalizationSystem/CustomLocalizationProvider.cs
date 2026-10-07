@@ -13,10 +13,8 @@ namespace PowerCellStudio
         public CustomLocalizationProvider(ILocalizationConfigProvider configProvider)
         {
             _configProvider = configProvider;
-            if (_configProvider == null)
-            {
-                LinkLogger.LogError("CustomLocalizationProvider requires a valid ILocalizationConfigProvider.");
-            }
+            if (_configProvider != null) return;
+            LinkLogger.LogError("CustomLocalizationProvider requires a valid ILocalizationConfigProvider.");
         }
 
         private ILocalizationConfigProvider _configProvider;
@@ -31,17 +29,10 @@ namespace PowerCellStudio
 
         public bool TryGetString(string key, out string result, params object[] param)
         {
-            if (_configProvider == null)
-            {
-                result = string.Empty;
-                return false;
-            }
+            result = string.Empty;
+            if (_configProvider == null) return false;
             var localizedString = _configProvider.GetLocalizedString(key, _currentLanguage);
-            if (string.IsNullOrEmpty(localizedString))
-            {
-                result = string.Empty;
-                return false;
-            }
+            if (string.IsNullOrEmpty(localizedString)) return false;
             result = string.Format(localizedString, param);
             return true;
         }
@@ -49,20 +40,14 @@ namespace PowerCellStudio
         public LoaderYieldInstruction<T> GetAssetAsync<T>(string key) where T : UnityEngine.Object
         {
             var path = GetAssetPath(key);
-            if (string.IsNullOrEmpty(path))
-            {
-                return null;
-            }
+            if (string.IsNullOrEmpty(path)) return null;
             return _assetLoader.LoadAsYieldInstruction<T>(path);
         }
         
         public void ReleaseAsset(string key)
         {
             var path = GetAssetPath(key);
-            if (string.IsNullOrEmpty(path))
-            {
-                return;
-            }
+            if (string.IsNullOrEmpty(path)) return;
             _assetLoader.Release(path);
         }
         

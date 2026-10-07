@@ -13,7 +13,6 @@ namespace PowerCellStudio.Editor
 {
     public class TextMeshProExMenu
     {
-        [MenuItem("GameObject/UI/TextMeshProUGUIEx", false, 3)]
         public static void AddTextMeshPro(MenuCommand menuCommand)
         {
             GameObject go = new GameObject("TextMeshProUGUIEx");
@@ -30,7 +29,6 @@ namespace PowerCellStudio.Editor
             Selection.activeGameObject = go;
         }
         
-        [MenuItem("GameObject/UI/Replace TextMeshProUGUIEx", false, 31)]
         public static void ReplaceWithTextMeshPro(MenuCommand menuCommand)
         {
             if (!Selection.activeGameObject) return;

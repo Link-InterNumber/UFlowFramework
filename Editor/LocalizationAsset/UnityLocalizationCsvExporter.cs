@@ -11,7 +11,6 @@ namespace PowerCellStudio.Editor
 {
     public static class UnityLocalizationCsvExporter
     {
-        [MenuItem("Tools/Config/Create Localization csv", false, 103)]
         public static void Export()
         {
             try

@@ -65,7 +65,11 @@ namespace RVO.JobSystem
             var knnBuildHandle = new KnnRebuildJob(_agentKnnContainer).Schedule(extractQueryDataHandle);
 
             var knnQueryHandle = new QueryKNearestBatchJob(_agentKnnContainer, _queryPositions, _knnCandidateIndices)
+#if UNITY_6000_0_OR_NEWER
                 .ScheduleBatch(_nativeAgents.Length, math.max(1, _nativeAgents.Length / BatchSize), knnBuildHandle);
+#else
+                .Schedule(_nativeAgents.Length, math.max(1, _nativeAgents.Length / BatchSize), knnBuildHandle);
+#endif
 
             var neighborHandle = new BuildAgentNeighborsKnnJob
             {

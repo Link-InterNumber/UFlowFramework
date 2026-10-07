@@ -58,6 +58,7 @@ namespace PowerCellStudio
 
         void IAssetManager.Deinit()
         {
+            EventManager.instance.onClearUnusedAsset.RemoveListener(ClearUnusedAsset);
             initState = AssetInitState.InitModule;
             initProcess = 0f;
             if (!_inited) return;

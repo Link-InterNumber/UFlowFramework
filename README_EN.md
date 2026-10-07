@@ -55,6 +55,15 @@ UFlow is a modular development framework for Unity projects. It provides a set o
 ## 🚨 Environment Requirements
 
 ### Mandatory Dependency Packages
+
+Runtime Packages：
+
+![AsmdefSetting.png](Doc/img/AsmdefSetting.png)
+
+Editor Packages：
+
+![EditorAsmdefSetting.png](Doc/img/EditorAsmdefSetting.png)
+
 The following official plugin packages must be installed via **Package Manager**:
 
 | Package Name | Purpose | Installation Verification |

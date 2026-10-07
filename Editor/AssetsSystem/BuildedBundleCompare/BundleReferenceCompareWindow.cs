@@ -13,8 +13,7 @@ namespace PowerCellStudio.Editor
     /// </summary>
     public sealed class BundleReferenceCompareWindow : EditorWindow
     {
-        [MenuItem("Tools/UFlow/Bundle Analysis/Builted Bundle Reference Compare", priority = 103)]
-        private static void ShowWindow()
+        public static void ShowWindow()
         {
             var window = GetWindow<BundleReferenceCompareWindow>();
             window.titleContent = new GUIContent("Bundle Reference Compare");

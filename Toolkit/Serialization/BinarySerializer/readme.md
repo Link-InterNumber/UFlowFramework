@@ -112,7 +112,7 @@ public struct ItemSnapshot : IBinaryData
 }
 ```
 
-这类类型在运行时会优先走 `BinaryDataTypeSelector<T>`，而不是默认对象字段反射路径。
+这类类型在运行时会优先走 `IBinaryData`，而不是默认对象字段反射路径。
 
 ### 2. 使用 `IBinarySerializerTypeSelector` 注册特殊类型处理器
 

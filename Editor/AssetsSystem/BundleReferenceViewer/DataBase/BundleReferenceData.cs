@@ -27,6 +27,9 @@ namespace PowerCellStudio.Editor
 
         public List<string> defectDetail => _defectDetail;
 
+        // 被多个分包引用且没有引用任何分包，视为共享分包，在group中视为group边界
+        public bool isSharedBundle => bundleReferenced.Count > 10 && bundleDependent.Count == 0;
+
         public BundleReferenceData()
         {
             _bundleDependent = new HashSet<string> ();

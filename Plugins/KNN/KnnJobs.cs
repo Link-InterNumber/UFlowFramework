@@ -48,7 +48,13 @@ namespace KNN.Jobs {
 
 
 	[BurstCompile(CompileSynchronously = true)]
-	public struct QueryKNearestBatchJob : IJobParallelForBatch {
+	public struct QueryKNearestBatchJob :
+#if UNITY_6000_0_OR_NEWER
+		IJobParallelForBatch
+#else
+		IJobParallelFor 
+#endif
+	{
 		[ReadOnly] KnnContainer m_container;
 		[ReadOnly] NativeSlice<float3> m_queryPositions;
 
@@ -75,10 +81,16 @@ namespace KNN.Jobs {
 
 		public void Execute(int startIndex, int count) {
 			// Write results to proper slice!
-			for (int index = startIndex; index < startIndex + count; ++index) {
-				NativeSlice<int> resultsSlice = m_results.Slice(index * m_k, m_k);
-				m_container.QueryKNearest(m_queryPositions[index], resultsSlice);
+			for (int index = startIndex; index < startIndex + count; ++index)
+			{
+				Execute(index);
 			}
+		}
+
+		public void Execute(int index)
+		{
+			NativeSlice<int> resultsSlice = m_results.Slice(index * m_k, m_k);
+			m_container.QueryKNearest(m_queryPositions[index], resultsSlice);
 		}
 	}
 
@@ -119,7 +131,13 @@ namespace KNN.Jobs {
 
 
 	[BurstCompile(CompileSynchronously = true)]
-	public struct QueryRangeBatchJob : IJobParallelForBatch {
+	public struct QueryRangeBatchJob :
+#if UNITY_6000_0_OR_NEWER
+		IJobParallelForBatch
+#else
+		IJobParallelFor 
+#endif
+	{
 		[ReadOnly] KnnContainer m_container;
 		[ReadOnly] NativeSlice<float3> m_queryPositions;
 
@@ -137,14 +155,19 @@ namespace KNN.Jobs {
 		public void Execute(int startIndex, int count) {
 			// Write results to proper slice!
 			for (int index = startIndex; index < startIndex + count; ++index) {
-				var tempList = new NativeList<int>(Allocator.Temp);
-				m_container.QueryRange(m_queryPositions[index], m_range, tempList);
-
-				var result = Results[index];
-				result.SetResults(tempList);
-
-				Results[index] = result;
+				Execute(index);
 			}
+		}
+
+		public void Execute(int index)
+		{
+			var tempList = new NativeList<int>(Allocator.Temp);
+			m_container.QueryRange(m_queryPositions[index], m_range, tempList);
+
+			var result = Results[index];
+			result.SetResults(tempList);
+
+			Results[index] = result;
 		}
 	}
 

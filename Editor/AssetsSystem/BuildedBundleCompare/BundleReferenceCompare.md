@@ -1,216 +1,174 @@
-# Bundle 构建对比工具
+# BundleReferenceCompare
 
-## 概述
+## 1. 系统概述
 
-Bundle 构建对比工具用于比较已构建 AssetBundle、当前 Unity 项目中的 Bundle 配置，以及可选的历史基准文件。
+`BundleReferenceCompare` 是一个 Unity Editor 工具，用于比较已构建 AssetBundle 与当前工程中的 Bundle 配置，并可选地与历史构建基准进行比较。它不负责构建 Bundle，也不自动修改 Bundle 配置，主要用于构建结果检查、资源差异定位和体积回归分析。
 
-工具可以帮助定位以下变化：
+主要特点：
 
-- 已构建 Bundle 在当前项目中新增或移除；
-- Bundle 内资源发生新增、移除或变化；
-- Bundle 依赖关系发生变化；
-- Bundle 文件大小和包含依赖后的加载成本发生变化；
-- 当前构建相对于历史基准的资源、依赖和大小变化。
+- 同时检查已构建 Bundle、当前 Bundle 配置和历史基准。
+- 递归收集依赖 Bundle，并计算包含全部依赖的加载成本。
+- 初次比较只读取文件元数据，选中条目后再延迟读取资源详情。
+- 使用 `.bundlebaseline` 文件保存跨构建比较所需的资源、大小和依赖数据。
+- 通过 UI Toolkit 提供筛选、状态展示和资源详情查看。
 
-该功能以 Unity EditorWindow 的形式提供，不参与运行时构建和运行时加载逻辑。
+### 主要组件 / 接口
 
-## 位置
+- `BundleReferenceCompareWindow`：编辑器窗口入口，负责参数输入、比较操作和结果展示。
+- `BundleReferenceManifest`：管理当前已加载的 Manifest 适配器及其清理生命周期。
+- `IBundleReferenceManifest`：抽象 Bundle 名称、依赖关系、文件路径和释放操作。
+- `UnityBundleReferenceManifest`：将 Unity `AssetBundleManifest` 适配为 `IBundleReferenceManifest`。
+- `BundleReferenceComparisonService`：合并多种数据来源并计算 Bundle 比较状态。
+- `BundleReferenceCompareUtility`：读取 Bundle 内容、查询当前配置、收集依赖并计算加载成本。
+- `BundleBuildBaselineUtility` / `BundleBuildBaselineInfo`：创建、保存、读取和校验历史基准数据。
 
-- 主窗口：`Assets/UFlowFramework/Editor/AssetsSystem/BuildedBundleCompare/BundleReferenceCompareWindow.cs`
-- 对比服务：`Assets/UFlowFramework/Editor/AssetsSystem/BuildedBundleCompare/BundleReferenceComparisonService.cs`
-- 对比工具：`Assets/UFlowFramework/Editor/AssetsSystem/BuildedBundleCompare/BundleReferenceCompareUtility.cs`
-- 展示格式化：`Assets/UFlowFramework/Editor/AssetsSystem/BuildedBundleCompare/BundleReferenceCompareFormatter.cs`
-- 界面配置：`Assets/UFlowFramework/Editor/AssetsSystem/BuildedBundleCompare/BundleReferenceCompareSettings.cs`
-- 基准数据：`Assets/UFlowFramework/Editor/AssetsSystem/BuildedBundleCompare/Serialization/BundleBuildBaselineInfo.cs`
-- 基准读写：`Assets/UFlowFramework/Editor/AssetsSystem/BuildedBundleCompare/Serialization/BundleBuildBaselineUtility.cs`
-- Manifest 适配：`Assets/UFlowFramework/Editor/AssetsSystem/BuildedBundleCompare/Database/IBundleReferenceManifest.cs`
+### 组件依赖关系
 
-## 核心概念
+```text
+BundleReferenceCompareWindow
+| 
+|──> BundleReferenceManifest
+|       |
+|       └──> IBundleReferenceManifest
+|               |
+|               └──> UnityBundleReferenceManifest
+|                       |
+|                       └──> Unity AssetBundleManifest
+|
+|──> BundleReferenceComparisonService
+|       |
+|       |──> BundleCompareItem / BundleCompareStatus
+|       |
+|       └──> BundleReferenceCompareUtility
+|               |
+|               |──> Unity AssetDatabase
+|               |
+|               └──> Unity AssetBundle
+|
+└──> BundleBuildBaselineUtility
+    |
+    |──> BundleBuildBaselineInfo
+    |
+    |──> ReferenceWriter / ReferenceReader
+    |
+    └──> .bundlebaseline 文件
+```
 
-### 1. 已构建 Bundle
+其中，`BundleReferenceCompareWindow` 是用户操作入口；它通过 `BundleReferenceManifest` 提供的 `IBundleReferenceManifest` 访问构建结果，通过 `BundleReferenceComparisonService` 计算差异，并通过 `BundleBuildBaselineUtility` 管理历史基准。依赖树表示组件引用或调用关系，具体执行先后见下一节。
 
-已构建 Bundle 通过构建目录中的 `AssetBundleManifest` 进行索引。`BundleReferenceManifest.PrepareManifest(...)` 加载指定 Manifest，并通过 `IBundleReferenceManifest` 提供以下信息：
+## 2. 工作原理与优化
 
-- 所有 Bundle 名称；
-- Bundle 的直接依赖和全部依赖；
-- Bundle 文件路径。
+### 比较流程
 
-实际 Bundle 文件由 `AssetBundle.LoadFromFile(...)` 打开，并通过 `GetAllAssetNames()` 和 `GetAllScenePaths()` 获取内容。
+1. `BundleReferenceCompareWindow` 从 `EditorPrefs` 恢复上次使用的构建目录、Manifest 名称和基准文件路径。
+2. 用户点击“开始对比”后，窗口调用 `BundleReferenceManifest.PrepareManifest`。
+3. `PrepareManifest` 校验目录和 Manifest 文件，加载其中的 `AssetBundleManifest`，并创建 `UnityBundleReferenceManifest`。
+4. `BundleReferenceComparisonService.Compare` 合并三类 Bundle 名称：Manifest 中的已构建 Bundle、`AssetDatabase` 中的当前 Bundle，以及基准文件中的 Bundle。
+5. 系统先通过 `ReadBuiltMetadata` 检查文件存在性和大小，并创建 `BundleCompareItem`。
+6. 用户选中某个条目后，窗口调用分析逻辑，读取 Bundle 资源名称、资源类型、当前配置资源和递归依赖。
+7. 比较结果按状态、资源差异、依赖关系和基准变化显示在详情面板中。
 
-### 2. 当前 Bundle 配置
+### 核心数据和资源管理
 
-当前项目的 Bundle 名称通过 `AssetDatabase.GetAllAssetBundleNames()` 获取，Bundle 内资源通过 `AssetDatabase.GetAssetPathsFromAssetBundle(...)` 获取。
+- `BundleCompareItem` 保存单个 Bundle 的当前状态、已构建资源、当前配置资源、依赖、加载成本以及基准差异。
+- `_builtData` 使用 Bundle 名称缓存 `BuiltBundleData`，避免同一次分析中反复打开公共依赖 Bundle。
+- `GetCurrentAssets` 通过 `AssetDatabase.GetAssetPathsFromAssetBundle` 获取当前工程资源，并将路径分隔符统一为 `/`。
+- `CollectDependencyData` 使用 `HashSet<string>` 递归去重依赖，再将自身和全部依赖的文件大小相加为 `loadCost`。
+- `BundleBuildBaselineUtility` 将版本号、Bundle 名称、大小、资源名称和依赖名称写入 `.bundlebaseline` 文件；读取时会校验文件版本。
+- 基准保存先写入临时文件，再替换目标文件，避免直接覆盖时因写入失败损坏已有基准。
 
-该数据来源于当前工程中的 AssetImporter 标记，不是已构建目录中的 Bundle 文件内容。因此，当前配置资源和构建产物资源可能存在路径格式或扩展名差异，比较时由 `BundleReferenceCompareUtility.IsAssetMatch(...)` 负责匹配。
+### 优化策略及约束
 
-### 3. 历史基准
+初次比较只读取构建文件的存在性和大小，不立即加载所有 Bundle 内容；详细分析按条目触发，降低大量 Bundle 同时加载造成的编辑器开销。依赖集合去重和 `_builtData` 缓存则减少公共依赖的重复读取。
 
-历史基准文件扩展名为 `.bundlebaseline`，保存每个 Bundle 的：
+这些操作依赖 Unity Editor 主线程 API，并包含文件 IO 和 `AssetBundle.LoadFromFile`。因此它适合用户主动触发的编辑器分析，不适合放入高频刷新、每帧回调或后台线程任务中。
 
-- Bundle 名称；
-- 文件大小；
-- 已构建资源列表；
-- 直接及间接依赖 Bundle 列表。
+## 3. 使用方法
 
-基准文件是可选的。没有加载基准文件时，窗口只比较已构建内容和当前 Editor 配置；加载基准后，详情面板会额外显示相对于基准的变化。
+### 3.1 执行 Bundle 对比
 
-### 4. 对比状态
+使用统一菜单入口：
 
-`BundleCompareStatus` 表示 Bundle 当前状态：
+`Tools/UFlow/Bundle Analysis/Builted Bundle Reference Compare`
 
-| 状态 | 含义 |
-|---|---|
-| `Unanalyzed` | 已确认 Bundle 同时存在于构建结果和当前配置，但详细资源信息尚未加载 |
-| `Same` | 两侧资源集合一致 |
-| `Added` | 当前配置存在，但构建结果中不存在 |
-| `Removed` | 构建结果存在，但当前配置中不存在 |
-| `Changed` | Bundle 两侧均存在，但资源集合不同 |
+最小操作流程：
 
-## 工作原理
+1. 在“已构建目录”中填写包含 Manifest 和 Bundle 文件的目录。
+2. 在“Manifest 名称”中填写构建输出中的 Manifest 文件名。
+3. 如需历史对比，在“基准文件”中选择 `.bundlebaseline` 文件。
+4. 点击“开始对比”。
+5. 在左侧选择 Bundle，查看右侧资源、依赖、类型、大小和加载成本详情。
 
-### 1. 打开窗口
+例如，构建目录为 `Build/Windows`、Manifest 文件名为 `Windows` 时，应将目录和 `Windows` 分别填写到对应输入框中。Manifest 名称必须是构建输出文件名，而不是 Bundle 内部资源名称。
 
-在 Unity 编辑器菜单中选择：
+### 3.2 创建历史基准
 
-`Tools/UFlow/Bundle Reference Compare`
+填写构建目录和 Manifest 名称后点击“保存为基准”。工具会读取 Manifest 中的每个 Bundle，创建 `BundleBuildBaselineInfo`，然后保存为 `.bundlebaseline` 文件。后续比较时选择该文件，详情面板会显示相对基准的大小、资源和依赖变化。
 
-窗口会恢复上次保存的构建目录、Manifest 名称和基准文件路径。路径通过带项目哈希的 `EditorPrefs` 键保存，避免不同项目之间互相覆盖历史配置。
+### 3.3 生命周期结束
 
-### 2. 准备 Manifest
+比较或保存基准完成后，工具会在清理路径中调用 `BundleReferenceManifest.ClearManifest`，释放 Manifest 和已加载的 AssetBundle。若外部代码扩展比较流程，必须保留相同的清理责任，不能在清理后继续使用 `BundleReferenceManifest.manifest`。
 
-点击“开始对比”后，窗口执行以下检查：
+## 4. 扩展方法
 
-1. 检查构建目录和 Manifest 名称是否填写；
-2. 调用 `BundleReferenceManifest.PrepareManifest(...)`；
-3. 验证目录和 Manifest 文件是否存在；
-4. 从 Manifest Bundle 中加载 `AssetBundleManifest`；
-5. 创建 `UnityBundleReferenceManifest`，作为后续查询入口；
-6. 尝试加载可选的 `.bundlebaseline` 文件。
+系统提供的扩展点是 `IBundleReferenceManifest`。它允许比较逻辑依赖统一的清单接口，而不直接依赖某一种 Manifest 数据来源。实现需要提供 Bundle 列表、直接依赖、全部依赖、Bundle 文件路径以及资源释放逻辑。
 
-如果基准文件读取失败，工具会记录警告并跳过基准比较，不会阻止普通的构建结果比较。
+当前没有独立的注册表或自动发现机制。`BundleReferenceManifest.PrepareManifest` 目前直接创建 `UnityBundleReferenceManifest`，所以自定义适配器必须接入该方法的构造分支，或由项目维护者增加等价的选择入口。仅新增一个接口实现不会自动被系统使用。
 
-### 3. 创建初始 Bundle 列表
-
-`BundleReferenceComparisonService.Compare(...)` 会合并三组名称：
-
-- Manifest 中的已构建 Bundle；
-- `AssetDatabase.GetAllAssetBundleNames()` 返回的当前 Bundle；
-- 基准文件中的 Bundle。
-
-每个名称创建一个 `BundleCompareItem`，列表默认按已构建文件大小从大到小排序。初次比较只读取文件存在性和大小，详细资源分析采用延迟执行。
-
-### 4. 延迟分析选中的 Bundle
-
-当用户选中 Bundle，或 Bundle 行进入可视区域时，窗口调用 `Analyze(...)`：
-
-1. 使用 `ReadBuiltAssets(...)` 读取构建 Bundle 中的资源和类型；
-2. 使用 `CollectDependencyData(...)` 递归收集所有依赖；
-3. 将当前项目中同名 Bundle 的资源读入 `currentAssets`；
-4. 计算 Bundle 状态；
-5. 计算新增资源、移除资源和合并后的资源列表；
-6. 计算加载成本：自身文件大小加全部依赖 Bundle 的文件大小；
-7. 如果存在基准，则计算相对于基准的状态和差异。
-
-构建 Bundle 数据保存在 `_builtData` 缓存中，避免同一个构建文件被重复读取。
-
-### 5. 展示结果
-
-左侧列表展示：
-
-- Bundle 大小；
-- 当前配置状态；
-- 基准状态；
-- Bundle 大小占所有已构建 Bundle 的比例。
-
-右侧详情展示：
-
-- 当前状态和基准状态；
-- Bundle 文件大小；
-- 包含全部依赖的加载成本；
-- 依赖 Bundle 列表；
-- 构建资源、当前配置资源、新增资源和移除资源数量；
-- 构建资源类型统计；
-- 相对基准的大小、资源和依赖变化；
-- 构建资源与当前配置资源的对应列表。
-
-依赖 Bundle 使用只读 `TextField` 展示，资源名称可以点击并通过 `BundleReferenceUtils.PingAsset(...)` 在 Project 窗口中定位。
-
-## 使用示例
-
-### 编辑器中使用
-
-1. 先完成 AssetBundle 构建，并保留构建目录中的 Manifest 文件和各个 Bundle 文件。
-2. 打开菜单 `Tools/UFlow/Bundle Reference Compare`。
-3. 在“已构建目录”中选择构建输出目录。
-4. 在“Manifest 名称”中填写对应的 Manifest 文件名。
-5. 可选：加载已有 `.bundlebaseline` 文件。
-6. 点击“开始对比”。
-7. 点击左侧 Bundle，查看资源、依赖、加载成本和差异详情。
-
-### 保存当前构建为基准
-
-在填写构建目录和 Manifest 名称后，点击“保存为基准”。工具会读取 Manifest 中的全部 Bundle，解析资源和依赖，并将结果保存为 `.bundlebaseline` 文件。
-
-基准文件可以在下一次构建后通过“添加基准”加载，用于比较跨构建变化。
-
-### 代码调用示例
-
-以下示例展示了该模块内部的典型调用顺序。示例应在 Unity Editor 环境中执行；相关类型为当前模块的 `internal` 类型，适合放在同一程序集的编辑器代码中。
+下面的示例展示自定义清单适配器的接入形态。`CustomManifestData` 是外部数据源，属于示意类型；实际项目需要用真实的构建清单替换它，并在 `PrepareManifest` 中增加选择逻辑。
 
 ```csharp
-using System.Collections.Generic;
-using UnityEditor;
-
-namespace PowerCellStudio.Editor
+// 伪代码：CustomManifestData 代表项目自己的清单数据源。
+internal sealed class CustomBundleReferenceManifest : IBundleReferenceManifest
 {
-    internal static class BundleCompareExample
+    private readonly CustomManifestData _data;
+    private readonly string _bundleDirectory;
+
+    public CustomBundleReferenceManifest(CustomManifestData data, string bundleDirectory)
     {
-        internal static List<BundleCompareItem> CompareCurrentBuild(
-            string buildDirectory,
-            string manifestName,
-            string baselinePath = null)
-        {
-            BundleReferenceManifest.PrepareManifest(buildDirectory, manifestName);
-            if (BundleReferenceManifest.manifest == null)
-                return new List<BundleCompareItem>();
+        _data = data;
+        _bundleDirectory = bundleDirectory;
+    }
 
-            List<BundleBuildBaselineInfo> baseline = null;
-            if (!string.IsNullOrEmpty(baselinePath))
-                baseline = BundleBuildBaselineUtility.Load(baselinePath);
+    public string[] GetAllAssetBundles() => _data.GetAllAssetBundles();
 
-            var currentBundleNames = new HashSet<string>(
-                AssetDatabase.GetAllAssetBundleNames(),
-                System.StringComparer.OrdinalIgnoreCase);
+    public string[] GetDirectDependencies(string assetBundleName) =>
+        _data.GetDirectDependencies(assetBundleName) ?? Array.Empty<string>();
 
-            return BundleReferenceComparisonService.Compare(
-                baseline,
-                currentBundleNames);
-        }
+    public string[] GetAllDependencies(string assetBundleName) =>
+        _data.GetAllDependencies(assetBundleName) ?? Array.Empty<string>();
+
+    public string GetBundlePath(string assetBundleName) =>
+        Path.Combine(_bundleDirectory, assetBundleName);
+
+    public void UnloadAsset()
+    {
+        _data.Dispose();
     }
 }
 ```
 
-使用完毕后，应调用 `BundleReferenceManifest.ClearManifest()` 释放 Manifest 和已加载的 AssetBundle 资源。窗口自身会在 `OnDisable()` 中执行清理。
+接入时必须保持以下不变量：Bundle 名称应使用与现有实现一致的比较规则；依赖查询不能把缺失依赖静默伪造成有效 Bundle；`GetBundlePath` 必须指向可被 `BundleReferenceCompareUtility` 读取的实际构建文件；`UnloadAsset` 必须释放适配器持有的文件句柄、Unity 资源或外部清单对象。
 
-## 常见使用场景
+## 5. 注意事项
 
-- 检查新构建是否意外移除了 Bundle 或资源；
-- 定位当前 AssetBundle 标记与实际构建内容不一致的问题；
-- 分析某个 Bundle 的全部依赖和实际加载成本；
-- 比较两个构建之间的 Bundle 资源变化；
-- 在资源或依赖发生变化时快速定位受影响的 Bundle；
-- 保存稳定构建作为基准，持续监控后续构建的大小和内容变化。
+- 构建目录必须存在，Manifest 文件必须能通过 `AssetBundle.LoadFromFile` 加载，并且其中必须包含名为 `AssetBundleManifest` 的资源。
+- 当前工程 Bundle 名称来自 `AssetDatabase.GetAllAssetBundleNames`；执行比较前应确保 Bundle 配置已经刷新到 AssetDatabase。
+- 列表中的“未分析”表示尚未读取该 Bundle 的详细内容，不表示构建结果本身错误。
+- `AssetDatabase`、`AssetBundle` 和编辑器窗口操作必须在 Unity 主线程执行。
+- `.bundlebaseline` 文件包含版本号。版本不匹配时，`Load` 会拒绝读取，需要重新生成基准文件。
+- 基准文件保存目录必须可写；保存失败时应保留原文件，并根据异常信息处理临时文件或权限问题。
+- Bundle 依赖通过递归方式收集。异常的循环依赖或无效依赖名称可能影响分析结果，清单适配器应保证依赖数据有效。
+- 资源路径会统一使用 `/`；缺少扩展名的资源名称可能执行文件名匹配，而带不同扩展名的同名资源不会被视为相同资源。
+- `BundleReferenceManifest.ClearManifest` 会卸载当前 Manifest 和已加载的 AssetBundle。释放后不能继续调用当前 Manifest 适配器。
+- 自定义 `IBundleReferenceManifest` 当前不会自动注册，必须同时修改适配器选择逻辑，并验证资源读取和释放流程。
 
-## 边界情况与注意事项
+## 6. 推荐使用场景
 
-- 构建目录必须包含指定的 Manifest 文件，且 Manifest 中必须能加载 `AssetBundleManifest`。
-- Manifest 名称应填写实际文件名，不需要额外添加 `.bundle` 扩展名，具体取决于构建输出使用的命名方式。
-- `GetCurrentAssets(...)` 查询的是当前项目的 AssetBundle 标记。如果资源使用 Addressables 或没有设置传统 AssetBundle 名称，该查询可能返回空集合。
-- 构建 Bundle 中的资源名称和当前项目资源路径可能存在扩展名差异。比较工具会先比较完整规范化路径，在一侧缺少扩展名时再比较文件名主体。
-- `AssetBundle.LoadFromFile(...)` 或资源读取失败时，工具仍会保留可读取的文件元数据，但资源列表和类型统计可能为空。
-- 详细资源分析是延迟执行的。初始 Bundle 列表不会立即读取每个 Bundle 的全部内容，选中项目或进入可视区域时才会分析。
-- 加载成本是自身 Bundle 大小与全部依赖 Bundle 大小之和，不等同于运行时精确内存占用。
-- 当前版本基准文件格式为 `CurrentVersion = 1`。不支持的版本会抛出异常，并提示重新生成基准文件。
-- 对比完成或窗口关闭后应释放 Manifest。`BundleReferenceManifest.ClearManifest()` 会卸载 Manifest，并卸载当前已加载的 AssetBundle。
-- `BundleReferenceManifest` 使用静态状态保存当前 Manifest。同一时间应避免多个窗口或流程同时切换不同的构建目录。
-- 当前窗口的资源列表显示资源文件名主体，而不是完整路径；点击资源后才通过 Unity 工具定位实际资源。
+- **发布前构建回归检查**：确认已构建 Bundle 与当前 Bundle 配置一致，发现新增、移除或资源变化。
+- **版本体积审查**：通过 Bundle 大小和包含依赖的 `loadCost`，定位下载或加载成本明显增加的 Bundle。
+- **跨构建差异追踪**：为关键版本保存 `.bundlebaseline`，持续比较资源、依赖和大小变化。
+- **依赖链排查**：查看单个 Bundle 的递归依赖，辅助定位公共资源重复打包或依赖链过长问题。
+- **资源归属检查**：通过资源列表和类型统计确认 Prefab、贴图、材质、场景等资源是否进入预期 Bundle。
+
+不推荐将此工具用于运行时资源加载、实时性能监控或自动修复 Bundle 配置；这些需求应分别使用运行时资源系统、Unity Profiler 或专门的构建校验流程。

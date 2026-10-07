@@ -31,10 +31,20 @@ namespace PowerCellStudio
         void IAssetManager.Deinit()
         {
             ClearUnusedAsset();
-            Addressables.ClearDependencyCacheAsync(Addressables.ResourceLocators);
-            Addressables.ClearResourceLocators();
+            foreach (var asyncOperationHandle in _sceneInstances)
+            {
+                Addressables.UnloadSceneAsync(asyncOperationHandle.Value);
+            }
+            _sceneInstances.Clear();
+            var handler = Addressables.ClearDependencyCacheAsync(Addressables.ResourceLocators, true);
+            handler.Completed += (op) =>
+            {
+                Addressables.ClearResourceLocators();
+            };
+            
             initState = AssetInitState.InitModule;
             initProcess = 0f;
+            _inited = false;
         }
 
         public IAssetLoader CreateLoader()
@@ -78,35 +88,41 @@ namespace PowerCellStudio
                     AssetLogger.Log("Check Addressables Asset Succeeded! Wait For Update");
                     var updateHandle = Addressables.UpdateCatalogs(catLogs, false);
                     yield return updateHandle;
-                    var resourceList = updateHandle.Result;
-                    foreach (var resourceLocator in resourceList)
+                    if (updateHandle.Status != AsyncOperationStatus.Succeeded)
                     {
-                        var getDownloadSizeAsync = Addressables.GetDownloadSizeAsync(resourceLocator.Keys);
-                        yield return getDownloadSizeAsync;
-                        var percent = 0f;
-                        if (getDownloadSizeAsync.Result > 0)
+                        AssetLogger.LogWarning("Update Addressables Catalogs Fail!");
+                    }
+                    else
+                    {
+                        var resourceList = updateHandle.Result;
+                        foreach (var resourceLocator in resourceList)
                         {
-                            var downloadDependencies =
-                                Addressables.DownloadDependenciesAsync(resourceLocator.Keys, Addressables.MergeMode.Union, false);
-                            while (downloadDependencies.Status == AsyncOperationStatus.None)
+                            var getDownloadSizeAsync = Addressables.GetDownloadSizeAsync(resourceLocator.Keys);
+                            yield return getDownloadSizeAsync;
+                            var percent = 0f;
+                            if (getDownloadSizeAsync.Result > 0)
                             {
-                                percent += downloadDependencies.PercentComplete;
-                                initProcess = percent / getDownloadSizeAsync.Result;
-                                yield return null;
-                            }
-                            // yield return downloadDependencies;
-                            if (downloadDependencies.Status == AsyncOperationStatus.Succeeded)
-                            {
-                                AssetLogger.Log($"Addressables Download {resourceLocator.LocatorId} Completed!");
-                            }
-                            else
-                            {
-                                AssetLogger.LogWarning($"Addressables Download {resourceLocator.LocatorId} Fail!");
-                            }
+                                var downloadDependencies =
+                                    Addressables.DownloadDependenciesAsync(resourceLocator.Keys, Addressables.MergeMode.Union, false);
+                                while (downloadDependencies.Status == AsyncOperationStatus.None)
+                                {
+                                    initProcess = downloadDependencies.PercentComplete;
+                                    yield return null;
+                                }
+                                // yield return downloadDependencies;
+                                if (downloadDependencies.Status == AsyncOperationStatus.Succeeded)
+                                {
+                                    AssetLogger.Log($"Addressables Download {resourceLocator.LocatorId} Completed!");
+                                }
+                                else
+                                {
+                                    AssetLogger.LogWarning($"Addressables Download {resourceLocator.LocatorId} Fail!");
+                                }
 
-                            Addressables.Release(downloadDependencies);
+                                Addressables.Release(downloadDependencies);
+                            }
+                            Addressables.Release(getDownloadSizeAsync);
                         }
-                        Addressables.Release(getDownloadSizeAsync);
                     }
 
                     Addressables.Release(updateHandle);
@@ -150,6 +166,7 @@ namespace PowerCellStudio
         {
             if (_preloadHandlers.TryGetValue(address, out var handle))
             {
+                _preloadHandlers.Remove(address);
                 return handle.Convert<T>();
             }
             return Addressables.LoadAssetAsync<T>(address);
@@ -175,6 +192,7 @@ namespace PowerCellStudio
 
         public void Release(AsyncOperationHandle handle)
         {
+            if (!handle.IsValid()) return;
             if (!handle.IsDone)
             {
                 handle.Completed += Addressables.Release;
@@ -183,7 +201,7 @@ namespace PowerCellStudio
             Addressables.Release(handle);
         }
 
-        private List<AsyncOperationHandle<SceneInstance> > _sceneInstances = new List<AsyncOperationHandle<SceneInstance>>();
+        private Dictionary<string, AsyncOperationHandle<SceneInstance> > _sceneInstances = new Dictionary<string, AsyncOperationHandle<SceneInstance>>();
 
         /// <summary>
         /// 加载场景
@@ -194,12 +212,12 @@ namespace PowerCellStudio
         /// <param name="unLoadOtherScene">卸载其他场景</param>
         public void LoadScene(string sceneName, Action onComplete, Action onFailed, bool unLoadOtherScene = false)
         {
-            if (_sceneInstances.Any(o => o.Result.Scene.name.Equals(sceneName)))
+            if (_sceneInstances.ContainsKey(sceneName))
                 return;
             
             var handle = Addressables.LoadSceneAsync(sceneName, unLoadOtherScene ? LoadSceneMode.Single : LoadSceneMode.Additive);
+            _sceneInstances.Add(sceneName, handle);
             if (unLoadOtherScene) handle.Completed += UnLoadOtherScene;
-            else handle.Completed += OnSceneLoaded;
             if (onComplete != null) 
                 handle.Completed += (a) => 
                     {
@@ -210,20 +228,21 @@ namespace PowerCellStudio
 
         private void UnLoadOtherScene(AsyncOperationHandle<SceneInstance> handle)
         {
-            if(handle.Status != AsyncOperationStatus.Succeeded) return;
+            if(!handle.IsValid() || handle.Status != AsyncOperationStatus.Succeeded) return;
+            _sceneInstances.Remove(handle.Result.Scene.name);
             foreach (var asyncOperationHandle in _sceneInstances)
             {
-                UnloadScene(asyncOperationHandle);
+                Addressables.UnloadSceneAsync(asyncOperationHandle.Value);
             }
             _sceneInstances.Clear();
-            _sceneInstances.Add(handle);
+            _sceneInstances.Add(handle.Result.Scene.name, handle);
         }
 
-        private void OnSceneLoaded(AsyncOperationHandle<SceneInstance> handle)
-        {
-            if(handle.Status != AsyncOperationStatus.Succeeded) return;
-            _sceneInstances.Add(handle);
-        }
+        // private void OnSceneLoaded(AsyncOperationHandle<SceneInstance> handle)
+        // {
+        //     if(!handle.IsValid() || handle.Status != AsyncOperationStatus.Succeeded) return;
+        //     _sceneInstances.Add(handle.Result.Scene.name, handle);
+        // }
 
         /// <summary>
         /// 卸载场景
@@ -231,14 +250,9 @@ namespace PowerCellStudio
         /// <param name="name">场景名</param>
         public void UnloadScene(string name)
         {
-            for (var i = 0; i < _sceneInstances.Count; i++)
-            {
-                var asyncOperationHandle = _sceneInstances[i];
-                if (!asyncOperationHandle.Result.Scene.name.Equals(name)) continue;
-                UnloadScene(asyncOperationHandle);
-                _sceneInstances.RemoveAt(i);
-                break;
-            }
+            if (!_sceneInstances.TryGetValue(name, out var handle)) return;
+            Addressables.UnloadSceneAsync(handle);
+            _sceneInstances.Remove(name);
         }
 
         /// <summary>
@@ -247,23 +261,11 @@ namespace PowerCellStudio
         /// <param name="sceneInstance">场景实例</param>
         public void UnloadScene(SceneInstance sceneInstance)
         {
+            if (sceneInstance.Scene.name == null) return;
             var sceneName = sceneInstance.Scene.name;
-            for (var i = 0; i < _sceneInstances.Count; i++)
-            {
-                var asyncOperationHandle = _sceneInstances[i];
-                if (!asyncOperationHandle.Result.Scene.name.Equals(sceneName)) continue;
-                UnloadScene(asyncOperationHandle);
-                _sceneInstances.RemoveAt(i);
-                break;
-            }
-            // Addressables.UnloadSceneAsync(sceneInstance);
+            UnloadScene(sceneName);
         }
         
-        private void UnloadScene(AsyncOperationHandle<SceneInstance> handle)
-        {
-            Addressables.UnloadSceneAsync(handle);
-        }
-
         public void ClearUnusedAsset()
         {
             foreach (var handler in _preloadHandlers.Values)

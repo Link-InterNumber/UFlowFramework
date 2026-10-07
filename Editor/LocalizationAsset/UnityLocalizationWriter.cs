@@ -44,14 +44,11 @@ namespace PowerCellStudio.Editor
             // var lan = Enum.GetNames(typeof(Language));
             // for (var i = 0; i < lan.Length; i++)
             // {
-            //     var csvPath = Path.Combine(directory, configName.Replace("Creator", "String") + $"{lan[i]}.csv");
-            //     if (!Directory.Exists(csvPath))
-            //     {
-            //         Directory.CreateDirectory(csvPath);
-            //     }
-            //
+            //     var csvPath = Path.Combine(directory, $"LocalizationString{lan[i]}.csv");
             //     var sb = new StringBuilder();
-            //     sb.AppendLine($"Key,RawString,{lan[i]}");
+            //     sb.AppendLine($"key,rawString,displayString");
+            //     sb.AppendLine($"key:key,rawString,displayString");
+            //     sb.AppendLine($"string,string,string");
             //     foreach (var stringRef in stringRefs)
             //     {
             //         if (i == 0)

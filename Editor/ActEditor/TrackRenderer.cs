@@ -34,12 +34,12 @@ namespace PowerCellStudio.Editor
             var trackHeight = rect.height;
             // Header
             var header = new Rect(rect.x, rect.y, ActEditorWindow.HeaderWidth, rect.height);
-            EditorGUI.DrawRect(header, new Color(0.12f, 0.12f, 0.12f));
-            EditorGUI.DrawRect(new Rect(header.x + 2, header.y + 4, 4, rect.height - 8), _track.color);
-            _track.name = EditorGUI.TextField(new Rect(header.x + 10, header.y + 4, header.width - 50, rect.height - 8), _track.name);
+            EditorGUI.DrawRect(header, ActEditorWindow.TimelineHeaderBackground);
+            EditorGUI.DrawRect(new Rect(header.x + 2, header.y + 3, 4, rect.height - 6), _track.color);
+            _track.name = EditorGUI.TextField(new Rect(header.x + 11, header.y + 4, header.width - 48, rect.height - 8), _track.name);
 
             // 删除按钮
-            if (GUI.Button(new Rect(header.xMax - 30, header.y + 5, 25, 16), "X", ActEditorWindow.GetRedMiniButton()))
+            if (GUI.Button(new Rect(header.xMax - 28, header.y + 5, 22, 18), "×", ActEditorWindow.GetRedMiniButton()))
             {
                 if (EditorUtility.DisplayDialog("Delete Track", $"Are you sure to delete track '{_track.name}'?", "Yes", "No"))
                 {
@@ -57,7 +57,17 @@ namespace PowerCellStudio.Editor
 
             // Body
             var body = new Rect(rect.x + ActEditorWindow.HeaderWidth, rect.y, rect.width - ActEditorWindow.HeaderWidth, rect.height);
-            EditorGUI.DrawRect(body, new Color(0.18f, 0.18f, 0.18f));
+            EditorGUI.DrawRect(body, ActEditorWindow.TimelineRowBackground);
+            EditorGUI.DrawRect(new Rect(body.x, body.yMax - 1f, body.width, 1f), EditorUIStyle.SeparatorColor);
+
+            var visibleStart = Mathf.Max(0f, scroll.x / pixelsPerSecond);
+            var visibleEnd = (scroll.x + body.width) / pixelsPerSecond;
+            var firstSecond = Mathf.FloorToInt(visibleStart);
+            for (var second = firstSecond; second <= visibleEnd; second++)
+            {
+                var x = body.x + second * pixelsPerSecond - scroll.x;
+                EditorGUI.DrawRect(new Rect(x, body.y, 1f, body.height), ActEditorWindow.TimelineGridColor);
+            }
 
             var hasSelected = false;
             if (_clipRenderers == null || _clipRenderers.Count != _track.clips.Count)

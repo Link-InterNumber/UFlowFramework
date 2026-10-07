@@ -14,7 +14,6 @@ namespace PowerCellStudio.Editor
 {
     public class TextExMenu
     {
-        [MenuItem("GameObject/UI/TextEx", false, 2)]
         public static void AddText(MenuCommand menuCommand)
         {
             GameObject go = new GameObject("TextEx");
@@ -31,7 +30,6 @@ namespace PowerCellStudio.Editor
             Selection.activeGameObject = go;
         }
 
-        [MenuItem("GameObject/UI/Replace TextEx", false, 30)]
         public static void ReplaceWithText(MenuCommand menuCommand)
         {
             if (!Selection.activeGameObject) return;

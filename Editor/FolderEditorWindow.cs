@@ -12,17 +12,22 @@ namespace PowerCellStudio.Editor
         {
             if (Selection.assetGUIDs.Length <= 0)
             {
-                GUILayout.Label("请先选择一个文件夹!!! ");
+                EditorGUILayout.HelpBox("请先在 Project 窗口选择一个文件夹。", MessageType.Info);
             }
             else
             {
                 var folder = AssetDatabase.GUIDToAssetPath(Selection.assetGUIDs[0]);
                 if (!Directory.Exists(folder))
                 {
-                    GUILayout.Label("请先选择一个文件夹!!! ");
+                    EditorGUILayout.HelpBox("当前选择不是文件夹，请重新选择。", MessageType.Warning);
                     return;
                 }
-                GUILayout.Label($"当前选中的文件夹：{folder}");
+                using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
+                {
+                    EditorGUILayout.LabelField("当前选中的文件夹", EditorUIStyle.SectionTitle);
+                    EditorGUILayout.SelectableLabel(folder, EditorStyles.textField,
+                        GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                }
             }
         }
         
@@ -31,7 +36,17 @@ namespace PowerCellStudio.Editor
         public delegate void DealWithFileHandle(string[] guids);
         protected void DrawButton(string buttonName, DealWithFileHandle action)
         {
-            if (!GUILayout.Button(buttonName)) return;
+            DrawButton(buttonName, action, GUI.skin.button);
+        }
+
+        protected void DrawButton(string buttonName, DealWithFileHandle action, GUIStyle style)
+        {
+            if (!GUILayout.Button(buttonName, style)) return;
+            if (Selection.assetGUIDs.Length == 0)
+            {
+                EditorUtility.DisplayDialog("未选择文件夹", "请先在 Project 窗口选择一个文件夹。", "确定");
+                return;
+            }
             var guids = GetSelectedGuids(string.IsNullOrEmpty(_filter)? "": _filter);
             action(guids);
         }

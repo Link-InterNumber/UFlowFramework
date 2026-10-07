@@ -53,7 +53,7 @@ namespace PowerCellStudio
         {
             _assets.TryGetValue(address, out var asset);
             if (asset == null) return false;
-            Resources.UnloadAsset(asset);
+            // Resources.UnloadAsset(asset);
             _assets.Remove(address);
             return true;
         }

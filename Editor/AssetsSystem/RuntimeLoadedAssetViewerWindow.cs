@@ -14,7 +14,6 @@ namespace PowerCellStudio.Editor
         private bool _autoRefresh = true;
         private double _lastRefreshTime;
 
-        [MenuItem("Tools/UFlow/Assets/Runtime Loaded Assets", false, 950)]
         public static void ShowWindow()
         {
             var window = GetWindow<RuntimeLoadedAssetViewerWindow>();
@@ -69,6 +68,8 @@ namespace PowerCellStudio.Editor
 
         private void OnGUI()
         {
+            EditorUIStyle.DrawWindowBackground(new Rect(Vector2.zero, position.size));
+            EditorUIStyle.DrawImguiHeader("Runtime Loaded Assets", "Inspect active loaders, tags, and cross-loader asset usage.");
             DrawToolbar();
 
             if (!Application.isPlaying)
@@ -83,13 +84,15 @@ namespace PowerCellStudio.Editor
                 return;
             }
 
-            _scroll = EditorGUILayout.BeginScrollView(_scroll);
-            foreach (var group in _groups)
+            using (var scroll = new EditorGUILayout.ScrollViewScope(_scroll))
             {
-                DrawTagGroup(group);
-                GUILayout.Space(6);
+                _scroll = scroll.scrollPosition;
+                foreach (var group in _groups)
+                {
+                    DrawTagGroup(group);
+                    GUILayout.Space(EditorUIStyle.GroupSpacing);
+                }
             }
-            EditorGUILayout.EndScrollView();
 
             DrawSummary();
         }
@@ -114,14 +117,14 @@ namespace PowerCellStudio.Editor
 
         private void DrawTagGroup(LoaderGroup group)
         {
-            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
             {
                 EditorGUILayout.LabelField(string.IsNullOrEmpty(group.Tag) ? "<No Tag>" : group.Tag, EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Loaders: {group.Loaders.Count}    Unique Assets: {group.UniqueAssets.Count}", EditorStyles.miniLabel);
 
                 foreach (var loader in group.Loaders)
                 {
-                    using (new EditorGUILayout.VerticalScope(EditorStyles.textArea))
+                    using (new EditorGUILayout.VerticalScope(EditorUIStyle.SectionBox))
                     {
                         EditorGUILayout.LabelField($"Loader #{loader.Index}   Index: {loader.Index}", EditorStyles.miniBoldLabel);
                         if (loader.Assets.Count == 0)
@@ -148,7 +151,7 @@ namespace PowerCellStudio.Editor
             {
                 EditorGUILayout.LabelField($"[{count}]", GUILayout.Width(36));
 
-                if (GUILayout.Button(path, EditorStyles.linkLabel))
+                if (GUILayout.Button(path, EditorUIStyle.LinkLabel))
                 {
                     PingAsset(path);
                 }
@@ -157,7 +160,7 @@ namespace PowerCellStudio.Editor
 
         private void DrawSummary()
         {
-            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
             {
                 EditorGUILayout.LabelField("Cross-Loader Usage Count", EditorStyles.boldLabel);
                 if (_assetUsageCount.Count == 0)
@@ -171,7 +174,7 @@ namespace PowerCellStudio.Editor
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         EditorGUILayout.LabelField($"[{pair.Value}]", GUILayout.Width(36));
-                        if (GUILayout.Button(pair.Key, EditorStyles.linkLabel))
+                        if (GUILayout.Button(pair.Key, EditorUIStyle.LinkLabel))
                         {
                             PingAsset(pair.Key);
                         }

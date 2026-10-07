@@ -41,7 +41,11 @@ namespace PowerCellStudio.Editor
             EditorGUIUtility.AddCursorRect(leftHandleRect, MouseCursor.ResizeHorizontal);
             EditorGUIUtility.AddCursorRect(rightHandleRect, MouseCursor.ResizeHorizontal);
 
-            EditorGUI.DrawRect(clipRect, _clip.editorColor * 0.85f);
+            var clipColor = _clip.editorColor;
+            clipColor.a = 0.9f;
+            EditorGUI.DrawRect(clipRect, clipColor);
+            EditorGUI.DrawRect(leftHandleRect, new Color(1f, 1f, 1f, 0.28f));
+            EditorGUI.DrawRect(rightHandleRect, new Color(1f, 1f, 1f, 0.28f));
             GUI.Label(new Rect(clipRect.x + 4, clipRect.y, clipRect.width - 8, clipRect.height),
                 $"{_clip.editorName} ({_clip.length:0.00}s)", EditorStyles.miniBoldLabel);
 
@@ -50,7 +54,8 @@ namespace PowerCellStudio.Editor
             if (selection == _clip)
             {
                 hasSelected = true;
-                EditorGUI.DrawRect(new Rect(clipRect.x, clipRect.y, clipRect.width, 2f), Color.yellow);
+                EditorGUI.DrawRect(new Rect(clipRect.x, clipRect.y, clipRect.width, 2f), EditorUIStyle.AccentHoverColor);
+                EditorGUI.DrawRect(new Rect(clipRect.x, clipRect.yMax - 2f, clipRect.width, 2f), EditorUIStyle.AccentHoverColor);
                 if (e.keyCode == KeyCode.Delete && selection != null) // Delete 删除选中片段
                 {
                     Undo.RecordObject(_actAsset, "Delete Clip");

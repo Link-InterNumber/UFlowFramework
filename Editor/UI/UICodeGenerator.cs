@@ -29,8 +29,7 @@ namespace PowerCellStudio.Editor
             public string relativePath;
         }
 
-        [MenuItem("Assets/UFlow/Create UI Script", true, 1)]
-        private static bool ValidateCreateUIScript()
+        public static bool ValidateCreateUIScript()
         {
             GameObject selected = Selection.activeObject as GameObject;
             return selected != null && PrefabUtility.GetPrefabAssetType(selected) != PrefabAssetType.NotAPrefab;
@@ -50,8 +49,7 @@ namespace PowerCellStudio.Editor
             { "IListUpdater", "Lst" },
         };
 
-        [MenuItem("Assets/UFlow/Create UI Script", false, 1)]
-        private static void CreateUIScript()
+        public static void CreateUIScript()
         {
             _CurrentPrefab = Selection.activeObject as GameObject;
             if (_CurrentPrefab == null)
@@ -373,8 +371,7 @@ namespace PowerCellStudio.Editor
             return sb.ToString();
         }
 
-        [MenuItem("Assets/UFlow/Add UI Component", false, 2)]
-        private static void AddUIComponentToPrefab()
+        public static void AddUIComponentToPrefab()
         {
             var prefab = Selection.activeObject as GameObject;
             if (prefab == null) return;

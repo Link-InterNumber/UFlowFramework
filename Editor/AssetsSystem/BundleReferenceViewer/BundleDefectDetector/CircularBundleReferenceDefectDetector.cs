@@ -27,7 +27,8 @@ namespace PowerCellStudio.Editor
             // 使用DFS检测从当前节点出发是否存在环
             var state = DictionaryPool<string, int>.Get(); // 0-未访问，1-访问中，2-已访问
             var path = new List<string>(_maxRecursionDepth + 2);
-            var result = HasCycle(queryer, bundleData.bundleName, state, path, 0, out var cyclePath);
+            var result = HasCycle(queryer, bundleData.bundleName, bundleData.bundleName,
+                state, path, 0, out var cyclePath);
             DictionaryPool<string, int>.Release(state);
             if (result)
             {
@@ -36,7 +37,7 @@ namespace PowerCellStudio.Editor
             return result;
         }
 
-        private bool HasCycle(BundleReferenceQueryer queryer, string node,
+        private bool HasCycle(BundleReferenceQueryer queryer, string rootNode, string node,
             Dictionary<string, int> state, List<string> path, int depth, out List<string> cyclePath)
         {
             cyclePath = null;
@@ -49,8 +50,12 @@ namespace PowerCellStudio.Editor
                 if (cycleStartIndex < 0)
                     return false;
 
-                cyclePath = path.GetRange(cycleStartIndex, path.Count - cycleStartIndex);
-                cyclePath.Add(node);
+                var detectedCyclePath = path.GetRange(cycleStartIndex, path.Count - cycleStartIndex);
+                detectedCyclePath.Add(node);
+                if (!detectedCyclePath.Contains(rootNode))
+                    return false;
+
+                cyclePath = detectedCyclePath;
                 return true;
             }
 
@@ -68,7 +73,7 @@ namespace PowerCellStudio.Editor
             {
                 foreach (var dep in data.bundleDependent)
                 {
-                    if (HasCycle(queryer, dep, state, path, depth + 1, out cyclePath))
+                    if (HasCycle(queryer, rootNode, dep, state, path, depth + 1, out cyclePath))
                         return true;
                 }
             }

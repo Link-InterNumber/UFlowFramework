@@ -114,7 +114,6 @@ namespace PowerCellStudio.Editor
             return AddressableBuilder.BuildAddressables();
         }
 
-        [MenuItem(@"Build/Addressable/Default Build", false, 1001)]
         public static void DefaultPlayerBuilder()
         {
             var options = new BuildPlayerOptions();
@@ -143,7 +142,6 @@ namespace PowerCellStudio.Editor
             EditorUtility.RevealInFinder($"Build/{playerSettings.target}/");
         }
         
-        [MenuItem(@"Build/Addressable/Window Build", false, 1002)]
         public static void BuildWindowAssets()
         {
             if (!ValidateBuildConfiguration(BuildTarget.StandaloneWindows))
@@ -175,7 +173,6 @@ namespace PowerCellStudio.Editor
             EditorUtility.RevealInFinder("Build/StandaloneWindows/");
         }
 
-        [MenuItem(@"Build/Addressable/Andriod Build", false, 1003)]
         public static void BuildAndroidAssets()
         {
             if (!ValidateBuildConfiguration(BuildTarget.Android))
@@ -209,7 +206,6 @@ namespace PowerCellStudio.Editor
             EditorUtility.RevealInFinder("Build/Android/");
         }
         
-        [MenuItem(@"Build/Addressable/WebGl Build", false, 1004)]
         public static void BuildWebGlAssets()
         {
             if (!ValidateBuildConfiguration(BuildTarget.WebGL))
@@ -243,7 +239,6 @@ namespace PowerCellStudio.Editor
             EditorUtility.RevealInFinder("Build/WebGl/");
         }
 
-        [MenuItem(@"Build/Addressable/Switch Build", false, 1005)]
         public static void BuildSwitchAssets()
         {
             if (!ValidateBuildConfiguration(BuildTarget.Switch))

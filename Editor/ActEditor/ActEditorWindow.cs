@@ -10,6 +10,13 @@ namespace PowerCellStudio.Editor
         private const float TrackHeight = 28f;
         public static readonly float HeaderWidth = 180f;
         private const float TimeRulerHeight = 22f;
+        private const float ToolbarControlHeight = 20f;
+
+        internal static readonly Color TimelineBackground = new Color(0.105f, 0.115f, 0.135f, 1f);
+        internal static readonly Color TimelineRowBackground = new Color(0.145f, 0.16f, 0.19f, 1f);
+        internal static readonly Color TimelineHeaderBackground = new Color(0.12f, 0.135f, 0.16f, 1f);
+        internal static readonly Color TimelineGridColor = new Color(0.55f, 0.62f, 0.72f, 0.12f);
+        internal static readonly Color PlayheadColor = new Color(1f, 0.32f, 0.26f, 1f);
 
         private ActAsset _asset;
         private Vector2 _scroll;
@@ -34,15 +41,28 @@ namespace PowerCellStudio.Editor
         {
             _zoom = 1f;
             _pixelsPerSecond = 100f;
+            minSize = new Vector2(720f, 320f);
+        }
+
+        private void OnDisable()
+        {
+            _preview?.Dispose();
+            _preview = null;
         }
 
         private void OnGUI()
         {
+            EditorUIStyle.DrawWindowBackground(new Rect(Vector2.zero, position.size));
             HandleKeyboardShortcutsIMGUI();
             DrawToolbar();
             if (_asset == null)
             {
-                EditorGUILayout.HelpBox("Assign an ActAsset to edit.", MessageType.Info);
+                GUILayout.Space(EditorUIStyle.ContentSpacing);
+                using (new EditorGUILayout.VerticalScope(EditorUIStyle.PanelBox))
+                {
+                    EditorGUILayout.LabelField("No ActAsset Selected", EditorUIStyle.HeaderTitle);
+                    EditorGUILayout.LabelField("Assign an existing asset above or create a new timeline to begin.", EditorUIStyle.MutedLabel);
+                }
                 return;
             }
 
@@ -51,9 +71,10 @@ namespace PowerCellStudio.Editor
             DrawTimeRuler(rulerRect);
 
             // Tracks
-            var contentHeight = Mathf.Max(position.height - TimeRulerHeight, _asset.tracks.Count * TrackHeight);
+            var contentHeight = Mathf.Max(position.height - TimeRulerHeight, (_asset.tracks.Count + 1) * TrackHeight);
             var viewRect = new Rect(0, TimeRulerHeight, position.width, position.height - TimeRulerHeight);
             var contentRect = new Rect(0, TimeRulerHeight, position.width - 5, contentHeight);
+            EditorGUI.DrawRect(viewRect, TimelineBackground);
             _scroll = GUI.BeginScrollView(viewRect, _scroll, contentRect);
             float y = TimeRulerHeight + TrackHeight;
 
@@ -129,11 +150,12 @@ namespace PowerCellStudio.Editor
         {
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
             {
-                _asset = (ActAsset)EditorGUILayout.ObjectField(_asset, typeof(ActAsset), false, GUILayout.Width(250));
+                GUILayout.Label("ACT", EditorStyles.boldLabel, GUILayout.Width(30f));
+                _asset = (ActAsset)EditorGUILayout.ObjectField(_asset, typeof(ActAsset), false,
+                    GUILayout.Width(220f), GUILayout.Height(ToolbarControlHeight));
                 if (_asset == null)
                 {
-                    // 创建按钮
-                    if (GUILayout.Button("Create", EditorStyles.toolbarButton, GUILayout.Width(50)))
+                    if (GUILayout.Button("Create", EditorUIStyle.TabButton, GUILayout.Width(58f)))
                     {
                         string path = EditorUtility.SaveFilePanelInProject("Create New ActAsset", "New ActAsset", "asset", "Please enter a file name to save the act asset to");
                         if (!string.IsNullOrEmpty(path))
@@ -148,7 +170,10 @@ namespace PowerCellStudio.Editor
                     }
                 }
                 
-                _previewTarget = (ActRuntimePlayer)EditorGUILayout.ObjectField(_previewTarget, typeof(ActRuntimePlayer), true, GUILayout.Width(200));
+                GUILayout.Space(6f);
+                GUILayout.Label("Preview", EditorStyles.miniLabel, GUILayout.Width(46f));
+                _previewTarget = (ActRuntimePlayer)EditorGUILayout.ObjectField(_previewTarget, typeof(ActRuntimePlayer), true,
+                    GUILayout.Width(170f), GUILayout.Height(ToolbarControlHeight));
                 if (_preview == null && _previewTarget && _asset)
                 {
                     _preview = new ActPreview(_asset, _previewTarget);
@@ -172,17 +197,20 @@ namespace PowerCellStudio.Editor
 
                 if (_preview != null)
                 {
-                    _preview.Loop = GUILayout.Toggle(_preview.Loop, "Loop");
-                    GUILayout.Label($"Time: {_preview.CurrentTime:0.00}s", GUILayout.Width(100));
-                    if (GUILayout.Button("Play", EditorStyles.toolbarButton, GUILayout.Width(50)))
+                    _preview.Loop = GUILayout.Toggle(_preview.Loop, "Loop", EditorStyles.toolbarButton, GUILayout.Width(44f));
+                    GUILayout.Label($"{_preview.CurrentTime:0.00}s", EditorStyles.miniLabel, GUILayout.Width(48f));
+                    GUI.enabled = !_preview.IsPlaying;
+                    if (GUILayout.Button("▶", EditorStyles.toolbarButton, GUILayout.Width(30f)))
                     {
                         _preview.Play();
                     }
-                    if (GUILayout.Button("Pause", EditorStyles.toolbarButton, GUILayout.Width(50)))
+                    GUI.enabled = _preview.IsPlaying;
+                    if (GUILayout.Button("Ⅱ", EditorStyles.toolbarButton, GUILayout.Width(30f)))
                     {
                         _preview.Pause();
                     }
-                    if (GUILayout.Button("Stop", EditorStyles.toolbarButton, GUILayout.Width(50)))
+                    GUI.enabled = true;
+                    if (GUILayout.Button("■", EditorStyles.toolbarButton, GUILayout.Width(30f)))
                     {
                         _preview.Stop();
                     }
@@ -202,11 +230,11 @@ namespace PowerCellStudio.Editor
                 //  GUILayout.Label($"Duration: {_asset.duration:0.00}s");
                 //  _asset.duration = Mathf.Max(0.1f, EditorGUILayout.Slider(_asset.duration, 0.1f, 120f, GUILayout.Width(200)));
 
-                GUILayout.Space(10);
-                GUILayout.Label("Zoom");
-                _pixelsPerSecond = Mathf.Clamp(EditorGUILayout.Slider(_pixelsPerSecond, 30f, 400f, GUILayout.Width(200)), 10f, 600f);
+                GUILayout.Space(8f);
+                GUILayout.Label("Zoom", EditorStyles.miniLabel, GUILayout.Width(34f));
+                _pixelsPerSecond = Mathf.Clamp(EditorGUILayout.Slider(_pixelsPerSecond, 30f, 400f, GUILayout.Width(130f)), 10f, 600f);
 
-                if (!GUILayout.Button("+Track", EditorStyles.toolbarButton)) return;
+                if (!GUILayout.Button("+ Track", EditorUIStyle.TabButton, GUILayout.Width(62f))) return;
                 Undo.RecordObject(_asset, "Add Track");
                 _asset.tracks.Add(new ActTrackData() { name = $"Track {_asset.tracks.Count + 1}" });
                 EditorUtility.SetDirty(_asset);
@@ -216,17 +244,17 @@ namespace PowerCellStudio.Editor
         private bool onPreviewDraw;
         private void DrawTimeRuler(Rect rect)
         {
-            EditorGUI.DrawRect(rect, new Color(0.15f, 0.15f, 0.15f));
+            EditorGUI.DrawRect(rect, TimelineBackground);
             float totalPixels = Mathf.Max(rect.width - HeaderWidth, 0);
             float totalTime = totalPixels / _pixelsPerSecond;
 
             // Header
-            EditorGUI.DrawRect(new Rect(rect.x, rect.y, HeaderWidth, rect.height), new Color(0.12f, 0.12f, 0.12f));
-            GUI.Label(new Rect(rect.x + 8, rect.y + 2, HeaderWidth - 16, rect.height - 4), "Time");
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, HeaderWidth, rect.height), TimelineHeaderBackground);
+            GUI.Label(new Rect(rect.x + 10, rect.y + 2, HeaderWidth - 20, rect.height - 4), "TRACK / TIME", EditorStyles.miniBoldLabel);
 
             // Ruler body
             var body = new Rect(rect.x + HeaderWidth, rect.y, rect.width - HeaderWidth, rect.height);
-            Handles.color = new Color(1, 1, 1, 0.1f);
+            Handles.color = TimelineGridColor;
             Handles.DrawLine(new Vector3(body.x, body.yMax), new Vector3(body.xMax, body.yMax));
 
             // Tick every 0.5s
@@ -237,7 +265,7 @@ namespace PowerCellStudio.Editor
 
                 bool major = Mathf.Abs(t - Mathf.Round(t)) < 0.001f;
                 float h = major ? 14f : 8f;
-                Handles.color = new Color(1, 1, 1, major ? 0.4f : 0.2f);
+                Handles.color = new Color(0.72f, 0.78f, 0.88f, major ? 0.5f : 0.24f);
                 Handles.DrawLine(new Vector3(x, body.yMax - h), new Vector3(x, body.yMax));
 
                 if (major)
@@ -252,7 +280,7 @@ namespace PowerCellStudio.Editor
                     // Handles.color = Color.red;
                     // Handles.DrawLine(new Vector3(x, body.y), new Vector3(x, body.yMax));
                     var drawRect = new Rect(x, body.y, 2, body.height);
-                    EditorGUI.DrawRect(drawRect, Color.red);
+                    EditorGUI.DrawRect(drawRect, PlayheadColor);
                     EditorGUIUtility.AddCursorRect(drawRect, MouseCursor.ResizeHorizontal);
                     var e = Event.current;
                     if (e.type == EventType.MouseDown && drawRect.Contains(e.mousePosition))
@@ -289,7 +317,9 @@ namespace PowerCellStudio.Editor
             // s_RedMiniButton.normal.background = Texture2D.grayTexture;
             //     s_RedMiniButton.hover.background = Texture2D.redTexture;
             //     s_RedMiniButton.active.background = Texture2D.redTexture;
-            s_RedMiniButton.hover.textColor = Color.red;
+            s_RedMiniButton.normal.textColor = new Color(0.9f, 0.52f, 0.5f);
+            s_RedMiniButton.hover.textColor = Color.white;
+            s_RedMiniButton.active.textColor = Color.white;
             // s_RedMiniButton.active.textColor = Color.white;
 
             return s_RedMiniButton;
