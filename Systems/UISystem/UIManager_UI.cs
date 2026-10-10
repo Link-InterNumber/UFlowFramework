@@ -291,6 +291,22 @@ namespace PowerCellStudio
             return GetWindow<T>()?.assetsLoader ?? null;
         }
 
+        public void PreloadWindow<T>() where T : class, IUIChild
+        {
+            var windowType = typeof(T);
+            if (typeof(IUIStandAlone).IsAssignableFrom(windowType))
+            {
+                _standAlonePage.PreloadUI<T>();
+                return;
+            }
+            if (currentPage.GetUI<T>() == null && typeof(IUIPoolable).IsAssignableFrom(windowType))
+            {
+                _poolPage.PreloadUI<T>();
+                return;
+            }
+            currentPage.PreloadUI<T>();
+        }
+
         /// <summary>
         /// 在当前页面打开窗口。
         /// Open a window on the current page.

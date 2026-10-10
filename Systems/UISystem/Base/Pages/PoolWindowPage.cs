@@ -23,12 +23,6 @@ namespace PowerCellStudio
                 });
                 return;
             }
-            // 限制每次只能打开一个界面
-            // if (_windowRequests.Values.Any(o => !o.isPreLoad))
-            // {
-            //     UILog.LogWarning($"{GetType().Name}有一个窗口正在打开");
-            //     return;
-            // }
             var window = GetUI<T>();
             if (window != null)
             {

@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace PowerCellStudio
+namespace MonoComponent
 {
     [RequireComponent(typeof(RectTransform))]
     public class AnimationRectLayout : UIBehaviour
@@ -13,11 +13,26 @@ namespace PowerCellStudio
             Vertical,
         }
 
+        // 对齐方式
+        public enum Alignment
+        {
+            Start,
+            Center,
+            End,
+        }
+
         public float space = 0f;
         public LayoutType layoutType;
+        public Alignment alignment;
         private List<RectTransform> _children = new List<RectTransform>();
         private List<Vector2> _targetPos = new List<Vector2>();
-        private bool _isDirty = false;
+        private bool _isDirty = true;
+        
+        private static float ManhattanDistance(Vector2 v2, Vector2 target)
+        {
+            return Mathf.Abs(v2.x - target.x) + Mathf.Abs(v2.y - target.y);
+        }
+
 
         private void Update()
         {
@@ -30,7 +45,7 @@ namespace PowerCellStudio
             var isAllArrived = true;
             for (var i = 0; i < _children.Count; i++)
             {
-                if (_children[i].anchoredPosition.ManhattanDistance(_targetPos[i]) < 5f)
+                if (ManhattanDistance(_children[i].anchoredPosition, _targetPos[i]) < 5f)
                 {
                     _children[i].anchoredPosition = _targetPos[i];
                     continue;
@@ -59,14 +74,14 @@ namespace PowerCellStudio
             }
             
             // 将_children按照现有位置排序
-            _children.Sort((a, b) =>
-            {
-                if (layoutType == LayoutType.Horizontal)
-                {
-                    return a.anchoredPosition.x.CompareTo(b.anchoredPosition.x);
-                }
-                return a.anchoredPosition.y.CompareTo(b.anchoredPosition.y);
-            });
+            // _children.Sort((a, b) =>
+            // {
+            //     if (layoutType == LayoutType.Horizontal)
+            //     {
+            //         return a.anchoredPosition.x.CompareTo(b.anchoredPosition.x);
+            //     }
+            //     return a.anchoredPosition.y.CompareTo(b.anchoredPosition.y);
+            // });
 
             var totalSize = new Vector2();
             foreach (var child in _children)
@@ -79,22 +94,53 @@ namespace PowerCellStudio
             totalSize += spaceV2;
             
             // 将_children按照从左到右放置
-            var startPos = layoutType == LayoutType.Horizontal
-                ? new Vector2(-totalSize.x / 2, 0f)
-                : new Vector2(0f, -totalSize.y / 2);
+            var startPos = Vector2.zero;
+            if (layoutType == LayoutType.Horizontal)
+            {
+                var rectTransform = transform as RectTransform;
+                switch (alignment)
+                {
+                    case Alignment.Start:
+                        startPos = new Vector2(-rectTransform.rect.width / 2, 0f);
+                        break;
+                    case Alignment.Center:
+                        startPos = new Vector2(-totalSize.x / 2, 0f);
+                        break;
+                    case Alignment.End:
+                        startPos = new Vector2(rectTransform.rect.width / 2 - totalSize.x, 0f);
+                        break;
+                }
+            }
+            else
+            {
+                var rectTransform = transform as RectTransform;
+                switch (alignment)
+                {
+                    case Alignment.Start:
+                        startPos = new Vector2(0f, rectTransform.rect.height / 2);
+                        break;
+                    case Alignment.Center:
+                        startPos = new Vector2(0f, totalSize.y / 2);
+                        break;
+                    case Alignment.End:
+                        startPos = new Vector2(0f, -rectTransform.rect.height / 2 + totalSize.y);
+                        break;
+                }
+            }
+            
             for (var i = 0; i < _children.Count; i++)
             {
                 var child = _children[i];
                 var targetPos = startPos;
                 if (layoutType == LayoutType.Horizontal)
                 {
-                    targetPos.x += child.sizeDelta.x / 2;
+                    targetPos.x += child.sizeDelta.x * child.pivot.x;
                     startPos.x += child.sizeDelta.x + space;
                 }
                 else
                 {
-                    targetPos.y += child.sizeDelta.y / 2;
-                    startPos.y += child.sizeDelta.y + space;
+                    targetPos.y -= child.sizeDelta.y * (1f - child.pivot.y);
+                    startPos.y -= child.sizeDelta.y + space;
                 }
 
                 _targetPos.Add(targetPos);
