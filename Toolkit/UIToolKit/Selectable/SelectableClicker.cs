@@ -7,6 +7,13 @@ namespace PowerCellStudio
     public class SelectableClicker : SelectableInteractor, IPointerClickHandler, ISubmitHandler
     {
         public UnityEvent onClick = new UnityEvent();
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            onClick?.RemoveAllListeners();
+            onClick = null;
+        }
         
         public void OnPointerClick(PointerEventData eventData)
         {

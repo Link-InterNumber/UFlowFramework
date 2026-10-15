@@ -12,5 +12,10 @@ namespace PowerCellStudio
         {
             if (!_target) _target = GetComponent<Selectable>();
         }
+
+        protected virtual void OnDestroy()
+        {
+            _target = null;
+        }
     }
 }

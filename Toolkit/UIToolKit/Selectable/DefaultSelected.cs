@@ -1,22 +1,36 @@
 ﻿using UnityEngine;
-using UnityEngine.Events;
-using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace PowerCellStudio
 {
     [DisallowMultipleComponent]
-    public class DefaultSelected : SelectableInteractor, ISelectHandler
+    public class DefaultSelected : MonoBehaviour
     {
-        public UnityEvent onSelected = new UnityEvent();
-        
-        private void OnEnable()
+        public bool activeOnEnable = false;
+
+        private Selectable _target;
+        public Selectable target => _target;
+
+        protected virtual void Awake()
         {
-            if(target) target.Select();
+            if (!_target) _target = GetComponent<Selectable>();
         }
 
-        public void OnSelect(BaseEventData eventData)
+        private void OnDestroy()
         {
-            onSelected.Invoke();
+            _target = null;
+        }
+
+        private void OnEnable()
+        {
+            if (!activeOnEnable) return;
+            target?.Select();
+        }
+
+        protected void Start()
+        {
+            if (activeOnEnable) return;
+            target?.Select();
         }
     }
 }

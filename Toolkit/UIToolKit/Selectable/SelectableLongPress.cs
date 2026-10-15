@@ -21,6 +21,23 @@ namespace PowerCellStudio
             longPressDuration = Mathf.Max(longPressDuration, 0.1f);
         }
 
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            onStart?.RemoveAllListeners();
+            onStart = null;
+            onConfirm?.RemoveAllListeners();
+            onConfirm = null;
+            onCancel?.RemoveAllListeners();
+            onCancel = null;
+            onRelease?.RemoveAllListeners();
+            onRelease = null;
+            onPressing?.RemoveAllListeners();
+            onPressing = null;
+            _onActive?.RemoveAllListeners();
+            _onActive = null;
+        }
+
         public float processValue
         {
             get

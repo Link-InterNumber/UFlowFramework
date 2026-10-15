@@ -17,6 +17,19 @@ namespace PowerCellStudio
         public UnityEvent onSelected = new UnityEvent();
         public UnityEvent onDeselect = new UnityEvent();
 
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            onDown?.RemoveAllListeners();
+            onDown = null;
+            onUp?.RemoveAllListeners();
+            onUp = null;
+            onSelected?.RemoveAllListeners();
+            onSelected = null;
+            onDeselect?.RemoveAllListeners();
+            onDeselect = null;
+        }
+
         public void OnPointerDown(PointerEventData eventData)
         {
             onDown.Invoke();
