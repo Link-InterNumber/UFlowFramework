@@ -7,97 +7,6 @@ using UnityEngine.Pool;
 namespace PowerCellStudio
 {
     /// <summary>
-    /// Delegate for handling item interaction events.
-    /// 处理子节点交互事件的委托。
-    /// </summary>
-    /// <param name="item">The item interacted with.
-    /// 交互的子节点。</param>
-    /// <param name="index">Index of the item.
-    /// 子节点的索引。</param>
-    /// <param name="passData">Data passed during interaction.
-    /// 交互传递的数据。</param>
-    public delegate void OnItemInteraction(IListItem item, int index, object passData);
-
-    /// <summary>
-    /// Interface for list updater behavior.
-    /// 列表更新器行为的接口。
-    /// </summary>
-    public interface IListUpdater
-    {
-        /// <summary>
-        /// Gets the asset loader.
-        /// 获取资产加载器。
-        /// </summary>
-        public IAssetLoader AssetLoader { get; }
-
-        /// <summary>
-        /// Adds a listener for item interaction events.
-        /// 为子节点交互事件添加监听器。
-        /// </summary>
-        public void AddInteractionListener(OnItemInteraction listener);
-
-        /// <summary>
-        /// Removes a listener for item interaction events.
-        /// 为子节点交互事件移除监听器。
-        /// </summary>
-        public void RemoveInteractionListener(OnItemInteraction listener);
-        
-        /// <summary>
-        /// Triggers the registered logic for a child item.
-        /// 触发注册的子节点逻辑。
-        /// </summary>
-        /// <param name="item">The child item to interact with.
-        /// 交互的子节点。</param>
-        /// <param name="passData">Data passed for interaction.
-        /// 交互传递的数据。</param>
-        public void ItemInteraction(IListItem item, object passData);
-
-        /// <summary>
-        /// Updates the list with given data and optionally destroys unused items.
-        /// 将数据列表传入并刷新列表，可以选择删除多余节点。
-        /// </summary>
-        /// <param name="data">The list data to update.
-        /// 刷新的列表数据。</param>
-        /// <param name="destroyUnused">If true, destroy unused items, otherwise hide them.
-        /// 是否删除多余节点。</param>
-        public void UpdateList(IEnumerable data, int startIndex = 0, bool destroyUnused = false);
-
-        /// <summary>
-        /// Updates a specific item at a given index.
-        /// 更新索引位上子节点。
-        /// </summary>
-        /// <param name="index">The index of the item.
-        /// 子节点索引。</param>
-        /// <param name="data">The data to update the item with.
-        /// 更新子节点的数据。</param>
-        public void UpdateItem(int index, object data);
-
-        /// <summary>
-        /// Adds a new item at the specified index.
-        /// 在指定索引处添加子节点。
-        /// </summary>
-        /// <param name="index">The index to add the item at.
-        /// 添加子节点的索引。</param>
-        /// <param name="data">The data for the new item.
-        /// 新子节点的数据。</param>
-        public void AddItem(int index, object data);
-
-        /// <summary>
-        /// Removes the item at the specified index.
-        /// 移除索引位的子节点。
-        /// </summary>
-        /// <param name="index">The index of the item to remove.
-        /// 被移除子节点的索引。</param>
-        public void RemoveItem(int index);
-
-        /// <summary>
-        /// Hides all child items.
-        /// 隐藏所有子节点。
-        /// </summary>
-        public void Clear();
-    }
-
-    /// <summary>
     /// Concrete implementation of IListUpdater for updating lists.
     /// IListUpdater接口的具体实现，用以更新列表。
     /// </summary>
@@ -111,6 +20,8 @@ namespace PowerCellStudio
         public IAssetLoader AssetLoader => _assetLoader;
 
         public event OnItemInteraction onItemInteraction;
+        
+        private Dictionary<GameObject, IListItem> _itemCache = new Dictionary<GameObject, IListItem>();
 
         public void AddInteractionListener(OnItemInteraction listener)
         {
@@ -136,6 +47,11 @@ namespace PowerCellStudio
         private void OnDestroy()
         {
             AssetUtils.DeSpawnLoader(_assetLoader);
+            _assetLoader = null;
+            onItemInteraction = null;
+            _prefab = null;
+            _itemCache.Clear();
+            _itemCache = null;
         }
 
         /// <summary>
@@ -162,6 +78,21 @@ namespace PowerCellStudio
                 _prefab = transform.GetChild(0).gameObject;
             }
             return _prefab;
+        }
+        
+        private IListItem GetListItem(GameObject go)
+        {
+            if (!go) return null;
+            if (_itemCache.TryGetValue(go, out var item))
+            {
+                return item;
+            }
+            item = go.GetComponent<IListItem>();
+            if (item != null)
+            {
+                _itemCache[go] = item;
+            }
+            return item;
         }
 
         /// <summary>
@@ -205,8 +136,12 @@ namespace PowerCellStudio
                     go.SetActive(true);
                 }
                 var child = transform.GetChild(i);
-                var item = child.GetComponent<IListItem>();
-                if (item == null) continue;
+                var item = GetListItem(child.gameObject);
+                if (item == null)
+                {
+                    i++;
+                    continue;
+                }
                 child.gameObject.SetActive(true);
                 item.UpdateContent(i, o, this);
                 i++;
@@ -236,8 +171,12 @@ namespace PowerCellStudio
                     go = transform.GetChild(index).gameObject;
                 }
                 go.SetActive(true);
-                var item = go.GetComponent<IListItem>();
-                if (item == null) continue;
+                var item = GetListItem(go);
+                if (item == null)
+                {
+                    index++;
+                    continue;
+                }
                 item.UpdateContent(index, o, this);
                 index++;
             }
@@ -282,7 +221,7 @@ namespace PowerCellStudio
         public void UpdateItem(int index, object data)
         {
             if (index < 0 || index >= transform.childCount) return;
-            var item = transform.GetChild(index).GetComponent<IListItem>();
+            var item = GetListItem(transform.GetChild(index).gameObject);
             if (item == null) return;
             item.UpdateContent(index, data, this);
         }
@@ -308,15 +247,15 @@ namespace PowerCellStudio
                 var realIndex = Mathf.Min(index, transform.childCount - 1);
                 go.transform.SetSiblingIndex(realIndex);
                 go.SetActive(true);
-                var item = go.GetComponent<IListItem>();
+                var item = GetListItem(go);
                 if (item == null) return;
                 item.UpdateContent(realIndex, data, this);
 
                 for (int i = index; i < transform.childCount; i++)
                 {
                     var child = transform.GetChild(i);
-                    if(!child.gameObject.activeSelf) break;
-                    var item2 = child.GetComponent<IListItem>();
+                    if (!child.gameObject.activeSelf) break;
+                    var item2 = GetListItem(child.gameObject);
                     if (item2 == null) continue;
                     item2.SetIndex(i);
                 }
@@ -327,7 +266,7 @@ namespace PowerCellStudio
             var itemGo = transform.GetChild(usedIndex);
             itemGo.gameObject.SetActive(true);
             itemGo.SetSiblingIndex(Mathf.Min(index, usedIndex));
-            var item1 = itemGo.GetComponent<IListItem>();
+            var item1 = GetListItem(itemGo.gameObject);
             if (item1 == null) return;
             item1.UpdateContent(Mathf.Min(index, usedIndex), data, this);
 
@@ -335,7 +274,7 @@ namespace PowerCellStudio
             {
                 var child = transform.GetChild(i);
                 if(!child.gameObject.activeSelf) break;
-                var item2 = child.GetComponent<IListItem>();
+                var item2 = GetListItem(child.gameObject);
                 if (item2 == null) continue;
                 item2.SetIndex(i);
             }
@@ -352,7 +291,7 @@ namespace PowerCellStudio
             {
                 var child = transform.GetChild(i);
                 if (!child.gameObject.activeSelf) break;
-                var item2 = child.GetComponent<IListItem>();
+                var item2 = GetListItem(child.gameObject);
                 if (item2 == null) continue;
                 item2.SetIndex(i);
             }
@@ -417,6 +356,7 @@ namespace PowerCellStudio
             }
             foreach (var go in toDestroy)
             {
+                _itemCache.Remove(go);
                 GameObject.Destroy(go);
             }
             ListPool<GameObject>.Release(toDestroy);

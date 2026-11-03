@@ -68,6 +68,17 @@ namespace PowerCellStudio
                     continue;
 
                 rectTransform.GetWorldCorners(fourCorners);
+                var padding = graphic.raycastPadding;
+                if (padding != Vector4.zero)
+                {
+                    // raycastPadding order: left, bottom, right, top (local space)
+                    fourCorners[0] += rectTransform.TransformVector(new Vector3(padding.x, padding.y, 0f));
+                    fourCorners[1] += rectTransform.TransformVector(new Vector3(padding.x, -padding.w, 0f));
+                    fourCorners[2] += rectTransform.TransformVector(new Vector3(-padding.z, -padding.w, 0f));
+                    fourCorners[3] += rectTransform.TransformVector(new Vector3(-padding.z, padding.y, 0f));
+                }
+
+
                 var isInteractive = HasUserInteractiveComponent(graphic.transform);
                 var layerT = activeCount > 1 ? i * 1f / (activeCount - 1) : 1f;
                 var baseFillColor = isInteractive ? interactiveFillColor : nonInteractiveFillColor;

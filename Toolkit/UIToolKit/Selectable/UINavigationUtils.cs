@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UI;
 
 namespace PowerCellStudio
@@ -27,15 +29,19 @@ namespace PowerCellStudio
             selectable.navigation = navigation;
         }
 
-        public static void SetNavigationGroup(NavigationLayout layout, Vector2Int gridSize, params Selectable[] selectables)
+        private static void SetNavigationGroupInternal(NavigationLayout layout, Vector2Int gridSize, IList<Selectable> selectables)
         {
-            if (selectables == null || selectables.Length == 0) return;
-            if (selectables.Length == 1)
+            if (selectables == null || selectables.Count == 0) return;
+            if (selectables.Count == 1)
             {
                 selectables[0].SetNavigation(null, null, null, null);
                 return;
             }
-            int length = selectables.Length;
+            int length = selectables.Count;
+            if (gridSize.x <= 0 || gridSize.y <= 0)
+            {
+                gridSize = new Vector2Int(length, 1);
+            }
             for (int i = 0; i < length; i++)
             {
                 int row = i / gridSize.x;
@@ -76,6 +82,19 @@ namespace PowerCellStudio
                 }
                 current.SetNavigation(up, down, left, right);
             }
+        }
+
+        public static void SetNavigationGroup(NavigationLayout layout, Vector2Int gridSize, IEnumerable<Selectable> selectables)
+        {
+            var tempList = ListPool<Selectable>.Get();
+            tempList.AddRange(selectables);
+            SetNavigationGroupInternal(layout, gridSize, tempList);
+            ListPool<Selectable>.Release(tempList);
+        }
+
+        public static void SetNavigationGroup(NavigationLayout layout, Vector2Int gridSize, params Selectable[] selectables)
+        {
+            SetNavigationGroupInternal(layout, gridSize, selectables);
         }
     }
 }

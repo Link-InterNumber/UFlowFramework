@@ -142,7 +142,7 @@ namespace PowerCellStudio
 
         private IEnumerator DelayInit()
         {
-            yield return new WaitForEndOfFrame();;
+            yield return new WaitForEndOfFrame();
             Init();
         }
 
@@ -319,6 +319,26 @@ namespace PowerCellStudio
             _dataList[index] = data;
             if (!_itemDict.TryGetValue(index, out var item)) return;
             item.listItem?.UpdateContent(index, data, this);
+        }
+
+        /// <summary>
+        /// 尝试获取指定索引的列表项
+        /// Attempts to retrieve the list item at the specified index.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="index"></param>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public bool TryGetItem<T>(int index, out T item) 
+            where T : class, IListItem
+        {
+            if (_itemDict.TryGetValue(index, out var recycleItem))
+            {
+                item = recycleItem.listItem as T;
+                return item != null;
+            }
+            item = null;
+            return false;
         }
 
         /// <summary>
