@@ -19,8 +19,143 @@ namespace PowerCellStudio.Editor
         private TreeViewState treeViewState;
         [SerializeField] MultiColumnHeaderState m_MultiColumnHeaderState;
 
+        [Serializable]
+        private class BundleWhitelistCache
+        {
+            public List<string> bundles = new List<string>();
+        }
+
+        private const string WhitelistCachePath = "Assets/UFlowSetting/BundleWhitelist.json";
+        private BundleWhitelistCache whitelist = new BundleWhitelistCache();
+        private string[] availableBundles = Array.Empty<string>();
+        private Vector2 whitelistScrollPosition;
+        private bool whitelistLoaded;
+
+        private void LoadWhitelist()
+        {
+            try
+            {
+                whitelist = File.Exists(WhitelistCachePath)
+                    ? JsonUtility.FromJson<BundleWhitelistCache>(File.ReadAllText(WhitelistCachePath))
+                    : new BundleWhitelistCache();
+                if (whitelist == null || whitelist.bundles == null)
+                    throw new InvalidDataException("Invalid bundle whitelist cache.");
+                whitelistLoaded = true;
+            }
+            catch (Exception exception)
+            {
+                whitelist = new BundleWhitelistCache();
+                whitelistLoaded = false;
+                Debug.LogError($"Failed to load bundle whitelist: {exception.Message}");
+            }
+        }
+
+        private void SaveWhitelist()
+        {
+            if (!whitelistLoaded) return;
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(WhitelistCachePath));
+                var temporaryPath = WhitelistCachePath + ".tmp";
+                File.WriteAllText(temporaryPath, JsonUtility.ToJson(whitelist, true));
+                if (File.Exists(WhitelistCachePath))
+                    File.Replace(temporaryPath, WhitelistCachePath, null);
+                else
+                    File.Move(temporaryPath, WhitelistCachePath);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError($"Failed to save bundle whitelist: {exception.Message}");
+            }
+        }
+
+        private void OnDisable()
+        {
+            SaveWhitelist();
+        }
+
+        private void OnProjectChange()
+        {
+            RefreshAvailableBundles();
+            Repaint();
+        }
+
+        private void RefreshAvailableBundles()
+        {
+            availableBundles = AssetDatabase.GetAllAssetBundleNames();
+            Array.Sort(availableBundles, StringComparer.Ordinal);
+        }
+
+        private void DrawWhitelist()
+        {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField("Bundle Whitelist", EditorStyles.boldLabel);
+                    using (new EditorGUI.DisabledScope(!whitelistLoaded))
+                    {
+                        if (GUILayout.Button("+", GUILayout.Width(25f)))
+                        {
+                            RefreshAvailableBundles();
+                            whitelist.bundles.Add(string.Empty);
+                            SaveWhitelist();
+                        }
+                    }
+                }
+                if (!whitelistLoaded)
+                {
+                    EditorGUILayout.HelpBox("Whitelist cache could not be loaded. Apply is disabled to protect existing bundles.", MessageType.Error);
+                    return;
+                }
+                EditorGUILayout.LabelField("Listed bundles are excluded from cleanup. Folder edits are applied afterward.", EditorStyles.wordWrappedMiniLabel);
+                using (var scroll = new EditorGUILayout.ScrollViewScope(whitelistScrollPosition,
+                    GUILayout.Height(Mathf.Min(whitelist.bundles.Count, 4) * 24f + 5f)))
+                {
+                    whitelistScrollPosition = scroll.scrollPosition;
+                    for (var i = 0; i < whitelist.bundles.Count; i++)
+                    {
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            var current = whitelist.bundles[i];
+                            var label = string.IsNullOrEmpty(current) ? "Select Bundle..." : current;
+                            if (GUILayout.Button(label, EditorStyles.popup))
+                            {
+                                RefreshAvailableBundles();
+                                var index = i;
+                                var menu = new GenericMenu();
+                                foreach (var bundle in availableBundles)
+                                {
+                                    var selectedBundle = bundle;
+                                    if (bundle != current && whitelist.bundles.Contains(bundle)) continue;
+                                    menu.AddItem(new GUIContent(bundle), bundle == current, () =>
+                                    {
+                                        if (index >= whitelist.bundles.Count) return;
+                                        whitelist.bundles[index] = selectedBundle;
+                                        SaveWhitelist();
+                                        Repaint();
+                                    });
+                                }
+                                if (menu.GetItemCount() == 0)
+                                    menu.AddDisabledItem(new GUIContent("No available bundles"));
+                                menu.ShowAsContext();
+                            }
+                            if (GUILayout.Button("-", GUILayout.Width(25f)))
+                            {
+                                whitelist.bundles.RemoveAt(i);
+                                SaveWhitelist();
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         private void OnEnable()
         {
+            LoadWhitelist();
+            RefreshAvailableBundles();
             if (treeViewState == null)
                 treeViewState = new TreeViewState();
 
@@ -93,16 +228,17 @@ namespace PowerCellStudio.Editor
             {
                 EditorUIStyle.DrawImguiHeader("AssetBundle Folder Settings", "Assign bundle names to folders and review inherited settings.");
                 if (treeView == null)
-                    {
+                {
                     EditorGUILayout.HelpBox("Bundle settings are not ready.", MessageType.Warning);
                     return;
                 }
 
+                DrawWhitelist();
                 using (var scroll = new EditorGUILayout.ScrollViewScope(scrollPosition, EditorUIStyle.SectionBox))
                 {
                     scrollPosition = scroll.scrollPosition;
                     var rect = GUILayoutUtility.GetRect(0, EditorUIStyle.TreeViewMaxLayoutSize, 0,
-                        Mathf.Max(120f, position.height - 150f));
+                        Mathf.Max(120f, position.height - 215f - Mathf.Min(whitelist.bundles.Count, 4) * 24f));
                     treeView.OnGUI(rect);
                 }
 
@@ -124,12 +260,16 @@ namespace PowerCellStudio.Editor
                     }
 
                     GUILayout.Space(EditorUIStyle.ContentSpacing);
-                    if (GUILayout.Button("Apply Settings", EditorUIStyle.PrimaryButton))
+                    using (new EditorGUI.DisabledScope(!whitelistLoaded))
                     {
-                        treeView.ApplyBundles();
-                        AssetDatabase.RemoveUnusedAssetBundleNames();
-                        AssetDatabase.SaveAssets();
-                        treeView.Reload();
+                        if (GUILayout.Button("Apply Settings", EditorUIStyle.PrimaryButton))
+                        {
+                            treeView.ApplyBundles(new HashSet<string>(whitelist.bundles, StringComparer.Ordinal));
+                            AssetDatabase.RemoveUnusedAssetBundleNames();
+                            AssetDatabase.SaveAssets();
+                            treeView.Reload();
+                            RefreshAvailableBundles();
+                        }
                     }
                 }
             }
@@ -177,6 +317,7 @@ namespace PowerCellStudio.Editor
 
             protected override TreeViewItem BuildRoot()
             {
+                editBuffer.Clear();
                 var root = new FolderTreeItem
                     { id = 0, depth = -1, displayName = "Root", path = "Assets", bundle = "", inheritedBundle = "" };
                 AddChildren(root, "Assets", null);
@@ -330,9 +471,73 @@ namespace PowerCellStudio.Editor
             //     base.OnGUI(rect);
             // }
 
-            public void ApplyBundles()
+            public void ApplyBundles(HashSet<string> bundleWhitelist)
             {
+                foreach (var bundleName in AssetDatabase.GetAllAssetBundleNames())
+                {
+                    if (bundleWhitelist.Contains(bundleName)) continue;
+                    if (!AssetDatabase.RemoveAssetBundleName(bundleName, true))
+                        throw new InvalidOperationException($"Failed to remove asset bundle: {bundleName}");
+                }
+
                 ApplyBundlesRecursive(rootItem as FolderTreeItem);
+                DealWithDuplicateAssets();
+                editBuffer.Clear();
+            }
+
+            private void DealWithDuplicateAssets()
+            {
+                string[] assetBuneleNames = AssetDatabase.GetAllAssetBundleNames();
+                var duplicateAssets = new Dictionary<string, HashSet<string>>();
+                var assignedAssetPaths = new HashSet<string>();
+                var assetPathsByBundle = new string[assetBuneleNames.Length][];
+                for (var i = 0; i < assetBuneleNames.Length; i++)
+                {
+                    var assetPaths = AssetDatabase.GetAssetPathsFromAssetBundle(assetBuneleNames[i]);
+                    assetPathsByBundle[i] = assetPaths;
+                    assignedAssetPaths.UnionWith(assetPaths);
+                }
+                
+                for (var i = 0; i < assetPathsByBundle.Length; i++)
+                {
+                    var assetPaths = assetPathsByBundle[i];
+                    string[] dependencies = AssetDatabase.GetDependencies(assetPaths, true);
+                    foreach (string dependency in dependencies)
+                    {
+                        if (!dependency.StartsWith("Assets/", StringComparison.Ordinal)) continue;
+                        var extension = Path.GetExtension(dependency);
+                    
+                        if (extension == ".cs" || extension == ".dll") continue;
+                        if (assignedAssetPaths.Contains(dependency)) continue;
+                        if (!duplicateAssets.TryGetValue(dependency, out var dependentBundles))
+                        {
+                            dependentBundles = new HashSet<string>(StringComparer.Ordinal);
+                            duplicateAssets.Add(dependency, dependentBundles);
+                        }
+                        dependentBundles.Add(assetBuneleNames[i]);
+                    }
+                }
+
+                // 完成全部依赖统计后再修改分包，避免影响本次扫描结果。
+                var sortedBundleNames = new List<string>();
+                foreach (var asset in duplicateAssets)
+                {
+                    if (asset.Value.Count < 2) continue;
+
+                    sortedBundleNames.Clear();
+                    sortedBundleNames.AddRange(asset.Value);
+                    sortedBundleNames.Sort(StringComparer.Ordinal);
+                    var bundleName = string.Concat(sortedBundleNames);
+                    var importer = AssetImporter.GetAtPath(asset.Key);
+                    if (importer == null)
+                    {
+                        AssetLogger.LogError($"Cannot assign shared asset bundle: {asset.Key}");
+                        continue;
+                    }
+
+                    importer.SetAssetBundleNameAndVariant(bundleName, string.Empty);
+                    EditorUtility.SetDirty(importer);
+                }
             }
 
             void ApplyBundlesRecursive(FolderTreeItem item)
@@ -345,12 +550,9 @@ namespace PowerCellStudio.Editor
                     }
                 }
 
-                var needApply = false;
-                if (editBuffer.TryGetValue(item.id, out var value))
-                {
-                    needApply = !value.Equals(item.bundle);
-                }
-                else if (!string.IsNullOrEmpty(item.bundle))
+                // 清除旧分包后，未编辑的非空配置也必须重新应用。
+                var needApply = !string.IsNullOrEmpty(item.bundle);
+                if (editBuffer.TryGetValue(item.id, out var value) && !value.Equals(item.bundle))
                 {
                     needApply = true;
                 }

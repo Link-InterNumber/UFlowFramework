@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 
@@ -20,50 +21,52 @@ namespace PowerCellStudio.Editor
             }
             // Chunk化保存
             ChunkMaker.StreamWriteSync(folder, ConstSetting.BundleAssetConfigName, mapDataSource, data => data.assetName, 256);
-            //保存创建的资源
-            AssetDatabase.SaveAssets();
-            //刷新界面
-            AssetDatabase.Refresh();
         }
 
         private static IEnumerable<ScriptableAssetBundleData> GetBundleAssetData(string[] bundleNames)
         {
-            AssetBundle.UnloadAllAssetBundles(true);
             var allAssets = new HashSet<string>();
-            foreach (var bundleName in bundleNames)
+            var duplicateAssets = new HashSet<string>();
+            // 先收集所有包的资源路径，避免将后续包中的资源误判为未分包依赖。
+            var assignedAssetPaths = new HashSet<string>();
+            var assetPathsByBundle = new string[bundleNames.Length][];
+            for (var i = 0; i < bundleNames.Length; i++)
             {
-                var directAssetPaths = AssetDatabase.GetAssetPathsFromAssetBundle(bundleName);
+                var assetPaths = AssetDatabase.GetAssetPathsFromAssetBundle(bundleNames[i]);
+                assetPathsByBundle[i] = assetPaths;
+                assignedAssetPaths.UnionWith(assetPaths);
+            }
+            HashSet<string> allAssetPaths = new HashSet<string>();
+            for (var i = 0; i < bundleNames.Length; i++)
+            {
+                var bundleName = bundleNames[i];
+                var directAssetPaths = assetPathsByBundle[i];
                 // 用来存储所有处理过的资源路径
-                HashSet<string> allAssetPaths = new HashSet<string>(directAssetPaths);
+                allAssetPaths.Clear();
+                allAssetPaths.UnionWith(directAssetPaths);
                 
-                foreach (var path in directAssetPaths)
+                string[] dependencies = AssetDatabase.GetDependencies(directAssetPaths, true); 
+                foreach (string dependency in dependencies)
                 {
-                    // 检查每个直接标记资源的依赖关系
-                    string[] dependencies = AssetDatabase.GetDependencies(path, true); // true: 包含所有依赖（间接和直接）
-
-                    foreach (string dependency in dependencies)
+                    if (!dependency.StartsWith("Assets/")) continue;
+                    var extension = Path.GetExtension(dependency);
+                    
+                    if (extension == ".cs" || extension == ".dll") continue;
+                    // 已分包资源由各自的直接资源集合收录，仅补充未分包依赖。
+                    if (!assignedAssetPaths.Contains(dependency))
                     {
-                        if (!dependency.StartsWith("Assets/")) continue;
-                        var extension = Path.GetExtension(dependency);
-                        
-                        if (extension == ".cs" || extension == ".dll") continue;
-                        // 过滤掉属于其他分包的资源
-                        string assetBundleName = AssetDatabase.GetImplicitAssetBundleName(dependency);
-                        if (string.IsNullOrEmpty(assetBundleName))
-                        {
-                            allAssetPaths.Add(dependency);
-                        }
+                        allAssetPaths.Add(dependency);
                     }
                 }
+                
                 foreach (var name in allAssetPaths)
                 {
-                    if (Path.GetExtension(name) == "shader") continue;
-                    if (allAssets.Contains(name))
+                    if (Path.GetExtension(name) == ".shader") continue;
+                    if (!allAssets.Add(name))
                     {
-                        AssetLogger.LogError($"Duplicate packaged assets: {name}");
+                        duplicateAssets.Add(name);
                         continue;
                     }
-                    allAssets.Add(name);
 
                     yield return new ScriptableAssetBundleData()
                     {
@@ -72,10 +75,17 @@ namespace PowerCellStudio.Editor
                         assetBundle = bundleName
                     };
                 }
-                // bundle.Unload(true);
             }
 
-            AssetBundle.UnloadAllAssetBundles(true);
+            if (duplicateAssets.Count <= 0) yield break;
+            var sb = new StringBuilder();
+            sb.AppendLine("Duplicate packaged assets:");  
+            foreach (var duplicateAsset in duplicateAssets)
+            {
+                sb.AppendLine(duplicateAsset);
+            }
+            AssetLogger.LogError(sb.ToString());
         }
+        
     }
 }
